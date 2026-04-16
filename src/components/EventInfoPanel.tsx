@@ -1,16 +1,12 @@
-const topHazards = [
-  { hazard: "THUNDERSTORM", alerts: 247 },
-  { hazard: "FLOOD", alerts: 183 },
-  { hazard: "WIND", alerts: 156 },
-  { hazard: "TORNADO", alerts: 89 },
-  { hazard: "HAIL", alerts: 74 },
-];
+interface HazardData {
+  hazard: string;
+  alerts: number;
+}
 
-const dangerousAlerts = [
-  { alert: "EF4 TORNADO — Oklahoma", severity: "EMERGENCY" as const },
-  { alert: "FLASH FLOOD — Houston", severity: "WARNING" as const },
-  { alert: "DERECHO — Illinois", severity: "WARNING" as const },
-];
+interface DangerousAlert {
+  alert: string;
+  severity: "EMERGENCY" | "WARNING" | "WATCH";
+}
 
 const severityColors: Record<string, string> = {
   EMERGENCY: "bg-[hsl(var(--severity-emergency))]",
@@ -18,7 +14,12 @@ const severityColors: Record<string, string> = {
   WATCH: "bg-[hsl(var(--severity-watch))]",
 };
 
-const EventInfoPanel = () => {
+interface Props {
+  topHazards: HazardData[];
+  dangerousAlerts: DangerousAlert[];
+}
+
+const EventInfoPanel = ({ topHazards, dangerousAlerts }: Props) => {
   return (
     <div className="flex gap-2 transition-all duration-300 ease-in-out w-fit">
       {/* Top 5 Hazards */}
