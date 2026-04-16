@@ -93,16 +93,16 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
   return (
     <div className="flex gap-3" style={{ height: "min(65vw, 620px)" }}>
       {/* Product sidebar */}
-      <div className="w-[160px] shrink-0 glass-panel p-2 flex flex-col gap-1.5 overflow-y-auto">
-        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-1 mb-1">
+      <div className="w-[160px] shrink-0 glass-panel p-2 flex flex-col overflow-y-auto">
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-1 mb-1.5">
           Products
         </span>
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-1.5 flex-1">
           {radarProducts.map((p) => (
             <button
               key={p.id}
               onClick={() => setSelectedProduct(p.id)}
-              className={`px-1.5 py-2 text-[9px] font-mono leading-tight rounded-sm border transition-colors text-center ${
+              className={`flex-1 px-1.5 text-[9px] font-mono leading-tight rounded-sm border transition-colors text-center flex items-center justify-center ${
                 selectedProduct === p.id
                   ? "bg-primary/20 text-primary border-primary/40 font-bold"
                   : "bg-background/60 text-muted-foreground border-border hover:text-foreground hover:border-primary/20"
