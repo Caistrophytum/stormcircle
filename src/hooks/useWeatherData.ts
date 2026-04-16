@@ -50,11 +50,11 @@ function generateWeatherData(): WeatherData {
   }));
 
   // Generate data nodes
-  const cape = rand(200, 5000);
-  const cin = -rand(5, 120);
-  const shear = rand(10, 80);
-  const srh = rand(50, 600);
-  const lcl = rand(300, 2000);
+  const cape = rand(0, 6000);
+  const cin = -rand(0, 250);
+  const shear = rand(0, 80);
+  const srh = rand(0, 700);
+  const lcl = rand(200, 2500);
 
   const getColor = (label: string, val: number) => {
     switch (label) {
