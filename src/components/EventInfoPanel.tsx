@@ -28,7 +28,7 @@ const EventInfoPanel = () => {
         </h3>
         <div className="flex flex-col gap-1">
           {topHazards.map((h, i) => (
-            <div key={h.hazard} className="flex items-center justify-between">
+            <div key={h.hazard} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-1.5">
                 <span className="text-[9px] font-mono text-muted-foreground w-3">
                   {i + 1}.
