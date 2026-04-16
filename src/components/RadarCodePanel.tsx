@@ -25,10 +25,10 @@ const RadarCodePanel = () => {
   return (
     <div className="glass-panel p-3 w-full">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-[13.5px] font-mono text-primary uppercase tracking-wider">
+        <span className="text-[16px] font-mono text-primary uppercase tracking-wider">
           RDA {scanAngle.toFixed(1)}°
         </span>
-        <span className="text-[13.5px] font-mono text-neon-green uppercase flex items-center gap-1">
+        <span className="text-[16px] font-mono text-neon-green uppercase flex items-center gap-1">
           <span className="size-1.5 rounded-full bg-neon-green animate-pulse" />
           LIVE
         </span>
@@ -53,7 +53,7 @@ const RadarCodePanel = () => {
                 setScanAngle(a);
                 setTiltLocked(true);
               }}
-              className={`px-1 py-0.5 text-[9.5px] font-mono rounded-sm transition-colors ${
+              className={`px-1 py-0.5 text-[11.5px] font-mono rounded-sm transition-colors ${
                 scanAngle === a
                   ? "bg-primary/20 text-primary border border-primary/30"
                   : "text-muted-foreground hover:text-foreground border border-transparent"
@@ -67,7 +67,7 @@ const RadarCodePanel = () => {
 
       {/* Speed control */}
       <div className="flex items-center gap-2">
-        <span className="text-[9.5px] font-mono text-muted-foreground w-8">SPD</span>
+        <span className="text-[11.5px] font-mono text-muted-foreground w-8">SPD</span>
         <Slider
           value={[speed]}
           onValueChange={(v) => setSpeed(v[0])}
@@ -76,7 +76,7 @@ const RadarCodePanel = () => {
           step={100}
           className="flex-1"
         />
-        <span className="text-[9.5px] font-mono text-primary w-10 text-right">{(speed / 1000).toFixed(1)}s</span>
+        <span className="text-[11.5px] font-mono text-primary w-10 text-right">{(speed / 1000).toFixed(1)}s</span>
       </div>
     </div>
   );
