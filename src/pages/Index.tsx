@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen, PanelBottomClose, PanelBottomOpen } from "lucide-react";
-import CommandSidebar from "@/components/CommandSidebar";
+import { PanelRightClose, PanelRightOpen, PanelBottomClose, PanelBottomOpen } from "lucide-react";
 import StatusBar from "@/components/StatusBar";
 import TacticalMap from "@/components/TacticalMap";
 import PeerReviewQueue from "@/components/PeerReviewQueue";
@@ -12,7 +11,6 @@ const Index = () => {
   const [mapExpanded, setMapExpanded] = useState(false);
   const [userRole, setUserRole] = useState<"guest" | "citizen" | "meteorologist">("meteorologist");
 
-  const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [bottomOpen, setBottomOpen] = useState(true);
 
@@ -23,28 +21,12 @@ const Index = () => {
   const overlayScale = Math.max(
     0.8,
     1 -
-      (leftOpen ? 0.05 : 0) -
       (rightOpen ? 0.08 : 0) -
       (!mapExpanded && bottomOpen ? 0.07 : 0)
   );
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Left sidebar */}
-      <AnimatePresence>
-        {leftOpen && (
-          <motion.div
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 256, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="shrink-0 overflow-hidden"
-          >
-            <CommandSidebar activeView={activeView} onViewChange={setActiveView} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <main className="flex-1 flex flex-col min-w-0">
         <StatusBar userRole={userRole} onSignIn={handleSignIn} />
 
@@ -61,21 +43,11 @@ const Index = () => {
             <div
               className="absolute bottom-4 right-4 z-30 origin-bottom-right"
               style={{
-                ...( !mapExpanded && bottomOpen ? { bottom: "calc(45% + 16px)" } : {}),
+                ...(!mapExpanded && bottomOpen ? { bottom: "calc(45% + 16px)" } : {}),
                 transform: `scale(${overlayScale})`,
               }}
             >
               <div className="flex gap-2">
-                <button
-                  onClick={() => setLeftOpen(!leftOpen)}
-                  className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
-                  title={leftOpen ? "Collapse left panel" : "Expand left panel"}
-                >
-                  {leftOpen
-                    ? <PanelLeftClose className="size-4 text-primary" />
-                    : <PanelLeftOpen className="size-4 text-primary" />}
-                  <span className="text-[9px] font-mono text-muted-foreground">{leftOpen ? "HIDE" : "SHOW"}</span>
-                </button>
                 <button
                   onClick={() => setRightOpen(!rightOpen)}
                   className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
