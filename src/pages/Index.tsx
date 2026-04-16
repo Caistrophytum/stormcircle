@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { PanelRightClose, PanelRightOpen, PanelBottomClose, PanelBottomOpen } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import StatusBar from "@/components/StatusBar";
 import TacticalMap from "@/components/TacticalMap";
 import PeerReviewQueue from "@/components/PeerReviewQueue";
@@ -39,15 +39,25 @@ const Index = () => {
               overlayScale={overlayScale}
             />
 
-            {/* Panel toggle buttons - inside the map column, bottom-right */}
+            {/* Panel toggle buttons - inside the map column, bottom-left */}
             <div
-              className="absolute bottom-4 right-4 z-30 origin-bottom-right"
+              className="absolute bottom-4 left-4 z-30 origin-bottom-left"
               style={{
                 ...(!mapExpanded && bottomOpen ? { bottom: "calc(45% + 16px)" } : {}),
                 transform: `scale(${overlayScale})`,
               }}
             >
               <div className="flex gap-2">
+                <button
+                  onClick={() => setBottomOpen(!bottomOpen)}
+                  className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
+                  title={bottomOpen ? "Collapse bottom panel" : "Expand bottom panel"}
+                >
+                  {bottomOpen
+                    ? <PanelLeftClose className="size-4 text-primary" />
+                    : <PanelLeftOpen className="size-4 text-primary" />}
+                  <span className="text-[9px] font-mono text-muted-foreground">{bottomOpen ? "HIDE" : "SHOW"}</span>
+                </button>
                 <button
                   onClick={() => setRightOpen(!rightOpen)}
                   className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
@@ -57,16 +67,6 @@ const Index = () => {
                     ? <PanelRightClose className="size-4 text-primary" />
                     : <PanelRightOpen className="size-4 text-primary" />}
                   <span className="text-[9px] font-mono text-muted-foreground">{rightOpen ? "HIDE" : "SHOW"}</span>
-                </button>
-                <button
-                  onClick={() => setBottomOpen(!bottomOpen)}
-                  className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
-                  title={bottomOpen ? "Collapse bottom panel" : "Expand bottom panel"}
-                >
-                  {bottomOpen
-                    ? <PanelBottomClose className="size-4 text-primary" />
-                    : <PanelBottomOpen className="size-4 text-primary" />}
-                  <span className="text-[9px] font-mono text-muted-foreground">{bottomOpen ? "HIDE" : "SHOW"}</span>
                 </button>
               </div>
             </div>
