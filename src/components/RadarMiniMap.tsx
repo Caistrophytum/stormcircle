@@ -97,7 +97,7 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
         <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider px-1 mb-1">
           Products
         </span>
-        <div className="grid grid-cols-2 gap-1.5">
+        <div className="flex flex-col gap-1.5">
           {radarProducts.map((p) => (
             <button
               key={p.id}
