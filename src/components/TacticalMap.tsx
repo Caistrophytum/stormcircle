@@ -99,12 +99,11 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </AnimatePresence>
       </div>
 
-      {/* Data nodes – fill space between radar and right edge */}
+      {/* Data nodes – full width to right edge */}
       <div
-        className="absolute bottom-[5.5rem] z-10 transition-all duration-300 ease-in-out"
+        className="absolute bottom-[5.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
-          right: "calc(1rem + 170px)",
         }}
       >
         <div className="flex gap-2 justify-between">
@@ -127,13 +126,12 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
       {/* WRS (Weather Risk Score) bar */}
       <div
-        className="absolute bottom-4 z-10 transition-all duration-300 ease-in-out"
+        className="absolute bottom-4 right-4 z-10 transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
-          right: "calc(1rem + 170px)",
         }}
       >
-        <div className="bg-background px-3 py-2 flex items-center gap-3">
+        <div className="bg-background px-3 py-3 flex items-center gap-3">
           <span className="text-[9px] font-mono text-muted-foreground whitespace-nowrap">WRS</span>
           <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
             <motion.div
