@@ -78,15 +78,16 @@ function generateWeatherData(): WeatherData {
     { label: "STP", value: String(stp), numericValue: stp, unit: "", color: getColor("STP", stp) },
   ];
 
-  // Threat level: aggregate from total alerts + CAPE + SRH + STP
-  const totalAlerts = topHazards.reduce((s, h) => s + h.alerts, 0);
+  // Threat level: meteorological composite score
+  const lclScore = Math.max(0, Math.min(1, 1 - (lcl / 2000)));
+  const cinScore = Math.max(0, Math.min(1, 1 - (Math.abs(cin) / 200)));
   const threatLevel = Math.min(100, Math.round(
-    (totalAlerts / 1500) * 30 +
-    (cape / 5000) * 25 +
-    (srh / 600) * 20 +
-    (stp / 8) * 15 +
-    (shear / 80) * 10
-  ));
+    (cape / 5000) * 35 +
+    (srh / 600) * 25 +
+    (shear / 50) * 20 +
+    lclScore * 12 +
+    cinScore * 8
+  ) * 100 / 100);
 
   return { topHazards, dangerousAlerts, dataNodes, threatLevel };
 }
