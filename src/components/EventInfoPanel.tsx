@@ -24,21 +24,21 @@ const EventInfoPanel = ({ topHazards, dangerousAlerts }: Props) => {
     <div className="flex gap-2 transition-all duration-300 ease-in-out w-fit">
       {/* Top 5 Hazards */}
       <div className="glass-panel p-2.5 whitespace-nowrap">
-        <h3 className="text-[9px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
+        <h3 className="text-[12px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 5 Hazards
         </h3>
         <div className="flex flex-col gap-1">
           {topHazards.map((h, i) => (
             <div key={h.hazard} className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-mono text-muted-foreground w-3">
+                <span className="text-[12px] font-mono text-muted-foreground w-3">
                   {i + 1}.
                 </span>
-                <span className="text-[10px] font-mono text-card-foreground tracking-wider">
+                <span className="text-[13.5px] font-mono text-card-foreground tracking-wider">
                   {h.hazard}
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-primary tabular-nums">
+              <span className="text-[13.5px] font-mono text-primary tabular-nums">
                 {h.alerts}
               </span>
             </div>
@@ -48,23 +48,23 @@ const EventInfoPanel = ({ topHazards, dangerousAlerts }: Props) => {
 
       {/* Top 3 Most Dangerous */}
       <div className="glass-panel p-2.5 whitespace-nowrap">
-        <h3 className="text-[9px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
+        <h3 className="text-[12px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Most Dangerous
         </h3>
         <div className="flex flex-col gap-1.5">
           {dangerousAlerts.map((a, i) => (
             <div key={a.alert} className="flex flex-col gap-0.5">
               <div className="flex items-center gap-1.5">
-                <span className="text-[9px] font-mono text-muted-foreground w-3">
+                <span className="text-[12px] font-mono text-muted-foreground w-3">
                   {i + 1}.
                 </span>
-                <span className="text-[10px] font-mono text-card-foreground leading-tight">
+                <span className="text-[13.5px] font-mono text-card-foreground leading-tight">
                   {a.alert}
                 </span>
               </div>
               <div className="ml-[18px]">
                 <span
-                  className={`text-[8px] font-mono tracking-widest px-1.5 py-0.5 rounded-sm ${severityColors[a.severity]} text-background font-bold`}
+                  className={`text-[11px] font-mono tracking-widest px-1.5 py-0.5 rounded-sm ${severityColors[a.severity]} text-background font-bold`}
                 >
                   {a.severity}
                 </span>
