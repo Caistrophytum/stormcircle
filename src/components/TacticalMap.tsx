@@ -49,7 +49,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
           key={weatherCondition}
           src={weatherBackgrounds[weatherCondition]}
           alt={`${weatherCondition} weather`}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-fill"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -59,7 +59,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         />
       </AnimatePresence>
 
-      <div className="absolute inset-0 bg-background/50" />
+      <div className="absolute inset-0 bg-background/30" />
 
       <div
         className="absolute bottom-4 z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
