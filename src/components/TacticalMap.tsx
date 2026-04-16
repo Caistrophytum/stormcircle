@@ -100,26 +100,27 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </AnimatePresence>
       </div>
 
-      {/* Data nodes – positioned after radar with gap */}
+      {/* Data nodes – fill space between radar and right edge */}
       <div
         className="absolute bottom-4 z-10 origin-bottom-left transition-all duration-300 ease-in-out"
         style={{
-          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1.5rem) * ${overlayScale})`,
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+          right: "200px",
           transform: `scale(${overlayScale})`,
         }}
       >
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-between">
           {dataNodes.map((node) => (
             <div
               key={node.label}
-              className="px-3 py-2 bg-background border-l-2 border-primary/30 flex flex-col gap-0.5"
+              className="flex-1 px-3 py-3 bg-background border-l-2 border-primary/30 flex flex-col gap-1"
             >
-              <span className="text-[7px] font-mono text-muted-foreground leading-none">
+              <span className="text-[8px] font-mono text-muted-foreground leading-none">
                 {node.label}
               </span>
-              <span className={`text-[11px] font-mono font-bold ${node.color} whitespace-nowrap`}>
+              <span className={`text-sm font-mono font-bold ${node.color} whitespace-nowrap`}>
                 {node.value}
-                <span className="text-[7px] text-muted-foreground ml-0.5">{node.unit}</span>
+                <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>
               </span>
             </div>
           ))}
