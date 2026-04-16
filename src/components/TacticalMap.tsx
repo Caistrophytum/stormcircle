@@ -157,18 +157,26 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </div>
       </div>
 
-      {/* Top panels: right-aligned, below controls */}
+      {/* Radar code panel: top-right corner */}
       <div
-        className="absolute top-12 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out"
+        className="absolute top-3 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out"
         style={{
           width: "clamp(200px, 22vw, 340px)",
           transform: `scale(${overlayScale})`,
         }}
       >
-        <div className="flex flex-col gap-2 w-full">
-          <EventInfoPanel />
-          <RadarCodePanel />
-        </div>
+        <RadarCodePanel />
+      </div>
+
+      {/* Event info panel: below radar code panel */}
+      <div
+        className="absolute top-32 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out"
+        style={{
+          width: "clamp(200px, 22vw, 340px)",
+          transform: `scale(${overlayScale})`,
+        }}
+      >
+        <EventInfoPanel />
       </div>
     </motion.section>
   );
