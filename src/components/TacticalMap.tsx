@@ -101,9 +101,10 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
       {/* Data nodes – fill space between radar and right edge */}
       <div
-        className="absolute bottom-16 right-4 z-10 transition-all duration-300 ease-in-out"
+        className="absolute bottom-[5.5rem] z-10 transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+          right: "calc(1rem + 170px)",
         }}
       >
         <div className="flex gap-2 justify-between">
@@ -121,6 +122,41 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
               </span>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* WRS (Weather Risk Score) bar */}
+      <div
+        className="absolute bottom-4 z-10 transition-all duration-300 ease-in-out"
+        style={{
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+          right: "calc(1rem + 170px)",
+        }}
+      >
+        <div className="bg-background px-3 py-2 flex items-center gap-3">
+          <span className="text-[9px] font-mono text-muted-foreground whitespace-nowrap">WRS</span>
+          <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full rounded-full"
+              style={{
+                background: data.threatLevel > 85
+                  ? "hsl(var(--neon-red))"
+                  : data.threatLevel >= 61
+                  ? "hsl(var(--neon-amber))"
+                  : data.threatLevel >= 31
+                  ? "hsl(var(--primary))"
+                  : "hsl(var(--neon-green))",
+              }}
+              initial={{ width: 0 }}
+              animate={{ width: `${data.threatLevel}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+          </div>
+          <span className={`text-sm font-mono font-bold whitespace-nowrap ${
+            data.threatLevel > 85 ? "text-neon-red" : data.threatLevel >= 61 ? "text-neon-amber" : data.threatLevel >= 31 ? "text-primary" : "text-neon-green"
+          }`}>
+            {data.threatLevel}
+          </span>
         </div>
       </div>
 
