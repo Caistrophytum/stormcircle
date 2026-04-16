@@ -129,9 +129,13 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </AnimatePresence>
       </div>
 
+      {/* Report buttons – positioned after radar with gap */}
       <div
-        className="absolute bottom-4 left-1/2 z-10 origin-bottom transition-all duration-300 ease-in-out"
-        style={{ transform: `translateX(-50%) scale(${overlayScale})` }}
+        className="absolute bottom-4 z-10 origin-bottom-left transition-all duration-300 ease-in-out"
+        style={{
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(200px, 22vw, 340px) + 0.75rem) * ${overlayScale})`,
+          transform: `scale(${overlayScale})`,
+        }}
       >
         <div className="flex gap-2">
           {reportButtons.map((btn) => (
@@ -154,18 +158,17 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </div>
       </div>
 
-      {/* Top panels: EventInfo + Radar – extend from left edge to centered buttons minus gap */}
+      {/* Top panels: match radar minimap width */}
       <div
-        className="absolute top-3 left-3 z-10 origin-top-left transition-transform duration-300 ease-in-out flex gap-2 items-start"
+        className="absolute top-3 z-10 origin-top-left transition-transform duration-300 ease-in-out flex gap-2 items-start"
         style={{
+          left: "clamp(0.75rem, 2vw, 1.5rem)",
+          width: "clamp(200px, 22vw, 340px)",
           transform: `scale(${overlayScale})`,
-          right: `calc(50% - ${overlayScale * 220}px)`,
         }}
       >
-        <div className="flex-1 min-w-0">
+        <div className="flex flex-col gap-2 w-full">
           <EventInfoPanel />
-        </div>
-        <div className="flex-1 min-w-0">
           <RadarCodePanel />
         </div>
       </div>
