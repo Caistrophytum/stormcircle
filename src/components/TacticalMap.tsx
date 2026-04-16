@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Maximize2, Minimize2, Wind, CloudHail, Eye } from "lucide-react";
 import RadarCodePanel from "./RadarCodePanel";
 import RadarMiniMap from "./RadarMiniMap";
+import EventInfoPanel from "./EventInfoPanel";
 
 import weatherCalm from "@/assets/weather-calm.jpg";
 import weatherOvercast from "@/assets/weather-overcast.jpg";
