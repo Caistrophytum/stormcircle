@@ -143,10 +143,10 @@ const SYNONYMS: string[][] = [
    "waterspout", "landspout", "gustnado", "wedge", "stovepipe", "rope"],
 
   // Hail family
-  ["hail", "hailstorm", "hailstone", "hailstones", "ice", "iceball"],
+  ["hail", "hailstorm", "hailstone", "hailstones", "ice", "iceball", "chunks"],
 
   // Hail size descriptors (treated as synonyms of each other)
-  ["large", "massive", "huge", "giant", "big", "significant", "major",
+  ["large", "massive", "huge", "giant", "big", "significant", "major", "great",
    "golf", "baseball", "softball", "grapefruit", "egg", "quarter"],
 
   // Wind family
