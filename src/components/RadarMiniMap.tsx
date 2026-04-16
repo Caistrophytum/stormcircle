@@ -36,8 +36,8 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
     return (
       <button
         onClick={onCollapse}
-        className="glass-panel p-3 flex flex-col items-center gap-2 hover:border-primary/50 transition-all cursor-pointer group"
-        style={{ aspectRatio: "9/16", width: "clamp(120px, 12vw, 180px)" }}
+        className="glass-panel p-3 flex items-center gap-3 hover:border-primary/50 transition-all cursor-pointer group"
+        style={{ aspectRatio: "16/9", width: "clamp(200px, 22vw, 340px)" }}
       >
         {/* Radar circle */}
         <div className="relative w-full flex-1 flex items-center justify-center">
