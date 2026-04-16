@@ -59,20 +59,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       <div className="absolute inset-0 bg-background/50" />
 
       <div
-        className="absolute top-3 right-3 z-20 origin-top-right transition-transform duration-300 ease-in-out"
-        style={{ transform: `scale(${overlayScale})` }}
-      >
-        <button
-          onClick={onToggleExpand}
-          className="glass-panel p-1.5 hover:border-primary/50 transition-colors"
-          title={expanded ? "Collapse map" : "Expand map"}
-        >
-          {expanded ? <Minimize2 className="size-3.5 text-primary" /> : <Maximize2 className="size-3.5 text-primary" />}
-        </button>
-      </div>
-
-      <div
-        className="absolute top-3 right-14 z-20 flex gap-1 origin-top-right transition-transform duration-300 ease-in-out"
+        className="absolute top-3 left-3 z-20 flex gap-1 origin-top-left transition-transform duration-300 ease-in-out items-center"
         style={{ transform: `scale(${overlayScale})` }}
       >
         {conditions.map((c) => (
@@ -88,6 +75,13 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
             {c}
           </button>
         ))}
+        <button
+          onClick={onToggleExpand}
+          className="glass-panel p-1.5 hover:border-primary/50 transition-colors ml-1"
+          title={expanded ? "Collapse map" : "Expand map"}
+        >
+          {expanded ? <Minimize2 className="size-3.5 text-primary" /> : <Maximize2 className="size-3.5 text-primary" />}
+        </button>
       </div>
 
       <div
@@ -157,18 +151,26 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </div>
       </div>
 
-      {/* Top panels: right-aligned, below controls */}
+      {/* Radar code panel: top-right corner */}
       <div
-        className="absolute top-12 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out"
+        className="absolute top-3 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out"
         style={{
           width: "clamp(200px, 22vw, 340px)",
           transform: `scale(${overlayScale})`,
         }}
       >
-        <div className="flex flex-col gap-2 w-full">
-          <EventInfoPanel />
-          <RadarCodePanel />
-        </div>
+        <RadarCodePanel />
+      </div>
+
+      {/* Event info panel: below radar code panel */}
+      <div
+        className="absolute top-32 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out"
+        style={{
+          width: "clamp(200px, 22vw, 340px)",
+          transform: `scale(${overlayScale})`,
+        }}
+      >
+        <EventInfoPanel />
       </div>
     </motion.section>
   );
