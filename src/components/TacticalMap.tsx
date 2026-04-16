@@ -32,9 +32,10 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
   // Derive weather condition from threat level
   const weatherCondition: WeatherCondition = useMemo(() => {
-    if (data.threatLevel >= 60) return "stormy";
-    if (data.threatLevel >= 30) return "overcast";
-    return "calm";
+    if (data.threatLevel >= 86) return "stormy";
+    if (data.threatLevel >= 61) return "rainy";
+    if (data.threatLevel >= 31) return "cloudy";
+    return "sunny";
   }, [data.threatLevel]);
 
   return (
