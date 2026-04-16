@@ -99,8 +99,11 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute top-14 right-3 z-10 origin-top-right"
-        style={{ transform: `scale(${overlayScale})` }}
+        className="absolute right-3 z-10 origin-top-right transition-all duration-300 ease-in-out"
+        style={{
+          top: `calc(2.5rem * ${overlayScale} + 0.75rem)`,
+          transform: `scale(${overlayScale})`,
+        }}
       >
         <EventInfoPanel />
       </div>
