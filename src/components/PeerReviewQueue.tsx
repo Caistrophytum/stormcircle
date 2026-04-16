@@ -91,6 +91,8 @@ const GENERIC_WORDS = new Set([
   "lightning", "tornado", "snow", "ice", "fog", "debris", "power", "outage",
   "flash", "flooding", "large", "severe", "report", "spotted", "near", "the",
   "down", "lines", "drop", "station", "ball", "golf", "heavy", "strong",
+  "massive", "huge", "giant", "big", "small", "hitting", "falling", "struck",
+  "pounding", "damaging", "dangerous", "extreme", "intense", "major", "minor",
 ]);
 
 const SYNONYMS: string[][] = [
@@ -107,6 +109,8 @@ const SYNONYMS: string[][] = [
   ["flood", "flooding", "flash"],
   ["debris", "damage"],
   ["wind", "gust", "gale", "derecho"],
+  ["large", "massive", "huge", "giant", "big"],
+  ["hitting", "striking", "pounding", "falling"],
 ];
 
 function getSynonymGroup(word: string): string[] {
