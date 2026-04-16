@@ -44,6 +44,7 @@ interface Props {
 }
 
 const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
+  const [selectedProduct, setSelectedProduct] = useState("BR");
   if (!expanded) {
     const circleSize = "clamp(160px, 18vw, 240px)";
 
