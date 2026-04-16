@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Maximize2, Minimize2, Wind, CloudHail, Eye } from "lucide-react";
 import RadarCodePanel from "./RadarCodePanel";
 import RadarMiniMap from "./RadarMiniMap";
+import EventInfoPanel from "./EventInfoPanel";
 
 import weatherCalm from "@/assets/weather-calm.jpg";
 import weatherOvercast from "@/assets/weather-overcast.jpg";
@@ -95,6 +96,13 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         style={{ transform: `scale(${overlayScale})` }}
       >
         <RadarCodePanel />
+      </div>
+
+      <div
+        className="absolute top-14 right-3 z-10 origin-top-right"
+        style={{ transform: `scale(${overlayScale})` }}
+      >
+        <EventInfoPanel />
       </div>
 
       <div
