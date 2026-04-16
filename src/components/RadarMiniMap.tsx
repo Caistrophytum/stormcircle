@@ -1,5 +1,18 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Maximize2, Minimize2 } from "lucide-react";
+
+const radarProducts = [
+  { id: "BR", label: "Base Reflectivity" },
+  { id: "BV", label: "Base Velocity" },
+  { id: "SRV", label: "Storm Rel. Velocity" },
+  { id: "ZDR", label: "Diff. Reflectivity" },
+  { id: "KDP", label: "Specific Diff. Phase" },
+  { id: "CC", label: "Correlation Coeff." },
+  { id: "VIL", label: "Vert. Int. Liquid" },
+  { id: "EET", label: "Enh. Echo Tops" },
+  { id: "HC", label: "Hydrometeor Class." },
+] as const;
 
 interface DataNode {
   label: string;
