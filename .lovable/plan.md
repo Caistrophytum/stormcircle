@@ -1,49 +1,56 @@
 
 
-## Plan: Add Event Information Overlays to Image Screen
+## Plan: Stacked Citizen Reports with Comment Input
 
 ### What We're Building
-Two new glass-panel overlays on the image screen (TacticalMap):
-1. **Top 5 Hazards** — ranked list showing hazard type + alert count (e.g., "THUNDERSTORM — 247 alerts")
-2. **Top 3 Most Dangerous Alerts** — ranked list showing the most severe active alerts with severity badge
+Transform the right panel (PeerReviewQueue) to include:
+1. **Stacked citizen reports** — duplicate reports about the same event are grouped and shown as "Large Hail In Tulsa (12 reports)" instead of individual entries
+2. **Comment input** — a text input at the bottom for submitting new reports
+3. **Working stacking** — new submissions that match existing topics increment the count; new topics create a new entry
 
-Both panels will use the existing `glass-panel` styling, `font-mono` text, severity color system, and will scale with `overlayScale` like all other map overlays.
+### Data Model
+Each stacked report will have:
+- `topic`: normalized title (e.g., "Large Hail In Tulsa")
+- `count`: number of citizen reports
+- `latestTime`: most recent report time
+- `type`: category tag
 
-### Layout Placement
-- **Top 5 Hazards**: Top-right area, below the weather condition selector buttons, anchored with `origin-top-right`
-- **Top 3 Dangerous Alerts**: Right side, vertically centered or below the hazards panel, also `origin-top-right`
+Initial mock data will include several pre-stacked entries with varying counts.
 
-Both panels will be compact (similar width to `RadarCodePanel` ~224px) to avoid obstructing the background.
+### UI Layout (top to bottom)
+1. **Header** — "Citizen Reports" (rename from Verification Queue)
+2. **Scrollable list** — stacked report cards showing:
+   - Topic title + "(X reports)" badge
+   - Type tag (REPORT/VISUAL/DATA)
+   - Time of latest report
+   - Verify/Reject buttons (keep existing pattern)
+3. **Input area** (pinned bottom) — text input + submit button, styled with glass-panel aesthetic
 
-### Data
-Static mock data for now, styled to match the avionics aesthetic:
-
-**Top 5 Hazards:**
-| # | Hazard | Alerts |
-|---|--------|--------|
-| 1 | THUNDERSTORM | 247 |
-| 2 | FLOOD | 183 |
-| 3 | WIND | 156 |
-| 4 | TORNADO | 89 |
-| 5 | HAIL | 74 |
-
-**Top 3 Most Dangerous:**
-| # | Alert | Severity |
-|---|-------|----------|
-| 1 | EF4 TORNADO — Oklahoma | EMERGENCY |
-| 2 | FLASH FLOOD — Houston | WARNING |
-| 3 | DERECHO — Illinois | WARNING |
+### Stacking Logic
+- Use React `useState` to hold the reports array
+- On submit, normalize the input text and check if a matching topic exists (case-insensitive substring match on key terms)
+- If match found: increment count, update time to "just now"
+- If no match: create new entry at count 1
+- Sort by count descending so most-reported items float to top
 
 ### Technical Details
 
-1. **New component**: `src/components/EventInfoPanel.tsx`
-   - Two sections in one glass-panel or two stacked panels
-   - Severity badges using existing CSS vars (`--severity-watch`, `--severity-warning`, `--severity-emergency`)
-   - Numbered rankings with monospace styling
-   - Compact layout with `text-[9px]` to `text-xs` sizing
+**File**: `src/components/PeerReviewQueue.tsx` — full rewrite
 
-2. **Edit**: `src/components/TacticalMap.tsx`
-   - Import and render `EventInfoPanel`
-   - Position absolute top-right, below weather buttons
-   - Apply `overlayScale` transform with `origin-top-right`
+- Replace `mockReports` with stacked report state:
+  ```ts
+  interface StackedReport {
+    id: string;
+    topic: string;
+    count: number;
+    latestTime: string;
+    type: "REPORT" | "VISUAL" | "DATA";
+  }
+  ```
+- Initial data: ~6 entries with counts like 47, 23, 15, 8, 4, 2
+- Include "Large Hail In Tulsa" with a high count to demonstrate stacking
+- Input bar at bottom with monospace styling, submit on Enter or button click
+- Adding "hail tulsa" matches existing "Large Hail In Tulsa" and increments count
+- List re-sorts after each addition so highest count stays on top
+- Keep the stats footer below the input
 
