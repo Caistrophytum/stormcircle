@@ -34,16 +34,28 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
   if (!expanded) {
     const circleSize = "clamp(160px, 18vw, 240px)";
 
+    // Positions for 6 nodes stacked on the right, evenly spaced vertically
+    const nodeOffsets = [
+      { top: "2%" },
+      { top: "18%" },
+      { top: "34%" },
+      { top: "50%" },
+      { top: "66%" },
+      { top: "82%" },
+    ];
+
     return (
-      <button
+      <div
         onClick={onCollapse}
-        className="relative hover:scale-[1.02] transition-transform cursor-pointer group"
-        style={{ width: circleSize, height: circleSize }}
+        className="relative cursor-pointer group flex items-start"
+        style={{ width: `calc(${circleSize} + 120px)`, height: circleSize }}
       >
         {/* Circular radar */}
-        <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
+        <div
+          className="relative shrink-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors"
+          style={{ width: circleSize, height: circleSize }}
+        >
           <div className="absolute inset-1 rounded-full bg-background/60 overflow-hidden">
-            {/* Grid */}
             <div
               className="absolute inset-0 opacity-20"
               style={{
@@ -52,7 +64,6 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
                 backgroundSize: "20px 20px",
               }}
             />
-            {/* Rings */}
             {[20, 32, 44].map((r) => (
               <div
                 key={r}
@@ -60,7 +71,6 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
                 style={{ width: `${r * 2}%`, height: `${r * 2}%`, top: `${50 - r}%`, left: `${50 - r}%` }}
               />
             ))}
-            {/* Sweep */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
               <motion.div
                 className="absolute w-[44%] h-[1px] origin-left bg-gradient-to-r from-primary/40 to-transparent"
@@ -68,7 +78,6 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
                 transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
               />
             </div>
-            {/* Center dot */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
               <div className="size-2 bg-primary rounded-full neon-glow-amber" />
             </div>
@@ -76,50 +85,22 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
           <Maximize2 className="absolute top-2 right-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-20" />
         </div>
 
-        {/* Data nodes wrapping around the circle */}
-        {/* Top-left */}
-        <div className="absolute -top-1 -left-2 -translate-x-full text-right">
-          <span className="text-[7px] font-mono text-muted-foreground block">{dataNodes[0].label}</span>
-          <span className={`text-[9px] font-mono font-bold ${dataNodes[0].color}`}>
-            {dataNodes[0].value}<span className="text-[6px] text-muted-foreground ml-0.5">{dataNodes[0].unit}</span>
-          </span>
+        {/* Data nodes stacked on the right, left border completing the radar */}
+        <div className="absolute flex flex-col gap-[2px]" style={{ left: `calc(${circleSize} - 4px)`, top: 0, height: "100%" }}>
+          {dataNodes.map((node, i) => (
+            <div
+              key={node.label}
+              className="bg-background border-l-2 border-primary/30 px-2 py-1 whitespace-nowrap"
+              style={{ marginTop: i === 0 ? nodeOffsets[i].top : undefined }}
+            >
+              <span className="text-[7px] font-mono text-muted-foreground block leading-none">{node.label}</span>
+              <span className={`text-[9px] font-mono font-bold ${node.color} leading-tight`}>
+                {node.value}<span className="text-[6px] text-muted-foreground ml-0.5">{node.unit}</span>
+              </span>
+            </div>
+          ))}
         </div>
-        {/* Top-right */}
-        <div className="absolute -top-1 -right-2 translate-x-full text-left">
-          <span className="text-[7px] font-mono text-muted-foreground block">{dataNodes[1].label}</span>
-          <span className={`text-[9px] font-mono font-bold ${dataNodes[1].color}`}>
-            {dataNodes[1].value}<span className="text-[6px] text-muted-foreground ml-0.5">{dataNodes[1].unit}</span>
-          </span>
-        </div>
-        {/* Mid-left */}
-        <div className="absolute top-1/2 -translate-y-1/2 -left-2 -translate-x-full text-right">
-          <span className="text-[7px] font-mono text-muted-foreground block">{dataNodes[2].label}</span>
-          <span className={`text-[9px] font-mono font-bold ${dataNodes[2].color}`}>
-            {dataNodes[2].value}<span className="text-[6px] text-muted-foreground ml-0.5">{dataNodes[2].unit}</span>
-          </span>
-        </div>
-        {/* Mid-right */}
-        <div className="absolute top-1/2 -translate-y-1/2 -right-2 translate-x-full text-left">
-          <span className="text-[7px] font-mono text-muted-foreground block">{dataNodes[3].label}</span>
-          <span className={`text-[9px] font-mono font-bold ${dataNodes[3].color}`}>
-            {dataNodes[3].value}<span className="text-[6px] text-muted-foreground ml-0.5">{dataNodes[3].unit}</span>
-          </span>
-        </div>
-        {/* Bottom-left */}
-        <div className="absolute -bottom-1 -left-2 -translate-x-full text-right">
-          <span className="text-[7px] font-mono text-muted-foreground block">{dataNodes[4].label}</span>
-          <span className={`text-[9px] font-mono font-bold ${dataNodes[4].color}`}>
-            {dataNodes[4].value}<span className="text-[6px] text-muted-foreground ml-0.5">{dataNodes[4].unit}</span>
-          </span>
-        </div>
-        {/* Bottom-right */}
-        <div className="absolute -bottom-1 -right-2 translate-x-full text-left">
-          <span className="text-[7px] font-mono text-muted-foreground block">{dataNodes[5].label}</span>
-          <span className={`text-[9px] font-mono font-bold ${dataNodes[5].color}`}>
-            {dataNodes[5].value}<span className="text-[6px] text-muted-foreground ml-0.5">{dataNodes[5].unit}</span>
-          </span>
-        </div>
-      </button>
+      </div>
     );
   }
 
