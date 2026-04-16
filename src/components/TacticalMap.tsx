@@ -157,9 +157,9 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </div>
       </div>
 
-      {/* Top panels: left-aligned */}
+      {/* Top panels: right-aligned */}
       <div
-        className="absolute top-3 left-3 z-10 origin-top-left transition-transform duration-300 ease-in-out flex gap-2 items-start"
+        className="absolute top-3 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out flex gap-2 items-start"
         style={{
           width: "clamp(200px, 22vw, 340px)",
           transform: `scale(${overlayScale})`,
