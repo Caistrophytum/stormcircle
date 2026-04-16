@@ -16,62 +16,11 @@ interface FeedItem {
   priorityUntil?: string;
 }
 
-const mockFeed: FeedItem[] = [
-  {
-    id: "1",
-    username: "WX_CHASE_MIKE",
-    isSkywarn: true,
-    isVerified: true,
-    time: "3m ago",
-    content: "Confirmed wall cloud with persistent rotation. Moving NE at 35mph. Tornado likely imminent.",
-    location: "34.12°N, 118.31°W",
-    type: "ROTATION",
-    priorityUntil: "1h",
-  },
-  {
-    id: "2",
-    username: "SKYWARN_DFW_42",
-    isSkywarn: true,
-    isVerified: true,
-    time: "8m ago",
-    content: "Golf ball hail measured at 1.75in diameter. Wind gusted ~70mph. Power lines down on Oak St.",
-    location: "32.78°N, 96.80°W",
-    type: "HAIL/WIND",
-    priorityUntil: "52m",
-  },
-  {
-    id: "3",
-    username: "CITIZEN_JEN",
-    isSkywarn: false,
-    isVerified: false,
-    time: "12m ago",
-    content: "Heavy rain and small hail in my neighborhood. Streets flooding near 5th and Main.",
-    location: "34.05°N, 118.24°W",
-    type: "FLOODING",
-  },
-  {
-    id: "4",
-    username: "STORM_OPS_7",
-    isSkywarn: false,
-    isVerified: true,
-    time: "18m ago",
-    content: "Doppler confirmed 58dBZ core approaching metro area. ETA 12 minutes.",
-    location: "33.95°N, 118.40°W",
-    type: "CORE",
-  },
-];
+const mockFeed: FeedItem[] = [];
 
-const hazcams = [
-  { id: "hc1", name: "CAM-A7 Riverside Overpass", status: "live", feed: "CLEAR" },
-  { id: "hc2", name: "CAM-B3 Industrial District", status: "live", feed: "DEBRIS DETECTED" },
-  { id: "hc3", name: "CAM-C1 Valley Bridge", status: "offline", feed: "—" },
-];
+const hazcams: { id: string; name: string; status: string; feed: string }[] = [];
 
-const trafficCams = [
-  { id: "tc1", name: "I-405 S / Wilshire", status: "live", condition: "FLOODED LANES" },
-  { id: "tc2", name: "US-101 N / Ventura", status: "live", condition: "REDUCED VIS" },
-  { id: "tc3", name: "I-10 E / Downtown", status: "live", condition: "NORMAL" },
-];
+const trafficCams: { id: string; name: string; status: string; condition: string }[] = [];
 
 const IntegrationPanel = () => {
   const [activeTab, setActiveTab] = useState<IntegrationTab>("network");
@@ -79,7 +28,7 @@ const IntegrationPanel = () => {
   const tabs: { id: IntegrationTab; label: string; icon: typeof Camera }[] = [
     { id: "hazcam", label: "HAZCAM", icon: Camera },
     { id: "traffic", label: "TRAFFIC", icon: Video },
-    { id: "network", label: "NETWORK", icon: Radio },
+    { id: "network", label: "SKYWARN", icon: Radio },
   ];
 
   // Sort feed: SKYWARN first
