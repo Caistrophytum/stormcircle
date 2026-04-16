@@ -84,14 +84,14 @@ function findMatch(reports: StackedReport[], input: string): number {
     const topicSpecific = topicWords.filter(w => !GENERIC_WORDS.has(w));
     const topicGeneric = topicWords.filter(w => GENERIC_WORDS.has(w));
 
-    // Location/specific words must overlap
+    // Location/specific words must overlap (using synonyms)
     const specificMatch = inputSpecific.filter(w =>
-      topicSpecific.some(tw => tw.includes(w) || w.includes(tw))
+      topicSpecific.some(tw => wordsMatch(w, tw))
     ).length;
 
-    // Generic/weather words must also overlap
+    // Generic/weather words must also overlap (using synonyms)
     const genericMatch = inputGeneric.filter(w =>
-      topicGeneric.some(tw => tw.includes(w) || w.includes(tw))
+      topicGeneric.some(tw => wordsMatch(w, tw))
     ).length;
 
     // Require BOTH: at least 1 specific word match AND at least 1 generic word match
