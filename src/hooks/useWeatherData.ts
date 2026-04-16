@@ -13,7 +13,7 @@ interface DangerousAlert {
 export interface WeatherData {
   topHazards: HazardData[];
   dangerousAlerts: DangerousAlert[];
-  dataNodes: { label: string; value: string; numericValue: number; unit: string; color: string }[];
+  dataNodes: { label: string; value: string; numericValue: number; unit: string; color: string; wrsContribution: number }[];
   threatLevel: number; // 0-100
 }
 
@@ -67,24 +67,28 @@ function generateWeatherData(): WeatherData {
     }
   };
 
-  const dataNodes = [
-    { label: "CAPE", value: cape.toLocaleString(), numericValue: cape, unit: "J/kg", color: getColor("CAPE", cape) },
-    { label: "CIN", value: String(cin), numericValue: cin, unit: "J/kg", color: getColor("CIN", cin) },
-    { label: "0-6km SHEAR", value: String(shear), numericValue: shear, unit: "kts", color: getColor("SHEAR", shear) },
-    { label: "0-1km SRH", value: String(srh), numericValue: srh, unit: "m²/s²", color: getColor("SRH", srh) },
-    { label: "LCL", value: String(lcl), numericValue: lcl, unit: "m", color: getColor("LCL", lcl) },
-  ];
-
   // Threat level: meteorological composite score
   const lclScore = Math.max(0, Math.min(1, 1 - (lcl / 2000)));
   const cinScore = Math.max(0, Math.min(1, 1 - (Math.abs(cin) / 200)));
+
+  // Individual WRS contributions
+  const capeContrib = Math.round(Math.min(1, cape / 5000) * 35);
+  const srhContrib = Math.round(Math.min(1, srh / 600) * 25);
+  const shearContrib = Math.round(Math.min(1, shear / 50) * 20);
+  const lclContrib = Math.round(lclScore * 12);
+  const cinContrib = Math.round(cinScore * 8);
+
+  const dataNodes = [
+    { label: "CAPE", value: cape.toLocaleString(), numericValue: cape, unit: "J/kg", color: getColor("CAPE", cape), wrsContribution: capeContrib },
+    { label: "CIN", value: String(cin), numericValue: cin, unit: "J/kg", color: getColor("CIN", cin), wrsContribution: cinContrib },
+    { label: "0-6km SHEAR", value: String(shear), numericValue: shear, unit: "kts", color: getColor("SHEAR", shear), wrsContribution: shearContrib },
+    { label: "0-1km SRH", value: String(srh), numericValue: srh, unit: "m²/s²", color: getColor("SRH", srh), wrsContribution: srhContrib },
+    { label: "LCL", value: String(lcl), numericValue: lcl, unit: "m", color: getColor("LCL", lcl), wrsContribution: lclContrib },
+  ];
+
   const threatLevel = Math.min(100, Math.round(
-    (cape / 5000) * 35 +
-    (srh / 600) * 25 +
-    (shear / 50) * 20 +
-    lclScore * 12 +
-    cinScore * 8
-  ) * 100 / 100);
+    capeContrib + srhContrib + shearContrib + lclContrib + cinContrib
+  ));
 
   return { topHazards, dangerousAlerts, dataNodes, threatLevel };
 }

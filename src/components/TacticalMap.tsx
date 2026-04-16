@@ -107,13 +107,26 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
           {data.dataNodes.map((node) => (
             <div
               key={node.label}
-              className="flex-1 px-3 py-3 bg-background border-l-2 border-primary/30 flex flex-col gap-1"
+              className="relative flex-1 px-3 py-3 bg-background border-l-2 border-primary/30 flex flex-col gap-1 overflow-visible"
             >
               <span className="text-[8px] font-mono text-muted-foreground leading-none">{node.label}</span>
               <span className={`text-sm font-mono font-bold ${node.color} whitespace-nowrap`}>
                 {node.value}
                 <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>
               </span>
+              {/* WRS contribution triangle */}
+              <div
+                className="absolute right-0 top-0 translate-x-full h-full flex items-center justify-center"
+                style={{
+                  width: "24px",
+                  clipPath: "polygon(0 0, 100% 50%, 0 100%)",
+                  background: "hsl(0 0% 92%)",
+                }}
+              >
+                <span className="text-[7px] font-mono font-bold text-background pl-0.5">
+                  {node.wrsContribution}
+                </span>
+              </div>
             </div>
           ))}
         </div>
