@@ -12,7 +12,7 @@ const Index = () => {
   const [userRole, setUserRole] = useState<"guest" | "citizen" | "meteorologist">("meteorologist");
 
   const [rightOpen, setRightOpen] = useState(true);
-  const [bottomOpen, setBottomOpen] = useState(true);
+  const [leftOpen, setLeftOpen] = useState(true);
 
   const handleSignIn = () => {
     setUserRole("citizen");
@@ -22,7 +22,7 @@ const Index = () => {
     0.8,
     1 -
       (rightOpen ? 0.08 : 0) -
-      (!mapExpanded && bottomOpen ? 0.07 : 0)
+      (leftOpen ? 0.07 : 0)
   );
 
   return (
@@ -31,32 +31,44 @@ const Index = () => {
         <StatusBar userRole={userRole} onSignIn={handleSignIn} />
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Left: map + integrations stacked */}
+          {/* Left: Integration panel */}
+          <AnimatePresence>
+            {leftOpen && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 320, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: "easeInOut" }}
+                className="shrink-0 overflow-hidden h-full border-r border-border bg-cockpit"
+              >
+                <IntegrationPanel />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Center: map */}
           <div className="flex-1 flex flex-col min-w-0 relative">
             <TacticalMap
-              expanded={mapExpanded || !bottomOpen}
+              expanded={mapExpanded}
               onToggleExpand={() => setMapExpanded(!mapExpanded)}
               overlayScale={overlayScale}
             />
 
-            {/* Panel toggle buttons - inside the map column, bottom-left */}
+            {/* Panel toggle buttons - bottom-right */}
             <div
               className="absolute bottom-4 right-4 z-30 origin-bottom-right"
-              style={{
-                ...(!mapExpanded && bottomOpen ? { bottom: "calc(45% + 16px)" } : {}),
-                transform: `scale(${overlayScale})`,
-              }}
+              style={{ transform: `scale(${overlayScale})` }}
             >
               <div className="flex gap-2">
                 <button
-                  onClick={() => setBottomOpen(!bottomOpen)}
+                  onClick={() => setLeftOpen(!leftOpen)}
                   className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
-                  title={bottomOpen ? "Collapse bottom panel" : "Expand bottom panel"}
+                  title={leftOpen ? "Collapse left panel" : "Expand left panel"}
                 >
-                  {bottomOpen
+                  {leftOpen
                     ? <PanelLeftClose className="size-4 text-primary" />
                     : <PanelLeftOpen className="size-4 text-primary" />}
-                  <span className="text-[9px] font-mono text-muted-foreground">{bottomOpen ? "HIDE" : "SHOW"}</span>
+                  <span className="text-[9px] font-mono text-muted-foreground">{leftOpen ? "HIDE" : "SHOW"}</span>
                 </button>
                 <button
                   onClick={() => setRightOpen(!rightOpen)}
@@ -70,20 +82,6 @@ const Index = () => {
                 </button>
               </div>
             </div>
-
-            <AnimatePresence>
-              {!mapExpanded && bottomOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "45%", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
-                  className="border-t border-border bg-cockpit overflow-hidden"
-                >
-                  <IntegrationPanel />
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
           {/* Right: peer review */}
