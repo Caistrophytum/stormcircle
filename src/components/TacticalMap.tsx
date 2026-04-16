@@ -59,9 +59,11 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       <div className="absolute inset-0 bg-background/15" />
 
       <div
-        className="absolute bottom-4 z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
+        className="absolute z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
         style={{
-          left: "clamp(0.75rem, 2vw, 1.5rem)",
+          left: radarExpanded ? "0.75rem" : "clamp(0.75rem, 2vw, 1.5rem)",
+          bottom: radarExpanded ? undefined : "1rem",
+          top: radarExpanded ? "0.75rem" : undefined,
           transform: radarExpanded ? undefined : `scale(${overlayScale})`,
         }}
       >
@@ -69,8 +71,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
           {radarExpanded ? (
             <motion.div
               key="expanded"
-              className="absolute bottom-0 left-0"
-              initial={{ scale: 0.3, opacity: 0, originX: 0, originY: 1 }}
+              initial={{ scale: 0.3, opacity: 0, originX: 0, originY: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.3, opacity: 0 }}
               transition={{ type: "spring", damping: 20, stiffness: 200 }}
