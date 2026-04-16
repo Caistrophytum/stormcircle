@@ -56,8 +56,7 @@ const TacticalMap = ({ expanded, onToggleExpand }: Props) => {
       </AnimatePresence>
 
       {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-background/70" />
-      <div className="absolute inset-0 avionics-grid" />
+      <div className="absolute inset-0 bg-background/50" />
 
       {/* Expand/collapse toggle */}
       <button
@@ -82,51 +81,6 @@ const TacticalMap = ({ expanded, onToggleExpand }: Props) => {
           >
             {c}
           </button>
-        ))}
-      </div>
-
-      {/* Radar overlay elements */}
-      <div className="absolute inset-0 z-[1]">
-        {/* Radar circles */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          {[120, 180, 240].map((size) => (
-            <div
-              key={size}
-              className="absolute rounded-full border border-primary/10"
-              style={{
-                width: size,
-                height: size,
-                top: -size / 2,
-                left: -size / 2,
-              }}
-            />
-          ))}
-          <motion.div
-            className="absolute w-[240px] h-[1px] origin-left bg-gradient-to-r from-primary/30 to-transparent"
-            style={{ top: 0, left: 0 }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-          />
-        </div>
-
-        {/* Weather markers */}
-        {[
-          { top: "30%", left: "25%", color: "bg-neon-red" },
-          { top: "55%", left: "60%", color: "bg-neon-amber" },
-          { top: "40%", left: "45%", color: "bg-neon-blue" },
-          { top: "65%", left: "30%", color: "bg-neon-green" },
-        ].map((marker, i) => (
-          <motion.div
-            key={i}
-            className="absolute"
-            style={{ top: marker.top, left: marker.left }}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: i * 0.2, type: "spring" }}
-          >
-            <div className={`size-3 rounded-full ${marker.color} animate-pulse`} />
-            <div className={`absolute inset-0 size-3 rounded-full ${marker.color} opacity-30 animate-ping`} />
-          </motion.div>
         ))}
       </div>
 
