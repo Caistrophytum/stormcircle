@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Maximize2, Minimize2, Wind, CloudHail, Eye } from "lucide-react";
+import { Maximize2, Minimize2 } from "lucide-react";
 import RadarCodePanel from "./RadarCodePanel";
 import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
@@ -17,10 +17,13 @@ const weatherBackgrounds: Record<WeatherCondition, string> = {
   stormy: weatherStormy,
 };
 
-const reportButtons = [
-  { label: "GALE", category: "WIND", icon: Wind, color: "neon-amber" },
-  { label: "HAIL", category: "PRECIP", icon: CloudHail, color: "neon-red" },
-  { label: "FOG", category: "VISIB", icon: Eye, color: "neon-blue" },
+const dataNodes = [
+  { label: "CAPE", value: "3,200", unit: "J/kg", color: "text-neon-red" },
+  { label: "CIN", value: "-42", unit: "J/kg", color: "text-neon-blue" },
+  { label: "0-6km SHEAR", value: "48", unit: "kts", color: "text-neon-amber" },
+  { label: "0-1km SRH", value: "312", unit: "m²/s²", color: "text-neon-red" },
+  { label: "LCL", value: "820", unit: "m", color: "text-neon-green" },
+  { label: "STP", value: "4.8", unit: "", color: "text-neon-red" },
 ];
 
 interface Props {
@@ -97,32 +100,29 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </AnimatePresence>
       </div>
 
-      {/* Report buttons – positioned after radar with gap */}
+      {/* Data nodes – positioned after radar with gap */}
       <div
         className="absolute bottom-4 z-10 origin-bottom-left transition-all duration-300 ease-in-out"
         style={{
-          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(200px, 22vw, 340px) + 0.75rem) * ${overlayScale})`,
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1.5rem) * ${overlayScale})`,
           transform: `scale(${overlayScale})`,
         }}
       >
         <div className="flex gap-2">
-          {reportButtons.map((btn) => (
-            <button
-              key={btn.label}
-              className="px-4 py-2 glass-panel hover:border-primary/50 transition-all group flex flex-col items-center gap-0.5 min-w-[75px]"
+          {dataNodes.map((node) => (
+            <div
+              key={node.label}
+              className="px-3 py-2 bg-background border-l-2 border-primary/30 flex flex-col gap-0.5"
             >
-              <span className="text-[9px] font-mono text-muted-foreground group-hover:text-primary transition-colors">
-                {btn.category}
+              <span className="text-[7px] font-mono text-muted-foreground leading-none">
+                {node.label}
               </span>
-              <span className="text-sm font-mono text-card-foreground tracking-widest">
-                {btn.label}
+              <span className={`text-[11px] font-mono font-bold ${node.color} whitespace-nowrap`}>
+                {node.value}
+                <span className="text-[7px] text-muted-foreground ml-0.5">{node.unit}</span>
               </span>
-            </button>
+            </div>
           ))}
-          <button className="px-4 py-2 bg-primary text-primary-foreground font-bold flex flex-col items-center gap-0.5 min-w-[100px] neon-glow-amber hover:brightness-110 transition-all rounded-sm">
-            <span className="text-[9px] font-mono tracking-tighter opacity-70">EMERGENCY</span>
-            <span className="text-sm font-mono tracking-widest">TORNADO</span>
-          </button>
         </div>
       </div>
 
