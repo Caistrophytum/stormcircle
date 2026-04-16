@@ -136,8 +136,11 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 origin-bottom-center"
-        style={{ transform: `translateX(-50%) scale(${overlayScale})` }}
+        className="absolute bottom-4 z-10 origin-bottom-left"
+        style={{
+          left: "calc(clamp(0.75rem, 2vw, 1.5rem) * 2 + clamp(200px, 22vw, 340px))",
+          transform: `scale(${overlayScale})`,
+        }}
       >
         <div className="flex gap-2">
           {reportButtons.map((btn) => (
