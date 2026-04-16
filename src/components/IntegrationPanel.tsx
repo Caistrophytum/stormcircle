@@ -92,12 +92,12 @@ const IntegrationPanel = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Tab bar */}
-      <div className="flex border-b border-border bg-cockpit/50">
+      <div className="flex justify-start border-b border-border bg-cockpit/50">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors ${
+            className={`flex items-center justify-center gap-1.5 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors ${
               activeTab === tab.id
                 ? "text-primary border-b-2 border-primary bg-primary/5"
                 : "text-muted-foreground hover:text-foreground"

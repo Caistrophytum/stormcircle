@@ -41,7 +41,7 @@ const Index = () => {
 
             {/* Panel toggle buttons - inside the map column, bottom-left */}
             <div
-              className="absolute bottom-4 left-4 z-30 origin-bottom-left"
+              className="absolute bottom-4 right-4 z-30 origin-bottom-right"
               style={{
                 ...(!mapExpanded && bottomOpen ? { bottom: "calc(45% + 16px)" } : {}),
                 transform: `scale(${overlayScale})`,
