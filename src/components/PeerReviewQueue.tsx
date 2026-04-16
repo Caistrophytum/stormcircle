@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CheckCircle2 } from "lucide-react";
 
 interface SingleReport {
   id: string;
@@ -70,14 +70,7 @@ function generateMockReports(topic: string, count: number): SingleReport[] {
   }));
 }
 
-const initialReports: StackedReport[] = ([
-  { id: "1", topic: "Large Hail In Tulsa", count: 47, latestTime: "1m ago", type: "REPORT" as const, reports: [] },
-  { id: "2", topic: "Funnel Cloud Near Baker Field", count: 23, latestTime: "3m ago", type: "VISUAL" as const, reports: [] },
-  { id: "3", topic: "Flash Flooding On Hwy 42", count: 15, latestTime: "5m ago", type: "REPORT" as const, reports: [] },
-  { id: "4", topic: "Power Outage Downtown OKC", count: 8, latestTime: "8m ago", type: "DATA" as const, reports: [] },
-  { id: "5", topic: "Debris On I-44 Eastbound", count: 4, latestTime: "12m ago", type: "VISUAL" as const, reports: [] },
-  { id: "6", topic: "Barometric Drop Station Delta", count: 2, latestTime: "18m ago", type: "DATA" as const, reports: [] },
-] as StackedReport[]).map(r => ({ ...r, reports: generateMockReports(r.topic, r.count) }));
+const initialReports: StackedReport[] = [];
 
 const typeColors: Record<string, string> = {
   REPORT: "bg-primary/20 text-primary border-primary/30",
@@ -270,6 +263,11 @@ const PeerReviewQueue = () => {
   const [reports, setReports] = useState<StackedReport[]>(initialReports);
   const [input, setInput] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [verified, setVerified] = useState<Set<string>>(new Set());
+
+  const handleVerify = (id: string) => {
+    setVerified(prev => new Set(prev).add(id));
+  };
 
   const toggleExpand = (id: string) => {
     setExpanded(prev => {
@@ -346,7 +344,8 @@ const PeerReviewQueue = () => {
                   className="w-full p-3 text-left space-y-2"
                 >
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-xs font-mono font-bold text-card-foreground leading-tight">
+                    <span className="text-xs font-mono font-bold text-card-foreground leading-tight flex items-center gap-1.5">
+                      {verified.has(report.id) && <CheckCircle2 className="size-3.5 text-neon-green shrink-0" />}
                       {report.topic}
                     </span>
                     <span className={`shrink-0 text-[9px] font-mono px-1.5 py-0.5 border rounded ${typeColors[report.type]}`}>
@@ -411,15 +410,17 @@ const PeerReviewQueue = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Verify / Reject */}
-                <div className="grid grid-cols-2 gap-2 px-3 pb-3">
-                  <button className="py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green font-mono text-[10px] uppercase font-bold hover:bg-neon-green hover:text-background transition-all rounded-sm">
-                    Verify
-                  </button>
-                  <button className="py-1.5 bg-destructive/10 border border-destructive/20 text-destructive font-mono text-[10px] uppercase font-bold hover:bg-destructive hover:text-destructive-foreground transition-all rounded-sm">
-                    Reject
-                  </button>
-                </div>
+                {/* Verify */}
+                {!verified.has(report.id) && (
+                  <div className="px-3 pb-3">
+                    <button
+                      onClick={() => handleVerify(report.id)}
+                      className="w-full py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green font-mono text-[10px] uppercase font-bold hover:bg-neon-green hover:text-background transition-all rounded-sm"
+                    >
+                      Verify
+                    </button>
+                  </div>
+                )}
               </motion.div>
             );
           })}
