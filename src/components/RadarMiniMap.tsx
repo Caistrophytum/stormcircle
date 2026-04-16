@@ -77,7 +77,7 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
 
   // Expanded: full radar view — 1:1 square
   return (
-    <div className="glass-panel p-4 flex flex-col" style={{ width: "min(72vw, 600px)", height: "min(72vw, 600px)" }}>
+    <div className="glass-panel p-4 flex flex-col" style={{ width: "min(65vw, 620px)", height: "min(65vw, 620px)" }}>
       <div className="flex justify-between items-center mb-3">
         <span className="text-[13px] font-mono text-muted-foreground uppercase tracking-wider">
           Mesoscale Analysis
