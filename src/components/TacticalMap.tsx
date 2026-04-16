@@ -60,7 +60,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       <div className="absolute inset-0 bg-background/50" />
 
       <div
-        className="absolute top-3 right-3 z-20 origin-top-right"
+        className="absolute top-3 right-3 z-20 origin-top-right transition-transform duration-300 ease-in-out"
         style={{ transform: `scale(${overlayScale})` }}
       >
         <button
@@ -73,7 +73,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute top-3 right-14 z-20 flex gap-1 origin-top-right"
+        className="absolute top-3 right-14 z-20 flex gap-1 origin-top-right transition-transform duration-300 ease-in-out"
         style={{ transform: `scale(${overlayScale})` }}
       >
         {conditions.map((c) => (
@@ -92,7 +92,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute top-3 left-3 z-10 origin-top-left"
+        className="absolute top-3 left-3 z-10 origin-top-left transition-transform duration-300 ease-in-out"
         style={{ transform: `scale(${overlayScale})` }}
       >
         <RadarCodePanel />
