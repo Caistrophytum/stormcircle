@@ -6,15 +6,17 @@ import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 
-import weatherCalm from "@/assets/weather-calm.jpg";
-import weatherOvercast from "@/assets/weather-overcast.jpg";
+import weatherSunny from "@/assets/weather-calm.jpg";
+import weatherCloudy from "@/assets/weather-overcast.jpg";
+import weatherRainy from "@/assets/weather-rainy.jpg";
 import weatherStormy from "@/assets/weather-stormy.jpg";
 
-type WeatherCondition = "calm" | "overcast" | "stormy";
+type WeatherCondition = "sunny" | "cloudy" | "rainy" | "stormy";
 
 const weatherBackgrounds: Record<WeatherCondition, string> = {
-  calm: weatherCalm,
-  overcast: weatherOvercast,
+  sunny: weatherSunny,
+  cloudy: weatherCloudy,
+  rainy: weatherRainy,
   stormy: weatherStormy,
 };
 
