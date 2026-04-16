@@ -105,7 +105,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         className="absolute bottom-16 z-10 origin-bottom-left transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
-          right: "1rem",
+          right: "0.75rem",
           transform: `scale(${overlayScale})`,
         }}
       >
