@@ -139,9 +139,8 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
       {/* Event info panel: top-right, same height as radar code panel */}
       <div
-        className="absolute top-3 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out"
+        className="absolute top-3 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out whitespace-nowrap w-auto"
         style={{
-          width: "clamp(200px, 22vw, 340px)",
           transform: `scale(${overlayScale})`,
         }}
       >

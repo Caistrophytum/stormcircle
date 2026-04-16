@@ -20,9 +20,9 @@ const severityColors: Record<string, string> = {
 
 const EventInfoPanel = () => {
   return (
-    <div className="flex gap-2 transition-all duration-300 ease-in-out">
+    <div className="flex gap-2 transition-all duration-300 ease-in-out w-fit">
       {/* Top 5 Hazards */}
-      <div className="glass-panel p-2.5 flex-1 min-w-0 min-h-0 overflow-y-auto">
+      <div className="glass-panel p-2.5 whitespace-nowrap">
         <h3 className="text-[9px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 5 Hazards
         </h3>
@@ -46,7 +46,7 @@ const EventInfoPanel = () => {
       </div>
 
       {/* Top 3 Most Dangerous */}
-      <div className="glass-panel p-2.5 flex-1 min-w-0 min-h-0 overflow-y-auto">
+      <div className="glass-panel p-2.5 whitespace-nowrap">
         <h3 className="text-[9px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Most Dangerous
         </h3>
