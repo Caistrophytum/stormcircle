@@ -70,14 +70,7 @@ function generateMockReports(topic: string, count: number): SingleReport[] {
   }));
 }
 
-const initialReports: StackedReport[] = ([
-  { id: "1", topic: "Large Hail In Tulsa", count: 47, latestTime: "1m ago", type: "REPORT" as const, reports: [] },
-  { id: "2", topic: "Funnel Cloud Near Baker Field", count: 23, latestTime: "3m ago", type: "VISUAL" as const, reports: [] },
-  { id: "3", topic: "Flash Flooding On Hwy 42", count: 15, latestTime: "5m ago", type: "REPORT" as const, reports: [] },
-  { id: "4", topic: "Power Outage Downtown OKC", count: 8, latestTime: "8m ago", type: "DATA" as const, reports: [] },
-  { id: "5", topic: "Debris On I-44 Eastbound", count: 4, latestTime: "12m ago", type: "VISUAL" as const, reports: [] },
-  { id: "6", topic: "Barometric Drop Station Delta", count: 2, latestTime: "18m ago", type: "DATA" as const, reports: [] },
-] as StackedReport[]).map(r => ({ ...r, reports: generateMockReports(r.topic, r.count) }));
+const initialReports: StackedReport[] = [];
 
 const typeColors: Record<string, string> = {
   REPORT: "bg-primary/20 text-primary border-primary/30",
