@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Maximize2, Minimize2 } from "lucide-react";
 import RadarCodePanel from "./RadarCodePanel";
 import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
+import { useWeatherData } from "@/hooks/useWeatherData";
 
 import weatherCalm from "@/assets/weather-calm.jpg";
 import weatherOvercast from "@/assets/weather-overcast.jpg";
@@ -17,15 +18,6 @@ const weatherBackgrounds: Record<WeatherCondition, string> = {
   stormy: weatherStormy,
 };
 
-const dataNodes = [
-  { label: "CAPE", value: "3,200", unit: "J/kg", color: "text-neon-red" },
-  { label: "CIN", value: "-42", unit: "J/kg", color: "text-neon-blue" },
-  { label: "0-6km SHEAR", value: "48", unit: "kts", color: "text-neon-amber" },
-  { label: "0-1km SRH", value: "312", unit: "m²/s²", color: "text-neon-red" },
-  { label: "LCL", value: "820", unit: "m", color: "text-neon-green" },
-  { label: "STP", value: "4.8", unit: "", color: "text-neon-red" },
-];
-
 interface Props {
   expanded: boolean;
   onToggleExpand: () => void;
@@ -33,10 +25,15 @@ interface Props {
 }
 
 const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
-  const [weatherCondition, setWeatherCondition] = useState<WeatherCondition>("stormy");
+  const { data } = useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
 
-  const conditions: WeatherCondition[] = ["calm", "overcast", "stormy"];
+  // Derive weather condition from threat level
+  const weatherCondition: WeatherCondition = useMemo(() => {
+    if (data.threatLevel >= 60) return "stormy";
+    if (data.threatLevel >= 30) return "overcast";
+    return "calm";
+  }, [data.threatLevel]);
 
   return (
     <motion.section
@@ -60,7 +57,6 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </AnimatePresence>
 
       <div className="absolute inset-0 bg-background/50" />
-
 
       <div
         className="absolute bottom-4 z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
@@ -108,7 +104,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         }}
       >
         <div className="flex gap-2 justify-between">
-          {dataNodes.map((node) => (
+          {data.dataNodes.map((node) => (
             <div
               key={node.label}
               className="flex-1 px-3 py-3 bg-background border-l-2 border-primary/30 flex flex-col gap-1"
@@ -136,14 +132,17 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         <RadarCodePanel />
       </div>
 
-      {/* Event info panel: top-right, same height as radar code panel */}
+      {/* Event info panel: top-right */}
       <div
         className="absolute top-3 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out whitespace-nowrap w-auto"
         style={{
           transform: `scale(${overlayScale})`,
         }}
       >
-        <EventInfoPanel />
+        <EventInfoPanel
+          topHazards={data.topHazards}
+          dangerousAlerts={data.dangerousAlerts}
+        />
       </div>
     </motion.section>
   );
