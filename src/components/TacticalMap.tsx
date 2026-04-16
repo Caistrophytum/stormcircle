@@ -60,7 +60,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       <div className="absolute inset-0 bg-background/50" />
 
       <div
-        className="absolute top-3 right-3 z-20 origin-top-right"
+        className="absolute top-3 right-3 z-20 origin-top-right transition-transform duration-300 ease-in-out"
         style={{ transform: `scale(${overlayScale})` }}
       >
         <button
@@ -73,7 +73,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute top-3 right-14 z-20 flex gap-1 origin-top-right"
+        className="absolute top-3 right-14 z-20 flex gap-1 origin-top-right transition-transform duration-300 ease-in-out"
         style={{ transform: `scale(${overlayScale})` }}
       >
         {conditions.map((c) => (
@@ -92,21 +92,24 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute top-3 left-3 z-10 origin-top-left"
+        className="absolute top-3 left-3 z-10 origin-top-left transition-transform duration-300 ease-in-out"
         style={{ transform: `scale(${overlayScale})` }}
       >
         <RadarCodePanel />
       </div>
 
       <div
-        className="absolute top-14 right-3 z-10 origin-top-right"
-        style={{ transform: `scale(${overlayScale})` }}
+        className="absolute right-3 z-10 origin-top-right transition-all duration-300 ease-in-out"
+        style={{
+          top: `calc(2.5rem * ${overlayScale} + 0.75rem)`,
+          transform: `scale(${overlayScale})`,
+        }}
       >
         <EventInfoPanel />
       </div>
 
       <div
-        className="absolute bottom-4 z-20 origin-bottom-left"
+        className="absolute bottom-4 z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
         style={{
           left: "clamp(0.75rem, 2vw, 1.5rem)",
           transform: radarExpanded ? undefined : `scale(${overlayScale})`,
@@ -144,7 +147,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute bottom-4 z-10 origin-bottom-left"
+        className="absolute bottom-4 z-10 origin-bottom-left transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) * 2 + clamp(200px, 22vw, 340px)) * ${overlayScale})`,
           transform: `scale(${overlayScale})`,

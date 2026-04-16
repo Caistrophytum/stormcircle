@@ -18,17 +18,11 @@ const severityColors: Record<string, string> = {
   WATCH: "bg-[hsl(var(--severity-watch))]",
 };
 
-const severityText: Record<string, string> = {
-  EMERGENCY: "text-[hsl(var(--severity-emergency))]",
-  WARNING: "text-[hsl(var(--severity-warning))]",
-  WATCH: "text-[hsl(var(--severity-watch))]",
-};
-
 const EventInfoPanel = () => {
   return (
-    <div className="flex flex-col gap-2 w-[224px]">
+    <div className="flex gap-2 transition-transform duration-300 ease-in-out">
       {/* Top 5 Hazards */}
-      <div className="glass-panel p-2.5">
+      <div className="glass-panel p-2.5 w-[260px]">
         <h3 className="text-[9px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 5 Hazards
         </h3>
@@ -52,7 +46,7 @@ const EventInfoPanel = () => {
       </div>
 
       {/* Top 3 Most Dangerous */}
-      <div className="glass-panel p-2.5">
+      <div className="glass-panel p-2.5 w-[260px]">
         <h3 className="text-[9px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Most Dangerous
         </h3>
