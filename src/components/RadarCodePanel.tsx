@@ -23,7 +23,7 @@ const RadarCodePanel = () => {
   }, [speed, advanceTilt]);
 
   return (
-    <div className="glass-panel p-3 w-56">
+    <div className="glass-panel p-3 w-full">
       <div className="flex justify-between items-center mb-2">
         <span className="text-[10px] font-mono text-primary uppercase tracking-wider">
           RDA {scanAngle.toFixed(1)}°
