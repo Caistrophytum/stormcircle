@@ -130,17 +130,14 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
       {/* Report buttons – positioned after radar with gap */}
       <div
-        className="absolute bottom-4 z-10 origin-bottom-left transition-all duration-300 ease-in-out"
-        style={{
-          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(200px, 22vw, 340px) + 0.75rem) * ${overlayScale})`,
-          transform: `scale(${overlayScale})`,
-        }}
+        className="absolute bottom-4 left-3 z-10 origin-bottom-left transition-all duration-300 ease-in-out"
+        style={{ transform: `scale(${overlayScale})` }}
       >
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {reportButtons.map((btn) => (
             <button
               key={btn.label}
-              className="px-4 py-2 glass-panel hover:border-primary/50 transition-all group flex flex-col items-center gap-0.5 min-w-[75px]"
+              className="px-3 py-1.5 glass-panel hover:border-primary/50 transition-all group flex flex-col items-center gap-0.5"
             >
               <span className="text-[9px] font-mono text-muted-foreground group-hover:text-primary transition-colors">
                 {btn.category}
@@ -150,7 +147,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
               </span>
             </button>
           ))}
-          <button className="px-4 py-2 bg-primary text-primary-foreground font-bold flex flex-col items-center gap-0.5 min-w-[100px] neon-glow-amber hover:brightness-110 transition-all rounded-sm">
+          <button className="px-3 py-1.5 bg-primary text-primary-foreground font-bold flex flex-col items-center gap-0.5 neon-glow-amber hover:brightness-110 transition-all rounded-sm">
             <span className="text-[9px] font-mono tracking-tighter opacity-70">EMERGENCY</span>
             <span className="text-sm font-mono tracking-widest">TORNADO</span>
           </button>
