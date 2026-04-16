@@ -44,33 +44,36 @@ const Index = () => {
 
         <div className="flex-1 flex overflow-hidden relative">
           {/* Panel toggle buttons */}
-          <div className="absolute bottom-4 right-4 z-30 flex gap-1">
+          <div className="absolute bottom-4 right-4 z-30 flex gap-2">
             <button
               onClick={() => setLeftOpen(!leftOpen)}
-              className="glass-panel p-1.5 hover:border-primary/50 transition-colors"
+              className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
               title={leftOpen ? "Collapse left panel" : "Expand left panel"}
             >
               {leftOpen
-                ? <PanelLeftClose className="size-3.5 text-primary" />
-                : <PanelLeftOpen className="size-3.5 text-primary" />}
+                ? <PanelLeftClose className="size-4 text-primary" />
+                : <PanelLeftOpen className="size-4 text-primary" />}
+              <span className="text-[9px] font-mono text-muted-foreground">{leftOpen ? "HIDE" : "SHOW"}</span>
             </button>
             <button
               onClick={() => setRightOpen(!rightOpen)}
-              className="glass-panel p-1.5 hover:border-primary/50 transition-colors"
+              className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
               title={rightOpen ? "Collapse right panel" : "Expand right panel"}
             >
               {rightOpen
-                ? <PanelRightClose className="size-3.5 text-primary" />
-                : <PanelRightOpen className="size-3.5 text-primary" />}
+                ? <PanelRightClose className="size-4 text-primary" />
+                : <PanelRightOpen className="size-4 text-primary" />}
+              <span className="text-[9px] font-mono text-muted-foreground">{rightOpen ? "HIDE" : "SHOW"}</span>
             </button>
             <button
               onClick={() => setBottomOpen(!bottomOpen)}
-              className="glass-panel p-1.5 hover:border-primary/50 transition-colors"
+              className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
               title={bottomOpen ? "Collapse bottom panel" : "Expand bottom panel"}
             >
               {bottomOpen
-                ? <PanelBottomClose className="size-3.5 text-primary" />
-                : <PanelBottomOpen className="size-3.5 text-primary" />}
+                ? <PanelBottomClose className="size-4 text-primary" />
+                : <PanelBottomOpen className="size-4 text-primary" />}
+              <span className="text-[9px] font-mono text-muted-foreground">{bottomOpen ? "HIDE" : "SHOW"}</span>
             </button>
           </div>
 
