@@ -33,9 +33,9 @@ const StatusBar = ({ userRole, onSignIn }: Props) => {
   const badge = roleBadge[userRole];
 
   return (
-    <header className="h-12 border-b border-border bg-cockpit/80 backdrop-blur-md flex items-center justify-between px-4 z-20 shrink-0">
-      {/* Left: role badge + coords */}
-      <div className="flex items-center gap-4">
+    <header className="h-12 border-b border-border bg-cockpit/80 backdrop-blur-md flex items-center justify-between px-6 z-20 shrink-0">
+      {/* Left: role badge + coords + pressure */}
+      <div className="flex items-center gap-6">
         {badge && (
           <div className={`flex items-center gap-1.5 px-2 py-1 border rounded-sm ${badge.className}`}>
             <badge.icon className="size-3" />
@@ -51,14 +51,21 @@ const StatusBar = ({ userRole, onSignIn }: Props) => {
           <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Pressure</span>
           <span className="text-xs font-mono text-neon-blue">1013.2 hPa</span>
         </div>
-      </div>
-
-      {/* Center: alert */}
-      <div className="flex items-center gap-3 bg-destructive/5 border border-destructive/20 px-3 py-1 rounded">
-        <div className="size-1.5 bg-destructive rounded-full animate-pulse" />
-        <span className="text-[10px] font-mono font-bold text-destructive uppercase tracking-tighter">
-          Alert: Severe Supercell - Sector 7G
-        </span>
+        <div className="h-5 w-px bg-border" />
+        <div className="flex flex-col">
+          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Humidity</span>
+          <span className="text-xs font-mono text-card-foreground">78%</span>
+        </div>
+        <div className="h-5 w-px bg-border" />
+        <div className="flex flex-col">
+          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Temp</span>
+          <span className="text-xs font-mono text-card-foreground">24.3°C</span>
+        </div>
+        <div className="h-5 w-px bg-border" />
+        <div className="flex flex-col">
+          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Dewpoint</span>
+          <span className="text-xs font-mono text-card-foreground">19.8°C</span>
+        </div>
       </div>
 
       {/* Right: time + auth */}
