@@ -263,6 +263,11 @@ const PeerReviewQueue = () => {
   const [reports, setReports] = useState<StackedReport[]>(initialReports);
   const [input, setInput] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [verified, setVerified] = useState<Set<string>>(new Set());
+
+  const handleVerify = (id: string) => {
+    setVerified(prev => new Set(prev).add(id));
+  };
 
   const toggleExpand = (id: string) => {
     setExpanded(prev => {
