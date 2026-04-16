@@ -123,7 +123,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
                   background: "hsl(0 0% 92%)",
                 }}
               >
-                <span className="text-[7px] font-mono font-bold text-background leading-none">
+                <span className="text-[11px] font-mono font-bold text-background leading-none">
                   {node.wrsContribution}%
                 </span>
               </div>
