@@ -44,7 +44,7 @@ const Index = () => {
 
         <div className="flex-1 flex overflow-hidden relative">
           {/* Panel toggle buttons */}
-          <div className="absolute top-2 left-2 z-30 flex gap-1">
+          <div className="absolute bottom-4 right-4 z-30 flex gap-1">
             <button
               onClick={() => setLeftOpen(!leftOpen)}
               className="glass-panel p-1.5 hover:border-primary/50 transition-colors"
