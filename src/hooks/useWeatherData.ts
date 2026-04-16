@@ -67,6 +67,10 @@ function generateWeatherData(): WeatherData {
     }
   };
 
+  // Threat level: meteorological composite score
+  const lclScore = Math.max(0, Math.min(1, 1 - (lcl / 2000)));
+  const cinScore = Math.max(0, Math.min(1, 1 - (Math.abs(cin) / 200)));
+
   // Individual WRS contributions
   const capeContrib = Math.round(Math.min(1, cape / 5000) * 35);
   const srhContrib = Math.round(Math.min(1, srh / 600) * 25);
@@ -82,16 +86,9 @@ function generateWeatherData(): WeatherData {
     { label: "LCL", value: String(lcl), numericValue: lcl, unit: "m", color: getColor("LCL", lcl), wrsContribution: lclContrib },
   ];
 
-  // Threat level: meteorological composite score
-  const lclScore = Math.max(0, Math.min(1, 1 - (lcl / 2000)));
-  const cinScore = Math.max(0, Math.min(1, 1 - (Math.abs(cin) / 200)));
   const threatLevel = Math.min(100, Math.round(
-    (cape / 5000) * 35 +
-    (srh / 600) * 25 +
-    (shear / 50) * 20 +
-    lclScore * 12 +
-    cinScore * 8
-  ) * 100 / 100);
+    capeContrib + srhContrib + shearContrib + lclContrib + cinContrib
+  ));
 
   return { topHazards, dangerousAlerts, dataNodes, threatLevel };
 }
