@@ -13,7 +13,7 @@ interface DangerousAlert {
 export interface WeatherData {
   topHazards: HazardData[];
   dangerousAlerts: DangerousAlert[];
-  dataNodes: { label: string; value: string; numericValue: number; unit: string; color: string }[];
+  dataNodes: { label: string; value: string; numericValue: number; unit: string; color: string; wrsContribution: number }[];
   threatLevel: number; // 0-100
 }
 
