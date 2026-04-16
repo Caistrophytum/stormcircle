@@ -344,7 +344,8 @@ const PeerReviewQueue = () => {
                   className="w-full p-3 text-left space-y-2"
                 >
                   <div className="flex justify-between items-start gap-2">
-                    <span className="text-xs font-mono font-bold text-card-foreground leading-tight">
+                    <span className="text-xs font-mono font-bold text-card-foreground leading-tight flex items-center gap-1.5">
+                      {verified.has(report.id) && <CheckCircle2 className="size-3.5 text-neon-green shrink-0" />}
                       {report.topic}
                     </span>
                     <span className={`shrink-0 text-[9px] font-mono px-1.5 py-0.5 border rounded ${typeColors[report.type]}`}>
