@@ -326,7 +326,12 @@ const PeerReviewQueue = () => {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
         <AnimatePresence>
-          {reports.map((report, i) => {
+          {[...reports].sort((a, b) => {
+            const aV = verified.has(a.id) ? 1 : 0;
+            const bV = verified.has(b.id) ? 1 : 0;
+            if (bV !== aV) return bV - aV;
+            return b.count - a.count;
+          }).map((report, i) => {
             const isOpen = expanded.has(report.id);
             return (
               <motion.div
