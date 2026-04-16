@@ -116,15 +116,15 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
               </span>
               {/* WRS contribution triangle */}
               <div
-                className="absolute right-0 top-0 translate-x-full h-full flex items-center justify-center"
+                className="absolute right-0 top-0 h-full flex items-center justify-end pr-1"
                 style={{
-                  width: "24px",
-                  clipPath: "polygon(0 0, 100% 50%, 0 100%)",
+                  width: "28px",
+                  clipPath: "polygon(100% 0, 100% 100%, 0 50%)",
                   background: "hsl(0 0% 92%)",
                 }}
               >
-                <span className="text-[7px] font-mono font-bold text-background pl-0.5">
-                  {node.wrsContribution}
+                <span className="text-[7px] font-mono font-bold text-background leading-none">
+                  {node.wrsContribution}%
                 </span>
               </div>
             </div>
