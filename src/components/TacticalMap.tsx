@@ -25,9 +25,10 @@ const reportButtons = [
 interface Props {
   expanded: boolean;
   onToggleExpand: () => void;
+  overlayScale: number;
 }
 
-const TacticalMap = ({ expanded, onToggleExpand }: Props) => {
+const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
   const [weatherCondition, setWeatherCondition] = useState<WeatherCondition>("stormy");
   const [radarExpanded, setRadarExpanded] = useState(false);
 
@@ -55,25 +56,30 @@ const TacticalMap = ({ expanded, onToggleExpand }: Props) => {
         />
       </AnimatePresence>
 
-      {/* Dark overlay for readability */}
       <div className="absolute inset-0 bg-background/50" />
 
-      {/* Expand/collapse toggle */}
-      <button
-        onClick={onToggleExpand}
-        className="absolute top-3 right-3 z-20 glass-panel p-[clamp(4px,0.5vw,6px)] hover:border-primary/50 transition-colors"
-        title={expanded ? "Collapse map" : "Expand map"}
+      <div
+        className="absolute top-3 right-3 z-20 origin-top-right"
+        style={{ transform: `scale(${overlayScale})` }}
       >
-        {expanded ? <Minimize2 className="size-[clamp(12px,1vw,14px)] text-primary" /> : <Maximize2 className="size-[clamp(12px,1vw,14px)] text-primary" />}
-      </button>
+        <button
+          onClick={onToggleExpand}
+          className="glass-panel p-1.5 hover:border-primary/50 transition-colors"
+          title={expanded ? "Collapse map" : "Expand map"}
+        >
+          {expanded ? <Minimize2 className="size-3.5 text-primary" /> : <Maximize2 className="size-3.5 text-primary" />}
+        </button>
+      </div>
 
-      {/* Weather condition selector */}
-      <div className="absolute top-3 right-14 z-20 flex gap-1">
+      <div
+        className="absolute top-3 right-14 z-20 flex gap-1 origin-top-right"
+        style={{ transform: `scale(${overlayScale})` }}
+      >
         {conditions.map((c) => (
           <button
             key={c}
             onClick={() => setWeatherCondition(c)}
-            className={`px-[clamp(4px,0.8vw,8px)] py-[clamp(2px,0.4vw,4px)] text-[clamp(7px,0.7vw,9px)] font-mono uppercase tracking-wider transition-all ${
+            className={`px-2 py-1 text-[9px] font-mono uppercase tracking-wider transition-all ${
               weatherCondition === c
                 ? "glass-panel border-primary/50 text-primary"
                 : "glass-panel text-muted-foreground hover:text-foreground"
@@ -84,23 +90,26 @@ const TacticalMap = ({ expanded, onToggleExpand }: Props) => {
         ))}
       </div>
 
-      {/* Radar code panel - top left */}
-      <div className="absolute top-3 left-3 z-10">
+      <div
+        className="absolute top-3 left-3 z-10 origin-top-left"
+        style={{ transform: `scale(${overlayScale})` }}
+      >
         <RadarCodePanel />
       </div>
 
-      {/* Expandable Radar Mini-Map - bottom left */}
-      <div className="absolute bottom-4 left-4 z-20">
+      <div
+        className="absolute bottom-4 left-4 z-20 origin-bottom-left"
+        style={{ transform: radarExpanded ? undefined : `scale(${overlayScale})` }}
+      >
         <AnimatePresence mode="wait">
           {radarExpanded ? (
             <motion.div
               key="expanded"
-              className="absolute bottom-0 left-0"
+              className="absolute bottom-0 left-0 w-[min(72vw,900px)] h-[min(58vh,600px)] max-w-[calc(100vw-3rem)] max-h-[calc(100vh-8rem)]"
               initial={{ scale: 0.3, opacity: 0, originX: 0, originY: 1 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.3, opacity: 0 }}
               transition={{ type: "spring", damping: 20, stiffness: 200 }}
-              style={{ width: "calc(100vw - 400px)", height: "calc(100vh - 160px)", maxWidth: 900, maxHeight: 600 }}
             >
               <RadarMiniMap expanded onCollapse={() => setRadarExpanded(false)} />
             </motion.div>
@@ -117,25 +126,29 @@ const TacticalMap = ({ expanded, onToggleExpand }: Props) => {
         </AnimatePresence>
       </div>
 
-      {/* Quick report buttons */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-[clamp(4px,0.5vw,8px)] z-10">
-        {reportButtons.map((btn) => (
-          <button
-            key={btn.label}
-            className="px-[clamp(8px,1.5vw,16px)] py-[clamp(4px,0.8vw,8px)] glass-panel hover:border-primary/50 transition-all group flex flex-col items-center gap-0.5"
-          >
-            <span className="text-[clamp(7px,0.7vw,9px)] font-mono text-muted-foreground group-hover:text-primary transition-colors">
-              {btn.category}
-            </span>
-            <span className="text-[clamp(10px,1vw,14px)] font-mono text-card-foreground tracking-widest">
-              {btn.label}
-            </span>
+      <div
+        className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 origin-bottom-center"
+        style={{ transform: `translateX(-50%) scale(${overlayScale})` }}
+      >
+        <div className="flex gap-2">
+          {reportButtons.map((btn) => (
+            <button
+              key={btn.label}
+              className="px-4 py-2 glass-panel hover:border-primary/50 transition-all group flex flex-col items-center gap-0.5 min-w-[75px]"
+            >
+              <span className="text-[9px] font-mono text-muted-foreground group-hover:text-primary transition-colors">
+                {btn.category}
+              </span>
+              <span className="text-sm font-mono text-card-foreground tracking-widest">
+                {btn.label}
+              </span>
+            </button>
+          ))}
+          <button className="px-4 py-2 bg-primary text-primary-foreground font-bold flex flex-col items-center gap-0.5 min-w-[100px] neon-glow-amber hover:brightness-110 transition-all rounded-sm">
+            <span className="text-[9px] font-mono tracking-tighter opacity-70">EMERGENCY</span>
+            <span className="text-sm font-mono tracking-widest">TORNADO</span>
           </button>
-        ))}
-        <button className="px-[clamp(8px,1.5vw,16px)] py-[clamp(4px,0.8vw,8px)] bg-primary text-primary-foreground font-bold flex flex-col items-center gap-0.5 neon-glow-amber hover:brightness-110 transition-all rounded-sm">
-          <span className="text-[clamp(7px,0.7vw,9px)] font-mono tracking-tighter opacity-70">EMERGENCY</span>
-          <span className="text-[clamp(10px,1vw,14px)] font-mono tracking-widest">TORNADO</span>
-        </button>
+        </div>
       </div>
     </motion.section>
   );

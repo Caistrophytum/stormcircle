@@ -20,7 +20,13 @@ const Index = () => {
     setUserRole("citizen");
   };
 
-  const allCollapsed = !leftOpen && !rightOpen && !bottomOpen;
+  const overlayScale = Math.max(
+    0.8,
+    1 -
+      (leftOpen ? 0.05 : 0) -
+      (rightOpen ? 0.08 : 0) -
+      (!mapExpanded && bottomOpen ? 0.07 : 0)
+  );
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -48,42 +54,49 @@ const Index = () => {
             <TacticalMap
               expanded={mapExpanded || !bottomOpen}
               onToggleExpand={() => setMapExpanded(!mapExpanded)}
+              overlayScale={overlayScale}
             />
 
             {/* Panel toggle buttons - inside the map column, bottom-right */}
-            <div className="absolute bottom-4 right-4 z-30 flex gap-[clamp(4px,0.5vw,8px)]"
-              style={!mapExpanded && bottomOpen ? { bottom: "calc(45% + 16px)" } : {}}
+            <div
+              className="absolute bottom-4 right-4 z-30 origin-bottom-right"
+              style={{
+                ...( !mapExpanded && bottomOpen ? { bottom: "calc(45% + 16px)" } : {}),
+                transform: `scale(${overlayScale})`,
+              }}
             >
-              <button
-                onClick={() => setLeftOpen(!leftOpen)}
-                className="px-[clamp(8px,1.5vw,16px)] py-[clamp(4px,0.8vw,8px)] glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5"
-                title={leftOpen ? "Collapse left panel" : "Expand left panel"}
-              >
-                {leftOpen
-                  ? <PanelLeftClose className="size-[clamp(14px,1.2vw,18px)] text-primary" />
-                  : <PanelLeftOpen className="size-[clamp(14px,1.2vw,18px)] text-primary" />}
-                <span className="text-[clamp(7px,0.7vw,9px)] font-mono text-muted-foreground">{leftOpen ? "HIDE" : "SHOW"}</span>
-              </button>
-              <button
-                onClick={() => setRightOpen(!rightOpen)}
-                className="px-[clamp(8px,1.5vw,16px)] py-[clamp(4px,0.8vw,8px)] glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5"
-                title={rightOpen ? "Collapse right panel" : "Expand right panel"}
-              >
-                {rightOpen
-                  ? <PanelRightClose className="size-[clamp(14px,1.2vw,18px)] text-primary" />
-                  : <PanelRightOpen className="size-[clamp(14px,1.2vw,18px)] text-primary" />}
-                <span className="text-[clamp(7px,0.7vw,9px)] font-mono text-muted-foreground">{rightOpen ? "HIDE" : "SHOW"}</span>
-              </button>
-              <button
-                onClick={() => setBottomOpen(!bottomOpen)}
-                className="px-[clamp(8px,1.5vw,16px)] py-[clamp(4px,0.8vw,8px)] glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5"
-                title={bottomOpen ? "Collapse bottom panel" : "Expand bottom panel"}
-              >
-                {bottomOpen
-                  ? <PanelBottomClose className="size-[clamp(14px,1.2vw,18px)] text-primary" />
-                  : <PanelBottomOpen className="size-[clamp(14px,1.2vw,18px)] text-primary" />}
-                <span className="text-[clamp(7px,0.7vw,9px)] font-mono text-muted-foreground">{bottomOpen ? "HIDE" : "SHOW"}</span>
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setLeftOpen(!leftOpen)}
+                  className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
+                  title={leftOpen ? "Collapse left panel" : "Expand left panel"}
+                >
+                  {leftOpen
+                    ? <PanelLeftClose className="size-4 text-primary" />
+                    : <PanelLeftOpen className="size-4 text-primary" />}
+                  <span className="text-[9px] font-mono text-muted-foreground">{leftOpen ? "HIDE" : "SHOW"}</span>
+                </button>
+                <button
+                  onClick={() => setRightOpen(!rightOpen)}
+                  className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
+                  title={rightOpen ? "Collapse right panel" : "Expand right panel"}
+                >
+                  {rightOpen
+                    ? <PanelRightClose className="size-4 text-primary" />
+                    : <PanelRightOpen className="size-4 text-primary" />}
+                  <span className="text-[9px] font-mono text-muted-foreground">{rightOpen ? "HIDE" : "SHOW"}</span>
+                </button>
+                <button
+                  onClick={() => setBottomOpen(!bottomOpen)}
+                  className="px-4 py-2 glass-panel hover:border-primary/50 transition-all flex flex-col items-center gap-0.5 min-w-[75px]"
+                  title={bottomOpen ? "Collapse bottom panel" : "Expand bottom panel"}
+                >
+                  {bottomOpen
+                    ? <PanelBottomClose className="size-4 text-primary" />
+                    : <PanelBottomOpen className="size-4 text-primary" />}
+                  <span className="text-[9px] font-mono text-muted-foreground">{bottomOpen ? "HIDE" : "SHOW"}</span>
+                </button>
+              </div>
             </div>
 
             <AnimatePresence>
