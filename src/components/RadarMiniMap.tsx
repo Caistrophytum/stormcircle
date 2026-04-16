@@ -34,27 +34,14 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
   if (!expanded) {
     const circleSize = "clamp(160px, 18vw, 240px)";
 
-    // Positions for 6 nodes stacked on the right, evenly spaced vertically
-    const nodeOffsets = [
-      { top: "2%" },
-      { top: "18%" },
-      { top: "34%" },
-      { top: "50%" },
-      { top: "66%" },
-      { top: "82%" },
-    ];
-
     return (
       <div
         onClick={onCollapse}
-        className="relative cursor-pointer group flex items-start"
-        style={{ width: `calc(${circleSize} + 120px)`, height: circleSize }}
+        className="relative cursor-pointer group"
+        style={{ width: circleSize, height: circleSize }}
       >
         {/* Circular radar */}
-        <div
-          className="relative shrink-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors"
-          style={{ width: circleSize, height: circleSize }}
-        >
+        <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
           <div className="absolute inset-1 rounded-full bg-background/60 overflow-hidden">
             <div
               className="absolute inset-0 opacity-20"
@@ -83,22 +70,6 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
             </div>
           </div>
           <Maximize2 className="absolute top-2 right-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-20" />
-        </div>
-
-        {/* Data nodes stacked on the right, left border completing the radar */}
-        <div className="absolute flex flex-col gap-[2px]" style={{ left: `calc(${circleSize} - 4px)`, top: 0, height: "100%" }}>
-          {dataNodes.map((node, i) => (
-            <div
-              key={node.label}
-              className="bg-background border-l-2 border-primary/30 px-2 py-1 whitespace-nowrap"
-              style={{ marginTop: i === 0 ? nodeOffsets[i].top : undefined }}
-            >
-              <span className="text-[7px] font-mono text-muted-foreground block leading-none">{node.label}</span>
-              <span className={`text-[9px] font-mono font-bold ${node.color} leading-tight`}>
-                {node.value}<span className="text-[6px] text-muted-foreground ml-0.5">{node.unit}</span>
-              </span>
-            </div>
-          ))}
         </div>
       </div>
     );
