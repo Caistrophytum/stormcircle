@@ -24,20 +24,59 @@ const typeColors: Record<string, string> = {
   DATA: "bg-secondary text-secondary-foreground border-border",
 };
 
-function normalize(text: string): string[] {
+// Common weather terms that should NOT drive matching on their own
+const GENERIC_WORDS = new Set([
+  "cloud", "funnel", "hail", "rain", "wind", "flood", "storm", "thunder",
+  "lightning", "tornado", "snow", "ice", "fog", "debris", "power", "outage",
+  "flash", "flooding", "large", "severe", "report", "spotted", "near", "the",
+]);
+
+function tokenize(text: string): string[] {
   return text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(w => w.length > 2);
 }
 
 function findMatch(reports: StackedReport[], input: string): number {
-  const words = normalize(input);
+  const words = tokenize(input);
   if (words.length === 0) return -1;
+
+  const inputSpecific = words.filter(w => !GENERIC_WORDS.has(w));
+  const inputGeneric = words.filter(w => GENERIC_WORDS.has(w));
+
   let bestIdx = -1, bestScore = 0;
+
   for (let i = 0; i < reports.length; i++) {
-    const topicWords = normalize(reports[i].topic);
-    const score = words.filter(w => topicWords.some(tw => tw.includes(w) || w.includes(tw))).length;
-    const ratio = score / Math.max(words.length, 1);
-    if (ratio >= 0.5 && score > bestScore) {
-      bestScore = score;
+    const topicWords = tokenize(reports[i].topic);
+    const topicSpecific = topicWords.filter(w => !GENERIC_WORDS.has(w));
+    const topicGeneric = topicWords.filter(w => GENERIC_WORDS.has(w));
+
+    // Location/specific words must overlap
+    const specificMatch = inputSpecific.filter(w =>
+      topicSpecific.some(tw => tw.includes(w) || w.includes(tw))
+    ).length;
+
+    // Generic/weather words must also overlap
+    const genericMatch = inputGeneric.filter(w =>
+      topicGeneric.some(tw => tw.includes(w) || w.includes(tw))
+    ).length;
+
+    // Require BOTH: at least 1 specific word match AND at least 1 generic word match
+    // OR if input has no specific words, require very high generic overlap (>=80%)
+    const hasSpecificOverlap = inputSpecific.length === 0
+      ? true
+      : specificMatch >= Math.max(1, inputSpecific.length * 0.5);
+    
+    const hasGenericOverlap = inputGeneric.length === 0
+      ? true
+      : genericMatch >= 1;
+
+    if (!hasSpecificOverlap || !hasGenericOverlap) continue;
+
+    // If input has specific words, they MUST match — this prevents "Manhattan" matching "Baker Field"
+    if (inputSpecific.length > 0 && specificMatch === 0) continue;
+
+    const totalScore = specificMatch * 3 + genericMatch;
+    if (totalScore > bestScore) {
+      bestScore = totalScore;
       bestIdx = i;
     }
   }
