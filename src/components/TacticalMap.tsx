@@ -39,10 +39,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
   }, [data.threatLevel]);
 
   return (
-    <motion.section
-      layout
-      className="relative overflow-hidden flex-1"
-    >
+    <motion.section layout className="relative overflow-hidden flex-1">
       {/* Weather-responsive background */}
       <AnimatePresence mode="wait">
         <motion.img
@@ -112,9 +109,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
               key={node.label}
               className="flex-1 px-3 py-3 bg-background border-l-2 border-primary/30 flex flex-col gap-1"
             >
-              <span className="text-[8px] font-mono text-muted-foreground leading-none">
-                {node.label}
-              </span>
+              <span className="text-[8px] font-mono text-muted-foreground leading-none">{node.label}</span>
               <span className={`text-sm font-mono font-bold ${node.color} whitespace-nowrap`}>
                 {node.value}
                 <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>
@@ -126,34 +121,43 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
       {/* WRS (Weather Risk Score) bar */}
       <div
-        className="absolute bottom-[14px] z-10 transition-all duration-300 ease-in-out"
+        className="absolute bottom-12 z-10 transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
           right: "calc(1rem + 160px + 0.5rem)",
         }}
       >
-        <div className="bg-background px-3 py-2 flex items-center gap-3 h-[44px]">
+        <div className="bg-background px-3 py-3 flex items-center gap-3">
           <span className="text-[9px] font-mono text-muted-foreground whitespace-nowrap">WRS</span>
           <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
             <motion.div
               className="h-full rounded-full"
               style={{
-                background: data.threatLevel > 85
-                  ? "hsl(var(--neon-red))"
-                  : data.threatLevel >= 61
-                  ? "hsl(var(--neon-amber))"
-                  : data.threatLevel >= 31
-                  ? "hsl(var(--primary))"
-                  : "hsl(var(--neon-green))",
+                background:
+                  data.threatLevel > 85
+                    ? "hsl(var(--neon-red))"
+                    : data.threatLevel >= 61
+                      ? "hsl(var(--neon-amber))"
+                      : data.threatLevel >= 31
+                        ? "hsl(var(--primary))"
+                        : "hsl(var(--neon-green))",
               }}
               initial={{ width: 0 }}
               animate={{ width: `${data.threatLevel}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             />
           </div>
-          <span className={`text-sm font-mono font-bold whitespace-nowrap ${
-            data.threatLevel > 85 ? "text-neon-red" : data.threatLevel >= 61 ? "text-neon-amber" : data.threatLevel >= 31 ? "text-primary" : "text-neon-green"
-          }`}>
+          <span
+            className={`text-sm font-mono font-bold whitespace-nowrap ${
+              data.threatLevel > 85
+                ? "text-neon-red"
+                : data.threatLevel >= 61
+                  ? "text-neon-amber"
+                  : data.threatLevel >= 31
+                    ? "text-primary"
+                    : "text-neon-green"
+            }`}
+          >
             {data.threatLevel}
           </span>
         </div>
@@ -177,10 +181,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
           transform: `scale(${overlayScale})`,
         }}
       >
-        <EventInfoPanel
-          topHazards={data.topHazards}
-          dangerousAlerts={data.dangerousAlerts}
-        />
+        <EventInfoPanel topHazards={data.topHazards} dangerousAlerts={data.dangerousAlerts} />
       </div>
     </motion.section>
   );
