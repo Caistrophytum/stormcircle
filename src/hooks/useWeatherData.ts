@@ -55,7 +55,6 @@ function generateWeatherData(): WeatherData {
   const shear = rand(10, 80);
   const srh = rand(50, 600);
   const lcl = rand(300, 2000);
-  const stp = +(Math.random() * 8).toFixed(1);
 
   const getColor = (label: string, val: number) => {
     switch (label) {
@@ -64,7 +63,6 @@ function generateWeatherData(): WeatherData {
       case "SHEAR": return val > 50 ? "text-neon-red" : val > 30 ? "text-neon-amber" : "text-neon-green";
       case "SRH": return val > 300 ? "text-neon-red" : val > 150 ? "text-neon-amber" : "text-neon-green";
       case "LCL": return val < 500 ? "text-neon-red" : val < 1000 ? "text-neon-amber" : "text-neon-green";
-      case "STP": return val > 4 ? "text-neon-red" : val > 2 ? "text-neon-amber" : "text-neon-green";
       default: return "text-neon-green";
     }
   };
@@ -75,7 +73,6 @@ function generateWeatherData(): WeatherData {
     { label: "0-6km SHEAR", value: String(shear), numericValue: shear, unit: "kts", color: getColor("SHEAR", shear) },
     { label: "0-1km SRH", value: String(srh), numericValue: srh, unit: "m²/s²", color: getColor("SRH", srh) },
     { label: "LCL", value: String(lcl), numericValue: lcl, unit: "m", color: getColor("LCL", lcl) },
-    { label: "STP", value: String(stp), numericValue: stp, unit: "", color: getColor("STP", stp) },
   ];
 
   // Threat level: meteorological composite score
