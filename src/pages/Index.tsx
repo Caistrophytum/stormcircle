@@ -62,7 +62,7 @@ const Index = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => setLeftOpen(!leftOpen)}
-                  className="px-4 h-11 glass-panel hover:border-primary/50 transition-all flex flex-col justify-center items-center gap-0.5 min-w-[75px]"
+                  className="px-4 h-[50px] glass-panel hover:border-primary/50 transition-all flex flex-col justify-center items-center gap-0.5 min-w-[75px]"
                   title={leftOpen ? "Collapse left panel" : "Expand left panel"}
                 >
                   {leftOpen
@@ -72,7 +72,7 @@ const Index = () => {
                 </button>
                 <button
                   onClick={() => setRightOpen(!rightOpen)}
-                  className="px-4 h-11 glass-panel hover:border-primary/50 transition-all flex flex-col justify-center items-center gap-0.5 min-w-[75px]"
+                  className="px-4 h-[50px] glass-panel hover:border-primary/50 transition-all flex flex-col justify-center items-center gap-0.5 min-w-[75px]"
                   title={rightOpen ? "Collapse right panel" : "Expand right panel"}
                 >
                   {rightOpen
