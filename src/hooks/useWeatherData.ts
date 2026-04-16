@@ -67,12 +67,19 @@ function generateWeatherData(): WeatherData {
     }
   };
 
+  // Individual WRS contributions
+  const capeContrib = Math.round(Math.min(1, cape / 5000) * 35);
+  const srhContrib = Math.round(Math.min(1, srh / 600) * 25);
+  const shearContrib = Math.round(Math.min(1, shear / 50) * 20);
+  const lclContrib = Math.round(lclScore * 12);
+  const cinContrib = Math.round(cinScore * 8);
+
   const dataNodes = [
-    { label: "CAPE", value: cape.toLocaleString(), numericValue: cape, unit: "J/kg", color: getColor("CAPE", cape) },
-    { label: "CIN", value: String(cin), numericValue: cin, unit: "J/kg", color: getColor("CIN", cin) },
-    { label: "0-6km SHEAR", value: String(shear), numericValue: shear, unit: "kts", color: getColor("SHEAR", shear) },
-    { label: "0-1km SRH", value: String(srh), numericValue: srh, unit: "m²/s²", color: getColor("SRH", srh) },
-    { label: "LCL", value: String(lcl), numericValue: lcl, unit: "m", color: getColor("LCL", lcl) },
+    { label: "CAPE", value: cape.toLocaleString(), numericValue: cape, unit: "J/kg", color: getColor("CAPE", cape), wrsContribution: capeContrib },
+    { label: "CIN", value: String(cin), numericValue: cin, unit: "J/kg", color: getColor("CIN", cin), wrsContribution: cinContrib },
+    { label: "0-6km SHEAR", value: String(shear), numericValue: shear, unit: "kts", color: getColor("SHEAR", shear), wrsContribution: shearContrib },
+    { label: "0-1km SRH", value: String(srh), numericValue: srh, unit: "m²/s²", color: getColor("SRH", srh), wrsContribution: srhContrib },
+    { label: "LCL", value: String(lcl), numericValue: lcl, unit: "m", color: getColor("LCL", lcl), wrsContribution: lclContrib },
   ];
 
   // Threat level: meteorological composite score
