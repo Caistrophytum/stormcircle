@@ -6,15 +6,17 @@ import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 
-import weatherCalm from "@/assets/weather-calm.jpg";
-import weatherOvercast from "@/assets/weather-overcast.jpg";
+import weatherSunny from "@/assets/weather-calm.jpg";
+import weatherCloudy from "@/assets/weather-overcast.jpg";
+import weatherRainy from "@/assets/weather-rainy.jpg";
 import weatherStormy from "@/assets/weather-stormy.jpg";
 
-type WeatherCondition = "calm" | "overcast" | "stormy";
+type WeatherCondition = "sunny" | "cloudy" | "rainy" | "stormy";
 
 const weatherBackgrounds: Record<WeatherCondition, string> = {
-  calm: weatherCalm,
-  overcast: weatherOvercast,
+  sunny: weatherSunny,
+  cloudy: weatherCloudy,
+  rainy: weatherRainy,
   stormy: weatherStormy,
 };
 
@@ -30,9 +32,10 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
   // Derive weather condition from threat level
   const weatherCondition: WeatherCondition = useMemo(() => {
-    if (data.threatLevel >= 60) return "stormy";
-    if (data.threatLevel >= 30) return "overcast";
-    return "calm";
+    if (data.threatLevel >= 86) return "stormy";
+    if (data.threatLevel >= 61) return "rainy";
+    if (data.threatLevel >= 31) return "cloudy";
+    return "sunny";
   }, [data.threatLevel]);
 
   return (
