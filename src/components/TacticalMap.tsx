@@ -132,7 +132,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
           right: "calc(1rem + 160px + 0.5rem)",
         }}
       >
-        <div className="bg-background px-3 py-3 flex items-center gap-3">
+        <div className="bg-background px-3 py-2 flex items-center gap-3 h-[44px]">
           <span className="text-[9px] font-mono text-muted-foreground whitespace-nowrap">WRS</span>
           <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
             <motion.div
