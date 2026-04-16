@@ -112,6 +112,7 @@ const GENERIC_WORDS = new Set([
   "large", "massive", "huge", "giant", "big", "small", "moderate",
   "severe", "extreme", "intense", "major", "minor", "significant",
   "catastrophic", "devastating", "dangerous", "deadly", "violent",
+  "great", "chunks", "pieces", "stones", "balls", "sized",
   "strong", "heavy", "thick", "dense", "light", "weak", "powerful",
   // Action words
   "hitting", "falling", "struck", "pounding", "damaging", "approaching",
@@ -142,10 +143,10 @@ const SYNONYMS: string[][] = [
    "waterspout", "landspout", "gustnado", "wedge", "stovepipe", "rope"],
 
   // Hail family
-  ["hail", "hailstorm", "hailstone", "hailstones", "ice", "iceball"],
+  ["hail", "hailstorm", "hailstone", "hailstones", "ice", "iceball", "chunks"],
 
   // Hail size descriptors (treated as synonyms of each other)
-  ["large", "massive", "huge", "giant", "big", "significant", "major",
+  ["large", "massive", "huge", "giant", "big", "significant", "major", "great",
    "golf", "baseball", "softball", "grapefruit", "egg", "quarter"],
 
   // Wind family
