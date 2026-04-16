@@ -99,7 +99,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute z-10 transition-all duration-300 ease-in-out"
+        className="absolute z-10 overflow-hidden transition-all duration-300 ease-in-out"
         style={{
           top: `calc(2.5rem * ${overlayScale} + 0.75rem)`,
           right: `calc(0.75rem * ${overlayScale})`,
