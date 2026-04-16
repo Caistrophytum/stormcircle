@@ -92,7 +92,7 @@ const IntegrationPanel = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Tab bar */}
-      <div className="flex border-b border-border bg-cockpit/50">
+      <div className="flex justify-start border-b border-border bg-cockpit/50">
         {tabs.map((tab) => (
           <button
             key={tab.id}
