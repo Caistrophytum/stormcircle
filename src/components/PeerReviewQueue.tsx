@@ -85,32 +85,117 @@ const typeColors: Record<string, string> = {
   DATA: "bg-secondary text-secondary-foreground border-border",
 };
 
-// Common weather terms that should NOT drive matching on their own
+// Common weather/descriptive terms that should NOT drive matching on their own
 const GENERIC_WORDS = new Set([
-  "cloud", "funnel", "hail", "rain", "wind", "flood", "storm", "thunder",
-  "lightning", "tornado", "snow", "ice", "fog", "debris", "power", "outage",
-  "flash", "flooding", "large", "severe", "report", "spotted", "near", "the",
-  "down", "lines", "drop", "station", "ball", "golf", "heavy", "strong",
-  "massive", "huge", "giant", "big", "small", "hitting", "falling", "struck",
-  "pounding", "damaging", "dangerous", "extreme", "intense", "major", "minor",
+  // Precipitation
+  "cloud", "funnel", "hail", "rain", "sleet", "snow", "ice", "freezing",
+  "drizzle", "downpour", "shower", "pelting", "precipitation", "graupel",
+  "hailstorm", "hailstone", "hailstones", "icy", "wintry",
+  // Wind
+  "wind", "gust", "gale", "breeze", "squall", "derecho", "microburst",
+  "downburst", "windshear", "crosswind", "headwind", "tailwind", "blowing",
+  // Storms
+  "storm", "thunder", "thunderstorm", "supercell", "mesocyclone",
+  "lightning", "tstorm", "cell", "convection", "convective",
+  // Tornado
+  "tornado", "twister", "cyclone", "rotation", "vortex", "waterspout",
+  "landspout", "gustnado", "wedge", "stovepipe", "rope",
+  // Flooding
+  "flood", "flooding", "flash", "inundation", "surge", "overflow",
+  "waterlogged", "submerged", "swamped", "underwater",
+  // Visibility
+  "fog", "mist", "haze", "visibility", "whiteout", "blackout", "obscured",
+  // Infrastructure
+  "debris", "power", "outage", "damage", "destruction", "collapse",
+  "down", "lines", "downed", "fallen", "blocked", "impassable",
+  // Intensity descriptors
+  "large", "massive", "huge", "giant", "big", "small", "moderate",
+  "severe", "extreme", "intense", "major", "minor", "significant",
+  "catastrophic", "devastating", "dangerous", "deadly", "violent",
+  "strong", "heavy", "thick", "dense", "light", "weak", "powerful",
+  // Action words
+  "hitting", "falling", "struck", "pounding", "damaging", "approaching",
+  "moving", "tracking", "spotted", "confirmed", "reported", "observed",
+  "sighted", "warning", "alert", "watch", "advisory", "emergency",
+  // Misc
+  "report", "near", "the", "area", "region", "zone", "sector",
+  "drop", "station", "ball", "golf", "baseball", "softball", "quarter",
+  "dime", "nickel", "penny", "marble", "egg", "grapefruit",
+  // Temperature
+  "cold", "hot", "warm", "cool", "freezing", "frigid", "scorching",
+  "heat", "heatwave", "coldfront", "warmfront",
+  // Barometric
+  "barometric", "pressure", "barometer", "millibar", "hectopascal",
 ]);
 
 const SYNONYMS: string[][] = [
+  // Locations / abbreviations
   ["okc", "oklahoma", "oklahomacity"],
-  ["hwy", "highway"],
-  ["power", "outage", "blackout"],
-  ["lines", "outage"],
-  ["down", "outage"],
+  ["hwy", "highway", "freeway", "interstate", "road", "route"],
   ["tulsa"],
   ["manhattan"],
   ["baker", "bakerfield"],
-  ["funnel", "tornado", "rotation"],
-  ["hail", "hailstorm"],
-  ["flood", "flooding", "flash"],
-  ["debris", "damage"],
-  ["wind", "gust", "gale", "derecho"],
-  ["large", "massive", "huge", "giant", "big"],
-  ["hitting", "striking", "pounding", "falling"],
+  ["downtown", "city", "urban", "metro"],
+
+  // Tornado family
+  ["tornado", "twister", "cyclone", "funnel", "rotation", "vortex",
+   "waterspout", "landspout", "gustnado", "wedge", "stovepipe", "rope"],
+
+  // Hail family
+  ["hail", "hailstorm", "hailstone", "hailstones", "ice", "iceball"],
+
+  // Hail size descriptors (treated as synonyms of each other)
+  ["large", "massive", "huge", "giant", "big", "significant", "major",
+   "golf", "baseball", "softball", "grapefruit", "egg", "quarter"],
+
+  // Wind family
+  ["wind", "gust", "gale", "squall", "derecho", "microburst",
+   "downburst", "windshear", "breeze", "blowing"],
+
+  // Rain family
+  ["rain", "downpour", "shower", "drizzle", "precipitation",
+   "pelting", "deluge", "rainstorm"],
+
+  // Flooding family
+  ["flood", "flooding", "flash", "inundation", "surge", "overflow",
+   "submerged", "swamped", "underwater", "waterlogged"],
+
+  // Thunder / storm family
+  ["storm", "thunder", "thunderstorm", "supercell", "tstorm",
+   "convection", "convective", "mesocyclone", "cell"],
+
+  // Lightning family
+  ["lightning", "bolt", "strike", "electrification"],
+
+  // Snow / winter family
+  ["snow", "blizzard", "sleet", "freezing", "ice", "wintry",
+   "whiteout", "graupel", "frost", "icing"],
+
+  // Visibility family
+  ["fog", "mist", "haze", "visibility", "obscured", "dense"],
+
+  // Power / infrastructure
+  ["power", "outage", "blackout", "electricity"],
+  ["lines", "outage", "downed", "down"],
+  ["down", "outage", "downed", "fallen"],
+  ["debris", "damage", "destruction", "wreckage", "rubble"],
+  ["collapse", "destroyed", "demolished", "flattened"],
+  ["blocked", "impassable", "closed", "shutdown"],
+
+  // Severity / intensity
+  ["severe", "extreme", "intense", "violent", "catastrophic",
+   "devastating", "dangerous", "deadly", "destructive"],
+  ["strong", "powerful", "heavy", "forceful"],
+  ["hitting", "striking", "pounding", "falling", "slamming",
+   "battering", "hammering", "pelting", "lashing"],
+
+  // Barometric
+  ["barometric", "pressure", "barometer"],
+  ["drop", "falling", "plummeting", "plunge", "decrease", "decline"],
+
+  // Temperature
+  ["heat", "heatwave", "scorching", "hot", "sweltering"],
+  ["cold", "frigid", "freezing", "arctic", "bitter"],
 ];
 
 function getSynonymGroup(word: string): string[] {
