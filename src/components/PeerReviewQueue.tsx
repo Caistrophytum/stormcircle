@@ -112,6 +112,7 @@ const GENERIC_WORDS = new Set([
   "large", "massive", "huge", "giant", "big", "small", "moderate",
   "severe", "extreme", "intense", "major", "minor", "significant",
   "catastrophic", "devastating", "dangerous", "deadly", "violent",
+  "great", "chunks", "pieces", "stones", "balls", "sized",
   "strong", "heavy", "thick", "dense", "light", "weak", "powerful",
   // Action words
   "hitting", "falling", "struck", "pounding", "damaging", "approaching",
