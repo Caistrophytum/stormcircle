@@ -29,10 +29,45 @@ const GENERIC_WORDS = new Set([
   "cloud", "funnel", "hail", "rain", "wind", "flood", "storm", "thunder",
   "lightning", "tornado", "snow", "ice", "fog", "debris", "power", "outage",
   "flash", "flooding", "large", "severe", "report", "spotted", "near", "the",
+  "down", "lines", "drop", "station", "ball", "golf", "heavy", "strong",
 ]);
+
+// Synonym groups — words in the same group are treated as equivalent
+const SYNONYMS: string[][] = [
+  ["okc", "oklahoma", "oklahomacity"],
+  ["hwy", "highway"],
+  ["power", "outage", "blackout"],
+  ["lines", "outage"],
+  ["down", "outage"],
+  ["tulsa"],
+  ["manhattan"],
+  ["baker", "bakerfield"],
+  ["funnel", "tornado", "rotation"],
+  ["hail", "hailstorm"],
+  ["flood", "flooding", "flash"],
+  ["debris", "damage"],
+  ["wind", "gust", "gale", "derecho"],
+];
+
+function getSynonymGroup(word: string): string[] {
+  const groups: string[] = [word];
+  for (const group of SYNONYMS) {
+    if (group.some(s => s === word || s.includes(word) || word.includes(s))) {
+      groups.push(...group);
+    }
+  }
+  return [...new Set(groups)];
+}
 
 function tokenize(text: string): string[] {
   return text.toLowerCase().replace(/[^a-z0-9\s]/g, "").split(/\s+/).filter(w => w.length > 2);
+}
+
+function wordsMatch(a: string, b: string): boolean {
+  if (a.includes(b) || b.includes(a)) return true;
+  const synA = getSynonymGroup(a);
+  const synB = getSynonymGroup(b);
+  return synA.some(sa => synB.some(sb => sa === sb || sa.includes(sb) || sb.includes(sa)));
 }
 
 function findMatch(reports: StackedReport[], input: string): number {
@@ -49,14 +84,14 @@ function findMatch(reports: StackedReport[], input: string): number {
     const topicSpecific = topicWords.filter(w => !GENERIC_WORDS.has(w));
     const topicGeneric = topicWords.filter(w => GENERIC_WORDS.has(w));
 
-    // Location/specific words must overlap
+    // Location/specific words must overlap (using synonyms)
     const specificMatch = inputSpecific.filter(w =>
-      topicSpecific.some(tw => tw.includes(w) || w.includes(tw))
+      topicSpecific.some(tw => wordsMatch(w, tw))
     ).length;
 
-    // Generic/weather words must also overlap
+    // Generic/weather words must also overlap (using synonyms)
     const genericMatch = inputGeneric.filter(w =>
-      topicGeneric.some(tw => tw.includes(w) || w.includes(tw))
+      topicGeneric.some(tw => wordsMatch(w, tw))
     ).length;
 
     // Require BOTH: at least 1 specific word match AND at least 1 generic word match
