@@ -36,51 +36,49 @@ const RadarMiniMap = ({ expanded, onCollapse }: Props) => {
     return (
       <button
         onClick={onCollapse}
-        className="glass-panel p-3 flex flex-col items-center gap-2 hover:border-primary/50 transition-all cursor-pointer group"
-        style={{ aspectRatio: "9/16", width: "clamp(120px, 12vw, 180px)" }}
+        className="glass-panel p-3 flex items-center gap-3 hover:border-primary/50 transition-all cursor-pointer group"
+        style={{ aspectRatio: "16/9", width: "clamp(200px, 22vw, 340px)" }}
       >
         {/* Radar circle */}
-        <div className="relative w-full flex-1 flex items-center justify-center">
-          <div className="relative" style={{ width: "80%", paddingBottom: "80%" }}>
-            <div className="absolute inset-0 rounded-full bg-background/60 overflow-hidden">
-              {/* Grid */}
+        <div className="relative shrink-0 self-stretch flex items-center justify-center" style={{ aspectRatio: "1/1", height: "100%" }}>
+          <div className="absolute inset-1 rounded-full bg-background/60 overflow-hidden">
+            {/* Grid */}
+            <div
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage:
+                  "linear-gradient(to right, hsl(var(--primary) / 0.2) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--primary) / 0.2) 1px, transparent 1px)",
+                backgroundSize: "16px 16px",
+              }}
+            />
+            {/* Rings */}
+            {[25, 37, 48].map((r) => (
               <div
-                className="absolute inset-0 opacity-20"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(to right, hsl(var(--primary) / 0.2) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--primary) / 0.2) 1px, transparent 1px)",
-                  backgroundSize: "16px 16px",
-                }}
+                key={r}
+                className="absolute rounded-full border border-primary/10"
+                style={{ width: `${r * 2}%`, height: `${r * 2}%`, top: `${50 - r}%`, left: `${50 - r}%` }}
               />
-              {/* Rings */}
-              {[25, 37, 48].map((r) => (
-                <div
-                  key={r}
-                  className="absolute rounded-full border border-primary/10"
-                  style={{ width: `${r * 2}%`, height: `${r * 2}%`, top: `${50 - r}%`, left: `${50 - r}%` }}
-                />
-              ))}
-              {/* Sweep */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <motion.div
-                  className="absolute w-[48%] h-[1px] origin-left bg-gradient-to-r from-primary/40 to-transparent"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-                />
-              </div>
-              {/* Center dot */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                <div className="size-1.5 bg-primary rounded-full neon-glow-amber" />
-              </div>
+            ))}
+            {/* Sweep */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <motion.div
+                className="absolute w-[48%] h-[1px] origin-left bg-gradient-to-r from-primary/40 to-transparent"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
+              />
             </div>
-            <Maximize2 className="absolute -top-1 -right-1 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+            {/* Center dot */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+              <div className="size-1.5 bg-primary rounded-full neon-glow-amber" />
+            </div>
           </div>
+          <Maximize2 className="absolute top-0 right-0 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
 
-        {/* Bottom info nodes */}
-        <div className="flex flex-col gap-1 w-full">
+        {/* Side info nodes */}
+        <div className="flex flex-col gap-1 flex-1 min-w-0 justify-center">
           {dataNodes.slice(0, 4).map((node) => (
-            <div key={node.label} className="flex items-baseline justify-between gap-1 px-1">
+            <div key={node.label} className="flex items-baseline justify-between gap-1">
               <span className="text-[7px] font-mono text-muted-foreground truncate">{node.label}</span>
               <span className={`text-[9px] font-mono font-bold ${node.color} whitespace-nowrap`}>
                 {node.value}
