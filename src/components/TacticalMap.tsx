@@ -91,58 +91,10 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         ))}
       </div>
 
+      {/* Report buttons – centered horizontally */}
       <div
-        className="absolute top-3 left-3 right-14 z-10 origin-top-left transition-transform duration-300 ease-in-out flex gap-2 items-start"
-        style={{ transform: `scale(${overlayScale})` }}
-      >
-        <EventInfoPanel />
-        <RadarCodePanel />
-      </div>
-
-      <div
-        className="absolute bottom-4 z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
-        style={{
-          left: "clamp(0.75rem, 2vw, 1.5rem)",
-          transform: radarExpanded ? undefined : `scale(${overlayScale})`,
-        }}
-      >
-        <AnimatePresence mode="wait">
-          {radarExpanded ? (
-            <motion.div
-              key="expanded"
-              className="absolute bottom-0 left-0"
-              style={{
-                width: "min(72vw, 900px)",
-                aspectRatio: "9/16",
-                maxWidth: "calc(100vw - 3rem)",
-                maxHeight: "calc(100vh - 8rem)",
-              }}
-              initial={{ scale: 0.3, opacity: 0, originX: 0, originY: 1 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.3, opacity: 0 }}
-              transition={{ type: "spring", damping: 20, stiffness: 200 }}
-            >
-              <RadarMiniMap expanded onCollapse={() => setRadarExpanded(false)} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="collapsed"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-            >
-              <RadarMiniMap expanded={false} onCollapse={() => setRadarExpanded(true)} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div
-        className="absolute bottom-4 z-10 origin-bottom-left transition-all duration-300 ease-in-out"
-        style={{
-          left: `calc((clamp(0.75rem, 2vw, 1.5rem) * 2 + clamp(200px, 22vw, 340px)) * ${overlayScale})`,
-          transform: `scale(${overlayScale})`,
-        }}
+        className="absolute bottom-4 left-1/2 z-10 origin-bottom transition-all duration-300 ease-in-out"
+        style={{ transform: `translateX(-50%) scale(${overlayScale})` }}
       >
         <div className="flex gap-2">
           {reportButtons.map((btn) => (
@@ -162,6 +114,22 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
             <span className="text-[9px] font-mono tracking-tighter opacity-70">EMERGENCY</span>
             <span className="text-sm font-mono tracking-widest">TORNADO</span>
           </button>
+        </div>
+      </div>
+
+      {/* Top panels: EventInfo + Radar – extend from left edge to centered buttons minus gap */}
+      <div
+        className="absolute top-3 left-3 z-10 origin-top-left transition-transform duration-300 ease-in-out flex gap-2 items-start"
+        style={{
+          transform: `scale(${overlayScale})`,
+          right: `calc(50% - ${overlayScale} * 220px)`,
+        }}
+      >
+        <div className="flex-1 min-w-0">
+          <EventInfoPanel />
+        </div>
+        <div className="flex-1 min-w-0">
+          <RadarCodePanel />
         </div>
       </div>
     </motion.section>
