@@ -410,15 +410,17 @@ const PeerReviewQueue = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Verify / Reject */}
-                <div className="grid grid-cols-2 gap-2 px-3 pb-3">
-                  <button className="py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green font-mono text-[10px] uppercase font-bold hover:bg-neon-green hover:text-background transition-all rounded-sm">
-                    Verify
-                  </button>
-                  <button className="py-1.5 bg-destructive/10 border border-destructive/20 text-destructive font-mono text-[10px] uppercase font-bold hover:bg-destructive hover:text-destructive-foreground transition-all rounded-sm">
-                    Reject
-                  </button>
-                </div>
+                {/* Verify */}
+                {!verified.has(report.id) && (
+                  <div className="px-3 pb-3">
+                    <button
+                      onClick={() => handleVerify(report.id)}
+                      className="w-full py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green font-mono text-[10px] uppercase font-bold hover:bg-neon-green hover:text-background transition-all rounded-sm"
+                    >
+                      Verify
+                    </button>
+                  </div>
+                )}
               </motion.div>
             );
           })}
