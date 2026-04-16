@@ -59,7 +59,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         />
       </AnimatePresence>
 
-      <div className="absolute inset-0 bg-background/30" />
+      <div className="absolute inset-0 bg-background/15" />
 
       <div
         className="absolute bottom-4 z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
