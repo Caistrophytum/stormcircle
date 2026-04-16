@@ -70,12 +70,6 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
             <motion.div
               key="expanded"
               className="absolute bottom-0 left-0"
-              style={{
-                width: "min(72vw, 900px)",
-                aspectRatio: "9/16",
-                maxWidth: "calc(100vw - 3rem)",
-                maxHeight: "calc(100vh - 8rem)",
-              }}
               initial={{ scale: 0.3, opacity: 0, originX: 0, originY: 1 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.3, opacity: 0 }}
