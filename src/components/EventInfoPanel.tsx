@@ -20,7 +20,7 @@ const severityColors: Record<string, string> = {
 
 const EventInfoPanel = () => {
   return (
-    <div className="flex gap-2 transition-transform duration-300 ease-in-out">
+    <div className="flex gap-2 h-full transition-transform duration-300 ease-in-out">
       {/* Top 5 Hazards */}
       <div className="glass-panel p-2.5 flex-1 min-w-0">
         <h3 className="text-[9px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
