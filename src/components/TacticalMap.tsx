@@ -121,7 +121,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
       {/* WRS (Weather Risk Score) bar */}
       <div
-        className="absolute bottom-12 z-10 transition-all duration-300 ease-in-out"
+        className="absolute bottom-8 z-10 transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
           right: "calc(1rem + 160px + 0.5rem)",
