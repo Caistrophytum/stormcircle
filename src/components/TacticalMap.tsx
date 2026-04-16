@@ -157,7 +157,6 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
           </span>
         </div>
       </div>
-      </div>
 
       {/* Radar code panel: top-left */}
       <div
