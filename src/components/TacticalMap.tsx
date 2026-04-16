@@ -109,7 +109,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute bottom-4 z-20 origin-bottom-left"
+        className="absolute bottom-4 z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
         style={{
           left: "clamp(0.75rem, 2vw, 1.5rem)",
           transform: radarExpanded ? undefined : `scale(${overlayScale})`,
@@ -147,7 +147,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       </div>
 
       <div
-        className="absolute bottom-4 z-10 origin-bottom-left"
+        className="absolute bottom-4 z-10 origin-bottom-left transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) * 2 + clamp(200px, 22vw, 340px)) * ${overlayScale})`,
           transform: `scale(${overlayScale})`,
