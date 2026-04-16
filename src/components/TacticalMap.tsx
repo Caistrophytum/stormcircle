@@ -129,7 +129,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
       >
         <div
           className="bg-background px-3 flex items-center gap-3"
-          style={{ height: `calc(2.75rem * ${overlayScale})` }}
+          style={{ height: `calc(50px * ${overlayScale})` }}
         >
           <span className="text-[9px] font-mono text-muted-foreground whitespace-nowrap">WRS</span>
           <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
