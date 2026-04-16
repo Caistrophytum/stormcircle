@@ -122,7 +122,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         className="absolute top-3 left-3 z-10 origin-top-left transition-transform duration-300 ease-in-out flex gap-2 items-start"
         style={{
           transform: `scale(${overlayScale})`,
-          right: `calc(50% - ${overlayScale} * 220px)`,
+          right: `calc(50% - ${overlayScale * 220}px)`,
         }}
       >
         <div className="flex-1 min-w-0">
