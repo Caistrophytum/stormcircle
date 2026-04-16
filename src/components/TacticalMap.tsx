@@ -58,31 +58,6 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
       <div className="absolute inset-0 bg-background/50" />
 
-      <div
-        className="absolute top-3 left-3 z-20 flex gap-1 origin-top-left transition-transform duration-300 ease-in-out items-center"
-        style={{ transform: `scale(${overlayScale})` }}
-      >
-        {conditions.map((c) => (
-          <button
-            key={c}
-            onClick={() => setWeatherCondition(c)}
-            className={`px-2 py-1 text-[9px] font-mono uppercase tracking-wider transition-all ${
-              weatherCondition === c
-                ? "glass-panel border-primary/50 text-primary"
-                : "glass-panel text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {c}
-          </button>
-        ))}
-        <button
-          onClick={onToggleExpand}
-          className="glass-panel p-1.5 hover:border-primary/50 transition-colors ml-1"
-          title={expanded ? "Collapse map" : "Expand map"}
-        >
-          {expanded ? <Minimize2 className="size-3.5 text-primary" /> : <Maximize2 className="size-3.5 text-primary" />}
-        </button>
-      </div>
 
       <div
         className="absolute bottom-4 z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
