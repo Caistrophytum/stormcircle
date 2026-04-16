@@ -38,8 +38,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
   return (
     <motion.section
       layout
-      className={`relative overflow-hidden shrink-0 ${expanded ? "flex-1" : ""}`}
-      style={expanded ? {} : { height: "55%" }}
+      className="relative overflow-hidden flex-1"
     >
       {/* Weather-responsive background */}
       <AnimatePresence mode="wait">
