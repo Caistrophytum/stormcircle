@@ -1,5 +1,13 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown } from "lucide-react";
+
+interface SingleReport {
+  id: string;
+  text: string;
+  username: string;
+  time: string;
+}
 
 interface StackedReport {
   id: string;
@@ -7,16 +15,69 @@ interface StackedReport {
   count: number;
   latestTime: string;
   type: "REPORT" | "VISUAL" | "DATA";
+  reports: SingleReport[];
+}
+
+const randomUser = () => {
+  const names = ["WX_HUNTER", "STORM_J", "SKY_OBS", "METEO_K", "CIT_WATCH", "RADAR_FAN", "CHASE_99", "HAIL_RPT", "WIND_EYE", "OKC_WX"];
+  return names[Math.floor(Math.random() * names.length)];
+};
+
+function generateMockReports(topic: string, count: number): SingleReport[] {
+  const times = ["1m ago", "2m ago", "4m ago", "6m ago", "10m ago", "15m ago", "22m ago", "30m ago"];
+  const variants: Record<string, string[]> = {
+    "Large Hail In Tulsa": [
+      "Golf ball sized hail hitting downtown Tulsa right now!",
+      "Hail breaking car windshields on 71st street",
+      "Quarter size hail near Tulsa Hills",
+      "Massive hail stones falling in midtown Tulsa",
+      "Hail damage on rooftops across south Tulsa",
+    ],
+    "Funnel Cloud Near Baker Field": [
+      "Rotating wall cloud spotted over Baker Field",
+      "Possible funnel forming near Baker Field area",
+      "Funnel cloud visible from Hwy 9 looking toward Baker",
+      "Confirmed rotation near Baker Field — stay alert",
+    ],
+    "Flash Flooding On Hwy 42": [
+      "Water over the road on Hwy 42 near mile marker 8",
+      "Cars stalled in floodwater on Highway 42",
+      "Flash flooding — Hwy 42 impassable westbound",
+      "Rapid water rise on 42, avoid the area",
+    ],
+    "Power Outage Downtown OKC": [
+      "Entire block dark on NW 10th and Broadway",
+      "Power lines down near Oklahoma City downtown",
+      "No electricity since the storm hit OKC",
+      "Traffic lights out at several OKC intersections",
+    ],
+    "Debris On I-44 Eastbound": [
+      "Tree limbs blocking right lane I-44 east",
+      "Debris scattered across I-44 near turnpike exit",
+      "Metal roofing on I-44 eastbound — drive careful",
+    ],
+    "Barometric Drop Station Delta": [
+      "Pressure dropping fast at Station Delta — 4.2 hPa in 15 min",
+      "Barometer falling rapidly, Station Delta readings anomalous",
+    ],
+  };
+  const texts = variants[topic] || [`Report about ${topic}`];
+  return Array.from({ length: Math.min(count, 8) }, (_, i) => ({
+    id: `${topic}-${i}`,
+    text: texts[i % texts.length],
+    username: randomUser(),
+    time: times[i % times.length],
+  }));
 }
 
 const initialReports: StackedReport[] = [
-  { id: "1", topic: "Large Hail In Tulsa", count: 47, latestTime: "1m ago", type: "REPORT" },
-  { id: "2", topic: "Funnel Cloud Near Baker Field", count: 23, latestTime: "3m ago", type: "VISUAL" },
-  { id: "3", topic: "Flash Flooding On Hwy 42", count: 15, latestTime: "5m ago", type: "REPORT" },
-  { id: "4", topic: "Power Outage Downtown OKC", count: 8, latestTime: "8m ago", type: "DATA" },
-  { id: "5", topic: "Debris On I-44 Eastbound", count: 4, latestTime: "12m ago", type: "VISUAL" },
-  { id: "6", topic: "Barometric Drop Station Delta", count: 2, latestTime: "18m ago", type: "DATA" },
-];
+  { id: "1", topic: "Large Hail In Tulsa", count: 47, latestTime: "1m ago", type: "REPORT", reports: [] },
+  { id: "2", topic: "Funnel Cloud Near Baker Field", count: 23, latestTime: "3m ago", type: "VISUAL", reports: [] },
+  { id: "3", topic: "Flash Flooding On Hwy 42", count: 15, latestTime: "5m ago", type: "REPORT", reports: [] },
+  { id: "4", topic: "Power Outage Downtown OKC", count: 8, latestTime: "8m ago", type: "DATA", reports: [] },
+  { id: "5", topic: "Debris On I-44 Eastbound", count: 4, latestTime: "12m ago", type: "VISUAL", reports: [] },
+  { id: "6", topic: "Barometric Drop Station Delta", count: 2, latestTime: "18m ago", type: "DATA", reports: [] },
+].map(r => ({ ...r, reports: generateMockReports(r.topic, r.count) }));
 
 const typeColors: Record<string, string> = {
   REPORT: "bg-primary/20 text-primary border-primary/30",
@@ -32,7 +93,6 @@ const GENERIC_WORDS = new Set([
   "down", "lines", "drop", "station", "ball", "golf", "heavy", "strong",
 ]);
 
-// Synonym groups — words in the same group are treated as equivalent
 const SYNONYMS: string[][] = [
   ["okc", "oklahoma", "oklahomacity"],
   ["hwy", "highway"],
@@ -84,18 +144,14 @@ function findMatch(reports: StackedReport[], input: string): number {
     const topicSpecific = topicWords.filter(w => !GENERIC_WORDS.has(w));
     const topicGeneric = topicWords.filter(w => GENERIC_WORDS.has(w));
 
-    // Location/specific words must overlap (using synonyms)
     const specificMatch = inputSpecific.filter(w =>
       topicSpecific.some(tw => wordsMatch(w, tw))
     ).length;
 
-    // Generic/weather words must also overlap (using synonyms)
     const genericMatch = inputGeneric.filter(w =>
       topicGeneric.some(tw => wordsMatch(w, tw))
     ).length;
 
-    // Require BOTH: at least 1 specific word match AND at least 1 generic word match
-    // OR if input has no specific words, require very high generic overlap (>=80%)
     const hasSpecificOverlap = inputSpecific.length === 0
       ? true
       : specificMatch >= Math.max(1, inputSpecific.length * 0.5);
@@ -105,8 +161,6 @@ function findMatch(reports: StackedReport[], input: string): number {
       : genericMatch >= 1;
 
     if (!hasSpecificOverlap || !hasGenericOverlap) continue;
-
-    // If input has specific words, they MUST match — this prevents "Manhattan" matching "Baker Field"
     if (inputSpecific.length > 0 && specificMatch === 0) continue;
 
     const totalScore = specificMatch * 3 + genericMatch;
@@ -125,17 +179,35 @@ function toTitleCase(str: string): string {
 const PeerReviewQueue = () => {
   const [reports, setReports] = useState<StackedReport[]>(initialReports);
   const [input, setInput] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   const handleSubmit = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
+
+    const newSingle: SingleReport = {
+      id: crypto.randomUUID(),
+      text: trimmed,
+      username: "YOU",
+      time: "just now",
+    };
 
     setReports(prev => {
       const idx = findMatch(prev, trimmed);
       let next: StackedReport[];
       if (idx >= 0) {
         next = prev.map((r, i) =>
-          i === idx ? { ...r, count: r.count + 1, latestTime: "just now" } : r
+          i === idx
+            ? { ...r, count: r.count + 1, latestTime: "just now", reports: [newSingle, ...r.reports] }
+            : r
         );
       } else {
         next = [
@@ -146,6 +218,7 @@ const PeerReviewQueue = () => {
             count: 1,
             latestTime: "just now",
             type: "REPORT",
+            reports: [newSingle],
           },
         ];
       }
@@ -165,40 +238,101 @@ const PeerReviewQueue = () => {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
         <AnimatePresence>
-          {reports.map((report, i) => (
-            <motion.div
-              key={report.id}
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ delay: i * 0.05 }}
-              className="bg-shroud border border-border p-3 space-y-2 hover:border-primary/20 transition-colors"
-            >
-              <div className="flex justify-between items-start gap-2">
-                <span className="text-xs font-mono font-bold text-card-foreground leading-tight">
-                  {report.topic}
-                </span>
-                <span className={`shrink-0 text-[9px] font-mono px-1.5 py-0.5 border rounded ${typeColors[report.type]}`}>
-                  {report.type}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-mono text-primary font-bold">
-                  {report.count} {report.count === 1 ? "report" : "reports"}
-                </span>
-                <span className="text-[10px] font-mono text-muted-foreground">{report.latestTime}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <button className="py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green font-mono text-[10px] uppercase font-bold hover:bg-neon-green hover:text-background transition-all rounded-sm">
-                  Verify
+          {reports.map((report, i) => {
+            const isOpen = expanded.has(report.id);
+            return (
+              <motion.div
+                key={report.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ delay: i * 0.05 }}
+                className="bg-shroud border border-border hover:border-primary/20 transition-colors"
+              >
+                {/* Header — clickable to expand */}
+                <button
+                  onClick={() => toggleExpand(report.id)}
+                  className="w-full p-3 text-left space-y-2"
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <span className="text-xs font-mono font-bold text-card-foreground leading-tight">
+                      {report.topic}
+                    </span>
+                    <span className={`shrink-0 text-[9px] font-mono px-1.5 py-0.5 border rounded ${typeColors[report.type]}`}>
+                      {report.type}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-mono text-primary font-bold">
+                      {report.count} {report.count === 1 ? "report" : "reports"}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-mono text-muted-foreground">{report.latestTime}</span>
+                      <ChevronDown className={`size-3 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                    </div>
+                  </div>
                 </button>
-                <button className="py-1.5 bg-destructive/10 border border-destructive/20 text-destructive font-mono text-[10px] uppercase font-bold hover:bg-destructive hover:text-destructive-foreground transition-all rounded-sm">
-                  Reject
-                </button>
-              </div>
-            </motion.div>
-          ))}
+
+                {/* Expanded individual reports */}
+                <AnimatePresence>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-3 pb-3 space-y-1.5 border-t border-border/50 pt-2">
+                        {report.reports.length === 0 ? (
+                          <p className="text-[10px] font-mono text-muted-foreground italic">
+                            {report.count} citizen reports aggregated
+                          </p>
+                        ) : (
+                          <>
+                            {report.reports.map((single) => (
+                              <div
+                                key={single.id}
+                                className="bg-background/40 border border-border/50 px-2 py-1.5 space-y-0.5"
+                              >
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[9px] font-mono font-bold text-card-foreground">
+                                    {single.username}
+                                  </span>
+                                  <span className="text-[9px] font-mono text-muted-foreground">
+                                    {single.time}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] font-mono text-foreground/80 leading-tight">
+                                  {single.text}
+                                </p>
+                              </div>
+                            ))}
+                            {report.count > report.reports.length && (
+                              <p className="text-[9px] font-mono text-muted-foreground text-center pt-1">
+                                +{report.count - report.reports.length} more reports
+                              </p>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Verify / Reject */}
+                <div className="grid grid-cols-2 gap-2 px-3 pb-3">
+                  <button className="py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green font-mono text-[10px] uppercase font-bold hover:bg-neon-green hover:text-background transition-all rounded-sm">
+                    Verify
+                  </button>
+                  <button className="py-1.5 bg-destructive/10 border border-destructive/20 text-destructive font-mono text-[10px] uppercase font-bold hover:bg-destructive hover:text-destructive-foreground transition-all rounded-sm">
+                    Reject
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 
