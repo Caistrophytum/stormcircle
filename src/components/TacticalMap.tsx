@@ -118,23 +118,23 @@ const TacticalMap = ({ expanded, onToggleExpand }: Props) => {
       </div>
 
       {/* Quick report buttons */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-[clamp(4px,0.5vw,8px)] z-10">
         {reportButtons.map((btn) => (
           <button
             key={btn.label}
-            className="px-4 py-2 glass-panel hover:border-primary/50 transition-all group flex flex-col items-center gap-0.5 min-w-[75px]"
+            className="px-[clamp(8px,1.5vw,16px)] py-[clamp(4px,0.8vw,8px)] glass-panel hover:border-primary/50 transition-all group flex flex-col items-center gap-0.5"
           >
-            <span className="text-[9px] font-mono text-muted-foreground group-hover:text-primary transition-colors">
+            <span className="text-[clamp(7px,0.7vw,9px)] font-mono text-muted-foreground group-hover:text-primary transition-colors">
               {btn.category}
             </span>
-            <span className="text-sm font-mono text-card-foreground tracking-widest">
+            <span className="text-[clamp(10px,1vw,14px)] font-mono text-card-foreground tracking-widest">
               {btn.label}
             </span>
           </button>
         ))}
-        <button className="px-4 py-2 bg-primary text-primary-foreground font-bold flex flex-col items-center gap-0.5 min-w-[100px] neon-glow-amber hover:brightness-110 transition-all rounded-sm">
-          <span className="text-[9px] font-mono tracking-tighter opacity-70">EMERGENCY</span>
-          <span className="text-sm font-mono tracking-widest">TORNADO</span>
+        <button className="px-[clamp(8px,1.5vw,16px)] py-[clamp(4px,0.8vw,8px)] bg-primary text-primary-foreground font-bold flex flex-col items-center gap-0.5 neon-glow-amber hover:brightness-110 transition-all rounded-sm">
+          <span className="text-[clamp(7px,0.7vw,9px)] font-mono tracking-tighter opacity-70">EMERGENCY</span>
+          <span className="text-[clamp(10px,1vw,14px)] font-mono tracking-widest">TORNADO</span>
         </button>
       </div>
     </motion.section>
