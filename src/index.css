@@ -110,19 +110,4 @@
   }
 }
 
-/* Flashing outline for high-severity warning polygons (Leaflet SVG paths) */
-@keyframes warning-flash {
-  0%, 100% {
-    stroke-opacity: 1;
-    stroke-width: 3;
-  }
-  50% {
-    stroke-opacity: 0.35;
-    stroke-width: 5;
-  }
-}
-
-.warning-flash {
-  animation: warning-flash 1s ease-in-out infinite;
-}
 

@@ -105,7 +105,6 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
         headline: p.headline,
         parameters: p.parameters,
         color: p.color,
-        flash: p.flash,
       },
     })),
   };
@@ -135,7 +134,6 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
             weight: 2,
             opacity: 1,
             fillOpacity: 0,
-            className: feature?.properties?.flash ? "warning-flash" : undefined,
           })}
         />
       )}
