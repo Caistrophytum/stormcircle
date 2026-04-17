@@ -434,27 +434,34 @@ const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
     const trimmed = input.trim();
     if (!trimmed) return;
 
+    const isMeteo = userRole === "meteorologist";
+
     const newSingle: SingleReport = {
       id: crypto.randomUUID(),
       text: trimmed,
-      username: "YOU",
+      username: isMeteo ? "METEOROLOGIST" : "YOU",
       time: "just now",
     };
+
+    let verifyId: string | null = null;
 
     setReports(prev => {
       const idx = findMatch(prev, trimmed);
       let next: StackedReport[];
       if (idx >= 0) {
+        verifyId = prev[idx].id;
         next = prev.map((r, i) =>
           i === idx
             ? { ...r, count: r.count + 1, latestTime: "just now", reports: [newSingle, ...r.reports] }
             : r
         );
       } else {
+        const newId = crypto.randomUUID();
+        verifyId = newId;
         next = [
           ...prev,
           {
-            id: crypto.randomUUID(),
+            id: newId,
             topic: toTitleCase(trimmed),
             count: 1,
             latestTime: "just now",
@@ -465,6 +472,11 @@ const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
       }
       return next.sort((a, b) => b.count - a.count);
     });
+
+    if (isMeteo && verifyId) {
+      setVerified(prev => new Set(prev).add(verifyId!));
+    }
+
     setInput("");
   };
 
