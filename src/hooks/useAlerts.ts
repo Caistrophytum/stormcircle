@@ -22,7 +22,7 @@ export interface AlertsData {
   lastUpdated: Date | null;
 }
 
-const REFRESH_INTERVAL_MS = 120_000; // 2 minutes
+const REFRESH_INTERVAL_MS = 60_000; // 1 minute
 
 const SEVERITY_ORDER: Record<Severity, number> = {
   Extreme: 0,
