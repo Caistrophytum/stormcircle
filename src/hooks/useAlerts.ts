@@ -102,12 +102,6 @@ export function useAlerts(): AlertsData {
     error: null,
     lastUpdated: null,
   });
-    mostDangerous: [],
-    topHazards: [],
-    loading: true,
-    error: null,
-    lastUpdated: null,
-  });
 
   useEffect(() => {
     let cancelled = false;
