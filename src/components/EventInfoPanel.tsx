@@ -26,7 +26,7 @@ const EventInfoPanel = () => {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 30_000);
+    const id = setInterval(() => setNow(new Date()), 5_000);
     return () => clearInterval(id);
   }, []);
 
