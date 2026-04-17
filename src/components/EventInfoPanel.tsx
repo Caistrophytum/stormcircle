@@ -62,6 +62,8 @@ const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps)
         stacked ? "flex-col" : "flex-row"
       }`}
     >
+      {show !== "dangerous" && (
+      <>
       {/* Top 5 Hazards */}
       <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px] self-start">
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
@@ -99,8 +101,12 @@ const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps)
           </div>
         )}
       </div>
+      </>
+      )}
 
-      {/* Top 3 Most Dangerous */}
+      {show !== "hazards" && (
+      <>
+      {/* Top 6 Most Dangerous */}
       <div className="glass-panel p-2.5 whitespace-nowrap min-w-[260px]">
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 6 Most Dangerous
@@ -156,6 +162,8 @@ const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps)
           ))}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };
