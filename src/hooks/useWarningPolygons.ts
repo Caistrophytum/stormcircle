@@ -148,7 +148,6 @@ export function useWarningPolygons(): WarningPolygonsData {
               description: String(props.description ?? ""),
               headline: String(props.headline ?? ""),
               parameters: props.parameters ?? {},
-              flash: shouldFlash(props),
               color: getWarningColor(props),
               geometry: f.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon,
             };
