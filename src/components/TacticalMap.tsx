@@ -5,6 +5,7 @@ import RadarCodePanel from "./RadarCodePanel";
 import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
+import { useRadar } from "@/hooks/useRadar";
 
 import weatherSunny from "@/assets/weather-calm.jpg";
 import weatherCloudy from "@/assets/weather-overcast.jpg";
@@ -29,6 +30,7 @@ interface Props {
 const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
   const { data } = useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
+  const radar = useRadar();
 
   // Derive weather condition from threat level
   const weatherCondition: WeatherCondition = useMemo(() => {
@@ -76,7 +78,15 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
               exit={{ scale: 0.3, opacity: 0 }}
               transition={{ type: "spring", damping: 20, stiffness: 200 }}
             >
-              <RadarMiniMap expanded onCollapse={() => setRadarExpanded(false)} />
+              <RadarMiniMap
+                expanded
+                onCollapse={() => setRadarExpanded(false)}
+                selectedStation={radar.selectedStation}
+                setSelectedStation={radar.setSelectedStation}
+                selectedProduct={radar.selectedProduct}
+                setSelectedProduct={radar.setSelectedProduct}
+                tileUrl={radar.tileUrl}
+              />
             </motion.div>
           ) : (
             <motion.div
@@ -85,7 +95,15 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
             >
-              <RadarMiniMap expanded={false} onCollapse={() => setRadarExpanded(true)} />
+              <RadarMiniMap
+                expanded={false}
+                onCollapse={() => setRadarExpanded(true)}
+                selectedStation={radar.selectedStation}
+                setSelectedStation={radar.setSelectedStation}
+                selectedProduct={radar.selectedProduct}
+                setSelectedProduct={radar.setSelectedProduct}
+                tileUrl={radar.tileUrl}
+              />
             </motion.div>
           )}
         </AnimatePresence>
