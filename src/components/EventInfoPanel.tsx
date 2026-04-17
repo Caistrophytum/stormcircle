@@ -27,23 +27,7 @@ const EventInfoPanel = ({ topHazards, dangerousAlerts }: Props) => {
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 5 Hazards
         </h3>
-        <div className="flex flex-col gap-1">
-          {topHazards.map((h, i) => (
-            <div key={h.hazard} className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[15px] font-mono text-muted-foreground w-4">
-                  {i + 1}.
-                </span>
-                <span className="text-[16.5px] font-mono text-card-foreground tracking-wider">
-                  {h.hazard}
-                </span>
-              </div>
-              <span className="text-[16.5px] font-mono text-primary tabular-nums">
-                {h.alerts}
-              </span>
-            </div>
-          ))}
-        </div>
+        <div className="flex flex-col gap-1" />
       </div>
 
       {/* Top 3 Most Dangerous */}
@@ -51,27 +35,7 @@ const EventInfoPanel = ({ topHazards, dangerousAlerts }: Props) => {
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Most Dangerous
         </h3>
-        <div className="flex flex-col gap-1.5">
-          {dangerousAlerts.map((a, i) => (
-            <div key={a.alert} className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[15px] font-mono text-muted-foreground w-4">
-                  {i + 1}.
-                </span>
-                <span className="text-[16.5px] font-mono text-card-foreground leading-tight">
-                  {a.alert}
-                </span>
-              </div>
-              <div className="ml-[22px]">
-                <span
-                  className={`text-[14px] font-mono tracking-widest px-1.5 py-0.5 rounded-sm ${severityColors[a.severity]} text-background font-bold`}
-                >
-                  {a.severity}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <div className="flex flex-col gap-1.5" />
       </div>
     </div>
   );
