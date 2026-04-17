@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { forwardRef, useEffect } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation } from "@/config/radarStations";
@@ -36,8 +36,13 @@ const Recenter = forwardRef<unknown, { station: RadarStation | null }>(function 
   return null;
 });
 
-const RadarOverlayLayer = forwardRef<unknown, { tileUrl: string | null }>(function RadarOverlayLayer(
-  { tileUrl },
+interface RadarOverlayLayerProps {
+  tileUrl: string | null;
+  onTileRequest?: (url: string) => void;
+}
+
+const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function RadarOverlayLayer(
+  { tileUrl, onTileRequest },
   _ref,
 ) {
   const map = useMap();
@@ -56,7 +61,9 @@ const RadarOverlayLayer = forwardRef<unknown, { tileUrl: string | null }>(functi
     });
 
     radarLayer.on("tileloadstart", (e: L.TileEvent) => {
-      console.log("[Radar] tile request:", (e.tile as HTMLImageElement).src);
+      const src = (e.tile as HTMLImageElement).src;
+      console.log("[Radar] tile request:", src);
+      onTileRequest?.(src);
     });
     radarLayer.on("tileerror", (e: L.TileErrorEvent) => {
       console.error("[Radar] tile error:", (e.tile as HTMLImageElement).src);
@@ -68,7 +75,7 @@ const RadarOverlayLayer = forwardRef<unknown, { tileUrl: string | null }>(functi
     return () => {
       map.removeLayer(radarLayer);
     };
-  }, [map, tileUrl]);
+  }, [map, tileUrl, onTileRequest]);
 
   return null;
 });
@@ -77,9 +84,10 @@ interface LeafletMapProps {
   station: RadarStation | null;
   tileUrl: string | null;
   interactive: boolean;
+  onTileRequest?: (url: string) => void;
 }
 
-const LeafletRadar = ({ station, tileUrl, interactive }: LeafletMapProps) => {
+const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
 
@@ -99,7 +107,7 @@ const LeafletRadar = ({ station, tileUrl, interactive }: LeafletMapProps) => {
       style={{ background: "hsl(var(--background))" }}
     >
       <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <RadarOverlayLayer tileUrl={tileUrl} />
+      <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
       <Recenter station={station} />
     </MapContainer>
   );
@@ -114,6 +122,7 @@ const RadarMiniMap = ({
   setSelectedProduct,
   tileUrl,
 }: Props) => {
+  const [lastTileUrl, setLastTileUrl] = useState<string | null>(null);
   if (!expanded) {
     const circleSize = "clamp(160px, 18vw, 240px)";
 
@@ -125,7 +134,7 @@ const RadarMiniMap = ({
       >
         <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
           <div className="absolute inset-1 overflow-hidden" style={{ borderRadius: "50%" }}>
-            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} />
+            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} />
           </div>
           <Maximize2 className="absolute top-2 right-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
         </div>
@@ -161,10 +170,16 @@ const RadarMiniMap = ({
         </div>
 
         <div className="flex-1 relative bg-background/60 rounded-sm overflow-hidden">
-          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive />
-          <div className="absolute top-2 left-2 z-[400] max-w-[90%] bg-background/90 border border-primary/40 px-2 py-1 rounded-sm font-mono text-[10px] text-primary break-all pointer-events-none">
-            <span className="text-muted-foreground uppercase tracking-wider mr-1">tileUrl:</span>
-            {tileUrl ?? "null (select station + product)"}
+          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} />
+          <div className="absolute top-2 left-2 z-[400] max-w-[90%] bg-background/90 border border-primary/40 px-2 py-1 rounded-sm font-mono text-[10px] text-primary break-all pointer-events-none flex flex-col gap-1">
+            <div>
+              <span className="text-muted-foreground uppercase tracking-wider mr-1">template:</span>
+              {tileUrl ?? "null (select station + product)"}
+            </div>
+            <div>
+              <span className="text-muted-foreground uppercase tracking-wider mr-1">last request:</span>
+              {lastTileUrl ?? "—"}
+            </div>
           </div>
         </div>
       </div>
