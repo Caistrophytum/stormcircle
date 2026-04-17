@@ -101,7 +101,7 @@ const EventInfoPanel = ({ stacked = false }: EventInfoPanelProps) => {
       {/* Top 3 Most Dangerous */}
       <div className="glass-panel p-2.5 whitespace-nowrap min-w-[260px]">
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
-          Most Dangerous
+          Top 5 Most Dangerous
         </h3>
         <div className="flex flex-col gap-1.5">
           {loading && (
