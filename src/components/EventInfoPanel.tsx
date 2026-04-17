@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useAlerts, type Severity } from "@/hooks/useAlerts";
 
 const severityBadge: Record<Severity, string> = {
@@ -8,8 +9,26 @@ const severityBadge: Record<Severity, string> = {
   Unknown: "bg-muted text-muted-foreground",
 };
 
+function formatRelativeTime(date: Date, now: Date): string {
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.max(0, Math.floor(diffMs / 1000));
+  if (diffSec < 60) return "just now";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr} hr ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay} d ago`;
+}
+
 const EventInfoPanel = () => {
-  const { mostDangerous, topHazards, loading, error } = useAlerts();
+  const { mostDangerous, topHazards, loading, error, lastUpdated } = useAlerts();
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <div className="flex gap-2 transition-all duration-300 ease-in-out w-fit">
