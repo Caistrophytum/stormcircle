@@ -211,12 +211,12 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
       {/* Event info panel: top-right */}
       <div
-        className="absolute top-3 right-3 z-10 origin-top-right transition-transform duration-300 ease-in-out whitespace-nowrap w-auto"
+        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out"
         style={{
           transform: `scale(${overlayScale})`,
         }}
       >
-        <EventInfoPanel />
+        <EventInfoPanel stacked={overlayScale < 0.85} />
       </div>
     </motion.section>
   );
