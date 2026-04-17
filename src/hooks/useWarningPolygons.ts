@@ -70,22 +70,19 @@ export function getWarningColor(properties: any): string {
   const event = properties?.event as string;
   const haystack = buildHaystack(properties);
 
+  // Special-severity overrides for select event types
   if (event === "Tornado Warning") {
     if (haystack.includes("tornado emergency")) return "#7B0000";
     if (hasPDS(haystack)) return "#FF00FF";
-    return "#FF0000";
   }
-  if (event === "Severe Thunderstorm Warning") {
-    if (hasPDS(haystack)) return "#FF6600";
-    return "#FFA500";
+  if (event === "Severe Thunderstorm Warning" && hasPDS(haystack)) {
+    return "#FF6600";
   }
-  if (event === "Flash Flood Warning") {
-    if (haystack.includes("flash flood emergency")) return "#7B3F00";
-    return "#00FF00";
+  if (event === "Flash Flood Warning" && haystack.includes("flash flood emergency")) {
+    return "#7B3F00";
   }
-  if (event === "Tornado Watch") return "#FF69B4";
-  if (event === "Severe Thunderstorm Watch") return "#FFFF00";
-  return "#FFFFFF";
+
+  return WARNING_COLORS[event] ?? "#FFFFFF";
 }
 
 /**
