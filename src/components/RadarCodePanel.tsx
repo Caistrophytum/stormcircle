@@ -29,7 +29,7 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
 
   // Derive font sizes from available-space scale.
   // Use an exponential curve so shrinking is visibly more aggressive than linear.
-  const fontScale = Math.pow(scale, 2);
+  const fontScale = Math.pow(scale, 3);
   const headerSize = `${(13.5 * fontScale).toFixed(2)}px`;
   const tiltSize = `${(9.75 * fontScale).toFixed(2)}px`;
   const labelSize = `${(9.75 * fontScale).toFixed(2)}px`;
