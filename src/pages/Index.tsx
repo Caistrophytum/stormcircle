@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import StatusBar from "@/components/StatusBar";
@@ -18,12 +18,30 @@ const Index = () => {
     setUserRole("citizen");
   };
 
-  const overlayScale = Math.max(
-    0.8,
-    1 -
-      (rightOpen ? 0.08 : 0) -
-      (leftOpen ? 0.07 : 0)
+  const [viewportW, setViewportW] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth : 1920
   );
+
+  useEffect(() => {
+    const onResize = () => setViewportW(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Width available to the map (center column) given which side panels are open
+  const sidePanelWidth = 320;
+  const centerWidth = Math.max(
+    320,
+    viewportW - (leftOpen ? sidePanelWidth : 0) - (rightOpen ? sidePanelWidth : 0)
+  );
+
+  // Intrinsic combined width of the top overlays (RadarCodePanel + gap + EventInfoPanel)
+  // RadarCodePanel ≈ clamp(200, 22vw, 340), EventInfoPanel ≈ ~500px, plus padding/gap
+  const radarPanelW = Math.min(340, Math.max(200, viewportW * 0.22));
+  const topOverlayIntrinsic = radarPanelW + 500 + 48; // 48 = side padding + gap buffer
+
+  // Scale so the top overlays always fit within the available center width
+  const overlayScale = Math.min(1, Math.max(0.6, centerWidth / topOverlayIntrinsic));
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
