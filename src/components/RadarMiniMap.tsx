@@ -6,7 +6,7 @@ import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode } from "@/hooks/useRadar";
-import { useWarningPolygons, WARNING_COLORS } from "@/hooks/useWarningPolygons";
+import { useWarningPolygons, getWarningColor } from "@/hooks/useWarningPolygons";
 
 interface Props {
   expanded: boolean;
