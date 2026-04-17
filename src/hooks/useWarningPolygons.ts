@@ -95,7 +95,7 @@ export interface WarningPolygon {
   description: string;
   headline: string;
   parameters: Record<string, any>;
-  flash: boolean;
+  
   color: string;
   geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon;
 }
