@@ -198,9 +198,11 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
 
       {/* Radar code panel: top-left */}
       <div
-        className="absolute top-3 left-3 z-10 origin-top-left transition-transform duration-300 ease-in-out"
+        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
         style={{
-          width: "clamp(200px, 22vw, 340px)",
+          // Shrink the panel's base width along with overlayScale so it claims
+          // less horizontal space when both side menus are open.
+          width: `clamp(180px, ${22 * overlayScale}vw, ${340 * overlayScale}px)`,
           transform: `scale(${overlayScale})`,
         }}
       >
