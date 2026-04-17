@@ -394,7 +394,11 @@ function toTitleCase(str: string): string {
   return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
-const PeerReviewQueue = () => {
+interface PeerReviewQueueProps {
+  userRole: "guest" | "citizen" | "meteorologist";
+}
+
+const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
   const [reports, setReports] = useState<StackedReport[]>(initialReports);
   const [input, setInput] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
