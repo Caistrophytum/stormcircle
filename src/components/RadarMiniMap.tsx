@@ -67,6 +67,10 @@ const LeafletRadar = ({ station, tileUrl, interactive }: LeafletMapProps) => {
           key={tileUrl}
           url={tileUrl}
           opacity={0.7}
+          tms={false}
+          detectRetina={false}
+          minZoom={1}
+          maxZoom={18}
           attribution="IEM NEXRAD / Iowa State"
         />
       )}
