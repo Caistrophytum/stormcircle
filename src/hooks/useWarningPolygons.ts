@@ -144,11 +144,13 @@ export function useWarningPolygons(): WarningPolygonsData {
         const features: any[] = Array.isArray(json?.features) ? json.features : [];
 
         const polygons: WarningPolygon[] = features
+          // Only render alerts that have polygon geometry. County-based alerts
+          // (geometry: null, identified by SAME/UGC codes only) are intentionally
+          // excluded until county shape fetching is implemented.
           .filter(
             (f) =>
               f?.geometry != null &&
-              (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon") &&
-              ALLOWED_EVENTS.has(f?.properties?.event),
+              (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"),
           )
           .map((f) => {
             const props = f.properties ?? {};
