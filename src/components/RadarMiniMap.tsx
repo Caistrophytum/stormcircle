@@ -1,11 +1,12 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { forwardRef, useEffect, useState } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode } from "@/hooks/useRadar";
+import { useWarningPolygons, WARNING_COLORS } from "@/hooks/useWarningPolygons";
 
 interface Props {
   expanded: boolean;
@@ -90,6 +91,16 @@ interface LeafletMapProps {
 const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
+  const { polygons } = useWarningPolygons();
+
+  const featureCollection: GeoJSON.FeatureCollection = {
+    type: "FeatureCollection",
+    features: polygons.map((p) => ({
+      type: "Feature",
+      geometry: p.geometry,
+      properties: { id: p.id, event: p.event },
+    })),
+  };
 
   return (
     <MapContainer
@@ -107,6 +118,18 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
       style={{ background: "hsl(var(--background))" }}
     >
       <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      {polygons.length > 0 && (
+        <GeoJSON
+          key={polygons.map((p) => p.id).join(",")}
+          data={featureCollection}
+          style={(feature) => ({
+            color: WARNING_COLORS[feature?.properties?.event] ?? "#FFFFFF",
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0,
+          })}
+        />
+      )}
       {/* TEMP: hardcoded radar tile test — bypasses tileUrl entirely */}
       <TileLayer
         url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::KBMX-N0Q-0/{z}/{x}/{y}.png"
