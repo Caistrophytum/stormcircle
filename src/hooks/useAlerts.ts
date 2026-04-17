@@ -179,7 +179,7 @@ export function useAlerts(): AlertsData {
 
         const mostDangerous = [...alerts]
           .sort((a, b) => dangerScore(a) - dangerScore(b))
-          .slice(0, 3);
+          .slice(0, 5);
 
         const counts = new Map<string, number>();
         for (const a of alerts) {
