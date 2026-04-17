@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useMemo } from "react";
 
 interface HazardData {
   hazard: string;
@@ -17,44 +17,16 @@ export interface WeatherData {
   threatLevel: number; // 0-100
 }
 
-const hazardTypes = ["THUNDERSTORM", "FLOOD", "WIND", "TORNADO", "HAIL", "ICE STORM", "BLIZZARD", "HEAT WAVE"];
-const locations = ["Oklahoma", "Houston", "Illinois", "Kansas", "Nebraska", "Iowa", "Missouri", "Arkansas", "Texas", "Colorado"];
-const alertTypes = [
-  "EF4 TORNADO", "EF3 TORNADO", "EF2 TORNADO", "FLASH FLOOD", "DERECHO",
-  "SEVERE HAIL", "BLIZZARD", "ICE STORM", "HEAT DOME", "DUST STORM",
-];
+function buildWeatherData(): WeatherData {
+  // Placeholder values until real data source is wired in
+  const topHazards: HazardData[] = [];
+  const dangerousAlerts: DangerousAlert[] = [];
 
-function rand(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function pickRandom<T>(arr: T[], count: number): T[] {
-  const shuffled = [...arr].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
-}
-
-function generateWeatherData(): WeatherData {
-  // Generate hazards
-  const selectedHazards = pickRandom(hazardTypes, 5);
-  const topHazards = selectedHazards
-    .map((h) => ({ hazard: h, alerts: rand(10, 350) }))
-    .sort((a, b) => b.alerts - a.alerts);
-
-  // Generate dangerous alerts
-  const severities: ("EMERGENCY" | "WARNING" | "WATCH")[] = ["EMERGENCY", "WARNING", "WATCH"];
-  const selectedAlerts = pickRandom(alertTypes, 3);
-  const selectedLocations = pickRandom(locations, 3);
-  const dangerousAlerts = selectedAlerts.map((a, i) => ({
-    alert: `${a} — ${selectedLocations[i]}`,
-    severity: severities[Math.min(i, 2)],
-  }));
-
-  // Generate data nodes
-  const cape = rand(0, 6000);
-  const cin = -rand(0, 250);
-  const shear = rand(0, 80);
-  const srh = rand(0, 700);
-  const lcl = rand(200, 2500);
+  const cape = 0;
+  const cin = 0;
+  const shear = 0;
+  const srh = 0;
+  const lcl = 0;
 
   const getColor = (label: string, val: number) => {
     switch (label) {
@@ -93,17 +65,11 @@ function generateWeatherData(): WeatherData {
   return { topHazards, dangerousAlerts, dataNodes, threatLevel };
 }
 
-export function useWeatherData(intervalMs = 15000) {
-  const [data, setData] = useState<WeatherData>(() => generateWeatherData());
-
-  const refresh = useCallback(() => {
-    setData(generateWeatherData());
-  }, []);
-
-  useEffect(() => {
-    const id = setInterval(refresh, intervalMs);
-    return () => clearInterval(id);
-  }, [refresh, intervalMs]);
-
+// Signature kept for backwards compatibility with existing callers (intervalMs is ignored)
+export function useWeatherData(_intervalMs?: number) {
+  const data = useMemo(() => buildWeatherData(), []);
+  const refresh = () => {
+    // no-op: real data source not wired in yet
+  };
   return { data, refresh };
 }
