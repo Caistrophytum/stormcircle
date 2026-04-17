@@ -154,6 +154,11 @@ const RadarMiniMap = ({
             tileUrl={tileUrl}
             interactive
           />
+          {/* Debug overlay: shows the current tileUrl */}
+          <div className="absolute top-2 left-2 z-[400] max-w-[90%] bg-background/90 border border-primary/40 px-2 py-1 rounded-sm font-mono text-[10px] text-primary break-all pointer-events-none">
+            <span className="text-muted-foreground uppercase tracking-wider mr-1">tileUrl:</span>
+            {tileUrl ?? "null (select station + product)"}
+          </div>
         </div>
       </div>
     </div>
