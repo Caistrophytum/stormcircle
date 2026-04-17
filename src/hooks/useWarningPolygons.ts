@@ -18,24 +18,47 @@ const ALLOWED_EVENTS = new Set([
 ]);
 
 /**
+ * Pull a flat lowercase haystack of every place NWS hides damage tags / PDS
+ * markers: description, headline, NWSheadline, and the parameters object.
+ */
+function buildHaystack(properties: any): string {
+  const params = properties?.parameters ?? {};
+  const parts: string[] = [
+    properties?.description ?? "",
+    properties?.headline ?? "",
+    properties?.event ?? "",
+    Array.isArray(params.NWSheadline) ? params.NWSheadline.join(" ") : (params.NWSheadline ?? ""),
+    params.tornadoDamageThreatTag ?? "",
+    params.thunderstormDamageThreatTag ?? "",
+    params.flashFloodDamageThreatTag ?? "",
+    Array.isArray(params.tornadoDetection) ? params.tornadoDetection.join(" ") : (params.tornadoDetection ?? ""),
+  ];
+  return parts.join(" ").toLowerCase();
+}
+
+function hasPDS(haystack: string): boolean {
+  return /particularly dangerous situation|\bpds\b/.test(haystack);
+}
+
+/**
  * Color a warning polygon based on event type AND special damage-tag keywords
  * inside the description text (Tornado Emergency, PDS, Flash Flood Emergency).
  */
 export function getWarningColor(properties: any): string {
   const event = properties?.event as string;
-  const desc = (properties?.description ?? "").toLowerCase();
+  const haystack = buildHaystack(properties);
 
   if (event === "Tornado Warning") {
-    if (desc.includes("tornado emergency")) return "#7B0000";
-    if (desc.includes("particularly dangerous situation")) return "#FF00FF";
+    if (haystack.includes("tornado emergency")) return "#7B0000";
+    if (hasPDS(haystack)) return "#FF00FF";
     return "#FF0000";
   }
   if (event === "Severe Thunderstorm Warning") {
-    if (desc.includes("particularly dangerous situation")) return "#FF6600";
+    if (hasPDS(haystack)) return "#FF6600";
     return "#FFA500";
   }
   if (event === "Flash Flood Warning") {
-    if (desc.includes("flash flood emergency")) return "#7B3F00";
+    if (haystack.includes("flash flood emergency")) return "#7B3F00";
     return "#00FF00";
   }
   if (event === "Tornado Watch") return "#FF69B4";
@@ -48,14 +71,11 @@ export function getWarningColor(properties: any): string {
  * outline — Emergencies, PDS, Considerable/Destructive/Catastrophic tags.
  */
 export function shouldFlash(properties: any): boolean {
-  const desc = (properties?.description ?? "").toLowerCase();
-  const headline = (properties?.headline ?? "").toLowerCase();
-  const haystack = `${desc} ${headline}`;
+  const haystack = buildHaystack(properties);
   return (
     haystack.includes("tornado emergency") ||
     haystack.includes("flash flood emergency") ||
-    haystack.includes("particularly dangerous situation") ||
-    /\bpds\b/.test(haystack) ||
+    hasPDS(haystack) ||
     haystack.includes("considerable") ||
     haystack.includes("destructive") ||
     haystack.includes("catastrophic")
