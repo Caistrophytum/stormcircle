@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { forwardRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import RadarMiniMap from "./RadarMiniMap";
@@ -24,7 +24,7 @@ interface Props {
   overlayScale: number;
 }
 
-const TacticalMap = ({ overlayScale }: Props) => {
+const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const { data } = useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
   const radar = useRadar();
