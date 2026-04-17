@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect } from "react";
+import { forwardRef, useEffect } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation } from "@/config/radarStations";
@@ -21,7 +21,10 @@ const DEFAULT_CENTER: [number, number] = [39.5, -98.35];
 const DEFAULT_ZOOM = 4;
 const STATION_ZOOM = 8;
 
-const Recenter = ({ station }: { station: RadarStation | null }) => {
+const Recenter = forwardRef<unknown, { station: RadarStation | null }>(function Recenter(
+  { station },
+  _ref,
+) {
   const map = useMap();
 
   useEffect(() => {
@@ -31,9 +34,12 @@ const Recenter = ({ station }: { station: RadarStation | null }) => {
   }, [station, map]);
 
   return null;
-};
+});
 
-const RadarOverlayLayer = ({ tileUrl }: { tileUrl: string | null }) => {
+const RadarOverlayLayer = forwardRef<unknown, { tileUrl: string | null }>(function RadarOverlayLayer(
+  { tileUrl },
+  _ref,
+) {
   const map = useMap();
 
   useEffect(() => {
@@ -58,7 +64,7 @@ const RadarOverlayLayer = ({ tileUrl }: { tileUrl: string | null }) => {
   }, [map, tileUrl]);
 
   return null;
-};
+});
 
 interface LeafletMapProps {
   station: RadarStation | null;
