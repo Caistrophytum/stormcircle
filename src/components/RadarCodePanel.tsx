@@ -27,10 +27,12 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
     return () => clearInterval(interval);
   }, [speed, advanceTilt]);
 
-  // Derive font sizes from available-space scale
-  const headerSize = `${(16.5 * scale).toFixed(2)}px`;
-  const tiltSize = `${(12 * scale).toFixed(2)}px`;
-  const labelSize = `${(12 * scale).toFixed(2)}px`;
+  // Derive font sizes from available-space scale.
+  // Use an exponential curve so shrinking is visibly more aggressive than linear.
+  const fontScale = Math.pow(scale, 2.2);
+  const headerSize = `${(18 * fontScale).toFixed(2)}px`;
+  const tiltSize = `${(13 * fontScale).toFixed(2)}px`;
+  const labelSize = `${(13 * fontScale).toFixed(2)}px`;
 
   return (
     <div className="glass-panel p-3 w-full">
