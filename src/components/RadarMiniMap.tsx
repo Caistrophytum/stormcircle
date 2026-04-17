@@ -103,6 +103,8 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
         event: p.event,
         description: p.description,
         headline: p.headline,
+        parameters: p.parameters,
+        color: p.color,
         flash: p.flash,
       },
     })),
@@ -129,7 +131,7 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
           key={polygons.map((p) => p.id).join(",")}
           data={featureCollection}
           style={(feature) => ({
-            color: getWarningColor(feature?.properties),
+            color: (feature?.properties?.color as string) ?? getWarningColor(feature?.properties),
             weight: 2,
             opacity: 1,
             fillOpacity: 0,
