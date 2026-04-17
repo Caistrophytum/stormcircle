@@ -443,38 +443,34 @@ const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
       time: "just now",
     };
 
-    let verifyId: string | null = null;
+    const idx = findMatch(reports, trimmed);
+    let verifyId: string;
 
-    setReports(prev => {
-      const idx = findMatch(prev, trimmed);
-      let next: StackedReport[];
-      if (idx >= 0) {
-        verifyId = prev[idx].id;
-        next = prev.map((r, i) =>
+    if (idx >= 0) {
+      verifyId = reports[idx].id;
+      setReports(prev => {
+        const next = prev.map((r, i) =>
           i === idx
             ? { ...r, count: r.count + 1, latestTime: "just now", reports: [newSingle, ...r.reports] }
             : r
         );
-      } else {
-        const newId = crypto.randomUUID();
-        verifyId = newId;
-        next = [
-          ...prev,
-          {
-            id: newId,
-            topic: toTitleCase(trimmed),
-            count: 1,
-            latestTime: "just now",
-            type: "REPORT",
-            reports: [newSingle],
-          },
-        ];
-      }
-      return next.sort((a, b) => b.count - a.count);
-    });
+        return next.sort((a, b) => b.count - a.count);
+      });
+    } else {
+      verifyId = crypto.randomUUID();
+      const newGroup: StackedReport = {
+        id: verifyId,
+        topic: toTitleCase(trimmed),
+        count: 1,
+        latestTime: "just now",
+        type: "REPORT",
+        reports: [newSingle],
+      };
+      setReports(prev => [...prev, newGroup].sort((a, b) => b.count - a.count));
+    }
 
-    if (isMeteo && verifyId) {
-      setVerified(prev => new Set(prev).add(verifyId!));
+    if (isMeteo) {
+      setVerified(prev => new Set(prev).add(verifyId));
     }
 
     setInput("");
