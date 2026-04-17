@@ -30,10 +30,8 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
   return (
     <div className="glass-panel p-3" style={{ width: `${scale * 100}%` }}>
       <div className="flex justify-between items-center mb-2">
-        <span className="font-mono text-primary uppercase tracking-wider">
-          RDA {scanAngle.toFixed(1)}°
-        </span>
-        <span className="font-mono text-neon-green uppercase flex items-center gap-1>
+        <span className="font-mono text-primary uppercase tracking-wider">RDA {scanAngle.toFixed(1)}°</span>
+        <span className="font-mono text-neon-green uppercase flex items-center gap-1">
           <span className="size-1.5 rounded-full bg-neon-green animate-pulse" />
           LIVE
         </span>
@@ -63,7 +61,6 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
                   ? "bg-primary/20 text-primary border border-primary/30"
                   : "text-muted-foreground hover:text-foreground border border-transparent"
               }`}
-              
             >
               {a}°
             </button>
@@ -73,9 +70,7 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
 
       {/* Speed control */}
       <div className="flex items-center gap-2">
-        <span className="font-mono text-muted-foreground w-8" style={{ fontSize: labelSize }}>
-          SPD
-        </span>
+        <span className="font-mono text-muted-foreground w-8">SPD</span>
         <Slider
           value={[speed]}
           onValueChange={(v) => setSpeed(v[0])}
@@ -84,9 +79,7 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
           step={100}
           className="flex-1"
         />
-        <span className="font-mono text-primary w-10 text-right" style={{ fontSize: labelSize }}>
-          {(speed / 1000).toFixed(1)}s
-        </span>
+        <span className="font-mono text-primary w-10 text-right">{(speed / 1000).toFixed(1)}s</span>
       </div>
     </div>
   );
