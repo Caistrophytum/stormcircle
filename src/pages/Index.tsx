@@ -7,8 +7,6 @@ import PeerReviewQueue from "@/components/PeerReviewQueue";
 import IntegrationPanel from "@/components/IntegrationPanel";
 
 const Index = () => {
-  const [activeView, setActiveView] = useState("mesh");
-  const [mapExpanded, setMapExpanded] = useState(false);
   const [userRole, setUserRole] = useState<"guest" | "citizen" | "meteorologist">("meteorologist");
 
   const [rightOpen, setRightOpen] = useState(true);
@@ -35,8 +33,7 @@ const Index = () => {
     viewportW - (leftOpen ? sidePanelWidth : 0) - (rightOpen ? sidePanelWidth : 0)
   );
 
-  // Intrinsic combined width of the top overlays (RadarCodePanel + gap + EventInfoPanel)
-  // RadarCodePanel ≈ clamp(200, 22vw, 340), EventInfoPanel ≈ ~500px, plus padding/gap
+  // Intrinsic combined width of the top overlays (radar mini-map + EventInfoPanel)
   const radarPanelW = Math.min(340, Math.max(200, viewportW * 0.22));
   const topOverlayIntrinsic = radarPanelW + 500 + 48; // 48 = side padding + gap buffer
 
@@ -66,11 +63,7 @@ const Index = () => {
 
           {/* Center: map */}
           <div className="flex-1 flex flex-col min-w-0 relative">
-            <TacticalMap
-              expanded={mapExpanded}
-              onToggleExpand={() => setMapExpanded(!mapExpanded)}
-              overlayScale={overlayScale}
-            />
+            <TacticalMap overlayScale={overlayScale} />
 
             {/* Panel toggle buttons - bottom-right */}
             <div
