@@ -41,7 +41,7 @@ const IntegrationPanel = () => {
   return (
     <div className="flex flex-col h-full">
       {/* Tab bar */}
-      <div className="flex justify-start border-b border-border bg-cockpit/50">
+      <div className="flex justify-start border-b border-border bg-cockpit/50 w-fit">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -59,7 +59,7 @@ const IntegrationPanel = () => {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2 w-fit">
         <AnimatePresence mode="wait">
           {activeTab === "hazcam" && (
             <motion.div key="hazcam" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
