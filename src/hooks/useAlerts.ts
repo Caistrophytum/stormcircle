@@ -120,8 +120,9 @@ const URGENCY_ORDER: Record<Urgency, number> = {
 };
 
 /**
- * Lower score = more dangerous. Tag tier dominates, then severity, kind,
- * certainty, urgency as tiebreakers.
+ * Lower score = more dangerous. Severity dominates (Extreme always above Severe,
+ * etc.), with damage tags as a tiebreaker within the same severity, then kind,
+ * certainty, and urgency.
  */
 function dangerScore(a: Alert): number {
   let tagTier = 4; // none
@@ -131,8 +132,8 @@ function dangerScore(a: Alert): number {
   else if (a.tags.includes("Considerable")) tagTier = 3;
 
   return (
+    SEVERITY_ORDER[a.severity] * 100_000 +
     tagTier * 10_000 +
-    SEVERITY_ORDER[a.severity] * 1_000 +
     KIND_ORDER[a.kind] * 100 +
     CERTAINTY_ORDER[a.certainty] * 10 +
     URGENCY_ORDER[a.urgency]
