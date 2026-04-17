@@ -27,20 +27,13 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
     return () => clearInterval(interval);
   }, [speed, advanceTilt]);
 
-  // Derive font sizes from available-space scale.
-  // Use an exponential curve so shrinking is visibly more aggressive than linear.
-  const fontScale = Math.pow(scale, 6);
-  const headerSize = `${(13.5 * fontScale).toFixed(2)}px`;
-  const tiltSize = `${(9.75 * fontScale).toFixed(2)}px`;
-  const labelSize = `${(9.75 * fontScale).toFixed(2)}px`;
-
   return (
-    <div className="glass-panel p-3 w-full">
+    <div className="glass-panel p-3" style={{ width: `${scale * 100}%` }}>
       <div className="flex justify-between items-center mb-2">
-        <span className="font-mono text-primary uppercase tracking-wider" style={{ fontSize: headerSize }}>
+        <span className="font-mono text-primary uppercase tracking-wider">
           RDA {scanAngle.toFixed(1)}°
         </span>
-        <span className="font-mono text-neon-green uppercase flex items-center gap-1" style={{ fontSize: headerSize }}>
+        <span className="font-mono text-neon-green uppercase flex items-center gap-1>
           <span className="size-1.5 rounded-full bg-neon-green animate-pulse" />
           LIVE
         </span>
@@ -70,7 +63,7 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
                   ? "bg-primary/20 text-primary border border-primary/30"
                   : "text-muted-foreground hover:text-foreground border border-transparent"
               }`}
-              style={{ fontSize: tiltSize }}
+              
             >
               {a}°
             </button>
