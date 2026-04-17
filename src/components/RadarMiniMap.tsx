@@ -1,11 +1,12 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { forwardRef, useEffect, useState } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode } from "@/hooks/useRadar";
+import { useWarningPolygons, WARNING_COLORS } from "@/hooks/useWarningPolygons";
 
 interface Props {
   expanded: boolean;
