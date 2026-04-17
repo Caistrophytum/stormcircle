@@ -102,8 +102,10 @@ const RadarControls = ({
         <SelectContent>
           {PRODUCTS.map((p) => (
             <SelectItem key={p.code} value={p.code} className="font-mono text-xs">
-              <span className="text-primary font-bold mr-2">{p.code}</span>
-              {p.label}
+              <div className="flex flex-col items-start leading-tight">
+                <span className="text-primary font-bold">{p.code}</span>
+                <span className="text-muted-foreground">{p.label}</span>
+              </div>
             </SelectItem>
           ))}
         </SelectContent>
