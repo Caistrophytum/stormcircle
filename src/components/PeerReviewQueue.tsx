@@ -388,6 +388,20 @@ const PeerReviewQueue = () => {
     setVerified(prev => new Set(prev).add(id));
   };
 
+  const handleRemove = (id: string) => {
+    setReports(prev => prev.filter(r => r.id !== id));
+    setExpanded(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setVerified(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
   const toggleExpand = (id: string) => {
     setExpanded(prev => {
       const next = new Set(prev);
