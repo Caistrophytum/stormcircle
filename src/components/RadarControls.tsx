@@ -30,7 +30,7 @@ const RadarControls = ({
   const [stationOpen, setStationOpen] = useState(false);
 
   return (
-    <div className="flex flex-col gap-2 w-full">
+    <div className="flex flex-col gap-2 w-full h-full">
       {/* Station picker - searchable */}
       <Popover open={stationOpen} onOpenChange={setStationOpen}>
         <PopoverTrigger asChild>
@@ -84,11 +84,11 @@ const RadarControls = ({
       </Popover>
 
       {/* Product picker - single-column tile menu */}
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-1.5 flex-1 min-h-0">
         <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
           Available Scans
         </span>
-        <div className="grid grid-cols-1 gap-1">
+        <div className="grid grid-cols-1 gap-1.5 flex-1 auto-rows-fr">
           {PRODUCTS.map((p) => {
             const isSelected = selectedProduct === p.code;
             const isDisabled = !selectedStation;
@@ -99,7 +99,7 @@ const RadarControls = ({
                 disabled={isDisabled}
                 onClick={() => onProductChange(p.code)}
                 className={cn(
-                  "w-full flex flex-col items-start gap-0.5 px-2.5 py-1.5 rounded-sm border font-mono text-left leading-tight transition-colors",
+                  "w-full h-full flex flex-col items-start justify-center gap-0.5 px-2.5 py-2 rounded-sm border font-mono text-left leading-tight transition-colors",
                   "disabled:opacity-40 disabled:cursor-not-allowed",
                   isSelected
                     ? "bg-primary/15 border-primary text-card-foreground"
