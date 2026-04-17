@@ -202,16 +202,6 @@ const RadarMiniMap = ({
 
         <div className="flex-1 relative bg-background/60 rounded-sm overflow-hidden">
           <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} />
-          <div className="absolute top-2 left-2 z-[400] max-w-[90%] bg-background/90 border border-primary/40 px-2 py-1 rounded-sm font-mono text-[10px] text-primary break-all pointer-events-none flex flex-col gap-1">
-            <div>
-              <span className="text-muted-foreground uppercase tracking-wider mr-1">template:</span>
-              {tileUrl ?? "null (select station + product)"}
-            </div>
-            <div>
-              <span className="text-muted-foreground uppercase tracking-wider mr-1">last request:</span>
-              {lastTileUrl ?? "—"}
-            </div>
-          </div>
         </div>
       </div>
     </div>
