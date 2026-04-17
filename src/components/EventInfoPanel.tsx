@@ -63,6 +63,11 @@ const EventInfoPanel = () => {
             </div>
           ))}
         </div>
+        {lastUpdated && (
+          <div className="mt-2 pt-2 border-t border-border/40 text-[11px] font-mono text-muted-foreground tracking-wider">
+            Last updated {formatRelativeTime(lastUpdated, now)}
+          </div>
+        )}
       </div>
 
       {/* Top 3 Most Dangerous */}
