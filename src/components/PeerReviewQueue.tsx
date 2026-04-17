@@ -558,19 +558,6 @@ const PeerReviewQueue = () => {
           </button>
         </div>
       </div>
-
-      {/* Stats */}
-      <div className="p-4 bg-background/40 border-t border-border">
-        <div className="flex flex-col gap-2 font-mono text-[10px]">
-          <div className="flex justify-between text-muted-foreground">
-            <span>NETWORK RELIABILITY</span>
-            <span className="text-neon-green">99.98%</span>
-          </div>
-          <div className="w-full h-0.5 bg-secondary rounded-full overflow-hidden">
-            <div className="w-[99%] h-full bg-neon-green" />
-          </div>
-        </div>
-      </div>
     </aside>
   );
 };
