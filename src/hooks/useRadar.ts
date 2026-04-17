@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { RadarStation } from "@/config/radarStations";
 
-export type ProductCode = "N0B" | "N0U" | "N0C" | "N0X" | "N0K" | "N0H";
+export type ProductCode = "N0B" | "N0U" | "N0S" | "N0Z" | "NET";
 
 export interface RadarProduct {
   code: ProductCode;
@@ -11,10 +11,9 @@ export interface RadarProduct {
 export const PRODUCTS: RadarProduct[] = [
   { code: "N0B", label: "Base Reflectivity" },
   { code: "N0U", label: "Base Velocity" },
-  { code: "N0C", label: "Correlation Coefficient" },
-  { code: "N0X", label: "Differential Reflectivity" },
-  { code: "N0K", label: "Specific Diff. Phase" },
-  { code: "N0H", label: "Hydrometeor Class" },
+  { code: "N0S", label: "Storm Relative Velocity" },
+  { code: "N0Z", label: "Base Reflectivity 248nm" },
+  { code: "NET", label: "Net Echo Tops" },
 ];
 
 export function useRadar() {
