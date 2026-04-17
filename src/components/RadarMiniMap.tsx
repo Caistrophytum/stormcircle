@@ -55,6 +55,13 @@ const RadarOverlayLayer = forwardRef<unknown, { tileUrl: string | null }>(functi
       attribution: "IEM NEXRAD / Iowa State",
     });
 
+    radarLayer.on("tileloadstart", (e: L.TileEvent) => {
+      console.log("[Radar] tile request:", (e.tile as HTMLImageElement).src);
+    });
+    radarLayer.on("tileerror", (e: L.TileErrorEvent) => {
+      console.error("[Radar] tile error:", (e.tile as HTMLImageElement).src);
+    });
+
     radarLayer.addTo(map);
     radarLayer.bringToFront();
 
