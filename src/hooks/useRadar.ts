@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { RadarStation } from "@/config/radarStations";
 
-export type ProductCode = "N0Q" | "N0U" | "N0C" | "N0X" | "N0K" | "N0H";
+export type ProductCode = "N0B" | "N0U" | "N0C" | "N0X" | "N0K" | "N0H";
 
 export interface RadarProduct {
   code: ProductCode;
@@ -9,7 +9,7 @@ export interface RadarProduct {
 }
 
 export const PRODUCTS: RadarProduct[] = [
-  { code: "N0Q", label: "Base Reflectivity" },
+  { code: "N0B", label: "Base Reflectivity" },
   { code: "N0U", label: "Base Velocity" },
   { code: "N0C", label: "Correlation Coefficient" },
   { code: "N0X", label: "Differential Reflectivity" },
@@ -23,7 +23,9 @@ export function useRadar() {
 
   const tileUrl = useMemo(() => {
     if (!selectedStation || !selectedProduct) return null;
-    return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${selectedStation.id}-${selectedProduct}-0/{z}/{x}/{y}.png`;
+    // IEM tile service expects the 3-letter station code (strip leading "K")
+    const tileId = selectedStation.id.replace(/^K/, "");
+    return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${tileId}-${selectedProduct}-0/{z}/{x}/{y}.png`;
   }, [selectedStation, selectedProduct]);
 
   return {
