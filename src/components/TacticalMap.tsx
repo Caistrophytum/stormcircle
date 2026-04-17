@@ -38,7 +38,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   }, [data.threatLevel]);
 
   return (
-    <motion.section layout className="relative overflow-hidden flex-1">
+    <motion.section ref={ref} layout className="relative overflow-hidden flex-1">
       {/* Weather-responsive background */}
       <AnimatePresence mode="wait">
         <motion.img
@@ -214,6 +214,8 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       </div>
     </motion.section>
   );
-};
+});
+
+TacticalMap.displayName = "TacticalMap";
 
 export default TacticalMap;
