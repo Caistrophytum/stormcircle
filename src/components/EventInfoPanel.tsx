@@ -12,7 +12,8 @@ const severityBadge: Record<Severity, string> = {
 function formatRelativeTime(date: Date, now: Date): string {
   const diffMs = now.getTime() - date.getTime();
   const diffSec = Math.max(0, Math.floor(diffMs / 1000));
-  if (diffSec < 60) return "just now";
+  if (diffSec < 5) return "just now";
+  if (diffSec < 60) return `${diffSec}s ago`;
   const diffMin = Math.floor(diffSec / 60);
   if (diffMin < 60) return `${diffMin} min ago`;
   const diffHr = Math.floor(diffMin / 60);
