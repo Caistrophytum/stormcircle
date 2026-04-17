@@ -41,7 +41,7 @@ const RadarOverlayLayer = ({ tileUrl }: { tileUrl: string | null }) => {
 
     const radarLayer = L.tileLayer(tileUrl, {
       opacity: 0.7,
-      tms: true,
+      tms: false,
       detectRetina: false,
       minZoom: 1,
       maxZoom: 20,
@@ -87,10 +87,7 @@ const LeafletRadar = ({ station, tileUrl, interactive }: LeafletMapProps) => {
       attributionControl={interactive}
       style={{ background: "hsl(var(--background))" }}
     >
-      <TileLayer
-        attribution='&copy; OpenStreetMap'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
       <RadarOverlayLayer tileUrl={tileUrl} />
       <Recenter station={station} />
     </MapContainer>
@@ -116,15 +113,8 @@ const RadarMiniMap = ({
         style={{ width: circleSize, height: circleSize }}
       >
         <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
-          <div
-            className="absolute inset-1 overflow-hidden"
-            style={{ borderRadius: "50%" }}
-          >
-            <LeafletRadar
-              station={selectedStation}
-              tileUrl={tileUrl}
-              interactive={false}
-            />
+          <div className="absolute inset-1 overflow-hidden" style={{ borderRadius: "50%" }}>
+            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} />
           </div>
           <Maximize2 className="absolute top-2 right-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
         </div>
@@ -135,9 +125,7 @@ const RadarMiniMap = ({
   return (
     <div className="flex gap-3" style={{ height: "min(65vw, 620px)" }}>
       <div className="w-[220px] shrink-0 glass-panel p-3 flex flex-col gap-3">
-        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-          Radar Controls
-        </span>
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Radar Controls</span>
         <RadarControls
           selectedStation={selectedStation}
           onStationChange={setSelectedStation}
@@ -146,35 +134,23 @@ const RadarMiniMap = ({
         />
       </div>
 
-      <div
-        className="glass-panel p-4 flex flex-col"
-        style={{ width: "min(65vw, 620px)", height: "100%" }}
-      >
+      <div className="glass-panel p-4 flex flex-col" style={{ width: "min(65vw, 620px)", height: "100%" }}>
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-3">
-            <span className="text-[13px] font-mono text-muted-foreground uppercase tracking-wider">
-              NEXRAD
-            </span>
+            <span className="text-[13px] font-mono text-muted-foreground uppercase tracking-wider">NEXRAD</span>
             {selectedStation && (
               <span className="text-[11px] font-mono text-primary/80 bg-primary/10 px-2 py-0.5 rounded-sm">
                 {selectedStation.id} — {selectedStation.name}
               </span>
             )}
           </div>
-          <button
-            onClick={onCollapse}
-            className="glass-panel p-1 hover:border-primary/50 transition-colors"
-          >
+          <button onClick={onCollapse} className="glass-panel p-1 hover:border-primary/50 transition-colors">
             <Minimize2 className="size-4 text-primary" />
           </button>
         </div>
 
         <div className="flex-1 relative bg-background/60 rounded-sm overflow-hidden">
-          <LeafletRadar
-            station={selectedStation}
-            tileUrl={tileUrl}
-            interactive
-          />
+          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive />
           <div className="absolute top-2 left-2 z-[400] max-w-[90%] bg-background/90 border border-primary/40 px-2 py-1 rounded-sm font-mono text-[10px] text-primary break-all pointer-events-none">
             <span className="text-muted-foreground uppercase tracking-wider mr-1">tileUrl:</span>
             {tileUrl ?? "null (select station + product)"}
