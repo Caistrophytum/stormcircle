@@ -81,7 +81,23 @@ function generateMockReports(topic: string, count: number): SingleReport[] {
   }));
 }
 
-const initialReports: StackedReport[] = [];
+const initialReports: StackedReport[] = [
+  {
+    id: "demo-citizen-1",
+    topic: "Large Hail In Tulsa",
+    count: 1,
+    latestTime: "2m ago",
+    type: "REPORT",
+    reports: [
+      {
+        id: "demo-citizen-1-r1",
+        text: "Quarter-sized hail coming down hard near 71st and Memorial in Tulsa right now!",
+        username: "STORM_J",
+        time: "2m ago",
+      },
+    ],
+  },
+];
 
 const typeColors: Record<string, string> = {
   REPORT: "bg-primary/20 text-primary border-primary/30",
@@ -378,7 +394,11 @@ function toTitleCase(str: string): string {
   return str.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 }
 
-const PeerReviewQueue = () => {
+interface PeerReviewQueueProps {
+  userRole: "guest" | "citizen" | "meteorologist";
+}
+
+const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
   const [reports, setReports] = useState<StackedReport[]>(initialReports);
   const [input, setInput] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -414,27 +434,34 @@ const PeerReviewQueue = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
 
+    const isMeteo = userRole === "meteorologist";
+
     const newSingle: SingleReport = {
       id: crypto.randomUUID(),
       text: trimmed,
-      username: "YOU",
+      username: isMeteo ? "METEOROLOGIST" : "YOU",
       time: "just now",
     };
+
+    let verifyId: string | null = null;
 
     setReports(prev => {
       const idx = findMatch(prev, trimmed);
       let next: StackedReport[];
       if (idx >= 0) {
+        verifyId = prev[idx].id;
         next = prev.map((r, i) =>
           i === idx
             ? { ...r, count: r.count + 1, latestTime: "just now", reports: [newSingle, ...r.reports] }
             : r
         );
       } else {
+        const newId = crypto.randomUUID();
+        verifyId = newId;
         next = [
           ...prev,
           {
-            id: crypto.randomUUID(),
+            id: newId,
             topic: toTitleCase(trimmed),
             count: 1,
             latestTime: "just now",
@@ -445,6 +472,11 @@ const PeerReviewQueue = () => {
       }
       return next.sort((a, b) => b.count - a.count);
     });
+
+    if (isMeteo && verifyId) {
+      setVerified(prev => new Set(prev).add(verifyId!));
+    }
+
     setInput("");
   };
 
