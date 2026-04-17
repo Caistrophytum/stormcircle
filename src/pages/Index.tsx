@@ -10,7 +10,7 @@ const Index = () => {
   const [userRole, setUserRole] = useState<"guest" | "citizen" | "meteorologist">("meteorologist");
 
   const [rightOpen, setRightOpen] = useState(true);
-  const [leftOpen, setLeftOpen] = useState(true);
+  const [leftOpen, setLeftOpen] = useState(false);
 
   const handleSignIn = () => {
     setUserRole("citizen");
