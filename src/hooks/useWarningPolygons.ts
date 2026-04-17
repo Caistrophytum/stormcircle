@@ -64,41 +64,29 @@ function hasPDS(haystack: string): boolean {
 
 /**
  * Color a warning polygon based on event type AND special damage-tag keywords
- * inside the description text (Tornado Emergency, PDS, Flash Flood Emergency).
+ * (Tornado Emergency, PDS, Flash Flood Emergency).
+ *
+ * PDS overrides apply to ALL Tornado / Severe Thunderstorm / Flash Flood
+ * Warnings regardless of whether they are radar-indicated or observed.
  */
 export function getWarningColor(properties: any): string {
   const event = properties?.event as string;
   const haystack = buildHaystack(properties);
+  const pds = hasPDS(haystack);
 
-  // Special-severity overrides for select event types
   if (event === "Tornado Warning") {
     if (haystack.includes("tornado emergency")) return "#7B0000";
-    if (hasPDS(haystack)) return "#FF00FF";
+    if (pds) return "#800080"; // purple
   }
-  if (event === "Severe Thunderstorm Warning" && hasPDS(haystack)) {
-    return "#FF6600";
+  if (event === "Severe Thunderstorm Warning" && pds) {
+    return "#8B4513"; // brown
   }
-  if (event === "Flash Flood Warning" && haystack.includes("flash flood emergency")) {
-    return "#7B3F00";
+  if (event === "Flash Flood Warning") {
+    if (haystack.includes("flash flood emergency")) return "#7B3F00";
+    if (pds) return "#ADFF2F"; // yellow-green
   }
 
   return WARNING_COLORS[event] ?? "#FFFFFF";
-}
-
-/**
- * Returns true if the warning is high-severity enough to warrant a flashing
- * outline — Emergencies, PDS, Considerable/Destructive/Catastrophic tags.
- */
-export function shouldFlash(properties: any): boolean {
-  const haystack = buildHaystack(properties);
-  return (
-    haystack.includes("tornado emergency") ||
-    haystack.includes("flash flood emergency") ||
-    hasPDS(haystack) ||
-    haystack.includes("considerable") ||
-    haystack.includes("destructive") ||
-    haystack.includes("catastrophic")
-  );
 }
 
 export interface WarningPolygon {
