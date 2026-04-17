@@ -54,7 +54,7 @@ const Index = () => {
             {leftOpen && (
               <motion.div
                 initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 240, opacity: 1 }}
+                animate={{ width: 280, opacity: 1 }}
                 exit={{ width: 0, opacity: 0 }}
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 className="shrink-0 overflow-hidden h-full border-r border-border bg-cockpit"
