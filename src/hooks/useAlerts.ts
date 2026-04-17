@@ -94,6 +94,51 @@ function extractTags(props: Record<string, any>): string[] {
   return Array.from(new Set(tags));
 }
 
+const KIND_ORDER: Record<AlertKind, number> = {
+  Emergency: 0,
+  Warning: 1,
+  Watch: 2,
+  Advisory: 3,
+  Statement: 4,
+  Other: 5,
+};
+
+const CERTAINTY_ORDER: Record<Certainty, number> = {
+  Observed: 0,
+  Likely: 1,
+  Possible: 2,
+  Unlikely: 3,
+  Unknown: 4,
+};
+
+const URGENCY_ORDER: Record<Urgency, number> = {
+  Immediate: 0,
+  Expected: 1,
+  Future: 2,
+  Past: 3,
+  Unknown: 4,
+};
+
+/**
+ * Lower score = more dangerous. Tag tier dominates, then severity, kind,
+ * certainty, urgency as tiebreakers.
+ */
+function dangerScore(a: Alert): number {
+  let tagTier = 4; // none
+  if (a.tags.includes("Tornado Emergency") || a.tags.includes("Flash Flood Emergency")) tagTier = 0;
+  else if (a.tags.includes("PDS") || a.tags.includes("Catastrophic")) tagTier = 1;
+  else if (a.tags.includes("Destructive")) tagTier = 2;
+  else if (a.tags.includes("Considerable")) tagTier = 3;
+
+  return (
+    tagTier * 10_000 +
+    SEVERITY_ORDER[a.severity] * 1_000 +
+    KIND_ORDER[a.kind] * 100 +
+    CERTAINTY_ORDER[a.certainty] * 10 +
+    URGENCY_ORDER[a.urgency]
+  );
+}
+
 export function useAlerts(): AlertsData {
   const [data, setData] = useState<AlertsData>({
     mostDangerous: [],
@@ -132,7 +177,7 @@ export function useAlerts(): AlertsData {
         });
 
         const mostDangerous = [...alerts]
-          .sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity])
+          .sort((a, b) => dangerScore(a) - dangerScore(b))
           .slice(0, 3);
 
         const counts = new Map<string, number>();
