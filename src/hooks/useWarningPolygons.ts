@@ -1,21 +1,43 @@
 import { useEffect, useState } from "react";
 
-/** Legacy color map kept for any existing imports. Prefer getWarningColor(). */
+/** Color map for NWS event types. Unknown types fall back to #FFFFFF. */
 export const WARNING_COLORS: Record<string, string> = {
+  // Tornado
   "Tornado Warning": "#FF0000",
-  "Severe Thunderstorm Warning": "#FFA500",
-  "Flash Flood Warning": "#00FF00",
   "Tornado Watch": "#FF69B4",
+  // Thunderstorm
+  "Severe Thunderstorm Warning": "#FFA500",
   "Severe Thunderstorm Watch": "#FFFF00",
+  // Flood
+  "Flash Flood Warning": "#00FF00",
+  "Flash Flood Watch": "#2E8B57",
+  "Flood Warning": "#00FF00",
+  "Flood Watch": "#2E8B57",
+  "Flood Advisory": "#00FA9A",
+  // Winter
+  "Winter Storm Warning": "#FF69B4",
+  "Winter Storm Watch": "#4169E1",
+  "Blizzard Warning": "#FF4500",
+  "Ice Storm Warning": "#8B008B",
+  "Winter Weather Advisory": "#7B68EE",
+  // Wind
+  "High Wind Warning": "#DAA520",
+  "High Wind Watch": "#B8860B",
+  "Wind Advisory": "#D2B48C",
+  // Marine
+  "Special Marine Warning": "#FFA500",
+  // Heat/Cold
+  "Excessive Heat Warning": "#C71585",
+  "Excessive Heat Watch": "#FF4500",
+  "Heat Advisory": "#FF7F50",
+  "Wind Chill Warning": "#B0C4DE",
+  "Wind Chill Watch": "#5F9EA0",
+  "Wind Chill Advisory": "#AFEEEE",
+  // Fog/Visibility
+  "Dense Fog Advisory": "#708090",
+  "Freeze Warning": "#483D8B",
+  "Frost Advisory": "#6495ED",
 };
-
-const ALLOWED_EVENTS = new Set([
-  "Tornado Warning",
-  "Severe Thunderstorm Warning",
-  "Flash Flood Warning",
-  "Tornado Watch",
-  "Severe Thunderstorm Watch",
-]);
 
 /**
  * Pull a flat lowercase haystack of every place NWS hides damage tags / PDS
@@ -48,22 +70,19 @@ export function getWarningColor(properties: any): string {
   const event = properties?.event as string;
   const haystack = buildHaystack(properties);
 
+  // Special-severity overrides for select event types
   if (event === "Tornado Warning") {
     if (haystack.includes("tornado emergency")) return "#7B0000";
     if (hasPDS(haystack)) return "#FF00FF";
-    return "#FF0000";
   }
-  if (event === "Severe Thunderstorm Warning") {
-    if (hasPDS(haystack)) return "#FF6600";
-    return "#FFA500";
+  if (event === "Severe Thunderstorm Warning" && hasPDS(haystack)) {
+    return "#FF6600";
   }
-  if (event === "Flash Flood Warning") {
-    if (haystack.includes("flash flood emergency")) return "#7B3F00";
-    return "#00FF00";
+  if (event === "Flash Flood Warning" && haystack.includes("flash flood emergency")) {
+    return "#7B3F00";
   }
-  if (event === "Tornado Watch") return "#FF69B4";
-  if (event === "Severe Thunderstorm Watch") return "#FFFF00";
-  return "#FFFFFF";
+
+  return WARNING_COLORS[event] ?? "#FFFFFF";
 }
 
 /**
@@ -125,11 +144,13 @@ export function useWarningPolygons(): WarningPolygonsData {
         const features: any[] = Array.isArray(json?.features) ? json.features : [];
 
         const polygons: WarningPolygon[] = features
+          // Only render alerts that have polygon geometry. County-based alerts
+          // (geometry: null, identified by SAME/UGC codes only) are intentionally
+          // excluded until county shape fetching is implemented.
           .filter(
             (f) =>
               f?.geometry != null &&
-              (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon") &&
-              ALLOWED_EVENTS.has(f?.properties?.event),
+              (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"),
           )
           .map((f) => {
             const props = f.properties ?? {};
