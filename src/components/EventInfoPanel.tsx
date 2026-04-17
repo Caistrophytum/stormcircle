@@ -31,9 +31,9 @@ const EventInfoPanel = () => {
   }, []);
 
   return (
-    <div className="flex gap-2 transition-all duration-300 ease-in-out w-fit">
+    <div className="flex gap-2 items-start transition-all duration-300 ease-in-out w-fit">
       {/* Top 5 Hazards */}
-      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]">
+      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px] self-start">
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 5 Hazards
         </h3>
