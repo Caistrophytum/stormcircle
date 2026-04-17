@@ -107,6 +107,14 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
       style={{ background: "hsl(var(--background))" }}
     >
       <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      {/* TEMP: hardcoded radar tile test — bypasses tileUrl entirely */}
+      <TileLayer
+        url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::KBMX-N0Q-0/{z}/{x}/{y}.png"
+        opacity={0.7}
+        tms={false}
+        zIndex={650}
+        attribution="IEM NEXRAD / Iowa State (HARDCODED)"
+      />
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
       <Recenter station={station} />
     </MapContainer>
