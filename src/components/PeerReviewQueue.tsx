@@ -81,23 +81,7 @@ function generateMockReports(topic: string, count: number): SingleReport[] {
   }));
 }
 
-const initialReports: StackedReport[] = [
-  {
-    id: "demo-citizen-1",
-    topic: "Large Hail In Tulsa",
-    count: 1,
-    latestTime: "2m ago",
-    type: "REPORT",
-    reports: [
-      {
-        id: "demo-citizen-1-r1",
-        text: "Quarter-sized hail coming down hard near 71st and Memorial in Tulsa right now!",
-        username: "STORM_J",
-        time: "2m ago",
-      },
-    ],
-  },
-];
+const initialReports: StackedReport[] = [];
 
 const typeColors: Record<string, string> = {
   REPORT: "bg-primary/20 text-primary border-primary/30",
