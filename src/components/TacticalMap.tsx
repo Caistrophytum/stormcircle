@@ -196,20 +196,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </div>
       </div>
 
-      {/* Radar code panel: top-left.
-          Width is capped at the size the panel would have with BOTH side menus open,
-          so it never grows beyond that footprint regardless of menu state. */}
-      <div
-        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
-        style={{
-          width: "clamp(180px, 16vw, 240px)",
-          transform: `scale(${overlayScale})`,
-        }}
-      >
-        <RadarCodePanel scale={overlayScale} />
-      </div>
-
-      {/* Event info panel: top-right */}
+      {/* Event info panel: top-right (rendered first so we can measure-reserve its space) */}
       <div
         className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out"
         style={{
@@ -217,6 +204,24 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         }}
       >
         <EventInfoPanel stacked={overlayScale < 0.85} />
+      </div>
+
+      {/* Radar code panel: top-left.
+          Capped to its both-menus-open footprint AND constrained by available space
+          to the hazards panel on the right (with a 1rem gap). */}
+      <div
+        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
+        style={{
+          // Reserve space for the hazards panel on the right.
+          // Stacked mode (overlayScale < 0.85) → ~260px wide; row mode → ~500px wide.
+          // Plus right offset (0.75rem) and a 1rem gap between panels.
+          width: `min(clamp(180px, 16vw, 240px), calc(100vw - 0.75rem - 1rem - 0.75rem - ${
+            overlayScale < 0.85 ? "260px" : "500px"
+          } * ${overlayScale}))`,
+          transform: `scale(${overlayScale})`,
+        }}
+      >
+        <RadarCodePanel scale={overlayScale} />
       </div>
     </motion.section>
   );
