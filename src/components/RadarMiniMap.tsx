@@ -103,6 +103,8 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
         event: p.event,
         description: p.description,
         headline: p.headline,
+        parameters: p.parameters,
+        color: p.color,
         flash: p.flash,
       },
     })),
