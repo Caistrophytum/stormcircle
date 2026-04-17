@@ -1,12 +1,20 @@
 import { useEffect, useState } from "react";
 
 export type Severity = "Extreme" | "Severe" | "Moderate" | "Minor" | "Unknown";
+export type AlertKind = "Warning" | "Watch" | "Advisory" | "Statement" | "Emergency" | "Other";
+export type Certainty = "Observed" | "Likely" | "Possible" | "Unlikely" | "Unknown";
+export type Urgency = "Immediate" | "Expected" | "Future" | "Past" | "Unknown";
 
 export interface Alert {
   event: string;
   severity: Severity;
   headline: string;
   areaDesc: string;
+  kind: AlertKind;
+  certainty: Certainty;
+  urgency: Urgency;
+  /** Special damage-tag flags such as PDS, Tornado Emergency, "considerable"/"destructive" tags */
+  tags: string[];
 }
 
 export interface TopHazard {
@@ -34,12 +42,66 @@ const SEVERITY_ORDER: Record<Severity, number> = {
 
 const VALID_SEVERITIES: Severity[] = ["Extreme", "Severe", "Moderate", "Minor", "Unknown"];
 
+const VALID_CERTAINTY: Certainty[] = ["Observed", "Likely", "Possible", "Unlikely", "Unknown"];
+const VALID_URGENCY: Urgency[] = ["Immediate", "Expected", "Future", "Past", "Unknown"];
+
 function normalizeSeverity(s: unknown): Severity {
   return VALID_SEVERITIES.includes(s as Severity) ? (s as Severity) : "Unknown";
 }
 
+function normalizeCertainty(s: unknown): Certainty {
+  return VALID_CERTAINTY.includes(s as Certainty) ? (s as Certainty) : "Unknown";
+}
+
+function normalizeUrgency(s: unknown): Urgency {
+  return VALID_URGENCY.includes(s as Urgency) ? (s as Urgency) : "Unknown";
+}
+
+function deriveKind(event: string): AlertKind {
+  const e = event.toLowerCase();
+  if (e.includes("emergency")) return "Emergency";
+  if (e.includes("warning")) return "Warning";
+  if (e.includes("watch")) return "Watch";
+  if (e.includes("advisory")) return "Advisory";
+  if (e.includes("statement")) return "Statement";
+  return "Other";
+}
+
+function extractTags(props: Record<string, any>): string[] {
+  const tags: string[] = [];
+  const haystack = [
+    props.headline,
+    props.description,
+    props.event,
+    props.parameters?.tornadoDamageThreatTag,
+    props.parameters?.thunderstormDamageThreatTag,
+    props.parameters?.flashFloodDamageThreatTag,
+    Array.isArray(props.parameters?.NWSheadline)
+      ? props.parameters.NWSheadline.join(" ")
+      : props.parameters?.NWSheadline,
+  ]
+    .filter(Boolean)
+    .map((v: any) => String(v).toLowerCase())
+    .join(" ");
+
+  if (/particularly dangerous situation|\bpds\b/.test(haystack)) tags.push("PDS");
+  if (/tornado emergency/.test(haystack)) tags.push("Tornado Emergency");
+  if (/flash flood emergency/.test(haystack)) tags.push("Flash Flood Emergency");
+  if (/\bdestructive\b/.test(haystack)) tags.push("Destructive");
+  if (/\bconsiderable\b/.test(haystack)) tags.push("Considerable");
+  if (/\bcatastrophic\b/.test(haystack)) tags.push("Catastrophic");
+
+  return Array.from(new Set(tags));
+}
+
 export function useAlerts(): AlertsData {
   const [data, setData] = useState<AlertsData>({
+    mostDangerous: [],
+    topHazards: [],
+    loading: true,
+    error: null,
+    lastUpdated: null,
+  });
     mostDangerous: [],
     topHazards: [],
     loading: true,
@@ -62,11 +124,16 @@ export function useAlerts(): AlertsData {
 
         const alerts: Alert[] = features.map((f) => {
           const p = f?.properties ?? {};
+          const event = String(p.event ?? "Unknown");
           return {
-            event: String(p.event ?? "Unknown"),
+            event,
             severity: normalizeSeverity(p.severity),
             headline: String(p.headline ?? ""),
             areaDesc: String(p.areaDesc ?? ""),
+            kind: deriveKind(event),
+            certainty: normalizeCertainty(p.certainty),
+            urgency: normalizeUrgency(p.urgency),
+            tags: extractTags(p),
           };
         });
 
