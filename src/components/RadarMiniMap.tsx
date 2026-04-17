@@ -84,12 +84,6 @@ interface LeafletMapProps {
   station: RadarStation | null;
   tileUrl: string | null;
   interactive: boolean;
-}
-
-interface LeafletMapProps {
-  station: RadarStation | null;
-  tileUrl: string | null;
-  interactive: boolean;
   onTileRequest?: (url: string) => void;
 }
 
@@ -128,6 +122,7 @@ const RadarMiniMap = ({
   setSelectedProduct,
   tileUrl,
 }: Props) => {
+  const [lastTileUrl, setLastTileUrl] = useState<string | null>(null);
   if (!expanded) {
     const circleSize = "clamp(160px, 18vw, 240px)";
 
@@ -139,7 +134,7 @@ const RadarMiniMap = ({
       >
         <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
           <div className="absolute inset-1 overflow-hidden" style={{ borderRadius: "50%" }}>
-            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} />
+            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} />
           </div>
           <Maximize2 className="absolute top-2 right-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
         </div>
@@ -175,10 +170,16 @@ const RadarMiniMap = ({
         </div>
 
         <div className="flex-1 relative bg-background/60 rounded-sm overflow-hidden">
-          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive />
-          <div className="absolute top-2 left-2 z-[400] max-w-[90%] bg-background/90 border border-primary/40 px-2 py-1 rounded-sm font-mono text-[10px] text-primary break-all pointer-events-none">
-            <span className="text-muted-foreground uppercase tracking-wider mr-1">tileUrl:</span>
-            {tileUrl ?? "null (select station + product)"}
+          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} />
+          <div className="absolute top-2 left-2 z-[400] max-w-[90%] bg-background/90 border border-primary/40 px-2 py-1 rounded-sm font-mono text-[10px] text-primary break-all pointer-events-none flex flex-col gap-1">
+            <div>
+              <span className="text-muted-foreground uppercase tracking-wider mr-1">template:</span>
+              {tileUrl ?? "null (select station + product)"}
+            </div>
+            <div>
+              <span className="text-muted-foreground uppercase tracking-wider mr-1">last request:</span>
+              {lastTileUrl ?? "—"}
+            </div>
           </div>
         </div>
       </div>
