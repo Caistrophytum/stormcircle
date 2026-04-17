@@ -206,7 +206,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
           transform: `scale(${overlayScale})`,
         }}
       >
-        <RadarCodePanel />
+        <RadarCodePanel scale={overlayScale} />
       </div>
 
       {/* Event info panel: top-right */}
