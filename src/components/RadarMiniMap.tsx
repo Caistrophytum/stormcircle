@@ -98,7 +98,13 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
     features: polygons.map((p) => ({
       type: "Feature",
       geometry: p.geometry,
-      properties: { id: p.id, event: p.event },
+      properties: {
+        id: p.id,
+        event: p.event,
+        description: p.description,
+        headline: p.headline,
+        flash: p.flash,
+      },
     })),
   };
 
@@ -123,10 +129,11 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
           key={polygons.map((p) => p.id).join(",")}
           data={featureCollection}
           style={(feature) => ({
-            color: WARNING_COLORS[feature?.properties?.event] ?? "#FFFFFF",
+            color: getWarningColor(feature?.properties),
             weight: 2,
             opacity: 1,
             fillOpacity: 0,
+            className: feature?.properties?.flash ? "warning-flash" : undefined,
           })}
         />
       )}
