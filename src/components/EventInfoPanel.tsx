@@ -43,9 +43,11 @@ function formatRelativeTime(date: Date, now: Date): string {
 interface EventInfoPanelProps {
   /** When true, the two cards stack vertically instead of side-by-side. */
   stacked?: boolean;
+  /** Which card(s) to render. Defaults to "both". */
+  show?: "both" | "hazards" | "dangerous";
 }
 
-const EventInfoPanel = ({ stacked = false }: EventInfoPanelProps) => {
+const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps) => {
   const { mostDangerous, topHazards, loading, error, lastUpdated } = useAlerts();
   const [now, setNow] = useState(() => new Date());
 
