@@ -105,7 +105,7 @@ const Index = () => {
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 className="shrink-0 overflow-hidden h-full"
               >
-                <PeerReviewQueue />
+                <PeerReviewQueue userRole={userRole} />
               </motion.div>
             )}
           </AnimatePresence>
