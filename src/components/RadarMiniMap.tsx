@@ -45,10 +45,12 @@ const RadarOverlayLayer = ({ tileUrl }: { tileUrl: string | null }) => {
       detectRetina: false,
       minZoom: 1,
       maxZoom: 20,
+      zIndex: 650,
       attribution: "IEM NEXRAD / Iowa State",
     });
 
     radarLayer.addTo(map);
+    radarLayer.bringToFront();
 
     return () => {
       map.removeLayer(radarLayer);
