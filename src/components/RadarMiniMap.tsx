@@ -46,7 +46,7 @@ const LeafletRadar = ({ station, tileUrl, interactive }: LeafletMapProps) => {
       center={center}
       zoom={zoom}
       className="w-full h-full"
-      zoomControl={interactive}
+      zoomControl={false}
       dragging={interactive}
       scrollWheelZoom={interactive}
       doubleClickZoom={interactive}
