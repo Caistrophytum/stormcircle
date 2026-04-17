@@ -1,4 +1,5 @@
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 import { useEffect } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
@@ -16,18 +17,44 @@ interface Props {
   tileUrl: string | null;
 }
 
-const DEFAULT_CENTER: [number, number] = [39.5, -98.35]; // CONUS center
+const DEFAULT_CENTER: [number, number] = [39.5, -98.35];
 const DEFAULT_ZOOM = 4;
 const STATION_ZOOM = 8;
 
-// Re-centers the map when the selected station changes
 const Recenter = ({ station }: { station: RadarStation | null }) => {
   const map = useMap();
+
   useEffect(() => {
     if (station) {
       map.setView([station.lat, station.lon], STATION_ZOOM);
     }
   }, [station, map]);
+
+  return null;
+};
+
+const RadarOverlayLayer = ({ tileUrl }: { tileUrl: string | null }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!tileUrl) return;
+
+    const radarLayer = L.tileLayer(tileUrl, {
+      opacity: 0.7,
+      tms: true,
+      detectRetina: false,
+      minZoom: 1,
+      maxZoom: 20,
+      attribution: "IEM NEXRAD / Iowa State",
+    });
+
+    radarLayer.addTo(map);
+
+    return () => {
+      map.removeLayer(radarLayer);
+    };
+  }, [map, tileUrl]);
+
   return null;
 };
 
@@ -62,18 +89,7 @@ const LeafletRadar = ({ station, tileUrl, interactive }: LeafletMapProps) => {
         attribution='&copy; OpenStreetMap'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {tileUrl && (
-        <TileLayer
-          key={tileUrl}
-          url={tileUrl}
-          opacity={0.7}
-          tms={true}
-          detectRetina={false}
-          minZoom={1}
-          maxZoom={20}
-          attribution="IEM NEXRAD / Iowa State"
-        />
-      )}
+      <RadarOverlayLayer tileUrl={tileUrl} />
       <Recenter station={station} />
     </MapContainer>
   );
@@ -114,10 +130,8 @@ const RadarMiniMap = ({
     );
   }
 
-  // Expanded
   return (
     <div className="flex gap-3" style={{ height: "min(65vw, 620px)" }}>
-      {/* Controls sidebar */}
       <div className="w-[220px] shrink-0 glass-panel p-3 flex flex-col gap-3">
         <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
           Radar Controls
@@ -130,7 +144,6 @@ const RadarMiniMap = ({
         />
       </div>
 
-      {/* Main radar panel */}
       <div
         className="glass-panel p-4 flex flex-col"
         style={{ width: "min(65vw, 620px)", height: "100%" }}
@@ -160,7 +173,6 @@ const RadarMiniMap = ({
             tileUrl={tileUrl}
             interactive
           />
-          {/* Debug overlay: shows the current tileUrl */}
           <div className="absolute top-2 left-2 z-[400] max-w-[90%] bg-background/90 border border-primary/40 px-2 py-1 rounded-sm font-mono text-[10px] text-primary break-all pointer-events-none">
             <span className="text-muted-foreground uppercase tracking-wider mr-1">tileUrl:</span>
             {tileUrl ?? "null (select station + product)"}
