@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState } from "react";
 
 interface HazardData {
   hazard: string;
@@ -67,9 +67,7 @@ function buildWeatherData(): WeatherData {
 
 // Signature kept for backwards compatibility with existing callers (intervalMs is ignored)
 export function useWeatherData(_intervalMs?: number) {
-  const data = useMemo(() => buildWeatherData(), []);
-  const refresh = () => {
-    // no-op: real data source not wired in yet
-  };
+  const [data, setData] = useState<WeatherData>(() => buildWeatherData());
+  const refresh = () => setData(buildWeatherData());
   return { data, refresh };
 }
