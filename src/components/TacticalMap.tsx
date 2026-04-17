@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Maximize2, Minimize2 } from "lucide-react";
-import RadarCodePanel from "./RadarCodePanel";
+
 import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
@@ -206,23 +206,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         <EventInfoPanel stacked={overlayScale < 0.85} />
       </div>
 
-      {/* Radar code panel: top-left.
-          Capped to its both-menus-open footprint AND constrained by available space
-          to the hazards panel on the right (with a 1rem gap). */}
-      <div
-        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
-        style={{
-          // Reserve space for the hazards panel on the right.
-          // Stacked mode (overlayScale < 0.85) → ~260px wide; row mode → ~500px wide.
-          // Plus right offset (0.75rem) and a 1rem gap between panels.
-          width: `min(clamp(180px, 16vw, 240px), calc(100vw - 0.75rem - 1rem - 0.75rem - ${
-            overlayScale < 0.85 ? "260px" : "500px"
-          } * ${overlayScale}))`,
-          transform: `scale(${overlayScale})`,
-        }}
-      >
-        <RadarCodePanel scale={overlayScale} />
-      </div>
+      {/* Radar code panel removed for now */}
     </motion.section>
   );
 };
