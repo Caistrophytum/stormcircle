@@ -70,8 +70,6 @@ const LeafletRadar = ({ station, tileUrl, interactive }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
 
-  console.log("[RadarMap] tileUrl:", tileUrl);
-
   return (
     <MapContainer
       center={center}

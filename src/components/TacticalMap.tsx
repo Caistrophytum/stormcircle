@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Maximize2, Minimize2 } from "lucide-react";
 
 import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
@@ -22,12 +21,10 @@ const weatherBackgrounds: Record<WeatherCondition, string> = {
 };
 
 interface Props {
-  expanded: boolean;
-  onToggleExpand: () => void;
   overlayScale: number;
 }
 
-const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
+const TacticalMap = ({ overlayScale }: Props) => {
   const { data } = useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
   const radar = useRadar();
