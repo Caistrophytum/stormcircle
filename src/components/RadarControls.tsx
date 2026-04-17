@@ -11,13 +11,6 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { RADAR_STATIONS, RadarStation } from "@/config/radarStations";
 import { PRODUCTS, ProductCode } from "@/hooks/useRadar";
 
@@ -90,26 +83,36 @@ const RadarControls = ({
         </PopoverContent>
       </Popover>
 
-      {/* Product picker */}
-      <Select
-        value={selectedProduct ?? undefined}
-        onValueChange={(v) => onProductChange(v as ProductCode)}
-        disabled={!selectedStation}
-      >
-        <SelectTrigger className="w-full font-mono text-xs h-9">
-          <SelectValue placeholder="Select product..." />
-        </SelectTrigger>
-        <SelectContent>
-          {PRODUCTS.map((p) => (
-            <SelectItem key={p.code} value={p.code} className="font-mono text-xs">
-              <div className="flex flex-col items-start leading-tight">
-                <span className="text-primary font-bold">{p.code}</span>
-                <span className="text-muted-foreground">{p.label}</span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* Product picker - single-column tile menu */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+          Available Scans
+        </span>
+        <div className="grid grid-cols-1 gap-1">
+          {PRODUCTS.map((p) => {
+            const isSelected = selectedProduct === p.code;
+            const isDisabled = !selectedStation;
+            return (
+              <button
+                key={p.code}
+                type="button"
+                disabled={isDisabled}
+                onClick={() => onProductChange(p.code)}
+                className={cn(
+                  "w-full flex flex-col items-start gap-0.5 px-2.5 py-1.5 rounded-sm border font-mono text-left leading-tight transition-colors",
+                  "disabled:opacity-40 disabled:cursor-not-allowed",
+                  isSelected
+                    ? "bg-primary/15 border-primary text-card-foreground"
+                    : "bg-background/40 border-border hover:border-primary/50 hover:bg-primary/5",
+                )}
+              >
+                <span className="text-[11px] font-bold text-primary">{p.code}</span>
+                <span className="text-[10px] text-muted-foreground">{p.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };
