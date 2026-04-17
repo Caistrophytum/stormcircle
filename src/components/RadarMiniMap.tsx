@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { forwardRef, useEffect } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation } from "@/config/radarStations";
@@ -36,8 +36,13 @@ const Recenter = forwardRef<unknown, { station: RadarStation | null }>(function 
   return null;
 });
 
-const RadarOverlayLayer = forwardRef<unknown, { tileUrl: string | null }>(function RadarOverlayLayer(
-  { tileUrl },
+interface RadarOverlayLayerProps {
+  tileUrl: string | null;
+  onTileRequest?: (url: string) => void;
+}
+
+const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function RadarOverlayLayer(
+  { tileUrl, onTileRequest },
   _ref,
 ) {
   const map = useMap();
@@ -56,7 +61,9 @@ const RadarOverlayLayer = forwardRef<unknown, { tileUrl: string | null }>(functi
     });
 
     radarLayer.on("tileloadstart", (e: L.TileEvent) => {
-      console.log("[Radar] tile request:", (e.tile as HTMLImageElement).src);
+      const src = (e.tile as HTMLImageElement).src;
+      console.log("[Radar] tile request:", src);
+      onTileRequest?.(src);
     });
     radarLayer.on("tileerror", (e: L.TileErrorEvent) => {
       console.error("[Radar] tile error:", (e.tile as HTMLImageElement).src);
@@ -68,7 +75,7 @@ const RadarOverlayLayer = forwardRef<unknown, { tileUrl: string | null }>(functi
     return () => {
       map.removeLayer(radarLayer);
     };
-  }, [map, tileUrl]);
+  }, [map, tileUrl, onTileRequest]);
 
   return null;
 });
@@ -79,7 +86,14 @@ interface LeafletMapProps {
   interactive: boolean;
 }
 
-const LeafletRadar = ({ station, tileUrl, interactive }: LeafletMapProps) => {
+interface LeafletMapProps {
+  station: RadarStation | null;
+  tileUrl: string | null;
+  interactive: boolean;
+  onTileRequest?: (url: string) => void;
+}
+
+const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
 
@@ -99,7 +113,7 @@ const LeafletRadar = ({ station, tileUrl, interactive }: LeafletMapProps) => {
       style={{ background: "hsl(var(--background))" }}
     >
       <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      <RadarOverlayLayer tileUrl={tileUrl} />
+      <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
       <Recenter station={station} />
     </MapContainer>
   );
