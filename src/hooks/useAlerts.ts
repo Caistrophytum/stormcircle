@@ -19,7 +19,10 @@ export interface AlertsData {
   topHazards: TopHazard[];
   loading: boolean;
   error: string | null;
+  lastUpdated: Date | null;
 }
+
+const REFRESH_INTERVAL_MS = 120_000; // 2 minutes
 
 const SEVERITY_ORDER: Record<Severity, number> = {
   Extreme: 0,
@@ -41,6 +44,7 @@ export function useAlerts(): AlertsData {
     topHazards: [],
     loading: true,
     error: null,
+    lastUpdated: null,
   });
 
   useEffect(() => {
@@ -80,23 +84,31 @@ export function useAlerts(): AlertsData {
           .slice(0, 5);
 
         if (!cancelled) {
-          setData({ mostDangerous, topHazards, loading: false, error: null });
+          setData({
+            mostDangerous,
+            topHazards,
+            loading: false,
+            error: null,
+            lastUpdated: new Date(),
+          });
         }
       } catch (err) {
         if (!cancelled) {
-          setData({
-            mostDangerous: [],
-            topHazards: [],
+          setData((prev) => ({
+            ...prev,
             loading: false,
             error: err instanceof Error ? err.message : "Failed to fetch alerts",
-          });
+          }));
         }
       }
     }
 
     fetchAlerts();
+    const intervalId = setInterval(fetchAlerts, REFRESH_INTERVAL_MS);
+
     return () => {
       cancelled = true;
+      clearInterval(intervalId);
     };
   }, []);
 
