@@ -29,7 +29,7 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
 
   // Derive font sizes from available-space scale.
   // Use an exponential curve so shrinking is visibly more aggressive than linear.
-  const fontScale = Math.pow(scale, 2.2);
+  const fontScale = Math.pow(scale, 2);
   const headerSize = `${(13.5 * fontScale).toFixed(2)}px`;
   const tiltSize = `${(9.75 * fontScale).toFixed(2)}px`;
   const labelSize = `${(9.75 * fontScale).toFixed(2)}px`;
@@ -37,16 +37,10 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
   return (
     <div className="glass-panel p-3 w-full">
       <div className="flex justify-between items-center mb-2">
-        <span
-          className="font-mono text-primary uppercase tracking-wider"
-          style={{ fontSize: headerSize }}
-        >
+        <span className="font-mono text-primary uppercase tracking-wider" style={{ fontSize: headerSize }}>
           RDA {scanAngle.toFixed(1)}°
         </span>
-        <span
-          className="font-mono text-neon-green uppercase flex items-center gap-1"
-          style={{ fontSize: headerSize }}
-        >
+        <span className="font-mono text-neon-green uppercase flex items-center gap-1" style={{ fontSize: headerSize }}>
           <span className="size-1.5 rounded-full bg-neon-green animate-pulse" />
           LIVE
         </span>
@@ -86,10 +80,7 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
 
       {/* Speed control */}
       <div className="flex items-center gap-2">
-        <span
-          className="font-mono text-muted-foreground w-8"
-          style={{ fontSize: labelSize }}
-        >
+        <span className="font-mono text-muted-foreground w-8" style={{ fontSize: labelSize }}>
           SPD
         </span>
         <Slider
@@ -100,10 +91,7 @@ const RadarCodePanel = ({ scale = 1 }: Props) => {
           step={100}
           className="flex-1"
         />
-        <span
-          className="font-mono text-primary w-10 text-right"
-          style={{ fontSize: labelSize }}
-        >
+        <span className="font-mono text-primary w-10 text-right" style={{ fontSize: labelSize }}>
           {(speed / 1000).toFixed(1)}s
         </span>
       </div>
