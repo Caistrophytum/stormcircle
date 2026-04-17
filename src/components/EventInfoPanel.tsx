@@ -40,7 +40,12 @@ function formatRelativeTime(date: Date, now: Date): string {
   return `${diffDay} d ago`;
 }
 
-const EventInfoPanel = () => {
+interface EventInfoPanelProps {
+  /** When true, the two cards stack vertically instead of side-by-side. */
+  stacked?: boolean;
+}
+
+const EventInfoPanel = ({ stacked = false }: EventInfoPanelProps) => {
   const { mostDangerous, topHazards, loading, error, lastUpdated } = useAlerts();
   const [now, setNow] = useState(() => new Date());
 
@@ -50,7 +55,11 @@ const EventInfoPanel = () => {
   }, []);
 
   return (
-    <div className="flex gap-2 items-start transition-all duration-300 ease-in-out w-fit">
+    <div
+      className={`flex gap-2 items-start transition-all duration-300 ease-in-out w-fit ${
+        stacked ? "flex-col" : "flex-row"
+      }`}
+    >
       {/* Top 5 Hazards */}
       <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px] self-start">
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
