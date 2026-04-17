@@ -196,17 +196,25 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
         </div>
       </div>
 
-      {/* Event info panel: top-right (rendered first so we can measure-reserve its space) */}
+      {/* Top Hazards: top-left */}
+      <div
+        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
+        style={{
+          transform: `scale(${overlayScale})`,
+        }}
+      >
+        <EventInfoPanel show="hazards" />
+      </div>
+
+      {/* Most Dangerous: top-right */}
       <div
         className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out"
         style={{
           transform: `scale(${overlayScale})`,
         }}
       >
-        <EventInfoPanel stacked={overlayScale < 0.85} />
+        <EventInfoPanel show="dangerous" />
       </div>
-
-      {/* Radar code panel removed for now */}
     </motion.section>
   );
 };

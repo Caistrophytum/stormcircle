@@ -43,9 +43,11 @@ function formatRelativeTime(date: Date, now: Date): string {
 interface EventInfoPanelProps {
   /** When true, the two cards stack vertically instead of side-by-side. */
   stacked?: boolean;
+  /** Which card(s) to render. Defaults to "both". */
+  show?: "both" | "hazards" | "dangerous";
 }
 
-const EventInfoPanel = ({ stacked = false }: EventInfoPanelProps) => {
+const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps) => {
   const { mostDangerous, topHazards, loading, error, lastUpdated } = useAlerts();
   const [now, setNow] = useState(() => new Date());
 
@@ -60,6 +62,8 @@ const EventInfoPanel = ({ stacked = false }: EventInfoPanelProps) => {
         stacked ? "flex-col" : "flex-row"
       }`}
     >
+      {show !== "dangerous" && (
+      <>
       {/* Top 5 Hazards */}
       <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px] self-start">
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
@@ -97,8 +101,12 @@ const EventInfoPanel = ({ stacked = false }: EventInfoPanelProps) => {
           </div>
         )}
       </div>
+      </>
+      )}
 
-      {/* Top 3 Most Dangerous */}
+      {show !== "hazards" && (
+      <>
+      {/* Top 6 Most Dangerous */}
       <div className="glass-panel p-2.5 whitespace-nowrap min-w-[260px]">
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 6 Most Dangerous
@@ -154,6 +162,8 @@ const EventInfoPanel = ({ stacked = false }: EventInfoPanelProps) => {
           ))}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };
