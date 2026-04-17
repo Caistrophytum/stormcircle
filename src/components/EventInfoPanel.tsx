@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAlerts, type Severity } from "@/hooks/useAlerts";
+import { useAlerts, type AlertKind, type Severity } from "@/hooks/useAlerts";
 
 const severityBadge: Record<Severity, string> = {
   Extreme: "bg-red-600 text-white",
@@ -7,6 +7,24 @@ const severityBadge: Record<Severity, string> = {
   Moderate: "bg-yellow-400 text-black",
   Minor: "bg-blue-500 text-white",
   Unknown: "bg-muted text-muted-foreground",
+};
+
+const kindBadge: Record<AlertKind, string> = {
+  Emergency: "bg-red-700 text-white",
+  Warning: "bg-orange-600 text-white",
+  Watch: "bg-yellow-500 text-black",
+  Advisory: "bg-blue-600 text-white",
+  Statement: "bg-slate-500 text-white",
+  Other: "bg-muted text-muted-foreground",
+};
+
+const tagBadge: Record<string, string> = {
+  PDS: "bg-fuchsia-700 text-white",
+  "Tornado Emergency": "bg-red-800 text-white",
+  "Flash Flood Emergency": "bg-red-800 text-white",
+  Catastrophic: "bg-red-700 text-white",
+  Destructive: "bg-orange-700 text-white",
+  Considerable: "bg-amber-600 text-white",
 };
 
 function formatRelativeTime(date: Date, now: Date): string {
@@ -99,12 +117,29 @@ const EventInfoPanel = () => {
               <div className="ml-[22px] text-[13px] font-mono text-muted-foreground leading-tight max-w-[260px] truncate">
                 {a.areaDesc}
               </div>
-              <div className="ml-[22px]">
+              <div className="ml-[22px] flex flex-wrap items-center gap-1">
                 <span
                   className={`text-[12px] font-mono tracking-widest px-1.5 py-0.5 rounded-sm font-bold uppercase ${severityBadge[a.severity]}`}
                 >
                   {a.severity}
                 </span>
+                {a.kind !== "Other" && (
+                  <span
+                    className={`text-[11px] font-mono tracking-widest px-1.5 py-0.5 rounded-sm font-bold uppercase ${kindBadge[a.kind]}`}
+                  >
+                    {a.kind}
+                  </span>
+                )}
+                {a.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className={`text-[11px] font-mono tracking-widest px-1.5 py-0.5 rounded-sm font-bold uppercase ${
+                      tagBadge[tag] ?? "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {tag}
+                  </span>
+                ))}
               </div>
             </div>
           ))}
