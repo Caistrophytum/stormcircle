@@ -87,7 +87,9 @@ export interface WarningPolygon {
   event: string;
   description: string;
   headline: string;
+  parameters: Record<string, any>;
   flash: boolean;
+  color: string;
   geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon;
 }
 
@@ -136,7 +138,9 @@ export function useWarningPolygons(): WarningPolygonsData {
               event: String(props.event),
               description: String(props.description ?? ""),
               headline: String(props.headline ?? ""),
+              parameters: props.parameters ?? {},
               flash: shouldFlash(props),
+              color: getWarningColor(props),
               geometry: f.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon,
             };
           });
