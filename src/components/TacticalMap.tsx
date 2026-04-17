@@ -196,7 +196,7 @@ const TacticalMap = ({ expanded, onToggleExpand, overlayScale }: Props) => {
           transform: `scale(${overlayScale})`,
         }}
       >
-        <EventInfoPanel topHazards={data.topHazards} dangerousAlerts={data.dangerousAlerts} />
+        <EventInfoPanel />
       </div>
     </motion.section>
   );
