@@ -149,7 +149,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         }}
       >
         <div className="flex gap-2 justify-between">
-          {data.dataNodes.map((node) => (
+          {soundingNodes.map((node) => (
             <div
               key={node.label}
               className="relative flex-1 px-3 py-3 bg-background border-l-2 border-primary/30 flex flex-col gap-1 overflow-visible"
