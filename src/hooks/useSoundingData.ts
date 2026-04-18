@@ -1,0 +1,77 @@
+import { useEffect, useState } from "react";
+import { RadarStation } from "@/config/radarStations";
+
+export interface SoundingData {
+  cape: number | null;
+  cin: number | null;
+  li: number | null;
+  blh: number | null;
+  lcl: number | null;
+}
+
+const EMPTY: SoundingData = {
+  cape: null,
+  cin: null,
+  li: null,
+  blh: null,
+  lcl: null,
+};
+
+/**
+ * Approximate LCL height (meters AGL) from surface T and Td (°C).
+ * Espy-style approximation: LCL ≈ 125 * (T - Td)
+ */
+function computeLCL(t2m: number, td2m: number): number {
+  return 125 * (t2m - td2m);
+}
+
+export function useSoundingData(selectedStation: RadarStation | null): SoundingData {
+  const [data, setData] = useState<SoundingData>(EMPTY);
+
+  useEffect(() => {
+    if (!selectedStation) {
+      setData(EMPTY);
+      return;
+    }
+
+    let cancelled = false;
+    const { lat, lon } = selectedStation;
+
+    const url =
+      `https://api.open-meteo.com/v1/forecast` +
+      `?latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,dewpoint_2m,cape,convective_inhibition,lifted_index,boundary_layer_height` +
+      `&timezone=UTC`;
+
+    (async () => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
+        const json = await res.json();
+        const c = json?.current ?? {};
+
+        const t2m = typeof c.temperature_2m === "number" ? c.temperature_2m : null;
+        const td2m = typeof c.dewpoint_2m === "number" ? c.dewpoint_2m : null;
+        const lcl = t2m != null && td2m != null ? computeLCL(t2m, td2m) : null;
+
+        if (cancelled) return;
+        setData({
+          cape: typeof c.cape === "number" ? c.cape : null,
+          cin: typeof c.convective_inhibition === "number" ? c.convective_inhibition : null,
+          li: typeof c.lifted_index === "number" ? c.lifted_index : null,
+          blh: typeof c.boundary_layer_height === "number" ? c.boundary_layer_height : null,
+          lcl,
+        });
+      } catch (err) {
+        console.error("[useSoundingData] fetch failed", err);
+        if (!cancelled) setData(EMPTY);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStation]);
+
+  return data;
+}
