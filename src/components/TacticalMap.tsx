@@ -43,15 +43,15 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     const capeColor = (() => {
       if (sounding.loading || radar.selectedStation === null || sounding.cape === null) return "text-neon-green";
       if (sounding.cape > 2500) return "text-neon-red";
-      if (sounding.cape >= 1000) return "text-neon-amber";
+      if (sounding.cape >= 1000) return "text-yellow-400";
       return "text-neon-green";
     })();
 
     const liColor = (() => {
       if (sounding.loading || radar.selectedStation === null || sounding.li === null) return "text-neon-green";
       if (sounding.li < -6) return "text-neon-red";
-      if (sounding.li < -3) return "text-neon-amber";
-      if (sounding.li <= 0) return "text-neon-amber";
+      if (sounding.li < -3) return "text-orange-500";
+      if (sounding.li <= 0) return "text-yellow-400";
       return "text-neon-green";
     })();
 
