@@ -5,6 +5,7 @@ import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
+import { useSoundingData } from "@/hooks/useSoundingData";
 
 import weatherSunny from "@/assets/weather-calm.jpg";
 import weatherCloudy from "@/assets/weather-overcast.jpg";
