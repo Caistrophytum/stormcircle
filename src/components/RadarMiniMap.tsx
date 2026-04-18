@@ -5,14 +5,16 @@ import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
-import { ProductCode } from "@/hooks/useRadar";
+import { ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useWarningPolygons, getWarningColor } from "@/hooks/useWarningPolygons";
 
 interface Props {
   expanded: boolean;
   onCollapse: () => void;
+  selectedCity: SelectedCity | null;
+  setSelectedCity: (c: SelectedCity) => void;
   selectedStation: RadarStation | null;
-  setSelectedStation: (s: RadarStation) => void;
+  stationDistanceKm: number | null;
   selectedProduct: ProductCode | null;
   setSelectedProduct: (p: ProductCode) => void;
   tileUrl: string | null;
@@ -154,8 +156,10 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
 const RadarMiniMap = ({
   expanded,
   onCollapse,
+  selectedCity,
+  setSelectedCity,
   selectedStation,
-  setSelectedStation,
+  stationDistanceKm,
   selectedProduct,
   setSelectedProduct,
   tileUrl,
@@ -185,8 +189,10 @@ const RadarMiniMap = ({
       <div className="w-[220px] shrink-0 glass-panel p-3 flex flex-col gap-3">
         <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Radar Controls</span>
         <RadarControls
+          selectedCity={selectedCity}
+          onCityChange={setSelectedCity}
           selectedStation={selectedStation}
-          onStationChange={setSelectedStation}
+          stationDistanceKm={stationDistanceKm}
           selectedProduct={selectedProduct}
           onProductChange={setSelectedProduct}
         />
