@@ -47,9 +47,10 @@ export function useSoundingData(selectedStation: RadarStation | null): SoundingD
       `&current=temperature_2m,dewpoint_2m,cape,convective_inhibition,lifted_index,boundary_layer_height` +
       `&timezone=UTC`;
 
-    setData({ cape: null, cin: null, li: null, blh: null, lcl: null, loading: true, error: false });
-
-    (async () => {
+    const fetchSounding = async (showLoading: boolean) => {
+      if (showLoading) {
+        setData({ cape: null, cin: null, li: null, blh: null, lcl: null, loading: true, error: false });
+      }
       try {
         const res = await fetch(url);
         if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
@@ -76,10 +77,15 @@ export function useSoundingData(selectedStation: RadarStation | null): SoundingD
           setData({ cape: null, cin: null, li: null, blh: null, lcl: null, loading: false, error: true });
         }
       }
-    })();
+    };
+
+    fetchSounding(true);
+    // Refresh every 60s on the same cadence as useAlerts
+    const intervalId = setInterval(() => fetchSounding(false), 60_000);
 
     return () => {
       cancelled = true;
+      clearInterval(intervalId);
     };
   }, [selectedStation]);
 
