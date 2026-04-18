@@ -141,8 +141,10 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               <RadarMiniMap
                 expanded
                 onCollapse={() => setRadarExpanded(false)}
+                selectedCity={radar.selectedCity}
+                setSelectedCity={radar.setSelectedCity}
                 selectedStation={radar.selectedStation}
-                setSelectedStation={radar.setSelectedStation}
+                stationDistanceKm={radar.stationDistanceKm}
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
                 tileUrl={radar.tileUrl}
@@ -158,8 +160,10 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               <RadarMiniMap
                 expanded={false}
                 onCollapse={() => setRadarExpanded(true)}
+                selectedCity={radar.selectedCity}
+                setSelectedCity={radar.setSelectedCity}
                 selectedStation={radar.selectedStation}
-                setSelectedStation={radar.setSelectedStation}
+                stationDistanceKm={radar.stationDistanceKm}
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
                 tileUrl={radar.tileUrl}
