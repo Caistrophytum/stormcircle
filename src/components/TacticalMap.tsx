@@ -224,31 +224,31 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               className="h-full rounded-full"
               style={{
                 background:
-                  data.threatLevel > 85
+                  threatLevel > 85
                     ? "hsl(var(--neon-red))"
-                    : data.threatLevel >= 61
+                    : threatLevel >= 61
                       ? "hsl(var(--neon-amber))"
-                      : data.threatLevel >= 31
+                      : threatLevel >= 31
                         ? "hsl(var(--primary))"
                         : "hsl(var(--neon-green))",
               }}
               initial={{ width: 0 }}
-              animate={{ width: `${data.threatLevel}%` }}
+              animate={{ width: `${threatLevel}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             />
           </div>
           <span
             className={`text-sm font-mono font-bold whitespace-nowrap ${
-              data.threatLevel > 85
+              threatLevel > 85
                 ? "text-neon-red"
-                : data.threatLevel >= 61
+                : threatLevel >= 61
                   ? "text-neon-amber"
-                  : data.threatLevel >= 31
+                  : threatLevel >= 31
                     ? "text-primary"
                     : "text-neon-green"
             }`}
           >
-            {data.threatLevel}
+            {threatLevel}
           </span>
         </div>
       </div>
