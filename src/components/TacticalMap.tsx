@@ -106,7 +106,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           key={weatherCondition}
           src={weatherBackgrounds[weatherCondition]}
           alt={`${weatherCondition} weather`}
-          className="absolute inset-0 w-full h-full object-fill"
+          className="absolute inset-0 w-full h-full object-cover"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
