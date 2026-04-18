@@ -29,6 +29,40 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const { data } = useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
   const radar = useRadar();
+  const sounding = useSoundingData(radar.selectedStation);
+
+  // Build the 5 sounding boxes from useSoundingData
+  const soundingNodes = useMemo(() => {
+    const fmt = (v: number | null, digits = 0): string => {
+      if (sounding.loading) return "...";
+      if (radar.selectedStation === null) return "—";
+      if (v === null) return "ERR";
+      return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
+    };
+
+    const capeColor = (() => {
+      if (sounding.loading || radar.selectedStation === null || sounding.cape === null) return "text-neon-green";
+      if (sounding.cape > 2500) return "text-neon-red";
+      if (sounding.cape >= 1000) return "text-neon-amber";
+      return "text-neon-green";
+    })();
+
+    const liColor = (() => {
+      if (sounding.loading || radar.selectedStation === null || sounding.li === null) return "text-neon-green";
+      if (sounding.li < -6) return "text-neon-red";
+      if (sounding.li < -3) return "text-neon-amber";
+      if (sounding.li <= 0) return "text-neon-amber";
+      return "text-neon-green";
+    })();
+
+    return [
+      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: capeColor, wrsContribution: 0 },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: "text-neon-green", wrsContribution: 0 },
+      { label: "LIFTED INDEX", value: fmt(sounding.li, 1), unit: "°C", color: liColor, wrsContribution: 0 },
+      { label: "BL HEIGHT", value: fmt(sounding.blh), unit: "m", color: "text-neon-green", wrsContribution: 0 },
+      { label: "LCL", value: fmt(sounding.lcl), unit: "m", color: "text-neon-green", wrsContribution: 0 },
+    ];
+  }, [sounding, radar.selectedStation]);
 
   // Derive weather condition from threat level
   const weatherCondition: WeatherCondition = useMemo(() => {
