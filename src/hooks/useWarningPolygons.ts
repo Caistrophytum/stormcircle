@@ -37,6 +37,8 @@ export const WARNING_COLORS: Record<string, string> = {
   "Dense Fog Advisory": "#708090",
   "Freeze Warning": "#483D8B",
   "Frost Advisory": "#6495ED",
+  // Statements
+  "Special Weather Statement": "#800080",
 };
 
 /**
