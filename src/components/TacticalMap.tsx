@@ -29,7 +29,9 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const { data } = useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
   const radar = useRadar();
-  const sounding = useSoundingData(radar.selectedStation);
+  const sounding = useSoundingData(
+    radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
+  );
 
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
@@ -139,8 +141,10 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               <RadarMiniMap
                 expanded
                 onCollapse={() => setRadarExpanded(false)}
+                selectedCity={radar.selectedCity}
+                setSelectedCity={radar.setSelectedCity}
                 selectedStation={radar.selectedStation}
-                setSelectedStation={radar.setSelectedStation}
+                stationDistanceKm={radar.stationDistanceKm}
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
                 tileUrl={radar.tileUrl}
@@ -156,8 +160,10 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               <RadarMiniMap
                 expanded={false}
                 onCollapse={() => setRadarExpanded(true)}
+                selectedCity={radar.selectedCity}
+                setSelectedCity={radar.setSelectedCity}
                 selectedStation={radar.selectedStation}
-                setSelectedStation={radar.setSelectedStation}
+                stationDistanceKm={radar.stationDistanceKm}
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
                 tileUrl={radar.tileUrl}

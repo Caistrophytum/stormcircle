@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { RadarStation } from "@/config/radarStations";
 
 export interface SoundingData {
   cape: number | null;
@@ -21,25 +20,27 @@ const EMPTY: SoundingData = {
   error: false,
 };
 
-/**
- * Approximate LCL height (meters AGL) from surface T and Td (°C).
- * Espy-style approximation: LCL ≈ 125 * (T - Td)
- */
+/** Espy-style LCL approximation: LCL ≈ 125 * (T - Td), in meters AGL. */
 function computeLCL(t2m: number, td2m: number): number {
   return 125 * (t2m - td2m);
 }
 
-export function useSoundingData(selectedStation: RadarStation | null): SoundingData {
+export interface LatLon {
+  lat: number;
+  lon: number;
+}
+
+export function useSoundingData(location: LatLon | null): SoundingData {
   const [data, setData] = useState<SoundingData>(EMPTY);
 
   useEffect(() => {
-    if (!selectedStation) {
+    if (!location) {
       setData(EMPTY);
       return;
     }
 
     let cancelled = false;
-    const { lat, lon } = selectedStation;
+    const { lat, lon } = location;
 
     const url =
       `https://api.open-meteo.com/v1/forecast` +
@@ -80,14 +81,13 @@ export function useSoundingData(selectedStation: RadarStation | null): SoundingD
     };
 
     fetchSounding(true);
-    // Refresh every 60s on the same cadence as useAlerts
     const intervalId = setInterval(() => fetchSounding(false), 60_000);
 
     return () => {
       cancelled = true;
       clearInterval(intervalId);
     };
-  }, [selectedStation]);
+  }, [location?.lat, location?.lon]);
 
   return data;
 }

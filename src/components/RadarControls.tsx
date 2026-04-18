@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,77 +11,119 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { RADAR_STATIONS, RadarStation } from "@/config/radarStations";
-import { PRODUCTS, ProductCode } from "@/hooks/useRadar";
+import { RadarStation } from "@/config/radarStations";
+import { PRODUCTS, ProductCode, SelectedCity } from "@/hooks/useRadar";
+import { useCitySearch } from "@/hooks/useCitySearch";
 
 interface Props {
+  selectedCity: SelectedCity | null;
+  onCityChange: (city: SelectedCity) => void;
   selectedStation: RadarStation | null;
-  onStationChange: (station: RadarStation) => void;
+  stationDistanceKm: number | null;
   selectedProduct: ProductCode | null;
   onProductChange: (product: ProductCode) => void;
 }
 
 const RadarControls = ({
+  selectedCity,
+  onCityChange,
   selectedStation,
-  onStationChange,
+  stationDistanceKm,
   selectedProduct,
   onProductChange,
 }: Props) => {
-  const [stationOpen, setStationOpen] = useState(false);
+  const [cityOpen, setCityOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const { results, loading, error } = useCitySearch(query);
 
   return (
     <div className="flex flex-col gap-2 w-full h-full">
-      {/* Station picker - searchable */}
-      <Popover open={stationOpen} onOpenChange={setStationOpen}>
+      {/* City picker - geocoded autocomplete */}
+      <Popover open={cityOpen} onOpenChange={setCityOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
-            aria-expanded={stationOpen}
+            aria-expanded={cityOpen}
             className="w-full justify-between font-mono text-xs h-9"
           >
-            {selectedStation
-              ? `${selectedStation.id} / ${selectedStation.name}`
-              : "Select radar station..."}
+            <span className="flex items-center gap-1.5 truncate">
+              <MapPin className="size-3 shrink-0 text-primary" />
+              {selectedCity
+                ? `${selectedCity.name}`
+                : "Search city..."}
+            </span>
             <ChevronsUpDown className="ml-2 size-3 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-          <Command
-            filter={(value, search) => {
-              const v = value.toLowerCase();
-              return v.includes(search.toLowerCase()) ? 1 : 0;
-            }}
-          >
-            <CommandInput placeholder="Search by ID or city..." className="h-9" />
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Type a US city..."
+              className="h-9"
+              value={query}
+              onValueChange={setQuery}
+            />
             <CommandList>
-              <CommandEmpty>No station found.</CommandEmpty>
-              <CommandGroup>
-                {RADAR_STATIONS.map((station) => (
-                  <CommandItem
-                    key={station.id}
-                    value={`${station.id} ${station.name}`}
-                    onSelect={() => {
-                      onStationChange(station);
-                      setStationOpen(false);
-                    }}
-                    className="font-mono text-xs"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 size-3",
-                        selectedStation?.id === station.id ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    <span className="text-primary font-bold mr-2">{station.id}</span>
-                    <span className="text-muted-foreground">/ {station.name}</span>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
+              <CommandEmpty>
+                {loading
+                  ? "Searching..."
+                  : error
+                    ? "Search error."
+                    : query.trim().length < 2
+                      ? "Type at least 2 characters."
+                      : "No city found."}
+              </CommandEmpty>
+              {results.length > 0 && (
+                <CommandGroup>
+                  {results.map((city) => {
+                    const label = city.admin1 ? `${city.name}, ${city.admin1}` : city.name;
+                    const isSelected =
+                      selectedCity?.lat === city.latitude && selectedCity?.lon === city.longitude;
+                    return (
+                      <CommandItem
+                        key={city.id}
+                        value={`${city.id}`}
+                        onSelect={() => {
+                          onCityChange({ name: label, lat: city.latitude, lon: city.longitude });
+                          setCityOpen(false);
+                        }}
+                        className="font-mono text-xs"
+                      >
+                        <Check
+                          className={cn("mr-2 size-3", isSelected ? "opacity-100" : "opacity-0")}
+                        />
+                        <span className="text-primary font-bold mr-2">{city.name}</span>
+                        {city.admin1 && (
+                          <span className="text-muted-foreground">/ {city.admin1}</span>
+                        )}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>
       </Popover>
+
+      {/* Nearest radar readout */}
+      {selectedStation && selectedCity && (
+        <div className="px-2 py-1.5 rounded-sm bg-primary/5 border border-primary/20 flex flex-col gap-0.5">
+          <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider">
+            Nearest Radar
+          </span>
+          <span className="text-[11px] font-mono font-bold text-primary leading-tight">
+            {selectedStation.id}
+          </span>
+          <span className="text-[9px] font-mono text-muted-foreground leading-tight">
+            {selectedStation.name}
+            {stationDistanceKm != null && (
+              <> · {Math.round(stationDistanceKm)} km</>
+            )}
+          </span>
+        </div>
+      )}
 
       {/* Product picker - single-column tile menu */}
       <div className="flex flex-col gap-1.5 flex-1 min-h-0">
