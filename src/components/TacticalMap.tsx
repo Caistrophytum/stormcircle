@@ -31,8 +31,11 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const radar = useRadar();
   const sounding = useSoundingData(radar.selectedStation);
 
-  // Build the 5 sounding boxes from useSoundingData
-  const soundingNodes = useMemo(() => {
+  // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
+  // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
+  const { soundingNodes, threatLevel } = useMemo(() => {
+    const stationActive = radar.selectedStation !== null && !sounding.loading;
+
     const fmt = (v: number | null, digits = 0): string => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
@@ -40,37 +43,59 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
     };
 
+    const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+
+    // Per-parameter normalized severity scores (0..1), then weighted to %
+    const capeScore = sounding.cape != null ? clamp01(sounding.cape / 4000) : 0;
+    // CIN is negative; less inhibition = more dangerous
+    const cinScore = sounding.cin != null ? clamp01(1 - Math.abs(sounding.cin) / 200) : 0;
+    // LI: more negative = more dangerous; 0 → 0, -8 → 1
+    const liScore = sounding.li != null ? clamp01(-sounding.li / 8) : 0;
+    // LCL: lower = more dangerous (favors tornadoes); <500m → 1, >2000m → 0
+    const lclScore = sounding.lcl != null ? clamp01(1 - (sounding.lcl - 500) / 1500) : 0;
+    // BLH: deeper mixed layer = more potential; 500m → 0, 2500m → 1
+    const blhScore = sounding.blh != null ? clamp01((sounding.blh - 500) / 2000) : 0;
+
+    const capeContrib = stationActive ? Math.round(capeScore * 35) : 0;
+    const liContrib = stationActive ? Math.round(liScore * 25) : 0;
+    const cinContrib = stationActive ? Math.round(cinScore * 15) : 0;
+    const lclContrib = stationActive ? Math.round(lclScore * 15) : 0;
+    const blhContrib = stationActive ? Math.round(blhScore * 10) : 0;
+
     const capeColor = (() => {
-      if (sounding.loading || radar.selectedStation === null || sounding.cape === null) return "text-neon-green";
+      if (!stationActive || sounding.cape === null) return "text-neon-green";
       if (sounding.cape > 2500) return "text-neon-red";
       if (sounding.cape >= 1000) return "text-yellow-400";
       return "text-neon-green";
     })();
 
     const liColor = (() => {
-      if (sounding.loading || radar.selectedStation === null || sounding.li === null) return "text-neon-green";
+      if (!stationActive || sounding.li === null) return "text-neon-green";
       if (sounding.li < -6) return "text-neon-red";
       if (sounding.li < -3) return "text-orange-500";
       if (sounding.li <= 0) return "text-yellow-400";
       return "text-neon-green";
     })();
 
-    return [
-      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: capeColor, wrsContribution: 0 },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: "text-neon-green", wrsContribution: 0 },
-      { label: "LIFTED INDEX", value: fmt(sounding.li, 1), unit: "°C", color: liColor, wrsContribution: 0 },
-      { label: "BL HEIGHT", value: fmt(sounding.blh), unit: "m", color: "text-neon-green", wrsContribution: 0 },
-      { label: "LCL", value: fmt(sounding.lcl), unit: "m", color: "text-neon-green", wrsContribution: 0 },
+    const nodes = [
+      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: capeColor, wrsContribution: capeContrib },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: "text-neon-green", wrsContribution: cinContrib },
+      { label: "LIFTED INDEX", value: fmt(sounding.li, 1), unit: "°C", color: liColor, wrsContribution: liContrib },
+      { label: "BL HEIGHT", value: fmt(sounding.blh), unit: "m", color: "text-neon-green", wrsContribution: blhContrib },
+      { label: "LCL", value: fmt(sounding.lcl), unit: "m", color: "text-neon-green", wrsContribution: lclContrib },
     ];
+
+    const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
+    return { soundingNodes: nodes, threatLevel: threat };
   }, [sounding, radar.selectedStation]);
 
-  // Derive weather condition from threat level
+  // Derive weather condition from live threat level
   const weatherCondition: WeatherCondition = useMemo(() => {
-    if (data.threatLevel > 85) return "stormy";
-    if (data.threatLevel >= 61) return "rainy";
-    if (data.threatLevel >= 31) return "cloudy";
+    if (threatLevel > 85) return "stormy";
+    if (threatLevel >= 61) return "rainy";
+    if (threatLevel >= 31) return "cloudy";
     return "sunny";
-  }, [data.threatLevel]);
+  }, [threatLevel]);
 
   return (
     <motion.section ref={ref} layout className="relative overflow-hidden flex-1">
@@ -199,31 +224,31 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               className="h-full rounded-full"
               style={{
                 background:
-                  data.threatLevel > 85
+                  threatLevel > 85
                     ? "hsl(var(--neon-red))"
-                    : data.threatLevel >= 61
+                    : threatLevel >= 61
                       ? "hsl(var(--neon-amber))"
-                      : data.threatLevel >= 31
+                      : threatLevel >= 31
                         ? "hsl(var(--primary))"
                         : "hsl(var(--neon-green))",
               }}
               initial={{ width: 0 }}
-              animate={{ width: `${data.threatLevel}%` }}
+              animate={{ width: `${threatLevel}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
             />
           </div>
           <span
             className={`text-sm font-mono font-bold whitespace-nowrap ${
-              data.threatLevel > 85
+              threatLevel > 85
                 ? "text-neon-red"
-                : data.threatLevel >= 61
+                : threatLevel >= 61
                   ? "text-neon-amber"
-                  : data.threatLevel >= 31
+                  : threatLevel >= 31
                     ? "text-primary"
                     : "text-neon-green"
             }`}
           >
-            {data.threatLevel}
+            {threatLevel}
           </span>
         </div>
       </div>
