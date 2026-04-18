@@ -5,6 +5,7 @@ import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
+import { useSoundingData } from "@/hooks/useSoundingData";
 
 import weatherSunny from "@/assets/weather-calm.jpg";
 import weatherCloudy from "@/assets/weather-overcast.jpg";
@@ -28,6 +29,40 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const { data } = useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
   const radar = useRadar();
+  const sounding = useSoundingData(radar.selectedStation);
+
+  // Build the 5 sounding boxes from useSoundingData
+  const soundingNodes = useMemo(() => {
+    const fmt = (v: number | null, digits = 0): string => {
+      if (sounding.loading) return "...";
+      if (radar.selectedStation === null) return "—";
+      if (v === null) return "ERR";
+      return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
+    };
+
+    const capeColor = (() => {
+      if (sounding.loading || radar.selectedStation === null || sounding.cape === null) return "text-neon-green";
+      if (sounding.cape > 2500) return "text-neon-red";
+      if (sounding.cape >= 1000) return "text-yellow-400";
+      return "text-neon-green";
+    })();
+
+    const liColor = (() => {
+      if (sounding.loading || radar.selectedStation === null || sounding.li === null) return "text-neon-green";
+      if (sounding.li < -6) return "text-neon-red";
+      if (sounding.li < -3) return "text-orange-500";
+      if (sounding.li <= 0) return "text-yellow-400";
+      return "text-neon-green";
+    })();
+
+    return [
+      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: capeColor, wrsContribution: 0 },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: "text-neon-green", wrsContribution: 0 },
+      { label: "LIFTED INDEX", value: fmt(sounding.li, 1), unit: "°C", color: liColor, wrsContribution: 0 },
+      { label: "BL HEIGHT", value: fmt(sounding.blh), unit: "m", color: "text-neon-green", wrsContribution: 0 },
+      { label: "LCL", value: fmt(sounding.lcl), unit: "m", color: "text-neon-green", wrsContribution: 0 },
+    ];
+  }, [sounding, radar.selectedStation]);
 
   // Derive weather condition from threat level
   const weatherCondition: WeatherCondition = useMemo(() => {
@@ -114,7 +149,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         }}
       >
         <div className="flex gap-2 justify-between">
-          {data.dataNodes.map((node) => (
+          {soundingNodes.map((node) => (
             <div
               key={node.label}
               className="relative flex-1 px-3 py-3 bg-background border-l-2 border-primary/30 flex flex-col gap-1 overflow-visible"

@@ -7,6 +7,8 @@ export interface SoundingData {
   li: number | null;
   blh: number | null;
   lcl: number | null;
+  loading: boolean;
+  error: boolean;
 }
 
 const EMPTY: SoundingData = {
@@ -15,6 +17,8 @@ const EMPTY: SoundingData = {
   li: null,
   blh: null,
   lcl: null,
+  loading: false,
+  error: false,
 };
 
 /**
@@ -43,6 +47,8 @@ export function useSoundingData(selectedStation: RadarStation | null): SoundingD
       `&current=temperature_2m,dewpoint_2m,cape,convective_inhibition,lifted_index,boundary_layer_height` +
       `&timezone=UTC`;
 
+    setData({ cape: null, cin: null, li: null, blh: null, lcl: null, loading: true, error: false });
+
     (async () => {
       try {
         const res = await fetch(url);
@@ -61,10 +67,14 @@ export function useSoundingData(selectedStation: RadarStation | null): SoundingD
           li: typeof c.lifted_index === "number" ? c.lifted_index : null,
           blh: typeof c.boundary_layer_height === "number" ? c.boundary_layer_height : null,
           lcl,
+          loading: false,
+          error: false,
         });
       } catch (err) {
         console.error("[useSoundingData] fetch failed", err);
-        if (!cancelled) setData(EMPTY);
+        if (!cancelled) {
+          setData({ cape: null, cin: null, li: null, blh: null, lcl: null, loading: false, error: true });
+        }
       }
     })();
 
