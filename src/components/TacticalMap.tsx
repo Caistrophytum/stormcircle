@@ -46,15 +46,16 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
     // Per-parameter normalized severity scores (0..1), then weighted to %
+    // CAPE: 0 → 0, 4000 → 1
     const capeScore = sounding.cape != null ? clamp01(sounding.cape / 4000) : 0;
-    // CIN is negative; less inhibition = more dangerous
+    // CIN (inverted): 0 → 1 (no inhibition, most dangerous), -200 → 0
     const cinScore = sounding.cin != null ? clamp01(1 - Math.abs(sounding.cin) / 200) : 0;
-    // LI: more negative = more dangerous; 0 → 0, -8 → 1
-    const liScore = sounding.li != null ? clamp01(-sounding.li / 8) : 0;
-    // LCL: lower = more dangerous (favors tornadoes); <500m → 1, >2000m → 0
-    const lclScore = sounding.lcl != null ? clamp01(1 - (sounding.lcl - 500) / 1500) : 0;
-    // BLH: deeper mixed layer = more potential; 500m → 0, 2500m → 1
-    const blhScore = sounding.blh != null ? clamp01((sounding.blh - 500) / 2000) : 0;
+    // LI: 6 → 0, -8 → 1
+    const liScore = sounding.li != null ? clamp01((6 - sounding.li) / 14) : 0;
+    // BL height: 0 → 0, 3000 → 1
+    const blhScore = sounding.blh != null ? clamp01(sounding.blh / 3000) : 0;
+    // LCL (inverted): 0 → 1, 2000 → 0
+    const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
 
     const capeContrib = stationActive ? Math.round(capeScore * 35) : 0;
     const liContrib = stationActive ? Math.round(liScore * 25) : 0;
