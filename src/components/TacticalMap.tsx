@@ -159,9 +159,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
                 tileUrl={radar.tileUrl}
-              />
-            </motion.div>
-          ) : (
+                warningsRef={warningRef}
             <motion.div
               key="collapsed"
               initial={{ scale: 0.8, opacity: 0 }}
