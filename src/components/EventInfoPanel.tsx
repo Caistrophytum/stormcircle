@@ -82,7 +82,13 @@ const EventInfoPanel = ({ stacked = false, show = "both", onHazardClick }: Event
             <span className="text-[13px] font-mono text-muted-foreground">No active hazards</span>
           )}
           {topHazards.map((h, i) => (
-            <div key={h.event} className="flex items-center justify-between gap-4">
+            <div
+              key={h.event}
+              onClick={onHazardClick ? () => onHazardClick(h.event) : undefined}
+              className={`flex items-center justify-between gap-4 px-1 py-0.5 rounded-sm transition-colors ${
+                onHazardClick ? "cursor-pointer hover:bg-primary/10" : ""
+              }`}
+            >
               <div className="flex items-center gap-1.5">
                 <span className="text-[15px] font-mono text-muted-foreground w-4">
                   {i + 1}.
