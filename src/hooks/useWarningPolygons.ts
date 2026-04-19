@@ -94,8 +94,13 @@ export function getWarningColor(properties: any): string {
 export interface WarningPolygon {
   id: string;
   event: string;
+  areaDesc: string;
+  expires: string;
   description: string;
   headline: string;
+  severity: string;
+  certainty: string;
+  urgency: string;
   parameters: Record<string, any>;
   
   color: string;
