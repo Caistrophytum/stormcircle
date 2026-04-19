@@ -279,7 +279,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           transform: `scale(${overlayScale})`,
         }}
       >
-        <EventInfoPanel show="hazards" />
+        <EventInfoPanel show="hazards" onHazardClick={handleHazardClick} />
       </div>
 
       {/* Most Dangerous: top-right */}
