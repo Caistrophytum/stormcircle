@@ -1,7 +1,7 @@
-import { forwardRef, useState, useMemo } from "react";
+import { forwardRef, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import RadarMiniMap from "./RadarMiniMap";
+import RadarMiniMap, { WarningPolygonsHandle } from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
