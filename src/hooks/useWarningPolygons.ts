@@ -152,8 +152,13 @@ export function useWarningPolygons(): WarningPolygonsData {
             return {
               id: String(props.id ?? f.id),
               event: String(props.event),
+              areaDesc: String(props.areaDesc ?? ""),
+              expires: String(props.expires ?? ""),
               description: String(props.description ?? ""),
               headline: String(props.headline ?? ""),
+              severity: String(props.severity ?? ""),
+              certainty: String(props.certainty ?? ""),
+              urgency: String(props.urgency ?? ""),
               parameters: props.parameters ?? {},
               color: getWarningColor(props),
               geometry: f.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon,
