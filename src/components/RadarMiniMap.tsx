@@ -9,8 +9,6 @@ import { ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
 import WarningPolygons, { WarningPolygonsHandle } from "./WarningPolygons";
 
-export type { WarningPolygonsHandle };
-
 interface Props {
   expanded: boolean;
   onCollapse: () => void;
