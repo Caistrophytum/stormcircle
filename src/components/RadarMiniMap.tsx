@@ -200,7 +200,7 @@ const RadarMiniMap = ({
         </div>
 
         <div className="flex-1 relative bg-background/60 rounded-sm overflow-hidden">
-          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} />
+          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} warningsRef={warningsRef} />
         </div>
       </div>
     </div>
