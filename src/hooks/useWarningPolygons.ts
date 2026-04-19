@@ -91,6 +91,31 @@ export function getWarningColor(properties: any): string {
   return WARNING_COLORS[event] ?? "#FFFFFF";
 }
 
+export function getWarningTags(properties: any): string[] {
+  const tags: string[] = [];
+  const desc = (properties.description ?? "").toLowerCase();
+
+  if (desc.includes("particularly dangerous situation")) tags.push("PDS");
+  if (desc.includes("tornado emergency")) tags.push("TORNADO EMERGENCY");
+  if (desc.includes("flash flood emergency")) tags.push("FLASH FLOOD EMERGENCY");
+  if (properties.certainty === "Observed") tags.push("OBSERVED");
+  if (desc.includes("considerable")) tags.push("CONSIDERABLE");
+  if (desc.includes("catastrophic")) tags.push("CATASTROPHIC");
+
+  return tags;
+}
+
+export function getExpiresLabel(isoString: string): string {
+  if (!isoString) return "Unknown";
+  const diff = new Date(isoString).getTime() - Date.now();
+  if (diff <= 0) return "Expired";
+  const mins = Math.round(diff / 60000);
+  if (mins < 60) return `Expires in ${mins} minute${mins !== 1 ? "s" : ""}`;
+  const hrs = Math.floor(mins / 60);
+  const rem = mins % 60;
+  return `Expires in ${hrs}h ${rem}m`;
+}
+
 export interface WarningPolygon {
   id: string;
   event: string;
