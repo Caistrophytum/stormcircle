@@ -148,6 +148,7 @@ const RadarMiniMap = ({
   selectedProduct,
   setSelectedProduct,
   tileUrl,
+  warningsRef,
 }: Props) => {
   const [lastTileUrl, setLastTileUrl] = useState<string | null>(null);
   if (!expanded) {
