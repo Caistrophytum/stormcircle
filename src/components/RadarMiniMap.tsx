@@ -90,28 +90,13 @@ interface LeafletMapProps {
   tileUrl: string | null;
   interactive: boolean;
   onTileRequest?: (url: string) => void;
+  warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
 }
 
-const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletMapProps) => {
+const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest, warningsRef }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
   const { polygons } = useWarningPolygons();
-
-  const featureCollection: GeoJSON.FeatureCollection = {
-    type: "FeatureCollection",
-    features: polygons.map((p) => ({
-      type: "Feature",
-      geometry: p.geometry,
-      properties: {
-        id: p.id,
-        event: p.event,
-        description: p.description,
-        headline: p.headline,
-        parameters: p.parameters,
-        color: p.color,
-      },
-    })),
-  };
 
   return (
     <MapContainer
@@ -140,18 +125,7 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
         attribution=""
       />
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
-      {polygons.length > 0 && (
-        <GeoJSON
-          key={polygons.map((p) => p.id).join(",")}
-          data={featureCollection}
-          style={(feature) => ({
-            color: (feature?.properties?.color as string) ?? getWarningColor(feature?.properties),
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0,
-          })}
-        />
-      )}
+      <WarningPolygons ref={warningsRef} polygons={polygons} />
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
         subdomains="abcd"
