@@ -1,12 +1,13 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { forwardRef, useEffect, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
+import { forwardRef, MutableRefObject, useEffect, useState } from "react";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode, SelectedCity } from "@/hooks/useRadar";
-import { useWarningPolygons, getWarningColor } from "@/hooks/useWarningPolygons";
+import { useWarningPolygons } from "@/hooks/useWarningPolygons";
+import WarningPolygons, { WarningPolygonsHandle } from "./WarningPolygons";
 
 interface Props {
   expanded: boolean;
@@ -18,6 +19,7 @@ interface Props {
   selectedProduct: ProductCode | null;
   setSelectedProduct: (p: ProductCode) => void;
   tileUrl: string | null;
+  warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
 }
 
 const DEFAULT_CENTER: [number, number] = [39.5, -98.35];
@@ -88,28 +90,13 @@ interface LeafletMapProps {
   tileUrl: string | null;
   interactive: boolean;
   onTileRequest?: (url: string) => void;
+  warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
 }
 
-const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletMapProps) => {
+const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest, warningsRef }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
   const { polygons } = useWarningPolygons();
-
-  const featureCollection: GeoJSON.FeatureCollection = {
-    type: "FeatureCollection",
-    features: polygons.map((p) => ({
-      type: "Feature",
-      geometry: p.geometry,
-      properties: {
-        id: p.id,
-        event: p.event,
-        description: p.description,
-        headline: p.headline,
-        parameters: p.parameters,
-        color: p.color,
-      },
-    })),
-  };
 
   return (
     <MapContainer
@@ -138,18 +125,7 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
         attribution=""
       />
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
-      {polygons.length > 0 && (
-        <GeoJSON
-          key={polygons.map((p) => p.id).join(",")}
-          data={featureCollection}
-          style={(feature) => ({
-            color: (feature?.properties?.color as string) ?? getWarningColor(feature?.properties),
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0,
-          })}
-        />
-      )}
+      <WarningPolygons ref={warningsRef} polygons={polygons} />
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
         subdomains="abcd"
@@ -172,6 +148,7 @@ const RadarMiniMap = ({
   selectedProduct,
   setSelectedProduct,
   tileUrl,
+  warningsRef,
 }: Props) => {
   const [lastTileUrl, setLastTileUrl] = useState<string | null>(null);
   if (!expanded) {
@@ -223,7 +200,7 @@ const RadarMiniMap = ({
         </div>
 
         <div className="flex-1 relative bg-background/60 rounded-sm overflow-hidden">
-          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} />
+          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} warningsRef={warningsRef} />
         </div>
       </div>
     </div>
