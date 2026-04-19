@@ -124,9 +124,24 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
       boxZoom={interactive}
       keyboard={interactive}
       attributionControl={interactive}
-      style={{ background: "hsl(var(--background))" }}
+      style={{ background: "#1a1a2e" }}
     >
-      <TileLayer attribution="&copy; OpenStreetMap" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <TileLayer
+        attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+        maxZoom={20}
+      />
+      <TileLayer
+        url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
+        opacity={0.5}
+        attribution=""
+      />
+      <TileLayer
+        url="https://tiles.stadiamaps.com/tiles/stamen_toner_lines/{z}/{x}/{y}{r}.png"
+        opacity={0.3}
+        attribution=""
+      />
+      <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
       {polygons.length > 0 && (
         <GeoJSON
           key={polygons.map((p) => p.id).join(",")}
@@ -139,7 +154,12 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
           })}
         />
       )}
-      <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
+      <TileLayer
+        url="https://tiles.stadiamaps.com/tiles/stamen_toner_labels/{z}/{x}/{y}{r}.png"
+        opacity={0.8}
+        attribution=""
+        zIndex={1000}
+      />
       <Recenter station={station} />
     </MapContainer>
   );
