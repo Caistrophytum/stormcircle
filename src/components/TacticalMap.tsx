@@ -1,7 +1,7 @@
-import { forwardRef, useState, useMemo } from "react";
+import { forwardRef, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import RadarMiniMap from "./RadarMiniMap";
+import RadarMiniMap, { WarningPolygonsHandle } from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
@@ -29,9 +29,20 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const { data } = useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
   const radar = useRadar();
+  const warningRef = useRef<WarningPolygonsHandle | null>(null);
   const sounding = useSoundingData(
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
   );
+
+  const handleHazardClick = (eventType: string) => {
+    if (!radarExpanded) {
+      setRadarExpanded(true);
+      // Wait for the expanded map to mount + animate before flying
+      setTimeout(() => warningRef.current?.flyToWarning(eventType), 500);
+    } else {
+      warningRef.current?.flyToWarning(eventType);
+    }
+  };
 
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
@@ -148,6 +159,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
                 tileUrl={radar.tileUrl}
+                warningsRef={warningRef}
               />
             </motion.div>
           ) : (
@@ -267,7 +279,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           transform: `scale(${overlayScale})`,
         }}
       >
-        <EventInfoPanel show="hazards" />
+        <EventInfoPanel show="hazards" onHazardClick={handleHazardClick} />
       </div>
 
       {/* Most Dangerous: top-right */}
