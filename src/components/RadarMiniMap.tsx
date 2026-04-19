@@ -127,18 +127,14 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
       style={{ background: "#1a1a2e" }}
     >
       <TileLayer
-        attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+        subdomains="abcd"
         maxZoom={20}
       />
       <TileLayer
         url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
-        opacity={0.5}
-        attribution=""
-      />
-      <TileLayer
-        url="https://tiles.stadiamaps.com/tiles/stamen_toner_lines/{z}/{x}/{y}{r}.png"
-        opacity={0.3}
+        opacity={0.6}
         attribution=""
       />
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
@@ -155,8 +151,9 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest }: LeafletM
         />
       )}
       <TileLayer
-        url="https://tiles.stadiamaps.com/tiles/stamen_toner_labels/{z}/{x}/{y}{r}.png"
-        opacity={0.8}
+        url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+        subdomains="abcd"
+        opacity={0.9}
         attribution=""
         zIndex={1000}
       />
