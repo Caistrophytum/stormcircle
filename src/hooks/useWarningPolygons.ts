@@ -91,11 +91,41 @@ export function getWarningColor(properties: any): string {
   return WARNING_COLORS[event] ?? "#FFFFFF";
 }
 
+export function getWarningTags(properties: any): string[] {
+  const tags: string[] = [];
+  const desc = (properties.description ?? "").toLowerCase();
+
+  if (desc.includes("particularly dangerous situation")) tags.push("PDS");
+  if (desc.includes("tornado emergency")) tags.push("TORNADO EMERGENCY");
+  if (desc.includes("flash flood emergency")) tags.push("FLASH FLOOD EMERGENCY");
+  if (properties.certainty === "Observed") tags.push("OBSERVED");
+  if (desc.includes("considerable")) tags.push("CONSIDERABLE");
+  if (desc.includes("catastrophic")) tags.push("CATASTROPHIC");
+
+  return tags;
+}
+
+export function getExpiresLabel(isoString: string): string {
+  if (!isoString) return "Unknown";
+  const diff = new Date(isoString).getTime() - Date.now();
+  if (diff <= 0) return "Expired";
+  const mins = Math.round(diff / 60000);
+  if (mins < 60) return `Expires in ${mins} minute${mins !== 1 ? "s" : ""}`;
+  const hrs = Math.floor(mins / 60);
+  const rem = mins % 60;
+  return `Expires in ${hrs}h ${rem}m`;
+}
+
 export interface WarningPolygon {
   id: string;
   event: string;
+  areaDesc: string;
+  expires: string;
   description: string;
   headline: string;
+  severity: string;
+  certainty: string;
+  urgency: string;
   parameters: Record<string, any>;
   
   color: string;
@@ -147,8 +177,13 @@ export function useWarningPolygons(): WarningPolygonsData {
             return {
               id: String(props.id ?? f.id),
               event: String(props.event),
+              areaDesc: String(props.areaDesc ?? ""),
+              expires: String(props.expires ?? ""),
               description: String(props.description ?? ""),
               headline: String(props.headline ?? ""),
+              severity: String(props.severity ?? ""),
+              certainty: String(props.certainty ?? ""),
+              urgency: String(props.urgency ?? ""),
               parameters: props.parameters ?? {},
               color: getWarningColor(props),
               geometry: f.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon,
