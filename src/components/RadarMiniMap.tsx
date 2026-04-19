@@ -1,12 +1,13 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { forwardRef, useEffect, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
+import { forwardRef, MutableRefObject, useEffect, useState } from "react";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode, SelectedCity } from "@/hooks/useRadar";
-import { useWarningPolygons, getWarningColor } from "@/hooks/useWarningPolygons";
+import { useWarningPolygons } from "@/hooks/useWarningPolygons";
+import WarningPolygons, { WarningPolygonsHandle } from "./WarningPolygons";
 
 interface Props {
   expanded: boolean;
@@ -18,6 +19,7 @@ interface Props {
   selectedProduct: ProductCode | null;
   setSelectedProduct: (p: ProductCode) => void;
   tileUrl: string | null;
+  warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
 }
 
 const DEFAULT_CENTER: [number, number] = [39.5, -98.35];
