@@ -45,9 +45,11 @@ interface EventInfoPanelProps {
   stacked?: boolean;
   /** Which card(s) to render. Defaults to "both". */
   show?: "both" | "hazards" | "dangerous";
+  /** Fired when a Top-5 hazard row is clicked. */
+  onHazardClick?: (eventType: string) => void;
 }
 
-const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps) => {
+const EventInfoPanel = ({ stacked = false, show = "both", onHazardClick }: EventInfoPanelProps) => {
   const { mostDangerous, topHazards, loading, error, lastUpdated } = useAlerts();
   const [now, setNow] = useState(() => new Date());
 
