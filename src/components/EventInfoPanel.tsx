@@ -124,7 +124,7 @@ const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps)
                   {h.event}
                 </span>
               </div>
-              <span className="text-[13px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-orange-500/15 border border-orange-500/40 text-orange-300">
+              <span className="text-[13px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-destructive/15 border border-destructive/40 text-destructive">
                 {h.count} New
               </span>
             </div>
