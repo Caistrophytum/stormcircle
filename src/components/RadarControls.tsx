@@ -118,9 +118,10 @@ const RadarControls = ({
           </span>
           <span className="text-[9px] font-mono text-muted-foreground leading-tight">
             {selectedStation.name}
-            {stationDistanceKm != null && (
-              <> · {Math.round(stationDistanceKm)} km</>
-            )}
+            {stationDistanceKm != null && (() => {
+              const d = displayLengthKm(stationDistanceKm, unitSystem);
+              return d ? <> · {Math.round(d.value)} {d.unit}</> : null;
+            })()}
           </span>
         </div>
       )}
