@@ -22,13 +22,22 @@ export interface TopHazard {
   count: number;
 }
 
+export interface NewWarning {
+  event: string;
+  count: number;
+}
+
 export interface AlertsData {
   mostDangerous: Alert[];
   topHazards: TopHazard[];
+  /** Warnings that appeared (by alert id) within the last 5 refresh cycles. */
+  newWarnings: NewWarning[];
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
 }
+
+const REFRESH_HISTORY_WINDOW = 5;
 
 const REFRESH_INTERVAL_MS = 60_000; // 1 minute
 
