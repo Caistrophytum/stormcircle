@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { LogIn, User, Shield, ChevronDown } from "lucide-react";
 import { useSelectedCity } from "@/contexts/CityContext";
 import { useCurrentWeather } from "@/hooks/useCurrentWeather";
+import {
+  useUnitSystem,
+  displayTemp,
+  displayPressure,
+} from "@/hooks/useUnitSystem";
 
 interface Props {
   userRole: "guest" | "citizen" | "meteorologist";
@@ -14,17 +19,17 @@ const formatCoord = (lat: number, lon: number) => {
   return `${Math.abs(lat).toFixed(4)}°${ns}, ${Math.abs(lon).toFixed(4)}°${ew}`;
 };
 
-const fmt = (
-  v: number | null,
-  unit: string,
+const renderValue = (
+  v: { value: number; unit: string } | null,
+  fallbackUnit: string,
   loading: boolean,
   hasCity: boolean,
   digits = 1,
 ) => {
-  if (!hasCity) return `— ${unit}`;
+  if (!hasCity) return `— ${fallbackUnit}`;
   if (loading) return "...";
   if (v == null) return "ERR";
-  return `${v.toFixed(digits)} ${unit}`;
+  return `${v.value.toFixed(digits)} ${v.unit}`;
 };
 
 const StatusBar = ({ userRole, onSignIn }: Props) => {
@@ -33,6 +38,12 @@ const StatusBar = ({ userRole, onSignIn }: Props) => {
   const weather = useCurrentWeather(
     selectedCity ? { lat: selectedCity.lat, lon: selectedCity.lon } : null,
   );
+  const unitSystem = useUnitSystem();
+  const tempDisplay = displayTemp(weather.temperatureC, unitSystem);
+  const dewDisplay = displayTemp(weather.dewpointC, unitSystem);
+  const pressureDisplay = displayPressure(weather.pressureHpa, unitSystem);
+  const tempFallbackUnit = unitSystem === "metric" ? "°C" : "°F";
+  const pressureFallbackUnit = unitSystem === "metric" ? "hPa" : "inHg";
 
   useEffect(() => {
     const interval = setInterval(() => setTime(new Date()), 1000);
@@ -81,7 +92,7 @@ const StatusBar = ({ userRole, onSignIn }: Props) => {
         <div className="flex flex-col">
           <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Pressure</span>
           <span className="text-xs font-mono text-neon-blue">
-            {fmt(weather.pressureHpa, "hPa", weather.loading, hasCity, 1)}
+            {renderValue(pressureDisplay, pressureFallbackUnit, weather.loading, hasCity, 1)}
           </span>
         </div>
         <div className="h-5 w-px bg-border" />
@@ -101,14 +112,14 @@ const StatusBar = ({ userRole, onSignIn }: Props) => {
         <div className="flex flex-col">
           <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Temp</span>
           <span className="text-xs font-mono text-card-foreground">
-            {fmt(weather.temperatureC, "°C", weather.loading, hasCity, 1)}
+            {renderValue(tempDisplay, tempFallbackUnit, weather.loading, hasCity, 1)}
           </span>
         </div>
         <div className="h-5 w-px bg-border" />
         <div className="flex flex-col">
           <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Dewpoint</span>
           <span className="text-xs font-mono text-card-foreground">
-            {fmt(weather.dewpointC, "°C", weather.loading, hasCity, 1)}
+            {renderValue(dewDisplay, tempFallbackUnit, weather.loading, hasCity, 1)}
           </span>
         </div>
       </div>

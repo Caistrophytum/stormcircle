@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { RadarStation } from "@/config/radarStations";
 import { PRODUCTS, ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useCitySearch } from "@/hooks/useCitySearch";
+import { useUnitSystem, displayLengthKm } from "@/hooks/useUnitSystem";
 
 interface Props {
   selectedCity: SelectedCity | null;
@@ -35,6 +36,7 @@ const RadarControls = ({
   const [cityOpen, setCityOpen] = useState(false);
   const [query, setQuery] = useState("");
   const { results, loading, error } = useCitySearch(query);
+  const unitSystem = useUnitSystem();
 
   return (
     <div className="flex flex-col gap-2 w-full h-full">
@@ -118,9 +120,10 @@ const RadarControls = ({
           </span>
           <span className="text-[9px] font-mono text-muted-foreground leading-tight">
             {selectedStation.name}
-            {stationDistanceKm != null && (
-              <> · {Math.round(stationDistanceKm)} km</>
-            )}
+            {stationDistanceKm != null && (() => {
+              const d = displayLengthKm(stationDistanceKm, unitSystem);
+              return d ? <> · {Math.round(d.value)} {d.unit}</> : null;
+            })()}
           </span>
         </div>
       )}

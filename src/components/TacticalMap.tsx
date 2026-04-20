@@ -6,6 +6,11 @@ import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
+import {
+  useUnitSystem,
+  displayTemp,
+  displayLengthM,
+} from "@/hooks/useUnitSystem";
 
 import weatherSunny from "@/assets/weather-calm.jpg";
 import weatherCloudy from "@/assets/weather-overcast.jpg";
@@ -32,6 +37,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const sounding = useSoundingData(
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
   );
+  const unitSystem = useUnitSystem();
 
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
@@ -44,6 +50,26 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       if (v === null) return "ERR";
       return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
     };
+
+    // Convert and format temperature (LIFTED INDEX) — flips with unit system
+    const fmtTemp = (v: number | null, digits = 1): string => {
+      if (sounding.loading) return "...";
+      if (radar.selectedStation === null) return "—";
+      if (v === null) return "ERR";
+      const d = displayTemp(v, unitSystem);
+      return d ? d.value.toFixed(digits) : "ERR";
+    };
+    const tempUnit = unitSystem === "metric" ? "°C" : "°F";
+
+    // Convert and format length-in-meters (LCL, BL HEIGHT) — flips with unit system
+    const fmtLenM = (v: number | null): string => {
+      if (sounding.loading) return "...";
+      if (radar.selectedStation === null) return "—";
+      if (v === null) return "ERR";
+      const d = displayLengthM(v, unitSystem);
+      return d ? Math.round(d.value).toLocaleString() : "ERR";
+    };
+    const lenUnit = unitSystem === "metric" ? "m" : "ft";
 
     const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
@@ -83,14 +109,14 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     const nodes = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: capeColor, wrsContribution: capeContrib },
       { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: "text-neon-green", wrsContribution: cinContrib },
-      { label: "LIFTED INDEX", value: fmt(sounding.li, 1), unit: "°C", color: liColor, wrsContribution: liContrib },
-      { label: "BL HEIGHT", value: fmt(sounding.blh), unit: "m", color: "text-neon-green", wrsContribution: blhContrib },
-      { label: "LCL", value: fmt(sounding.lcl), unit: "m", color: "text-neon-green", wrsContribution: lclContrib },
+      { label: "LIFTED INDEX", value: fmtTemp(sounding.li, 1), unit: tempUnit, color: liColor, wrsContribution: liContrib },
+      { label: "BL HEIGHT", value: fmtLenM(sounding.blh), unit: lenUnit, color: "text-neon-green", wrsContribution: blhContrib },
+      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: "text-neon-green", wrsContribution: lclContrib },
     ];
 
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
     return { soundingNodes: nodes, threatLevel: threat };
-  }, [sounding, radar.selectedStation]);
+  }, [sounding, radar.selectedStation, unitSystem]);
 
   // Derive weather condition from live threat level
   const weatherCondition: WeatherCondition = useMemo(() => {
