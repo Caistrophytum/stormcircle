@@ -63,9 +63,9 @@ const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps)
       }`}
     >
       {show !== "dangerous" && (
-      <>
+      <div className="flex flex-col gap-2 self-start">
       {/* Top 5 Hazards */}
-      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px] self-start">
+      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]">
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 5 Hazards
         </h3>
@@ -101,7 +101,40 @@ const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps)
           </div>
         )}
       </div>
-      </>
+
+      {/* New Warnings (last 5 refreshes) */}
+      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]">
+        <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
+          New Warnings
+        </h3>
+        <div className="flex flex-col gap-1">
+          {loading && (
+            <span className="text-[13px] font-mono text-muted-foreground">Loading…</span>
+          )}
+          {!loading && !error && newWarnings.length === 0 && (
+            <span className="text-[13px] font-mono text-muted-foreground">No new warnings</span>
+          )}
+          {newWarnings.map((h, i) => (
+            <div key={h.event} className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[15px] font-mono text-muted-foreground w-4">
+                  {i + 1}.
+                </span>
+                <span className="text-[16.5px] font-mono text-card-foreground tracking-wider">
+                  {h.event}
+                </span>
+              </div>
+              <span className="text-[13px] font-mono tabular-nums px-1.5 py-0.5 rounded-sm bg-orange-500/15 border border-orange-500/40 text-orange-300">
+                {h.count} New
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 pt-2 border-t border-border/40 text-[10px] font-mono text-muted-foreground tracking-wider">
+          Last 5 refresh cycles
+        </div>
+      </div>
+      </div>
       )}
 
       {show !== "hazards" && (
