@@ -48,7 +48,7 @@ interface EventInfoPanelProps {
 }
 
 const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps) => {
-  const { mostDangerous, topHazards, loading, error, lastUpdated } = useAlerts();
+  const { mostDangerous, topHazards, newWarnings, loading, error, lastUpdated } = useAlerts();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
