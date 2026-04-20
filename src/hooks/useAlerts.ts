@@ -153,6 +153,7 @@ export function useAlerts(): AlertsData {
   const [data, setData] = useState<AlertsData>({
     mostDangerous: [],
     topHazards: [],
+    newWarnings: [],
     loading: true,
     error: null,
     lastUpdated: null,
@@ -160,6 +161,9 @@ export function useAlerts(): AlertsData {
 
   useEffect(() => {
     let cancelled = false;
+    // Rolling history of alert-id sets across the last N refreshes.
+    // Index 0 is the oldest snapshot.
+    const history: Set<string>[] = [];
 
     async function fetchAlerts() {
       try {
@@ -171,10 +175,18 @@ export function useAlerts(): AlertsData {
 
         const features: any[] = Array.isArray(json?.features) ? json.features : [];
 
-        const alerts: Alert[] = features.map((f) => {
+        const alerts: Alert[] = [];
+        const currentIds = new Set<string>();
+        // Map id -> event so we can label new warnings even if they drop out next cycle.
+        const idToEvent = new Map<string, string>();
+
+        for (const f of features) {
           const p = f?.properties ?? {};
           const event = String(p.event ?? "Unknown");
-          return {
+          const id = String(f?.id ?? p.id ?? `${event}|${p.sent ?? ""}|${p.areaDesc ?? ""}`);
+          currentIds.add(id);
+          idToEvent.set(id, event);
+          alerts.push({
             event,
             severity: normalizeSeverity(p.severity),
             headline: String(p.headline ?? ""),
@@ -183,8 +195,8 @@ export function useAlerts(): AlertsData {
             certainty: normalizeCertainty(p.certainty),
             urgency: normalizeUrgency(p.urgency),
             tags: extractTags(p),
-          };
-        });
+          });
+        }
 
         const mostDangerous = [...alerts]
           .sort((a, b) => dangerScore(a) - dangerScore(b))
@@ -199,10 +211,38 @@ export function useAlerts(): AlertsData {
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
 
+        // Determine which IDs are "new": present now but not in any prior snapshot
+        // within the rolling window. On the very first fetch, history is empty,
+        // so nothing is reported as new (avoids flagging the entire initial load).
+        const newWarningCounts = new Map<string, number>();
+        if (history.length > 0) {
+          const seenBefore = new Set<string>();
+          for (const snap of history) for (const id of snap) seenBefore.add(id);
+          for (const id of currentIds) {
+            if (!seenBefore.has(id)) {
+              const ev = idToEvent.get(id) ?? "Unknown";
+              // Only count Warnings/Emergencies as "new warnings".
+              const kind = deriveKind(ev);
+              if (kind === "Warning" || kind === "Emergency") {
+                newWarningCounts.set(ev, (newWarningCounts.get(ev) ?? 0) + 1);
+              }
+            }
+          }
+        }
+        const newWarnings: NewWarning[] = Array.from(newWarningCounts.entries())
+          .map(([event, count]) => ({ event, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        // Push current snapshot into rolling history.
+        history.push(currentIds);
+        while (history.length > REFRESH_HISTORY_WINDOW) history.shift();
+
         if (!cancelled) {
           setData({
             mostDangerous,
             topHazards,
+            newWarnings,
             loading: false,
             error: null,
             lastUpdated: new Date(),
