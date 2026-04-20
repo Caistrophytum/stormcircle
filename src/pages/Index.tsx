@@ -5,6 +5,7 @@ import StatusBar from "@/components/StatusBar";
 import TacticalMap from "@/components/TacticalMap";
 import PeerReviewQueue from "@/components/PeerReviewQueue";
 import IntegrationPanel from "@/components/IntegrationPanel";
+import { CityProvider } from "@/contexts/CityContext";
 
 const Index = () => {
   const [userRole, setUserRole] = useState<"guest" | "citizen" | "meteorologist">("meteorologist");
