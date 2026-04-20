@@ -51,11 +51,21 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   _ref,
 ) {
   const map = useMap();
+  const [cacheBust, setCacheBust] = useState(0);
+
+  // Refresh radar tiles every 60s, matching weather/sounding/warnings cadence.
+  useEffect(() => {
+    if (!tileUrl) return;
+    const id = setInterval(() => setCacheBust((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, [tileUrl]);
 
   useEffect(() => {
     if (!tileUrl) return;
 
-    const radarLayer = L.tileLayer(tileUrl, {
+    const bustedUrl = tileUrl + (tileUrl.includes("?") ? "&" : "?") + "_t=" + cacheBust;
+
+    const radarLayer = L.tileLayer(bustedUrl, {
       opacity: 0.7,
       tms: false,
       detectRetina: false,
@@ -80,7 +90,7 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
     return () => {
       map.removeLayer(radarLayer);
     };
-  }, [map, tileUrl, onTileRequest]);
+  }, [map, tileUrl, cacheBust, onTileRequest]);
 
   return null;
 });
