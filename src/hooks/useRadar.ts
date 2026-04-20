@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { RadarStation } from "@/config/radarStations";
 import { findNearestStation } from "@/lib/nearestStation";
+import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/CityContext";
 
 export type ProductCode = "N0B" | "N0U" | "N0S" | "N0Z" | "NET";
 
@@ -24,21 +25,25 @@ export interface SelectedCity {
 }
 
 export function useRadar() {
-  const [selectedCity, setSelectedCityState] = useState<SelectedCity | null>(null);
+  const { selectedCity, setSelectedCity: setCtxCity } = useSelectedCity();
   const [selectedStation, setSelectedStation] = useState<RadarStation | null>(null);
   const [stationDistanceKm, setStationDistanceKm] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<ProductCode | null>(null);
 
-  const setSelectedCity = (city: SelectedCity | null) => {
-    setSelectedCityState(city);
-    if (city) {
-      const { station, distanceKm } = findNearestStation(city.lat, city.lon);
+  // Keep nearest-station state in sync with the shared selectedCity.
+  useEffect(() => {
+    if (selectedCity) {
+      const { station, distanceKm } = findNearestStation(selectedCity.lat, selectedCity.lon);
       setSelectedStation(station);
       setStationDistanceKm(distanceKm);
     } else {
       setSelectedStation(null);
       setStationDistanceKm(null);
     }
+  }, [selectedCity?.lat, selectedCity?.lon]);
+
+  const setSelectedCity = (city: CtxSelectedCity | null) => {
+    setCtxCity(city);
   };
 
   const tileUrl = useMemo(() => {

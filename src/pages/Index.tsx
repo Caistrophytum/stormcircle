@@ -5,6 +5,7 @@ import StatusBar from "@/components/StatusBar";
 import TacticalMap from "@/components/TacticalMap";
 import PeerReviewQueue from "@/components/PeerReviewQueue";
 import IntegrationPanel from "@/components/IntegrationPanel";
+import { CityProvider } from "@/contexts/CityContext";
 
 const Index = () => {
   const [userRole, setUserRole] = useState<"guest" | "citizen" | "meteorologist">("meteorologist");
@@ -41,6 +42,7 @@ const Index = () => {
   const overlayScale = Math.min(1, Math.max(0.6, centerWidth / topOverlayIntrinsic));
 
   return (
+    <CityProvider>
     <div className="flex h-screen overflow-hidden bg-background">
       <main className="flex-1 flex flex-col min-w-0">
         <StatusBar userRole={userRole} onSignIn={handleSignIn} />
@@ -112,6 +114,7 @@ const Index = () => {
         </div>
       </main>
     </div>
+    </CityProvider>
   );
 };
 
