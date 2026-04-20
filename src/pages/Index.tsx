@@ -42,6 +42,7 @@ const Index = () => {
   const overlayScale = Math.min(1, Math.max(0.6, centerWidth / topOverlayIntrinsic));
 
   return (
+    <CityProvider>
     <div className="flex h-screen overflow-hidden bg-background">
       <main className="flex-1 flex flex-col min-w-0">
         <StatusBar userRole={userRole} onSignIn={handleSignIn} />
@@ -113,6 +114,7 @@ const Index = () => {
         </div>
       </main>
     </div>
+    </CityProvider>
   );
 };
 
