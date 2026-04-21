@@ -239,17 +239,59 @@ const RadarMiniMap = ({
   if (!expanded) {
     const circleSize = "clamp(160px, 18vw, 240px)";
 
+    const stopClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+    };
     return (
       <div
-        onClick={onCollapse}
-        className="relative cursor-pointer group"
+        className="relative"
         style={{ width: circleSize, height: circleSize }}
       >
-        <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
+        <div
+          onClick={onCollapse}
+          className="absolute inset-0 rounded-full glass-panel overflow-hidden cursor-pointer group hover:border-primary/50 transition-colors"
+        >
           <div className="absolute inset-1 overflow-hidden" style={{ borderRadius: "50%" }}>
-            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} selectedStation={selectedStation} onStationMarkerSelect={onStationMarkerSelect} setSelectedProduct={setSelectedProduct} showZoomButtons />
+            <LeafletRadar
+              station={selectedStation}
+              tileUrl={tileUrl}
+              interactive={false}
+              onTileRequest={setLastTileUrl}
+              selectedStation={selectedStation}
+              onStationMarkerSelect={onStationMarkerSelect}
+              setSelectedProduct={setSelectedProduct}
+              onMap={(m) => setMiniMap(m)}
+            />
           </div>
           <Maximize2 className="absolute top-2 left-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
+        </div>
+
+        {/* External zoom buttons hugging the upper-right curve */}
+        <div
+          className="absolute flex flex-col gap-1.5 z-[500]"
+          style={{ top: "8%", right: "-10px" }}
+          onClick={stopClick}
+        >
+          <button
+            onClick={(e) => {
+              stopClick(e);
+              miniMap?.zoomIn();
+            }}
+            className="size-6 rounded-full glass-panel flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors shadow-lg"
+            aria-label="Zoom in"
+          >
+            <Plus className="size-3.5 text-primary" strokeWidth={2.5} />
+          </button>
+          <button
+            onClick={(e) => {
+              stopClick(e);
+              miniMap?.zoomOut();
+            }}
+            className="size-6 rounded-full glass-panel flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors shadow-lg"
+            aria-label="Zoom out"
+          >
+            <Minus className="size-3.5 text-primary" strokeWidth={2.5} />
+          </button>
         </div>
       </div>
     );
