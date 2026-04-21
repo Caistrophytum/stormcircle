@@ -169,7 +169,7 @@ const LeafletRadar = ({
   selectedStation,
   onStationMarkerSelect,
   setSelectedProduct,
-  showZoomButtons,
+  onMap,
 }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
@@ -216,7 +216,7 @@ const LeafletRadar = ({
         zIndex={1000}
       />
       <Recenter station={station} />
-      {showZoomButtons && <MiniZoomButtons />}
+      {onMap && <MapRefCapture onMap={onMap} />}
     </MapContainer>
   );
 };
