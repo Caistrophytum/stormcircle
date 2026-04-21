@@ -149,7 +149,7 @@ interface LeafletMapProps {
   selectedStation: RadarStation | null;
   onStationMarkerSelect: (s: RadarStation) => void;
   setSelectedProduct: (p: ProductCode) => void;
-  showZoomButtons?: boolean;
+  onMap?: (m: L.Map) => void;
 }
 
 const MapRefCapture = ({ onMap }: { onMap: (m: L.Map) => void }) => {
