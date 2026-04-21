@@ -273,9 +273,9 @@ const RadarMiniMap = ({
       >
         <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
           <div className="absolute inset-1 overflow-hidden" style={{ borderRadius: "50%" }}>
-            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} selectedStation={selectedStation} onStationMarkerSelect={onStationMarkerSelect} setSelectedProduct={setSelectedProduct} />
+            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} selectedStation={selectedStation} onStationMarkerSelect={onStationMarkerSelect} setSelectedProduct={setSelectedProduct} showZoomButtons />
           </div>
-          <Maximize2 className="absolute top-2 right-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
+          <Maximize2 className="absolute top-2 left-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
         </div>
       </div>
     );
