@@ -193,7 +193,7 @@ const LeafletRadar = ({
       />
       <RadarStationMarkers
         selectedStation={selectedStation}
-        onStationSelect={setSelectedStation}
+        onStationSelect={onStationMarkerSelect}
         onProductSelect={setSelectedProduct}
       />
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
