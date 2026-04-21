@@ -16,6 +16,7 @@ interface Props {
   setSelectedCity: (c: SelectedCity) => void;
   selectedStation: RadarStation | null;
   setSelectedStation: (s: RadarStation) => void;
+  onStationMarkerSelect: (s: RadarStation) => void;
   stationDistanceKm: number | null;
   selectedProduct: ProductCode | null;
   setSelectedProduct: (p: ProductCode) => void;
@@ -146,7 +147,7 @@ interface LeafletMapProps {
   onTileRequest?: (url: string) => void;
   warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
   selectedStation: RadarStation | null;
-  setSelectedStation: (s: RadarStation) => void;
+  onStationMarkerSelect: (s: RadarStation) => void;
   setSelectedProduct: (p: ProductCode) => void;
 }
 
@@ -157,7 +158,7 @@ const LeafletRadar = ({
   onTileRequest,
   warningsRef,
   selectedStation,
-  setSelectedStation,
+  onStationMarkerSelect,
   setSelectedProduct,
 }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
@@ -192,7 +193,7 @@ const LeafletRadar = ({
       />
       <RadarStationMarkers
         selectedStation={selectedStation}
-        onStationSelect={setSelectedStation}
+        onStationSelect={onStationMarkerSelect}
         onProductSelect={setSelectedProduct}
       />
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
@@ -216,6 +217,7 @@ const RadarMiniMap = ({
   setSelectedCity,
   selectedStation,
   setSelectedStation,
+  onStationMarkerSelect,
   stationDistanceKm,
   selectedProduct,
   setSelectedProduct,
@@ -234,7 +236,7 @@ const RadarMiniMap = ({
       >
         <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
           <div className="absolute inset-1 overflow-hidden" style={{ borderRadius: "50%" }}>
-            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} selectedStation={selectedStation} setSelectedStation={setSelectedStation} setSelectedProduct={setSelectedProduct} />
+            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} selectedStation={selectedStation} onStationMarkerSelect={onStationMarkerSelect} setSelectedProduct={setSelectedProduct} />
           </div>
           <Maximize2 className="absolute top-2 right-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
         </div>
@@ -272,7 +274,7 @@ const RadarMiniMap = ({
         </div>
 
         <div className="flex-1 relative bg-background/60 rounded-sm overflow-hidden">
-          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} warningsRef={warningsRef} selectedStation={selectedStation} setSelectedStation={setSelectedStation} setSelectedProduct={setSelectedProduct} />
+          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} warningsRef={warningsRef} selectedStation={selectedStation} onStationMarkerSelect={onStationMarkerSelect} setSelectedProduct={setSelectedProduct} />
         </div>
       </div>
     </div>

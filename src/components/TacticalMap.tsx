@@ -171,6 +171,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
                 setSelectedCity={radar.setSelectedCity}
                 selectedStation={radar.selectedStation}
                 setSelectedStation={radar.setSelectedStation}
+                onStationMarkerSelect={radar.selectStationByMarker}
                 stationDistanceKm={radar.stationDistanceKm}
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
@@ -191,6 +192,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
                 setSelectedCity={radar.setSelectedCity}
                 selectedStation={radar.selectedStation}
                 setSelectedStation={radar.setSelectedStation}
+                onStationMarkerSelect={radar.selectStationByMarker}
                 stationDistanceKm={radar.stationDistanceKm}
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
