@@ -2,7 +2,7 @@ import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { forwardRef, MutableRefObject, useEffect, useState } from "react";
 import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
-import { Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2, Plus, Minus } from "lucide-react";
 import { RadarStation, RADAR_STATIONS } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode, SelectedCity } from "@/hooks/useRadar";
@@ -149,7 +149,42 @@ interface LeafletMapProps {
   selectedStation: RadarStation | null;
   onStationMarkerSelect: (s: RadarStation) => void;
   setSelectedProduct: (p: ProductCode) => void;
+  showZoomButtons?: boolean;
 }
+
+const MiniZoomButtons = () => {
+  const map = useMap();
+  const stop = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+  };
+  return (
+    <div className="absolute top-1 right-1 z-[500] flex flex-col gap-1 pointer-events-auto">
+      <button
+        onMouseDown={stop}
+        onClick={(e) => {
+          stop(e);
+          map.zoomIn();
+        }}
+        className="size-5 rounded-full glass-panel flex items-center justify-center hover:border-primary/70 hover:text-primary transition-colors"
+        aria-label="Zoom in"
+      >
+        <Plus className="size-3 text-primary" strokeWidth={2.5} />
+      </button>
+      <button
+        onMouseDown={stop}
+        onClick={(e) => {
+          stop(e);
+          map.zoomOut();
+        }}
+        className="size-5 rounded-full glass-panel flex items-center justify-center hover:border-primary/70 hover:text-primary transition-colors"
+        aria-label="Zoom out"
+      >
+        <Minus className="size-3 text-primary" strokeWidth={2.5} />
+      </button>
+    </div>
+  );
+};
 
 const LeafletRadar = ({
   station,
@@ -160,6 +195,7 @@ const LeafletRadar = ({
   selectedStation,
   onStationMarkerSelect,
   setSelectedProduct,
+  showZoomButtons,
 }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
@@ -206,6 +242,7 @@ const LeafletRadar = ({
         zIndex={1000}
       />
       <Recenter station={station} />
+      {showZoomButtons && <MiniZoomButtons />}
     </MapContainer>
   );
 };
@@ -236,9 +273,9 @@ const RadarMiniMap = ({
       >
         <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
           <div className="absolute inset-1 overflow-hidden" style={{ borderRadius: "50%" }}>
-            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} selectedStation={selectedStation} onStationMarkerSelect={onStationMarkerSelect} setSelectedProduct={setSelectedProduct} />
+            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} selectedStation={selectedStation} onStationMarkerSelect={onStationMarkerSelect} setSelectedProduct={setSelectedProduct} showZoomButtons />
           </div>
-          <Maximize2 className="absolute top-2 right-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
+          <Maximize2 className="absolute top-2 left-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
         </div>
       </div>
     );
