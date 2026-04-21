@@ -38,7 +38,7 @@ export function useRadar() {
       const { station, distanceKm } = findNearestStation(selectedCity.lat, selectedCity.lon);
       setSelectedStation(station);
       setStationDistanceKm(distanceKm);
-      setSelectedProduct((prev) => prev ?? "N0B");
+      setSelectedProduct("N0B");
     } else {
       setSelectedStation(null);
       setStationDistanceKm(null);
