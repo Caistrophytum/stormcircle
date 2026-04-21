@@ -46,6 +46,38 @@ export function useRadar() {
     setCtxCity(city);
   };
 
+  /**
+   * Marker-click handler: when the user picks a radar station directly on the
+   * map, resolve the station's home city via Open-Meteo geocoding and adopt it
+   * as the selectedCity so all weather/sounding parameters refresh for that
+   * location. Falls back to the station's own coordinates if geocoding fails.
+   */
+  const selectStationByMarker = async (station: RadarStation) => {
+    // Optimistic: switch station immediately so the radar overlay/recenter fires.
+    setSelectedStation(station);
+    setStationDistanceKm(0);
+
+    // station.name is "City, ST" — strip the state suffix for geocoding.
+    const cityName = station.name.split(",")[0].trim();
+    try {
+      const url =
+        `https://geocoding-api.open-meteo.com/v1/search` +
+        `?name=${encodeURIComponent(cityName)}&count=1&language=en&format=json&countryCode=US`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Geocoding ${res.status}`);
+      const json = await res.json();
+      const hit = json?.results?.[0];
+      if (hit) {
+        setCtxCity({ name: hit.name, lat: hit.latitude, lon: hit.longitude });
+        return;
+      }
+    } catch (err) {
+      console.warn("[useRadar] reverse geocode failed, using station coords", err);
+    }
+    // Fallback: use the station's own coordinates as the "city".
+    setCtxCity({ name: cityName, lat: station.lat, lon: station.lon });
+  };
+
   const tileUrl = useMemo(() => {
     if (!selectedStation || !selectedProduct) return null;
     const tileId = selectedStation.id.replace(/^K/, "");
