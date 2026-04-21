@@ -96,15 +96,70 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   return null;
 });
 
+interface RadarStationMarkersProps {
+  selectedStation: RadarStation | null;
+  onStationSelect: (station: RadarStation) => void;
+  onProductSelect: (product: ProductCode) => void;
+}
+
+const RadarStationMarkers = ({
+  selectedStation,
+  onStationSelect,
+  onProductSelect,
+}: RadarStationMarkersProps) => {
+  return (
+    <>
+      {RADAR_STATIONS.map((station) => {
+        const isSelected = selectedStation?.id === station.id;
+        return (
+          <CircleMarker
+            key={station.id}
+            center={[station.lat, station.lon]}
+            radius={isSelected ? 8 : 5}
+            pathOptions={{
+              color: isSelected ? "#00ffff" : "#4af",
+              fillColor: isSelected ? "#00ffff" : "#1a6aaa",
+              fillOpacity: isSelected ? 0.9 : 0.6,
+              weight: isSelected ? 2 : 1,
+            }}
+            eventHandlers={{
+              click: () => {
+                onStationSelect(station);
+                onProductSelect("N0B");
+              },
+            }}
+          >
+            <Tooltip permanent direction="top" offset={[0, -6]} className="radar-station-label">
+              {station.id}
+            </Tooltip>
+          </CircleMarker>
+        );
+      })}
+    </>
+  );
+};
+
 interface LeafletMapProps {
   station: RadarStation | null;
   tileUrl: string | null;
   interactive: boolean;
   onTileRequest?: (url: string) => void;
   warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
+  selectedStation: RadarStation | null;
+  setSelectedStation: (s: RadarStation) => void;
+  setSelectedProduct: (p: ProductCode) => void;
 }
 
-const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest, warningsRef }: LeafletMapProps) => {
+const LeafletRadar = ({
+  station,
+  tileUrl,
+  interactive,
+  onTileRequest,
+  warningsRef,
+  selectedStation,
+  setSelectedStation,
+  setSelectedProduct,
+}: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
   const { polygons } = useWarningPolygons();
@@ -134,6 +189,11 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest, warningsRe
         url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
         opacity={0.6}
         attribution=""
+      />
+      <RadarStationMarkers
+        selectedStation={selectedStation}
+        onStationSelect={setSelectedStation}
+        onProductSelect={setSelectedProduct}
       />
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
       <WarningPolygons ref={warningsRef} polygons={polygons} />
