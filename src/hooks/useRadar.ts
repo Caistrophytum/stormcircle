@@ -89,6 +89,7 @@ export function useRadar() {
     setSelectedCity,
     selectedStation,
     setSelectedStation,
+    selectStationByMarker,
     stationDistanceKm,
     selectedProduct,
     setSelectedProduct,
