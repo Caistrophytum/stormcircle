@@ -15,6 +15,7 @@ interface Props {
   selectedCity: SelectedCity | null;
   setSelectedCity: (c: SelectedCity) => void;
   selectedStation: RadarStation | null;
+  setSelectedStation: (s: RadarStation) => void;
   stationDistanceKm: number | null;
   selectedProduct: ProductCode | null;
   setSelectedProduct: (p: ProductCode) => void;
