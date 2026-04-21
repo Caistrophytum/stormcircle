@@ -31,11 +31,14 @@ export function useRadar() {
   const [selectedProduct, setSelectedProduct] = useState<ProductCode | null>(null);
 
   // Keep nearest-station state in sync with the shared selectedCity.
+  // Also auto-select Base Reflectivity (N0B) so the radar overlay appears
+  // immediately whenever a city is picked.
   useEffect(() => {
     if (selectedCity) {
       const { station, distanceKm } = findNearestStation(selectedCity.lat, selectedCity.lon);
       setSelectedStation(station);
       setStationDistanceKm(distanceKm);
+      setSelectedProduct((prev) => prev ?? "N0B");
     } else {
       setSelectedStation(null);
       setStationDistanceKm(null);
