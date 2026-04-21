@@ -147,7 +147,7 @@ interface LeafletMapProps {
   onTileRequest?: (url: string) => void;
   warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
   selectedStation: RadarStation | null;
-  setSelectedStation: (s: RadarStation) => void;
+  onStationMarkerSelect: (s: RadarStation) => void;
   setSelectedProduct: (p: ProductCode) => void;
 }
 
@@ -158,7 +158,7 @@ const LeafletRadar = ({
   onTileRequest,
   warningsRef,
   selectedStation,
-  setSelectedStation,
+  onStationMarkerSelect,
   setSelectedProduct,
 }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
