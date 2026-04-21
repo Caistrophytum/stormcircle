@@ -215,6 +215,7 @@ const RadarMiniMap = ({
   selectedCity,
   setSelectedCity,
   selectedStation,
+  setSelectedStation,
   stationDistanceKm,
   selectedProduct,
   setSelectedProduct,
