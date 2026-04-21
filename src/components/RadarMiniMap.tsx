@@ -1,9 +1,9 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { forwardRef, MutableRefObject, useEffect, useState } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { Maximize2, Minimize2 } from "lucide-react";
-import { RadarStation } from "@/config/radarStations";
+import { RadarStation, RADAR_STATIONS } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
@@ -15,6 +15,7 @@ interface Props {
   selectedCity: SelectedCity | null;
   setSelectedCity: (c: SelectedCity) => void;
   selectedStation: RadarStation | null;
+  setSelectedStation: (s: RadarStation) => void;
   stationDistanceKm: number | null;
   selectedProduct: ProductCode | null;
   setSelectedProduct: (p: ProductCode) => void;
@@ -95,15 +96,70 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   return null;
 });
 
+interface RadarStationMarkersProps {
+  selectedStation: RadarStation | null;
+  onStationSelect: (station: RadarStation) => void;
+  onProductSelect: (product: ProductCode) => void;
+}
+
+const RadarStationMarkers = ({
+  selectedStation,
+  onStationSelect,
+  onProductSelect,
+}: RadarStationMarkersProps) => {
+  return (
+    <>
+      {RADAR_STATIONS.map((station) => {
+        const isSelected = selectedStation?.id === station.id;
+        return (
+          <CircleMarker
+            key={station.id}
+            center={[station.lat, station.lon]}
+            radius={isSelected ? 8 : 5}
+            pathOptions={{
+              color: isSelected ? "#00ffff" : "#4af",
+              fillColor: isSelected ? "#00ffff" : "#1a6aaa",
+              fillOpacity: isSelected ? 0.9 : 0.6,
+              weight: isSelected ? 2 : 1,
+            }}
+            eventHandlers={{
+              click: () => {
+                onStationSelect(station);
+                onProductSelect("N0B");
+              },
+            }}
+          >
+            <Tooltip permanent direction="top" offset={[0, -6]} className="radar-station-label">
+              {station.id}
+            </Tooltip>
+          </CircleMarker>
+        );
+      })}
+    </>
+  );
+};
+
 interface LeafletMapProps {
   station: RadarStation | null;
   tileUrl: string | null;
   interactive: boolean;
   onTileRequest?: (url: string) => void;
   warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
+  selectedStation: RadarStation | null;
+  setSelectedStation: (s: RadarStation) => void;
+  setSelectedProduct: (p: ProductCode) => void;
 }
 
-const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest, warningsRef }: LeafletMapProps) => {
+const LeafletRadar = ({
+  station,
+  tileUrl,
+  interactive,
+  onTileRequest,
+  warningsRef,
+  selectedStation,
+  setSelectedStation,
+  setSelectedProduct,
+}: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
   const { polygons } = useWarningPolygons();
@@ -134,6 +190,11 @@ const LeafletRadar = ({ station, tileUrl, interactive, onTileRequest, warningsRe
         opacity={0.6}
         attribution=""
       />
+      <RadarStationMarkers
+        selectedStation={selectedStation}
+        onStationSelect={setSelectedStation}
+        onProductSelect={setSelectedProduct}
+      />
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
       <WarningPolygons ref={warningsRef} polygons={polygons} />
       <TileLayer
@@ -154,6 +215,7 @@ const RadarMiniMap = ({
   selectedCity,
   setSelectedCity,
   selectedStation,
+  setSelectedStation,
   stationDistanceKm,
   selectedProduct,
   setSelectedProduct,
@@ -172,7 +234,7 @@ const RadarMiniMap = ({
       >
         <div className="absolute inset-0 rounded-full glass-panel overflow-hidden group-hover:border-primary/50 transition-colors">
           <div className="absolute inset-1 overflow-hidden" style={{ borderRadius: "50%" }}>
-            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} />
+            <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive={false} onTileRequest={setLastTileUrl} selectedStation={selectedStation} setSelectedStation={setSelectedStation} setSelectedProduct={setSelectedProduct} />
           </div>
           <Maximize2 className="absolute top-2 right-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
         </div>
@@ -210,7 +272,7 @@ const RadarMiniMap = ({
         </div>
 
         <div className="flex-1 relative bg-background/60 rounded-sm overflow-hidden">
-          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} warningsRef={warningsRef} />
+          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} warningsRef={warningsRef} selectedStation={selectedStation} setSelectedStation={setSelectedStation} setSelectedProduct={setSelectedProduct} />
         </div>
       </div>
     </div>
