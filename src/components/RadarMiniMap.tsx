@@ -267,10 +267,10 @@ const RadarMiniMap = ({
           <Maximize2 className="absolute top-2 left-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
         </div>
 
-        {/* External zoom buttons aligned to the right of the circle (CAPE box edge) */}
+        {/* External zoom buttons above the mini-map */}
         <div
-          className="absolute flex flex-col gap-2 z-[500]"
-          style={{ top: "4%", right: "-52px" }}
+          className="absolute flex flex-row gap-2 z-[500]"
+          style={{ top: "-18px", right: "10px" }}
           onClick={stopClick}
         >
           <button
