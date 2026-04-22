@@ -226,7 +226,7 @@ export function useAlerts(): AlertsData {
             if (!isInitial) {
               const event = idToEvent.get(id) ?? "Unknown";
               const kind = deriveKind(event);
-              if (kind === "Warning" || kind === "Emergency") {
+              if (kind === "Warning" || kind === "Emergency" || kind === "Watch") {
                 firstSeen.set(id, { cycle, event });
               }
             }
