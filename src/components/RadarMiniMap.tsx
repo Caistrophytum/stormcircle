@@ -267,10 +267,10 @@ const RadarMiniMap = ({
           <Maximize2 className="absolute top-2 left-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
         </div>
 
-        {/* External zoom buttons hugging the upper-right curve */}
+        {/* External zoom buttons aligned to the right of the circle (CAPE box edge) */}
         <div
-          className="absolute flex flex-col gap-1.5 z-[500]"
-          style={{ top: "8%", right: "-10px" }}
+          className="absolute flex flex-col gap-2 z-[500]"
+          style={{ top: "4%", right: "-36px" }}
           onClick={stopClick}
         >
           <button
@@ -278,20 +278,20 @@ const RadarMiniMap = ({
               stopClick(e);
               miniMap?.zoomIn();
             }}
-            className="size-6 rounded-full glass-panel flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors shadow-lg"
+            className="size-8 rounded-full glass-panel flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors shadow-lg"
             aria-label="Zoom in"
           >
-            <Plus className="size-3.5 text-primary" strokeWidth={2.5} />
+            <Plus className="size-4 text-primary" strokeWidth={2.5} />
           </button>
           <button
             onClick={(e) => {
               stopClick(e);
               miniMap?.zoomOut();
             }}
-            className="size-6 rounded-full glass-panel flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors shadow-lg"
+            className="size-8 rounded-full glass-panel flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors shadow-lg"
             aria-label="Zoom out"
           >
-            <Minus className="size-3.5 text-primary" strokeWidth={2.5} />
+            <Minus className="size-4 text-primary" strokeWidth={2.5} />
           </button>
         </div>
       </div>
