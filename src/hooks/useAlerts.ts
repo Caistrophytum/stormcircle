@@ -181,12 +181,14 @@ export function useAlerts(): AlertsData {
 
         const alerts: Alert[] = [];
         const currentIds = new Set<string>();
+        const idToEvent = new Map<string, string>();
 
         for (const f of features) {
           const p = f?.properties ?? {};
           const event = String(p.event ?? "Unknown");
           const id = String(f?.id ?? p.id ?? `${event}|${p.sent ?? ""}|${p.areaDesc ?? ""}`);
           currentIds.add(id);
+          idToEvent.set(id, event);
           alerts.push({
             event,
             severity: normalizeSeverity(p.severity),
@@ -222,19 +224,7 @@ export function useAlerts(): AlertsData {
           if (!everSeen.has(id)) {
             everSeen.add(id);
             if (!isInitial) {
-              const ev = alerts.find((a) => true) && // event lookup below
-                features.find((f) => String(f?.id ?? f?.properties?.id ?? "") === id);
-              const event = String(
-                ev?.properties?.event ??
-                  features.find((f) => {
-                    const p = f?.properties ?? {};
-                    const fid = String(
-                      f?.id ?? p.id ?? `${p.event ?? "Unknown"}|${p.sent ?? ""}|${p.areaDesc ?? ""}`,
-                    );
-                    return fid === id;
-                  })?.properties?.event ??
-                  "Unknown",
-              );
+              const event = idToEvent.get(id) ?? "Unknown";
               const kind = deriveKind(event);
               if (kind === "Warning" || kind === "Emergency") {
                 firstSeen.set(id, { cycle, event });
