@@ -161,9 +161,13 @@ export function useAlerts(): AlertsData {
 
   useEffect(() => {
     let cancelled = false;
-    // Rolling history of alert-id sets across the last N refreshes.
-    // Index 0 is the oldest snapshot.
-    const history: Set<string>[] = [];
+    // Monotonic cycle counter — incremented once per successful fetch.
+    let cycle = 0;
+    // Set of alert ids we've ever seen (used to detect first appearance).
+    const everSeen = new Set<string>();
+    // First-seen cycle index per alert id (so we can age entries out of the window).
+    // Also remember the event label so it survives even if the alert drops from the feed.
+    const firstSeen = new Map<string, { cycle: number; event: string }>();
 
     async function fetchAlerts() {
       try {
@@ -177,15 +181,12 @@ export function useAlerts(): AlertsData {
 
         const alerts: Alert[] = [];
         const currentIds = new Set<string>();
-        // Map id -> event so we can label new warnings even if they drop out next cycle.
-        const idToEvent = new Map<string, string>();
 
         for (const f of features) {
           const p = f?.properties ?? {};
           const event = String(p.event ?? "Unknown");
           const id = String(f?.id ?? p.id ?? `${event}|${p.sent ?? ""}|${p.areaDesc ?? ""}`);
           currentIds.add(id);
-          idToEvent.set(id, event);
           alerts.push({
             event,
             severity: normalizeSeverity(p.severity),
@@ -211,32 +212,53 @@ export function useAlerts(): AlertsData {
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
 
-        // Determine which IDs are "new": present now but not in any prior snapshot
-        // within the rolling window. On the very first fetch, history is empty,
-        // so nothing is reported as new (avoids flagging the entire initial load).
-        const newWarningCounts = new Map<string, number>();
-        if (history.length > 0) {
-          const seenBefore = new Set<string>();
-          for (const snap of history) for (const id of snap) seenBefore.add(id);
-          for (const id of currentIds) {
-            if (!seenBefore.has(id)) {
-              const ev = idToEvent.get(id) ?? "Unknown";
-              // Only count Warnings/Emergencies as "new warnings".
-              const kind = deriveKind(ev);
+        // Increment cycle counter. On the very first fetch (cycle becomes 1),
+        // we treat everything as "pre-existing" to avoid flagging the entire
+        // initial load as new.
+        cycle += 1;
+        const isInitial = cycle === 1;
+
+        for (const id of currentIds) {
+          if (!everSeen.has(id)) {
+            everSeen.add(id);
+            if (!isInitial) {
+              const ev = alerts.find((a) => true) && // event lookup below
+                features.find((f) => String(f?.id ?? f?.properties?.id ?? "") === id);
+              const event = String(
+                ev?.properties?.event ??
+                  features.find((f) => {
+                    const p = f?.properties ?? {};
+                    const fid = String(
+                      f?.id ?? p.id ?? `${p.event ?? "Unknown"}|${p.sent ?? ""}|${p.areaDesc ?? ""}`,
+                    );
+                    return fid === id;
+                  })?.properties?.event ??
+                  "Unknown",
+              );
+              const kind = deriveKind(event);
               if (kind === "Warning" || kind === "Emergency") {
-                newWarningCounts.set(ev, (newWarningCounts.get(ev) ?? 0) + 1);
+                firstSeen.set(id, { cycle, event });
               }
             }
           }
         }
+
+        // Aggregate all first-seen entries whose first-seen cycle is still
+        // inside the rolling window (last REFRESH_HISTORY_WINDOW cycles).
+        const newWarningCounts = new Map<string, number>();
+        for (const [id, info] of firstSeen) {
+          if (cycle - info.cycle < REFRESH_HISTORY_WINDOW) {
+            newWarningCounts.set(info.event, (newWarningCounts.get(info.event) ?? 0) + 1);
+          } else {
+            // Aged out — remove to keep the map small.
+            firstSeen.delete(id);
+          }
+        }
+
         const newWarnings: NewWarning[] = Array.from(newWarningCounts.entries())
           .map(([event, count]) => ({ event, count }))
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
-
-        // Push current snapshot into rolling history.
-        history.push(currentIds);
-        while (history.length > REFRESH_HISTORY_WINDOW) history.shift();
 
         if (!cancelled) {
           setData({
