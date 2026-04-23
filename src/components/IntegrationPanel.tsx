@@ -25,7 +25,7 @@ const IntegrationPanel = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex w-fit items-center gap-1.5 border-b-2 border-primary bg-primary/5 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-primary">
+      <div className="flex w-full items-center justify-center gap-1.5 border-b-2 border-primary bg-primary/5 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-primary">
         <Radio className="size-3" />
         SKYWARN
       </div>
