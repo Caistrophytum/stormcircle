@@ -25,6 +25,10 @@ function computeLCL(t2m: number, td2m: number): number {
   return 125 * (t2m - td2m);
 }
 
+function normalizeCIN(cin: number): number {
+  return cin > 0 ? -cin : cin;
+}
+
 export interface LatLon {
   lat: number;
   lon: number;
@@ -65,7 +69,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         if (cancelled) return;
         setData({
           cape: typeof c.cape === "number" ? c.cape : null,
-          cin: typeof c.convective_inhibition === "number" ? c.convective_inhibition : null,
+          cin: typeof c.convective_inhibition === "number" ? normalizeCIN(c.convective_inhibition) : null,
           li: typeof c.lifted_index === "number" ? c.lifted_index : null,
           blh: typeof c.boundary_layer_height === "number" ? c.boundary_layer_height : null,
           lcl,
