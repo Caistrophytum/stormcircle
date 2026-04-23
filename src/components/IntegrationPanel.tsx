@@ -1,42 +1,41 @@
 import { useState } from "react";
-import { Camera, Video, Radio, Star, Clock, MapPin, Shield } from "lucide-react";
+import { Camera, Video, Radio } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getLSRColor, getSourceColor, useLSR } from "@/hooks/useLSR";
 
 type IntegrationTab = "hazcam" | "traffic" | "network";
-
-interface FeedItem {
-  id: string;
-  username: string;
-  isSkywarn: boolean;
-  isVerified: boolean;
-  time: string;
-  content: string;
-  location: string;
-  type: string;
-  priorityUntil?: string;
-}
-
-const mockFeed: FeedItem[] = [];
 
 const hazcams: { id: string; name: string; status: string; feed: string }[] = [];
 
 const trafficCams: { id: string; name: string; status: string; condition: string }[] = [];
 
+function getTimeAgo(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  return `${hrs}h ${mins % 60}m ago`;
+}
+
+function getMagnitudeUnit(typetext: string): string {
+  const t = typetext.toUpperCase();
+  if (t.includes("HAIL")) return "in.";
+  if (t.includes("WIND")) return "mph";
+  if (t.includes("SNOW") || t.includes("RAIN")) return "in.";
+  if (t.includes("FLOOD")) return "ft.";
+  return "";
+}
+
 const IntegrationPanel = () => {
   const [activeTab, setActiveTab] = useState<IntegrationTab>("network");
+  const { reports, loading, error, lastUpdated } = useLSR();
 
   const tabs: { id: IntegrationTab; label: string; icon: typeof Camera }[] = [
     { id: "hazcam", label: "HAZCAM", icon: Camera },
     { id: "traffic", label: "TRAFFIC", icon: Video },
     { id: "network", label: "SKYWARN", icon: Radio },
   ];
-
-  // Sort feed: SKYWARN first
-  const sortedFeed = [...mockFeed].sort((a, b) => {
-    if (a.isSkywarn && !b.isSkywarn) return -1;
-    if (!a.isSkywarn && b.isSkywarn) return 1;
-    return 0;
-  });
 
   return (
     <div className="flex flex-col h-full">
@@ -104,57 +103,70 @@ const IntegrationPanel = () => {
           )}
 
           {activeTab === "network" && (
-            <motion.div key="network" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
-              {sortedFeed.map((item) => (
-                <div
-                  key={item.id}
-                  className={`glass-panel p-3 space-y-2 ${
-                    item.isSkywarn ? "border-primary/30 bg-primary/5" : ""
-                  }`}
-                >
-                  {/* Header */}
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-mono font-bold text-card-foreground">{item.username}</span>
-                      {item.isSkywarn && (
-                        <span className="text-[8px] font-mono font-bold bg-primary/20 text-primary px-1 py-0.5 rounded-sm flex items-center gap-0.5">
-                          <Shield className="size-2.5" />
-                          SKYWARN
-                        </span>
-                      )}
-                      {item.isVerified && !item.isSkywarn && (
-                        <span className="text-[8px] font-mono font-bold bg-neon-blue/20 text-neon-blue px-1 py-0.5 rounded-sm">
-                          VERIFIED
+            <motion.div key="network" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex h-full flex-col gap-2">
+              <div className="glass-panel flex flex-wrap gap-x-3 gap-y-1 p-2 text-[10px] font-mono font-bold uppercase">
+                {["TORNADO", "LARGE HAIL", "DAMAGING WIND", "FLOOD", "FLASH FLOOD"].map((type) => {
+                  const count = reports.filter((report) =>
+                    report.typetext.toUpperCase().includes(type)
+                  ).length;
+                  if (count === 0) return null;
+                  return (
+                    <span key={type} style={{ color: getLSRColor(type) }}>
+                      {type}: {count}
+                    </span>
+                  );
+                })}
+                {loading && <span className="text-muted-foreground">LOADING LSR...</span>}
+                {error && <span className="text-destructive">LSR ERROR</span>}
+              </div>
+
+              <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                {reports.map((report) => (
+                  <div
+                    key={`${report.valid}-${report.typetext}-${report.lat}-${report.lon}`}
+                    className="glass-panel space-y-2 p-3 font-mono"
+                    style={{ borderLeft: `3px solid ${getLSRColor(report.typetext)}` }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-[11px] font-bold uppercase" style={{ color: getLSRColor(report.typetext) }}>
+                        {report.typetext}
+                      </span>
+                      <span className="shrink-0 text-[9px] text-muted-foreground">{getTimeAgo(report.valid)}</span>
+                    </div>
+                    <span className="block text-[10px] text-card-foreground">
+                      {report.city}, {report.county} Co., {report.state}
+                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className="font-bold uppercase"
+                        style={{
+                          background: getSourceColor(report.source),
+                          color: "#000",
+                          borderRadius: "3px",
+                          padding: "1px 5px",
+                          fontSize: "10px",
+                        }}
+                      >
+                        {report.source}
+                      </span>
+                      {report.magnitude && (
+                        <span className="text-[10px] font-bold text-foreground">
+                          {report.magnitude} {getMagnitudeUnit(report.typetext)}
                         </span>
                       )}
                     </div>
-                    <span className="text-[9px] font-mono text-muted-foreground">{item.time}</span>
+                    {report.remark && (
+                      <p className="text-[11px] leading-relaxed" style={{ color: "#aaa", fontSize: "11px" }}>
+                        {report.remark}
+                      </p>
+                    )}
                   </div>
+                ))}
+              </div>
 
-                  {/* SKYWARN priority badge */}
-                  {item.isSkywarn && item.priorityUntil && (
-                    <div className="flex items-center gap-1 text-[8px] font-mono text-primary/80">
-                      <Star className="size-2.5 fill-primary text-primary" />
-                      PRIORITY FEED — {item.priorityUntil} remaining
-                      <Clock className="size-2.5 ml-1" />
-                    </div>
-                  )}
-
-                  {/* Type tag */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-[8px] font-mono font-bold bg-destructive/10 text-destructive px-1.5 py-0.5 rounded-sm">
-                      {item.type}
-                    </span>
-                    <span className="text-[8px] font-mono text-muted-foreground flex items-center gap-0.5">
-                      <MapPin className="size-2.5" />
-                      {item.location}
-                    </span>
-                  </div>
-
-                  {/* Content */}
-                  <p className="text-[11px] font-mono text-foreground leading-relaxed">{item.content}</p>
-                </div>
-              ))}
+              <span className="border-t border-border pt-2 text-[9px] font-mono text-muted-foreground">
+                Last updated: {lastUpdated ? getTimeAgo(lastUpdated.toISOString()) : "—"}
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
