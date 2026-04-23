@@ -1,23 +1,9 @@
 import { useState } from "react";
-import { Camera, Video, Radio, Star, Clock, MapPin, Shield } from "lucide-react";
+import { Camera, Video, Radio } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getLSRColor, getSourceColor, useLSR } from "@/hooks/useLSR";
 
 type IntegrationTab = "hazcam" | "traffic" | "network";
-
-interface FeedItem {
-  id: string;
-  username: string;
-  isSkywarn: boolean;
-  isVerified: boolean;
-  time: string;
-  content: string;
-  location: string;
-  type: string;
-  priorityUntil?: string;
-}
-
-const mockFeed: FeedItem[] = [];
 
 const hazcams: { id: string; name: string; status: string; feed: string }[] = [];
 
@@ -50,13 +36,6 @@ const IntegrationPanel = () => {
     { id: "traffic", label: "TRAFFIC", icon: Video },
     { id: "network", label: "SKYWARN", icon: Radio },
   ];
-
-  // Sort feed: SKYWARN first
-  const sortedFeed = [...mockFeed].sort((a, b) => {
-    if (a.isSkywarn && !b.isSkywarn) return -1;
-    if (!a.isSkywarn && b.isSkywarn) return 1;
-    return 0;
-  });
 
   return (
     <div className="flex flex-col h-full">
