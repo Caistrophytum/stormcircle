@@ -1,13 +1,6 @@
-import { useState } from "react";
-import { Camera, Video, Radio } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Radio } from "lucide-react";
+import { motion } from "framer-motion";
 import { getLSRColor, getSourceColor, useLSR } from "@/hooks/useLSR";
-
-type IntegrationTab = "hazcam" | "traffic" | "network";
-
-const hazcams: { id: string; name: string; status: string; feed: string }[] = [];
-
-const trafficCams: { id: string; name: string; status: string; condition: string }[] = [];
 
 function getTimeAgo(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime();
@@ -28,82 +21,17 @@ function getMagnitudeUnit(typetext: string): string {
 }
 
 const IntegrationPanel = () => {
-  const [activeTab, setActiveTab] = useState<IntegrationTab>("network");
   const { reports, loading, error, lastUpdated } = useLSR();
-
-  const tabs: { id: IntegrationTab; label: string; icon: typeof Camera }[] = [
-    { id: "hazcam", label: "HAZCAM", icon: Camera },
-    { id: "traffic", label: "TRAFFIC", icon: Video },
-    { id: "network", label: "SKYWARN", icon: Radio },
-  ];
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tab bar */}
-      <div className="flex justify-start border-b border-border bg-cockpit/50 w-fit">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center justify-center gap-1.5 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider transition-colors ${
-              activeTab === tab.id
-                ? "text-primary border-b-2 border-primary bg-primary/5"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <tab.icon className="size-3" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="flex w-fit items-center gap-1.5 border-b-2 border-primary bg-primary/5 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-primary">
+        <Radio className="size-3" />
+        SKYWARN
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 w-fit">
-        <AnimatePresence mode="wait">
-          {activeTab === "hazcam" && (
-            <motion.div key="hazcam" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
-              {hazcams.map((cam) => (
-                <div key={cam.id} className="glass-panel p-3 space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-mono text-card-foreground font-bold">{cam.name}</span>
-                    <span className={`text-[9px] font-mono uppercase ${cam.status === "live" ? "text-neon-green" : "text-muted-foreground"}`}>
-                      {cam.status === "live" ? "● LIVE" : "○ OFFLINE"}
-                    </span>
-                  </div>
-                  <div className="h-16 bg-background/80 rounded-sm flex items-center justify-center border border-border">
-                    <span className={`text-[10px] font-mono ${cam.feed === "DEBRIS DETECTED" ? "text-neon-red animate-pulse" : "text-muted-foreground"}`}>
-                      [{cam.feed}]
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          )}
-
-          {activeTab === "traffic" && (
-            <motion.div key="traffic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
-              {trafficCams.map((cam) => (
-                <div key={cam.id} className="glass-panel p-3">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-mono text-card-foreground font-bold">{cam.name}</span>
-                    <span className="text-[9px] font-mono text-neon-green uppercase">● LIVE</span>
-                  </div>
-                  <div className="h-12 bg-background/80 rounded-sm flex items-center justify-center border border-border">
-                    <span className={`text-[10px] font-mono ${
-                      cam.condition === "FLOODED LANES" ? "text-neon-red" :
-                      cam.condition === "REDUCED VIS" ? "text-neon-amber" :
-                      "text-neon-green"
-                    }`}>
-                      [{cam.condition}]
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          )}
-
-          {activeTab === "network" && (
-            <motion.div key="network" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex h-full flex-col gap-2">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full flex-col gap-2">
               <div className="glass-panel flex flex-wrap gap-x-3 gap-y-1 p-2 text-[10px] font-mono font-bold uppercase">
                 {["TORNADO", "LARGE HAIL", "DAMAGING WIND", "FLOOD", "FLASH FLOOD"].map((type) => {
                   const count = reports.filter((report) =>
@@ -168,8 +96,6 @@ const IntegrationPanel = () => {
                 Last updated: {lastUpdated ? getTimeAgo(lastUpdated.toISOString()) : "—"}
               </span>
             </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );
