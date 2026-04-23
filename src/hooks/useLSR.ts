@@ -62,7 +62,7 @@ export function getSourceColor(source: string): string {
 }
 
 const LSR_URL =
-  "https://mesonet.agron.iastate.edu/cgi-bin/request/gis/lsr.py?wfo=ALL&recent=7200&fmt=geojson";
+  "https://mesonet.agron.iastate.edu/geojson/lsr.py?hours=2&wfo=ALL";
 const REFRESH_MS = 60_000;
 
 interface UseLSRResult {
