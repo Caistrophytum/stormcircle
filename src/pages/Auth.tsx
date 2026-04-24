@@ -29,7 +29,11 @@ const usernameSchema = z
 const passwordSchema = z
   .string()
   .min(8, { message: "Password must be at least 8 characters" })
-  .max(128, { message: "Password must be 128 characters or less" });
+  .max(128, { message: "Password must be 128 characters or less" })
+  .regex(/[A-Z]/, { message: "Password must contain at least 1 uppercase letter" })
+  .regex(/[0-9]/, { message: "Password must contain at least 1 number" });
+
+const GENERIC_AUTH_ERROR = "Invalid credentials";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -44,6 +48,8 @@ const Auth = () => {
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suConfirm, setSuConfirm] = useState("");
+  // Honeypot — real users never fill this; bots typically auto-fill all fields
+  const [suHoneypot, setSuHoneypot] = useState("");
 
   // Forgot state
   const [forgotEmail, setForgotEmail] = useState("");
@@ -62,7 +68,8 @@ const Auth = () => {
       if (!email.includes("@")) {
         const parsed = usernameSchema.safeParse(email);
         if (!parsed.success) {
-          toast.error(parsed.error.errors[0].message);
+          // Generic message to avoid revealing whether the username exists
+          toast.error(GENERIC_AUTH_ERROR);
           return;
         }
         const { data, error } = await supabase
@@ -71,14 +78,14 @@ const Auth = () => {
           .eq("username", parsed.data)
           .maybeSingle();
         if (error || !data) {
-          toast.error("No account found for that username");
+          toast.error(GENERIC_AUTH_ERROR);
           return;
         }
         email = data.email;
       } else {
         const parsed = emailSchema.safeParse(email);
         if (!parsed.success) {
-          toast.error(parsed.error.errors[0].message);
+          toast.error(GENERIC_AUTH_ERROR);
           return;
         }
         email = parsed.data;
@@ -89,7 +96,9 @@ const Auth = () => {
         password: loginPassword,
       });
       if (error) {
-        toast.error(error.message);
+        // Always return the same generic message — never reveal whether
+        // the email exists or whether only the password was wrong
+        toast.error(GENERIC_AUTH_ERROR);
         return;
       }
       toast.success("Signed in");
@@ -101,6 +110,11 @@ const Auth = () => {
 
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
+    // Honeypot check — silently reject bots without telling them why
+    if (suHoneypot.trim() !== "") {
+      toast.success("Check your email to confirm your account");
+      return;
+    }
     if (suPassword !== suConfirm) {
       toast.error("Passwords do not match");
       return;
@@ -298,6 +312,19 @@ const Auth = () => {
 
             {view === "signup" && (
               <form onSubmit={handleSignUp} className="space-y-4">
+                {/* Honeypot — hidden from real users; bots will auto-fill it */}
+                <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+                  <label htmlFor="su-website">Website</label>
+                  <input
+                    id="su-website"
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={suHoneypot}
+                    onChange={(e) => setSuHoneypot(e.target.value)}
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <label className={labelClass} htmlFor="su-username">Username</label>
                   <input
@@ -333,7 +360,7 @@ const Auth = () => {
                     value={suPassword}
                     onChange={(e) => setSuPassword(e.target.value)}
                     className={inputClass}
-                    placeholder="min. 8 characters"
+                    placeholder="8+ chars, 1 uppercase, 1 number"
                     required
                     maxLength={128}
                   />
