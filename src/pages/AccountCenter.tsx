@@ -104,6 +104,20 @@ const AccountCenter = () => {
   const [contactMessage, setContactMessage] = useState("");
   const [sendingContact, setSendingContact] = useState(false);
 
+  // Shared 60s cooldown between any email send (applies to BOTH the
+  // meteorologist application and the contact form) so the EmailJS quota
+  // can't be drained by a single user spamming submits.
+  const EMAIL_COOLDOWN_SECONDS = 60;
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+    const t = setTimeout(() => setCooldownRemaining((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldownRemaining]);
+
+  const startCooldown = () => setCooldownRemaining(EMAIL_COOLDOWN_SECONDS);
+
   useEffect(() => {
     if (profile?.email && !appEmail) setAppEmail(profile.email);
   }, [profile, appEmail]);
@@ -156,6 +170,12 @@ const AccountCenter = () => {
     if (!emailParsed.success) return toast.error("Invalid email address");
     if (desc.length < 50)
       return toast.error("Description must be at least 50 characters");
+    if (desc.length > 1000)
+      return toast.error("Description must be 1000 characters or less");
+
+    if (cooldownRemaining > 0) {
+      return toast.error(`Please wait ${cooldownRemaining}s before sending another email`);
+    }
 
     setSubmittingApp(true);
     try {
@@ -191,6 +211,7 @@ const AccountCenter = () => {
       }
 
       if (emailSent) {
+        startCooldown();
         toast.success("Application submitted — we'll be in touch");
       } else if (emailError) {
         toast.warning(`Application saved, but email failed: ${emailError}`);
@@ -206,13 +227,17 @@ const AccountCenter = () => {
     e.preventDefault();
     const message = contactMessage.trim();
     if (message.length < 5) return toast.error("Message is too short");
-    if (message.length > 2000) return toast.error("Message is too long (max 2000)");
+    if (message.length > 500) return toast.error("Message is too long (max 500)");
     const subjectParsed = subjectSchema.safeParse(contactSubject);
     if (!subjectParsed.success) return toast.error("Invalid subject");
 
     if (!isEmailJsConfigured()) {
       toast.error("Email is not configured yet — message could not be sent.");
       return;
+    }
+
+    if (cooldownRemaining > 0) {
+      return toast.error(`Please wait ${cooldownRemaining}s before sending another email`);
     }
 
     setSendingContact(true);
@@ -225,6 +250,7 @@ const AccountCenter = () => {
         message,
         category: subjectParsed.data,
       });
+      startCooldown();
       toast.success("Message sent");
       setContactMessage("");
     } catch (err) {
@@ -363,7 +389,7 @@ const AccountCenter = () => {
                   </div>
                   <div className="space-y-1.5">
                     <label className={labelClass} htmlFor="app-desc">
-                      Self-description ({appDesc.trim().length}/50)
+                      Self-description ({appDesc.trim().length}/1000, min 50)
                     </label>
                     <textarea
                       id="app-desc"
@@ -371,21 +397,23 @@ const AccountCenter = () => {
                       onChange={(e) => setAppDesc(e.target.value)}
                       className={`${inputClass} min-h-[120px] resize-y`}
                       placeholder="Background, credentials, forecasting experience..."
-                      maxLength={2000}
+                      maxLength={1000}
                       required
                     />
                   </div>
                   <button
                     type="submit"
-                    disabled={submittingApp}
-                    className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60"
+                    disabled={submittingApp || cooldownRemaining > 0}
+                    className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {submittingApp ? (
                       <Loader2 className="size-3.5 animate-spin" />
                     ) : (
                       <Send className="size-3.5" />
                     )}
-                    Submit Application
+                    {cooldownRemaining > 0
+                      ? `Wait ${cooldownRemaining}s`
+                      : "Submit Application"}
                   </button>
                 </form>
               )}
@@ -423,28 +451,30 @@ const AccountCenter = () => {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className={labelClass} htmlFor="contact-message">Message</label>
+                <label className={labelClass} htmlFor="contact-message">
+                  Message ({contactMessage.trim().length}/500)
+                </label>
                 <textarea
                   id="contact-message"
                   value={contactMessage}
                   onChange={(e) => setContactMessage(e.target.value)}
                   className={`${inputClass} min-h-[120px] resize-y`}
                   placeholder="What's on your mind?"
-                  maxLength={2000}
+                  maxLength={500}
                   required
                 />
               </div>
               <button
                 type="submit"
-                disabled={sendingContact}
-                className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60"
+                disabled={sendingContact || cooldownRemaining > 0}
+                className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {sendingContact ? (
                   <Loader2 className="size-3.5 animate-spin" />
                 ) : (
                   <Send className="size-3.5" />
                 )}
-                Send Message
+                {cooldownRemaining > 0 ? `Wait ${cooldownRemaining}s` : "Send Message"}
               </button>
             </form>
           </div>
