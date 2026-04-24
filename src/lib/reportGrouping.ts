@@ -201,10 +201,24 @@ function isMatch(candidate: string, existing: string): boolean {
 /* ── Public API ────────────────────────────────────────────────────────── */
 
 /**
- * Group raw messages (oldest → newest) into stacked reports, sorted by count
- * descending then by most-recent activity.
+ * Group raw messages (oldest → newest) into stacked reports.
+ *
+ * Sort priority (top → bottom):
+ *   1. Approved + many reports     (count desc)
+ *   2. Approved (any count)        (count desc)
+ *   3. Unapproved + many reports   (count desc)
+ *   4. Unapproved                  (count desc)
+ *   — within ties: most-recent activity first.
+ *
+ * "Many reports" threshold = 3 (a stack with 3+ submissions is considered
+ * trending and outranks single approved messages only when also approved).
  */
-export function groupMessages(messages: RawMessage[]): StackedReport[] {
+const TRENDING_THRESHOLD = 3;
+
+export function groupMessages(
+  messages: RawMessage[],
+  approvedSignatures: Set<string> = new Set(),
+): StackedReport[] {
   const stacks: StackedReport[] = [];
 
   for (const msg of messages) {
@@ -216,18 +230,35 @@ export function groupMessages(messages: RawMessage[]): StackedReport[] {
         match.latestTime = msg.created_at;
       }
     } else {
+      const sig = messageSignature(msg.content);
       stacks.push({
         id: msg.id,
+        signature: sig,
         topic: msg.content,
         count: 1,
         latestTime: msg.created_at,
         badge: msg.badge,
         reports: [msg],
+        approved: approvedSignatures.has(sig),
       });
     }
   }
 
+  // Re-evaluate approval after stacks are built (sig is set on first msg).
+  for (const s of stacks) s.approved = approvedSignatures.has(s.signature);
+
+  function tier(s: StackedReport): number {
+    const trending = s.count >= TRENDING_THRESHOLD;
+    if (s.approved && trending) return 0;
+    if (s.approved) return 1;
+    if (trending) return 2;
+    return 3;
+  }
+
   return stacks.sort((a, b) => {
+    const ta = tier(a);
+    const tb = tier(b);
+    if (ta !== tb) return ta - tb;
     if (b.count !== a.count) return b.count - a.count;
     return new Date(b.latestTime).getTime() - new Date(a.latestTime).getTime();
   });
