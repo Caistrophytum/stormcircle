@@ -5,6 +5,18 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const getAuthRedirectUrl = () => {
+  if (typeof window === "undefined") return "/";
+
+  const { origin, hostname } = window.location;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "https://id-preview--bce5fa05-5c8e-4487-b852-7382c0d3ff7e.lovable.app/";
+  }
+
+  return `${origin}/`;
+};
+
 type View = "login" | "signup" | "forgot";
 
 const emailSchema = z.string().trim().email({ message: "Invalid email address" }).max(255);
@@ -112,7 +124,7 @@ const Auth = () => {
         email: email.data,
         password: password.data,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: getAuthRedirectUrl(),
           data: { username: username.data },
         },
       });
@@ -136,7 +148,7 @@ const Auth = () => {
     setSubmitting(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.data, {
-        redirectTo: window.location.origin,
+        redirectTo: getAuthRedirectUrl(),
       });
       if (error) {
         toast.error(error.message);
