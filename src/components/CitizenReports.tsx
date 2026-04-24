@@ -114,6 +114,31 @@ export default function CitizenReports() {
     setSending(false);
   }
 
+  // Whether the signed-in user can remove a given message.
+  // RLS enforces this server-side too — this just hides the button when not allowed.
+  const isModerator = profile?.badge === "Meteorologist";
+  function canDelete(msg: Message) {
+    if (!user) return false;
+    return msg.user_id === user.id || isModerator;
+  }
+
+  async function deleteMessage(id: string) {
+    // Optimistic: remove locally; Realtime DELETE will keep other clients in sync.
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+    const { error } = await supabase.from("messages").delete().eq("id", id);
+    if (error) {
+      console.error("Failed to delete message:", error);
+      // Re-fetch on failure so UI doesn't drift from the DB.
+      const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .gte("created_at", cutoff)
+        .order("created_at", { ascending: true });
+      if (data) setMessages(data as Message[]);
+    }
+  }
+
   return (
     <aside className="w-80 h-full border-l border-border bg-cockpit flex flex-col shrink-0">
       {/* Header */}
