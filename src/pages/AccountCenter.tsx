@@ -389,7 +389,7 @@ const AccountCenter = () => {
                   </div>
                   <div className="space-y-1.5">
                     <label className={labelClass} htmlFor="app-desc">
-                      Self-description ({appDesc.trim().length}/50)
+                      Self-description ({appDesc.trim().length}/1000, min 50)
                     </label>
                     <textarea
                       id="app-desc"
@@ -397,21 +397,23 @@ const AccountCenter = () => {
                       onChange={(e) => setAppDesc(e.target.value)}
                       className={`${inputClass} min-h-[120px] resize-y`}
                       placeholder="Background, credentials, forecasting experience..."
-                      maxLength={2000}
+                      maxLength={1000}
                       required
                     />
                   </div>
                   <button
                     type="submit"
-                    disabled={submittingApp}
-                    className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60"
+                    disabled={submittingApp || cooldownRemaining > 0}
+                    className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {submittingApp ? (
                       <Loader2 className="size-3.5 animate-spin" />
                     ) : (
                       <Send className="size-3.5" />
                     )}
-                    Submit Application
+                    {cooldownRemaining > 0
+                      ? `Wait ${cooldownRemaining}s`
+                      : "Submit Application"}
                   </button>
                 </form>
               )}
