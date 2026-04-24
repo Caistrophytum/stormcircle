@@ -86,45 +86,171 @@ const GENERIC_WORDS = new Set<string>([
   "rolling", "passing", "sweeping", "dumping",
 ]);
 
+// Multi-word place names that collapse to a single token before tokenization,
+// so they can be aliased via SYNONYMS (e.g. "new jersey" → "newjersey" → "nj").
+// Sorted longest-first so multi-word phrases match before their substrings.
+const MULTIWORD_PHRASES: string[] = [
+  // States
+  "new hampshire", "new jersey", "new mexico", "new york state", "new york",
+  "north carolina", "north dakota", "rhode island", "south carolina",
+  "south dakota", "west virginia", "washington dc", "washington d c",
+  // Cities
+  "oklahoma city", "new york city", "fort worth", "ft worth",
+  "los angeles", "san francisco", "san antonio", "san diego", "san jose",
+  "saint louis", "st louis", "saint paul", "st paul", "twin cities",
+  "salt lake city", "kansas city", "las vegas", "new orleans",
+].sort((a, b) => b.length - a.length);
+
 // Synonym groups — every word in a group is treated as the same token.
+// Add new aliases here when you notice the chat splitting equivalent
+// place names (e.g. "NJ" vs "New Jersey", "St. Louis" vs "Saint Louis").
 const SYNONYMS: string[][] = [
-  // Cities / regions
-  ["okc", "oklahoma", "oklahomacity"],
-  ["nyc", "newyork", "manhattan", "manhatten"],
+  // ── US states (abbrev ↔ full name; multi-word names collapse to one token
+  //    because tokenization strips whitespace/punctuation, so "New Jersey" →
+  //    "newjersey").
+  ["al", "alabama"],
+  ["ak", "alaska"],
+  ["az", "arizona"],
+  ["ar", "arkansas"],
+  ["ca", "california", "calif"],
+  ["co", "colorado"],
+  ["ct", "connecticut", "conn"],
+  ["de", "delaware"],
+  ["fl", "florida", "fla"],
+  ["ga", "georgia"],
+  ["hi", "hawaii"],
+  ["id", "idaho"],
+  ["il", "illinois", "ill"],
+  ["in", "indiana", "ind"],
+  ["ia", "iowa"],
+  ["ks", "kansas", "kan"],
+  ["ky", "kentucky"],
+  ["la", "louisiana"], // NB: also matches "LA" the city — see city group below.
+  ["me", "maine"],
+  ["md", "maryland"],
+  ["ma", "massachusetts", "mass"],
+  ["mi", "michigan", "mich"],
+  ["mn", "minnesota", "minn"],
+  ["ms", "mississippi", "miss"],
+  ["mo", "missouri"],
+  ["mt", "montana", "mont"],
+  ["ne", "nebraska", "nebr"],
+  ["nv", "nevada"],
+  ["nh", "newhampshire"],
+  ["nj", "newjersey"],
+  ["nm", "newmexico"],
+  ["ny", "newyorkstate"], // state abbreviation; NYC handled in city group
+  ["nc", "northcarolina"],
+  ["nd", "northdakota"],
+  ["oh", "ohio"],
+  ["ok", "oklahoma", "okla"],
+  ["or", "oregon", "ore"],
+  ["pa", "pennsylvania", "penn"],
+  ["ri", "rhodeisland"],
+  ["sc", "southcarolina"],
+  ["sd", "southdakota"],
+  ["tn", "tennessee", "tenn"],
+  ["tx", "texas", "tex"],
+  ["ut", "utah"],
+  ["vt", "vermont"],
+  ["va", "virginia"],
+  ["wa", "washington", "wash"], // state; "DC" handled separately
+  ["wv", "westvirginia"],
+  ["wi", "wisconsin", "wisc"],
+  ["wy", "wyoming"],
+  ["dc", "washingtondc"],
+
+  // ── Major US cities (abbrev / nickname ↔ canonical)
+  ["okc", "oklahomacity"],
+  ["nyc", "newyorkcity", "newyork", "manhattan", "manhatten", "brooklyn", "bronx", "queens"],
   ["dfw", "dallas", "fortworth", "ftworth"],
-  ["la", "losangeles"],
-  ["sf", "sanfrancisco"],
-  // Tornado family
+  ["la", "losangeles", "lax"],
+  ["sf", "sanfrancisco", "frisco"],
+  ["chi", "chicago", "chitown"],
+  ["philly", "philadelphia"],
+  ["nola", "neworleans"],
+  ["vegas", "lasvegas"],
+  ["atl", "atlanta"],
+  ["bos", "boston"],
+  ["sea", "seattle"],
+  ["pdx", "portland"],
+  ["mia", "miami"],
+  ["hou", "houston"],
+  ["sa", "sanantonio"],
+  ["sd", "sandiego"], // overlaps SD/South Dakota — context (other tokens) disambiguates
+  ["sj", "sanjose"],
+  ["det", "detroit"],
+  ["msp", "minneapolis", "stpaul", "saintpaul", "twincities"],
+  ["stl", "stlouis", "saintlouis"],
+  ["kc", "kansascity"],
+  ["pit", "pittsburgh"],
+  ["clt", "charlotte"],
+  ["rdu", "raleigh", "durham"],
+  ["jax", "jacksonville"],
+  ["tpa", "tampa"],
+  ["orl", "orlando"],
+  ["abq", "albuquerque"],
+  ["slc", "saltlakecity"],
+  ["den", "denver"],
+  ["phx", "phoenix"],
+  ["tus", "tucson"],
+  ["ind", "indianapolis", "indy"],
+  ["mke", "milwaukee"],
+  ["cle", "cleveland"],
+  ["cin", "cincinnati", "cincy"],
+  ["col", "columbus"],
+  ["nash", "nashville"],
+  ["mem", "memphis"],
+  ["bham", "birmingham"],
+  ["ral", "raleigh"],
+
+  // ── Tornado family
   ["tornado", "twister", "rotation", "wedge", "stovepipe", "vortex", "funnel"],
-  // Hail family
+  // ── Hail family
   ["hail", "hailstone", "hailstones", "chunks", "stones", "balls"],
-  // Wind family
+  // ── Wind family
   ["wind", "winds", "gust", "gusts", "gale", "squall", "derecho", "microburst", "downburst"],
-  // Rain / flood family
+  // ── Rain / flood family
   ["rain", "downpour", "deluge", "shower", "drizzle"],
   ["flood", "flooding", "flash", "waterlogged", "submerged"],
-  // Snow / ice family
+  // ── Snow / ice family
   ["snow", "snowstorm", "blizzard", "graupel", "sleet"],
   ["ice", "icy", "freezing", "frost"],
-  // Lightning / thunder
+  // ── Lightning / thunder
   ["lightning", "thunder", "thunderstorm", "storm"],
-  // Visibility
+  // ── Visibility
   ["fog", "mist", "haze"],
-  // Infrastructure / power
+  // ── Infrastructure / power
   ["power", "outage", "blackout", "electricity", "lines"],
   ["tree", "trees", "branch", "branches", "fallen", "uprooted"],
   ["road", "roads", "highway", "hwy", "street", "streets", "impassable"],
-  // Intensity / size
+  // ── Intensity / size
   ["large", "massive", "huge", "giant", "big", "great", "significant", "extreme"],
   ["small", "tiny", "minor"],
-  // Action / impact
+  // ── Action / impact
   ["hitting", "striking", "pounding", "battering", "lashing", "slamming", "falling"],
 ];
 
+// A single word can belong to multiple synonym groups (e.g. "la" is both
+// Louisiana and Los Angeles, "sd" is both South Dakota and San Diego).
+// We merge all groups that contain a given word so wordsMatch() treats any
+// of those aliases as equivalent. Disambiguation in practice comes from the
+// other tokens in the message (state names rarely co-occur with city names).
 const WORD_TO_GROUP = new Map<string, Set<string>>();
 for (const group of SYNONYMS) {
-  const set = new Set(group);
-  for (const word of group) WORD_TO_GROUP.set(word, set);
+  for (const word of group) {
+    const existing = WORD_TO_GROUP.get(word);
+    if (existing) {
+      for (const w of group) existing.add(w);
+    } else {
+      WORD_TO_GROUP.set(word, new Set(group));
+    }
+  }
+}
+// Second pass: ensure every word in a merged set points to the same Set
+// instance, so updates above are reflected for all members.
+for (const [, set] of WORD_TO_GROUP) {
+  for (const w of set) WORD_TO_GROUP.set(w, set);
 }
 
 /* ── Tokenization & matching ───────────────────────────────────────────── */
@@ -144,8 +270,21 @@ function analyze(text: string): TokenAnalysis {
   const cached = tokenCache.get(text);
   if (cached) return cached;
 
-  const tokens = text
-    .toLowerCase()
+  // Collapse known multi-word place names to a single token BEFORE
+  // tokenization, so "New Jersey" → "newjersey" (which then matches "nj"
+  // via the synonym table). Order matters: longer phrases first to avoid
+  // greedy partial matches.
+  let normalized = text.toLowerCase();
+  for (const phrase of MULTIWORD_PHRASES) {
+    // word-boundary, allow any whitespace between parts
+    const pattern = new RegExp(
+      `\\b${phrase.split(" ").join("\\s+")}\\b`,
+      "g",
+    );
+    normalized = normalized.replace(pattern, phrase.replace(/\s+/g, ""));
+  }
+
+  const tokens = normalized
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter(Boolean);
