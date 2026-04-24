@@ -24,7 +24,7 @@ import TacticalMap from "@/components/TacticalMap";
 import CitizenReports from "@/components/CitizenReports";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
-import { useAuth } from "@/hooks/useAuth";
+
 
 const Index = () => {
   // Side-panel open/close state.
