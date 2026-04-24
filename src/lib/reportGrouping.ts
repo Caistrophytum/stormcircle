@@ -216,10 +216,26 @@ const SYNONYMS: string[][] = [
   ["hitting", "striking", "pounding", "battering", "lashing", "slamming", "falling"],
 ];
 
+// A single word can belong to multiple synonym groups (e.g. "la" is both
+// Louisiana and Los Angeles, "sd" is both South Dakota and San Diego).
+// We merge all groups that contain a given word so wordsMatch() treats any
+// of those aliases as equivalent. Disambiguation in practice comes from the
+// other tokens in the message (state names rarely co-occur with city names).
 const WORD_TO_GROUP = new Map<string, Set<string>>();
 for (const group of SYNONYMS) {
-  const set = new Set(group);
-  for (const word of group) WORD_TO_GROUP.set(word, set);
+  for (const word of group) {
+    const existing = WORD_TO_GROUP.get(word);
+    if (existing) {
+      for (const w of group) existing.add(w);
+    } else {
+      WORD_TO_GROUP.set(word, new Set(group));
+    }
+  }
+}
+// Second pass: ensure every word in a merged set points to the same Set
+// instance, so updates above are reflected for all members.
+for (const [, set] of WORD_TO_GROUP) {
+  for (const w of set) WORD_TO_GROUP.set(w, set);
 }
 
 /* ── Tokenization & matching ───────────────────────────────────────────── */
