@@ -16,17 +16,12 @@
  *     with the user's own profile.username + badge so spoofing another user
  *     is blocked by the RLS check (auth.uid() = user_id).
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { groupMessages, type RawMessage } from "@/lib/reportGrouping";
 
-interface Message {
-  id: string;
-  username: string;
-  badge: string;
-  content: string;
-  created_at: string;
-}
+type Message = RawMessage;
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
