@@ -227,13 +227,17 @@ const AccountCenter = () => {
     e.preventDefault();
     const message = contactMessage.trim();
     if (message.length < 5) return toast.error("Message is too short");
-    if (message.length > 2000) return toast.error("Message is too long (max 2000)");
+    if (message.length > 500) return toast.error("Message is too long (max 500)");
     const subjectParsed = subjectSchema.safeParse(contactSubject);
     if (!subjectParsed.success) return toast.error("Invalid subject");
 
     if (!isEmailJsConfigured()) {
       toast.error("Email is not configured yet — message could not be sent.");
       return;
+    }
+
+    if (cooldownRemaining > 0) {
+      return toast.error(`Please wait ${cooldownRemaining}s before sending another email`);
     }
 
     setSendingContact(true);
@@ -246,6 +250,7 @@ const AccountCenter = () => {
         message,
         category: subjectParsed.data,
       });
+      startCooldown();
       toast.success("Message sent");
       setContactMessage("");
     } catch (err) {
