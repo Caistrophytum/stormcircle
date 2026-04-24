@@ -17,7 +17,7 @@ const getAuthRedirectUrl = () => {
   return `${origin}/`;
 };
 
-type View = "login" | "signup" | "forgot";
+type View = "login" | "signup" | "forgot" | "resend";
 
 const emailSchema = z.string().trim().email({ message: "Invalid email address" }).max(255);
 const usernameSchema = z
