@@ -15,11 +15,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  sendContactMessage,
-  sendMeteorologistApplication,
-  isEmailJsConfigured,
-} from "@/lib/emailjs";
+import { sendEmail, TEMPLATE_IDS } from "@/lib/emailjs";
 import {
   AlertDialog,
   AlertDialogAction,
