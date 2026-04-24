@@ -140,13 +140,16 @@ function dangerScore(a: Alert): number {
   else if (a.tags.includes("Destructive")) tagTier = 2;
   else if (a.tags.includes("Considerable")) tagTier = 3;
 
-  // Kind dominates so a Warning is always ranked above a Watch (and Watch above
-  // Advisory, etc.) regardless of NWS-assigned severity. Severity, tags,
-  // certainty, and urgency act as tiebreakers within the same kind.
+  // Kind dominates so a Warning is always ranked above a Watch (regardless of
+  // severity). Within the same kind, Extreme severity ranks highest, then
+  // tagged warnings (Considerable/Destructive/PDS/etc.) outrank untagged
+  // warnings of any non-Extreme severity. Certainty and urgency tie-break.
+  const isExtreme = a.severity === "Extreme" ? 0 : 1;
   return (
-    KIND_ORDER[a.kind] * 1_000_000 +
-    SEVERITY_ORDER[a.severity] * 100_000 +
-    tagTier * 10_000 +
+    KIND_ORDER[a.kind] * 10_000_000 +
+    isExtreme * 1_000_000 +
+    tagTier * 100_000 +
+    SEVERITY_ORDER[a.severity] * 1_000 +
     CERTAINTY_ORDER[a.certainty] * 10 +
     URGENCY_ORDER[a.urgency]
   );
