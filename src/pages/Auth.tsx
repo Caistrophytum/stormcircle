@@ -219,7 +219,7 @@ const Auth = () => {
     setSubmitting(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.data, {
-        redirectTo: getAuthRedirectUrl(),
+        redirectTo: `${getAuthRedirectUrl().replace(/\/$/, "")}/reset-password`,
       });
       if (error) {
         toast.error(error.message);
