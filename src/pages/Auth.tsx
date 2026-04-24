@@ -150,6 +150,17 @@ const Auth = () => {
     }
   };
 
+  /**
+   * Signup flow:
+   *   1. Honeypot check — bots fill every input including the hidden one
+   *   2. Confirm password matches
+   *   3. Validate username/email/password against the schemas above
+   *   4. Hand off to Supabase signUp() — the database trigger
+   *      `handle_new_user` will auto-create the matching profiles row
+   *
+   * The username is sent in `options.data` so the trigger can pick it up
+   * from `raw_user_meta_data->>'username'`.
+   */
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
     // Honeypot check — silently reject bots without telling them why
