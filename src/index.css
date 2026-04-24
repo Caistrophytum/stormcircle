@@ -187,3 +187,18 @@
 }
 
 
+
+/* Pulsing glow on the left menu button when a new SKYWARN report arrives. */
+@keyframes report-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+    border-color: hsl(var(--primary) / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 18px 4px hsl(var(--primary) / 0.75);
+    border-color: hsl(var(--primary));
+  }
+}
+.report-glow {
+  animation: report-glow-pulse 1s ease-in-out 2;
+}
