@@ -204,12 +204,12 @@ export default function CitizenReports() {
 
   // ── Permission helpers ────────────────────────────────────────────────
   // (RLS enforces these server-side too — UI just hides disallowed buttons.)
-  function canDelete(msg: Message) {
-    if (!user) return false;
-    return msg.user_id === user.id || isModerator;
+  // Only Meteorologists can delete (any message or whole stacks). Citizens
+  // and guests can read but cannot moderate.
+  function canDelete(_msg: Message) {
+    return isModerator;
   }
-  function canDeleteStack(stack: StackedReport) {
-    // Stack delete is moderator-only per requirement.
+  function canDeleteStack(_stack: StackedReport) {
     return isModerator;
   }
 
