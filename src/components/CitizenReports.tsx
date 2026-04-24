@@ -11,10 +11,10 @@
  *      from local state (the server pg_cron job purges rows every 5 min).
  *
  * Auth model:
- *   - Anyone (including guests) can READ chat + approvals.
- *   - Only authenticated users can SEND.
- *   - Citizens can DELETE their own messages.
- *   - Meteorologists can DELETE any message AND approve/unapprove topics.
+ *   - Anyone (including guests and Citizens) can READ chat + approvals.
+ *   - Only Meteorologists can SEND messages.
+ *   - Only Meteorologists can DELETE messages (single or whole stack).
+ *   - Only Meteorologists can approve/unapprove topics.
  *   - Meteorologist messages auto-approve their topic via a DB trigger.
  *
  * Approval model:
