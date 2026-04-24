@@ -31,7 +31,18 @@ export default function CitizenReports() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Derive grouped, ranked stacks from the live message list.
+  const stacks = useMemo(() => groupMessages(messages), [messages]);
+
+  function toggleExpand(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   // ── Initial load: pull the last 2 hours of history ────────────────────
   useEffect(() => {
