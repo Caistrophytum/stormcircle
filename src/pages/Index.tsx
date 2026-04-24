@@ -1,3 +1,21 @@
+/**
+ * Index.tsx — the main "tactical map" page.
+ *
+ * Layout:
+ *   ┌──────────────── StatusBar ─────────────────┐
+ *   │ [Integrations] │  TacticalMap  │ [PeerReview] │
+ *   └─────────────────────────────────────────────┘
+ *
+ * The left and right side panels can be collapsed/expanded with the
+ * buttons in the bottom-right of the map. When a panel collapses, the
+ * map gets the extra width — and the floating overlays at the top of the
+ * map (radar mini-map + EventInfoPanel) get scaled down so they always
+ * fit inside the available center column.
+ *
+ * The page also derives `userRole` from the auth state, which the peer
+ * review panel uses to gate moderation buttons (only "meteorologist"
+ * users can verify or remove reports).
+ */
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from "lucide-react";
@@ -9,6 +27,10 @@ import { CityProvider } from "@/contexts/CityContext";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
+  // Three-tier role:
+  //   guest         — not signed in
+  //   citizen       — signed in, default badge
+  //   meteorologist — signed in, badge has been promoted by an admin
   const { user, profile } = useAuth();
   const userRole: "guest" | "citizen" | "meteorologist" = !user
     ? "guest"
@@ -16,9 +38,11 @@ const Index = () => {
       ? "meteorologist"
       : "citizen";
 
+  // Side-panel open/close state.
   const [rightOpen, setRightOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
 
+  // Track viewport width so we can recompute the overlay scale on resize.
   const [viewportW, setViewportW] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth : 1920
   );
@@ -29,18 +53,20 @@ const Index = () => {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Width available to the map (center column) given which side panels are open
+  // Width available to the map (center column) given which side panels are open.
   const sidePanelWidth = 320;
   const centerWidth = Math.max(
     320,
     viewportW - (leftOpen ? sidePanelWidth : 0) - (rightOpen ? sidePanelWidth : 0)
   );
 
-  // Intrinsic combined width of the top overlays (radar mini-map + EventInfoPanel)
+  // Intrinsic combined width of the top overlays (radar mini-map + EventInfoPanel).
+  // 500 = EventInfoPanel intrinsic width, 48 = side padding + gap buffer.
   const radarPanelW = Math.min(340, Math.max(200, viewportW * 0.22));
-  const topOverlayIntrinsic = radarPanelW + 500 + 48; // 48 = side padding + gap buffer
+  const topOverlayIntrinsic = radarPanelW + 500 + 48;
 
-  // Scale so the top overlays always fit within the available center width
+  // Scale so the top overlays always fit within the available center width.
+  // Clamped to [0.6, 1] — never grow above natural size, never shrink below 60%.
   const overlayScale = Math.min(1, Math.max(0.6, centerWidth / topOverlayIntrinsic));
 
   return (
