@@ -402,6 +402,41 @@ const Auth = () => {
                 </div>
               </form>
             )}
+
+            {view === "resend" && (
+              <form onSubmit={handleResend} className="space-y-4">
+                <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
+                  Didn't get the confirmation email? Enter your registered email and we'll send a fresh link.
+                </p>
+                <div className="space-y-1.5">
+                  <label className={labelClass} htmlFor="rs-email">Email</label>
+                  <input
+                    id="rs-email"
+                    type="email"
+                    autoComplete="email"
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    className={inputClass}
+                    placeholder="operator@strato.ops"
+                    required
+                    maxLength={255}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <MailCheck className="size-3.5" />}
+                  Resend Confirmation
+                </button>
+                <div className="text-[10px] font-mono text-center pt-1">
+                  <button type="button" onClick={() => setView("login")} className="text-muted-foreground hover:text-primary transition-colors">
+                    ← Back to Login
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>
