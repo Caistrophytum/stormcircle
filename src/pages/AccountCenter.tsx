@@ -104,6 +104,20 @@ const AccountCenter = () => {
   const [contactMessage, setContactMessage] = useState("");
   const [sendingContact, setSendingContact] = useState(false);
 
+  // Shared 60s cooldown between any email send (applies to BOTH the
+  // meteorologist application and the contact form) so the EmailJS quota
+  // can't be drained by a single user spamming submits.
+  const EMAIL_COOLDOWN_SECONDS = 60;
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+    const t = setTimeout(() => setCooldownRemaining((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldownRemaining]);
+
+  const startCooldown = () => setCooldownRemaining(EMAIL_COOLDOWN_SECONDS);
+
   useEffect(() => {
     if (profile?.email && !appEmail) setAppEmail(profile.email);
   }, [profile, appEmail]);
