@@ -6,7 +6,7 @@ import emailjs from "@emailjs/browser";
 //   3. Create two email templates — one for meteorologist applications, one for contact/feedback
 //   4. Copy the Service ID, Public Key, and Template IDs into this file
 export const EMAILJS_SERVICE_ID = "service_xxk4g8g";
-export const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+export const EMAILJS_PUBLIC_KEY = "s0M3hsjSA8UikMSrN";
 
 export const TEMPLATE_IDS = {
   meteorologistApplication: "YOUR_TEMPLATE_ID_1",
