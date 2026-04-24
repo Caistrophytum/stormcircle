@@ -161,9 +161,20 @@ function isMatch(candidate: string, existing: string): boolean {
   const specificScore = overlap(specificA, specificB);
   const genericScore = overlap(genericA, genericB);
 
-  // Must share at least one specific (location-ish) token AND have any
-  // generic overlap — this keeps "Hail in Tulsa" from merging with
-  // "Power outage in Tulsa".
+  // Edge case: neither message has any specific (location-ish) tokens
+  // (e.g. "test", "hello", or short generic chatter). Fall back to pure
+  // token overlap so identical/near-identical messages still stack.
+  if (specificA.length === 0 && specificB.length === 0) {
+    const tokenScore = overlap(ta, tb);
+    const minLen = Math.min(ta.length, tb.length);
+    if (minLen === 0) return false;
+    // Require most tokens to overlap when there's no location anchor.
+    return tokenScore / minLen >= 0.6;
+  }
+
+  // Otherwise: require at least one specific (location) overlap. Generic
+  // overlap adds to the score but cannot match on its own — this keeps
+  // "Hail in Tulsa" from merging with "Power outage in Tulsa".
   if (specificScore === 0) return false;
   if (genericScore === 0 && specificA.length > 0 && specificB.length > 0) return false;
 
