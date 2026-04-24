@@ -6,8 +6,16 @@ import TacticalMap from "@/components/TacticalMap";
 import PeerReviewQueue from "@/components/PeerReviewQueue";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
+  const { user, profile } = useAuth();
+  const userRole: "guest" | "citizen" | "meteorologist" = !user
+    ? "guest"
+    : profile?.badge === "Meteorologist"
+      ? "meteorologist"
+      : "citizen";
+
   const [rightOpen, setRightOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
 
