@@ -15,7 +15,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { sendEmail, TEMPLATE_IDS } from "@/lib/emailjs";
+import { sendEmail, TEMPLATE_IDS, isEmailJsConfigured } from "@/lib/emailjs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -159,28 +159,44 @@ const AccountCenter = () => {
 
     setSubmittingApp(true);
     try {
-      await sendEmail(TEMPLATE_IDS.meteorologistApplication, {
-        subject: `Meteorologist Badge Application — ${profile.username}`,
-        from_email: email,
-        reply_to: email,
-        name: `${first} ${last}`,
-        first_name: first,
-        last_name: last,
-        username: profile.username,
-        description: desc,
-      });
+      let emailSent = false;
+      let emailError: string | null = null;
+
+      if (isEmailJsConfigured()) {
+        try {
+          await sendEmail(TEMPLATE_IDS.meteorologistApplication, {
+            subject: `Meteorologist Badge Application — ${profile.username}`,
+            from_email: email,
+            reply_to: email,
+            name: `${first} ${last}`,
+            first_name: first,
+            last_name: last,
+            username: profile.username,
+            description: desc,
+          });
+          emailSent = true;
+        } catch (err) {
+          emailError = err instanceof Error ? err.message : "Email delivery failed";
+        }
+      }
+
+      // Always record the application in the database so the UI reflects it.
       const { error } = await supabase
         .from("profiles")
         .update({ meteorologist_applied: true })
         .eq("id", user.id);
       if (error) {
-        toast.error(`Application sent, but flag update failed: ${error.message}`);
+        toast.error(`Could not save application: ${error.message}`);
         return;
       }
-      toast.success("Application submitted — we'll be in touch");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to send application";
-      toast.error(msg);
+
+      if (emailSent) {
+        toast.success("Application submitted — we'll be in touch");
+      } else if (emailError) {
+        toast.warning(`Application saved, but email failed: ${emailError}`);
+      } else {
+        toast.success("Application saved. (Email delivery is not configured yet.)");
+      }
     } finally {
       setSubmittingApp(false);
     }
