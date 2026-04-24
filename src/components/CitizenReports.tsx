@@ -1,5 +1,5 @@
 /**
- * PublicChat — global chat room with a 2-hour rolling history.
+ * CitizenReports — global citizen report stream with a 2-hour rolling history.
  *
  * Data flow:
  *   1. On mount, hydrate with messages from the last 2 hours (server-side filter).
@@ -31,7 +31,7 @@ interface Message {
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
 
-export default function PublicChat() {
+export default function CitizenReports() {
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -117,7 +117,7 @@ export default function PublicChat() {
       <div className="p-4 border-b border-border bg-shroud/30">
         <h3 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
           <span className="size-1.5 bg-primary rounded-full animate-pulse" />
-          Public Chat
+          Citizen Reports
         </h3>
         <p className="text-[9px] font-mono text-muted-foreground mt-1 uppercase">
           2-hour rolling history
