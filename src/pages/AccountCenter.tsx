@@ -15,11 +15,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  sendContactMessage,
-  sendMeteorologistApplication,
-  isEmailJsConfigured,
-} from "@/lib/emailjs";
+import { sendEmail, TEMPLATE_IDS } from "@/lib/emailjs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -163,15 +159,14 @@ const AccountCenter = () => {
 
     setSubmittingApp(true);
     try {
-      if (!isEmailJsConfigured()) {
-        toast.error("EmailJS not configured yet — application not sent");
-        return;
-      }
-      await sendMeteorologistApplication({
+      await sendEmail(TEMPLATE_IDS.meteorologistApplication, {
+        subject: `Meteorologist Badge Application — ${profile.username}`,
+        from_email: email,
+        reply_to: email,
+        name: `${first} ${last}`,
+        first_name: first,
+        last_name: last,
         username: profile.username,
-        email,
-        firstName: first,
-        lastName: last,
         description: desc,
       });
       const { error } = await supabase
@@ -201,15 +196,13 @@ const AccountCenter = () => {
 
     setSendingContact(true);
     try {
-      if (!isEmailJsConfigured()) {
-        toast.error("EmailJS not configured yet — message not sent");
-        return;
-      }
-      await sendContactMessage({
+      await sendEmail(TEMPLATE_IDS.contactFeedback, {
+        subject: `${subjectParsed.data} from ${profile.username}`,
+        from_email: profile.email,
+        reply_to: profile.email,
         username: profile.username,
-        email: profile.email,
-        subject: subjectParsed.data,
         message,
+        category: subjectParsed.data,
       });
       toast.success("Message sent");
       setContactMessage("");
