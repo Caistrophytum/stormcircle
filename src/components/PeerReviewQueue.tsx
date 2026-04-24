@@ -615,23 +615,32 @@ const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
         </AnimatePresence>
       </div>
 
-      {/* Comment Input */}
+      {/* Comment Input — disabled for guests to prevent unauthenticated reporting */}
       <div className="p-3 border-t border-border bg-shroud/30">
-        <div className="flex gap-2">
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && handleSubmit()}
-            placeholder="Report an event..."
-            className="flex-1 bg-background/50 border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
-          />
-          <button
-            onClick={handleSubmit}
-            className="px-3 py-1.5 bg-primary/10 border border-primary/20 text-primary font-mono text-[10px] uppercase font-bold hover:bg-primary hover:text-background transition-all rounded-sm"
-          >
-            Send
-          </button>
-        </div>
+        {userRole === "guest" ? (
+          <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
+            <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
+              Sign in to report an event
+            </p>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleSubmit()}
+              placeholder="Report an event..."
+              maxLength={500}
+              className="flex-1 bg-background/50 border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
+            />
+            <button
+              onClick={handleSubmit}
+              className="px-3 py-1.5 bg-primary/10 border border-primary/20 text-primary font-mono text-[10px] uppercase font-bold hover:bg-primary hover:text-background transition-all rounded-sm"
+            >
+              Send
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );
