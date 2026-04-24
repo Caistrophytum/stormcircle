@@ -86,6 +86,21 @@ const GENERIC_WORDS = new Set<string>([
   "rolling", "passing", "sweeping", "dumping",
 ]);
 
+// Multi-word place names that collapse to a single token before tokenization,
+// so they can be aliased via SYNONYMS (e.g. "new jersey" → "newjersey" → "nj").
+// Sorted longest-first so multi-word phrases match before their substrings.
+const MULTIWORD_PHRASES: string[] = [
+  // States
+  "new hampshire", "new jersey", "new mexico", "new york state", "new york",
+  "north carolina", "north dakota", "rhode island", "south carolina",
+  "south dakota", "west virginia", "washington dc", "washington d c",
+  // Cities
+  "oklahoma city", "new york city", "fort worth", "ft worth",
+  "los angeles", "san francisco", "san antonio", "san diego", "san jose",
+  "saint louis", "st louis", "saint paul", "st paul", "twin cities",
+  "salt lake city", "kansas city", "las vegas", "new orleans",
+].sort((a, b) => b.length - a.length);
+
 // Synonym groups — every word in a group is treated as the same token.
 // Add new aliases here when you notice the chat splitting equivalent
 // place names (e.g. "NJ" vs "New Jersey", "St. Louis" vs "Saint Louis").
