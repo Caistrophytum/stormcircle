@@ -1,3 +1,18 @@
+/**
+ * AccountCenter.tsx — the signed-in user's "settings" page. Three sections:
+ *
+ *   1. Operator Profile — username/email/badge readout + Logout / Delete
+ *   2. Meteorologist Badge — application form (only shown to Citizens who
+ *      haven't applied yet) or "under review" status (after applying)
+ *   3. Contact / Feedback — generic message form to stormcirclecontact@gmail.com
+ *
+ * Both forms (badge application and contact) share a 60-second cooldown so
+ * a single user can't drain the EmailJS free-tier quota by spamming submits.
+ *
+ * The "delete account" flow requires the user to type their EXACT username
+ * (case-sensitive) into the confirmation dialog before the destructive RPC
+ * `delete_user` is invoked.
+ */
 import { useEffect, useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
