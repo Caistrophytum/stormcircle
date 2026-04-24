@@ -208,6 +208,7 @@ const Auth = () => {
     }
   };
 
+  /** Sends a "reset your password" email via Supabase. */
   const handleForgot = async (e: FormEvent) => {
     e.preventDefault();
     const email = emailSchema.safeParse(forgotEmail);
@@ -230,6 +231,11 @@ const Auth = () => {
     }
   };
 
+  /**
+   * Re-sends the signup confirmation email. Supabase silently no-ops if
+   * the address is already confirmed, so a successful response here does
+   * NOT guarantee an email actually went out.
+   */
   const handleResend = async (e: FormEvent) => {
     e.preventDefault();
     const email = emailSchema.safeParse(resendEmail);
