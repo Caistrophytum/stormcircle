@@ -388,11 +388,15 @@ const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [verified, setVerified] = useState<Set<string>>(new Set());
 
+  const canModerate = userRole === "meteorologist";
+
   const handleVerify = (id: string) => {
+    if (!canModerate) return;
     setVerified(prev => new Set(prev).add(id));
   };
 
   const handleRemove = (id: string) => {
+    if (!canModerate) return;
     setReports(prev => prev.filter(r => r.id !== id));
     setExpanded(prev => {
       const next = new Set(prev);
