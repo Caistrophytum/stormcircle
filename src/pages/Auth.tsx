@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn, UserPlus, KeyRound, Loader2, ArrowLeft } from "lucide-react";
+import { LogIn, UserPlus, KeyRound, Loader2, ArrowLeft, MailCheck } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ const getAuthRedirectUrl = () => {
   return `${origin}/`;
 };
 
-type View = "login" | "signup" | "forgot";
+type View = "login" | "signup" | "forgot" | "resend";
 
 const emailSchema = z.string().trim().email({ message: "Invalid email address" }).max(255);
 const usernameSchema = z
@@ -47,6 +47,9 @@ const Auth = () => {
 
   // Forgot state
   const [forgotEmail, setForgotEmail] = useState("");
+
+  // Resend confirmation
+  const [resendEmail, setResendEmail] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -160,10 +163,35 @@ const Auth = () => {
     }
   };
 
+  const handleResend = async (e: FormEvent) => {
+    e.preventDefault();
+    const email = emailSchema.safeParse(resendEmail);
+    if (!email.success) {
+      toast.error(email.error.errors[0].message);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.data,
+        options: { emailRedirectTo: getAuthRedirectUrl() },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Confirmation email re-sent. Check your inbox.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const titles: Record<View, { label: string; icon: typeof LogIn }> = {
     login: { label: "Authenticate", icon: LogIn },
     signup: { label: "New Operator", icon: UserPlus },
     forgot: { label: "Recover Access", icon: KeyRound },
+    resend: { label: "Resend Confirmation", icon: MailCheck },
   };
   const Icon = titles[view].icon;
 
@@ -193,13 +221,14 @@ const Auth = () => {
           </div>
 
           {/* Tabs */}
-          <div className="grid grid-cols-3 border-b border-border">
-            {(["login", "signup", "forgot"] as View[]).map((v) => {
+          <div className="grid grid-cols-4 border-b border-border">
+            {(["login", "signup", "forgot", "resend"] as View[]).map((v) => {
               const active = view === v;
               const labels: Record<View, string> = {
                 login: "Login",
                 signup: "Sign Up",
                 forgot: "Recover",
+                resend: "Resend",
               };
               return (
                 <button
@@ -365,6 +394,41 @@ const Auth = () => {
                 >
                   {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <KeyRound className="size-3.5" />}
                   Send Reset Link
+                </button>
+                <div className="text-[10px] font-mono text-center pt-1">
+                  <button type="button" onClick={() => setView("login")} className="text-muted-foreground hover:text-primary transition-colors">
+                    ← Back to Login
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {view === "resend" && (
+              <form onSubmit={handleResend} className="space-y-4">
+                <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
+                  Didn't get the confirmation email? Enter your registered email and we'll send a fresh link.
+                </p>
+                <div className="space-y-1.5">
+                  <label className={labelClass} htmlFor="rs-email">Email</label>
+                  <input
+                    id="rs-email"
+                    type="email"
+                    autoComplete="email"
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    className={inputClass}
+                    placeholder="operator@strato.ops"
+                    required
+                    maxLength={255}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <MailCheck className="size-3.5" />}
+                  Resend Confirmation
                 </button>
                 <div className="text-[10px] font-mono text-center pt-1">
                   <button type="button" onClick={() => setView("login")} className="text-muted-foreground hover:text-primary transition-colors">
