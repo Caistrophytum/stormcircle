@@ -74,6 +74,7 @@ export type Database = {
     }
     Functions: {
       delete_user: { Args: never; Returns: undefined }
+      is_meteorologist: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
