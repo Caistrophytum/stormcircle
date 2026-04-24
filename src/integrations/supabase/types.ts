@@ -68,6 +68,24 @@ export type Database = {
         }
         Relationships: []
       }
+      report_approvals: {
+        Row: {
+          approved_at: string
+          approved_by: string
+          signature: string
+        }
+        Insert: {
+          approved_at?: string
+          approved_by: string
+          signature: string
+        }
+        Update: {
+          approved_at?: string
+          approved_by?: string
+          signature?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -75,6 +93,7 @@ export type Database = {
     Functions: {
       delete_user: { Args: never; Returns: undefined }
       is_meteorologist: { Args: { _user_id: string }; Returns: boolean }
+      message_signature: { Args: { _content: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never
