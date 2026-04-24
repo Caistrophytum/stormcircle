@@ -53,6 +53,9 @@ type Message = RawMessage;
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
+// Bound on how many messages we hold in client state at once. The oldest
+// 2-hour window holds whatever fits — older rows fall off as new ones arrive.
+const MAX_INITIAL_MESSAGES = 500;
 
 // Action queued behind the confirmation dialog.
 type PendingAction =
