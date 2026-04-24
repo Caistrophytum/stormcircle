@@ -26,11 +26,27 @@ export interface RawMessage {
 
 export interface StackedReport {
   id: string;            // id of the first (oldest) message in the stack
+  signature: string;     // stable topic signature (matches SQL message_signature)
   topic: string;         // display title — content of the first message
   count: number;
   latestTime: string;    // created_at of the most recent message
   badge: string;         // badge of the first reporter
   reports: RawMessage[]; // all individual reports in this stack
+  approved: boolean;     // computed at render time from approvals set
+}
+
+/**
+ * Build a stable signature for a message — must match the SQL function
+ * `public.message_signature`: lowercase, strip non-alphanumerics, dedupe,
+ * sort, and join with "|".
+ */
+export function messageSignature(content: string): string {
+  const tokens = new Set<string>();
+  for (const raw of content.toLowerCase().split(/\s+/)) {
+    const cleaned = raw.replace(/[^a-z0-9]/g, "");
+    if (cleaned.length > 0) tokens.add(cleaned);
+  }
+  return Array.from(tokens).sort().join("|");
 }
 
 /* ── Vocabulary ────────────────────────────────────────────────────────── */
