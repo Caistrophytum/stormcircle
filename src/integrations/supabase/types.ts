@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      messages: {
+        Row: {
+          badge: string
+          content: string
+          created_at: string | null
+          id: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          badge?: string
+          content: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          badge?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           badge: string
