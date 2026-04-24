@@ -11,10 +11,10 @@
  *      from local state (the server pg_cron job purges rows every 5 min).
  *
  * Auth model:
- *   - Anyone (including guests) can READ chat + approvals.
- *   - Only authenticated users can SEND.
- *   - Citizens can DELETE their own messages.
- *   - Meteorologists can DELETE any message AND approve/unapprove topics.
+ *   - Anyone (including guests and Citizens) can READ chat + approvals.
+ *   - Only Meteorologists can SEND messages.
+ *   - Only Meteorologists can DELETE messages (single or whole stack).
+ *   - Only Meteorologists can approve/unapprove topics.
  *   - Meteorologist messages auto-approve their topic via a DB trigger.
  *
  * Approval model:
@@ -204,12 +204,12 @@ export default function CitizenReports() {
 
   // ── Permission helpers ────────────────────────────────────────────────
   // (RLS enforces these server-side too — UI just hides disallowed buttons.)
-  function canDelete(msg: Message) {
-    if (!user) return false;
-    return msg.user_id === user.id || isModerator;
+  // Only Meteorologists can delete (any message or whole stacks). Citizens
+  // and guests can read but cannot moderate.
+  function canDelete(_msg: Message) {
+    return isModerator;
   }
-  function canDeleteStack(stack: StackedReport) {
-    // Stack delete is moderator-only per requirement.
+  function canDeleteStack(_stack: StackedReport) {
     return isModerator;
   }
 
@@ -491,7 +491,7 @@ export default function CitizenReports() {
 
       {/* Input */}
       <div className="p-3 border-t border-border bg-shroud/30">
-        {user && profile ? (
+        {user && profile && isModerator ? (
           <>
             <div className="flex gap-2">
               <input
@@ -520,10 +520,16 @@ export default function CitizenReports() {
               {input.length}/{MAX_MESSAGE_LENGTH}
             </p>
           </>
+        ) : user && profile ? (
+          <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
+            <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
+              Read-only — only Meteorologists can post reports
+            </p>
+          </div>
         ) : (
           <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
             <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
-              Sign in to report an event
+              Sign in as a Meteorologist to post reports
             </p>
           </div>
         )}
