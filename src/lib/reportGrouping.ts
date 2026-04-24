@@ -255,8 +255,21 @@ function analyze(text: string): TokenAnalysis {
   const cached = tokenCache.get(text);
   if (cached) return cached;
 
-  const tokens = text
-    .toLowerCase()
+  // Collapse known multi-word place names to a single token BEFORE
+  // tokenization, so "New Jersey" → "newjersey" (which then matches "nj"
+  // via the synonym table). Order matters: longer phrases first to avoid
+  // greedy partial matches.
+  let normalized = text.toLowerCase();
+  for (const phrase of MULTIWORD_PHRASES) {
+    // word-boundary, allow any whitespace between parts
+    const pattern = new RegExp(
+      `\\b${phrase.split(" ").join("\\s+")}\\b`,
+      "g",
+    );
+    normalized = normalized.replace(pattern, phrase.replace(/\s+/g, ""));
+  }
+
+  const tokens = normalized
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter(Boolean);
