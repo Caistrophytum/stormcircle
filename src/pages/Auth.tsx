@@ -163,10 +163,35 @@ const Auth = () => {
     }
   };
 
+  const handleResend = async (e: FormEvent) => {
+    e.preventDefault();
+    const email = emailSchema.safeParse(resendEmail);
+    if (!email.success) {
+      toast.error(email.error.errors[0].message);
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.data,
+        options: { emailRedirectTo: getAuthRedirectUrl() },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Confirmation email re-sent. Check your inbox.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const titles: Record<View, { label: string; icon: typeof LogIn }> = {
     login: { label: "Authenticate", icon: LogIn },
     signup: { label: "New Operator", icon: UserPlus },
     forgot: { label: "Recover Access", icon: KeyRound },
+    resend: { label: "Resend Confirmation", icon: MailCheck },
   };
   const Icon = titles[view].icon;
 
