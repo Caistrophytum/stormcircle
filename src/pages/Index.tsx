@@ -24,12 +24,23 @@ import TacticalMap from "@/components/TacticalMap";
 import CitizenReports from "@/components/CitizenReports";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
+import { useNewReportPing } from "@/hooks/useNewReportPing";
 
 
 const Index = () => {
   // Side-panel open/close state.
   const [rightOpen, setRightOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
+
+  // Glow the left menu button for ~2s whenever a new SKYWARN report arrives.
+  const reportPing = useNewReportPing();
+  const [leftGlow, setLeftGlow] = useState(false);
+  useEffect(() => {
+    if (reportPing === 0) return;
+    setLeftGlow(true);
+    const t = setTimeout(() => setLeftGlow(false), 2000);
+    return () => clearTimeout(t);
+  }, [reportPing]);
 
   // Track viewport width so we can recompute the overlay scale on resize.
   const [viewportW, setViewportW] = useState(() =>
