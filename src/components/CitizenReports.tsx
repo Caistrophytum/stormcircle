@@ -122,7 +122,11 @@ export default function CitizenReports() {
           setMessages((prev) => {
             const next = payload.new as Message;
             if (prev.some((m) => m.id === next.id)) return prev;
-            return [...prev, next];
+            // Bound in-memory messages: drop the oldest if we exceed the cap.
+            const appended = [...prev, next];
+            return appended.length > MAX_INITIAL_MESSAGES
+              ? appended.slice(appended.length - MAX_INITIAL_MESSAGES)
+              : appended;
           });
         },
       )
