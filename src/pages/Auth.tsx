@@ -48,6 +48,8 @@ const Auth = () => {
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suConfirm, setSuConfirm] = useState("");
+  // Honeypot — real users never fill this; bots typically auto-fill all fields
+  const [suHoneypot, setSuHoneypot] = useState("");
 
   // Forgot state
   const [forgotEmail, setForgotEmail] = useState("");
