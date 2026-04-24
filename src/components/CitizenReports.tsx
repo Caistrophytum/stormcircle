@@ -85,15 +85,19 @@ export default function CitizenReports() {
   }
 
   // ── Initial load ──────────────────────────────────────────────────────
+  // Cap at MAX_INITIAL_MESSAGES to bound memory & render cost during severe
+  // weather bursts. Fetch newest first so we keep the most-recent slice if
+  // we hit the cap, then reverse to oldest-first for grouping.
   useEffect(() => {
     const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
     supabase
       .from("messages")
       .select("*")
       .gte("created_at", cutoff)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(MAX_INITIAL_MESSAGES)
       .then(({ data }) => {
-        if (data) setMessages(data as Message[]);
+        if (data) setMessages((data as Message[]).slice().reverse());
       });
 
     supabase
