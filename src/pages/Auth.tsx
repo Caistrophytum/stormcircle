@@ -92,6 +92,15 @@ const Auth = () => {
 
   const [submitting, setSubmitting] = useState(false);
 
+  /**
+   * Login flow:
+   *   1. Treat input as a username if it has no "@", otherwise as an email
+   *   2. If username, look up the matching email in `profiles`
+   *   3. Call signInWithPassword with that email
+   *
+   * Every failure path returns the SAME generic error message — never tell
+   * the attacker whether the username/email exists vs the password is wrong.
+   */
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
