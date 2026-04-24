@@ -211,6 +211,7 @@ const AccountCenter = () => {
       }
 
       if (emailSent) {
+        startCooldown();
         toast.success("Application submitted — we'll be in touch");
       } else if (emailError) {
         toast.warning(`Application saved, but email failed: ${emailError}`);
