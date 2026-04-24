@@ -17,6 +17,7 @@
 
 export interface RawMessage {
   id: string;
+  user_id: string;
   username: string;
   badge: string;
   content: string;

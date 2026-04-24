@@ -114,6 +114,31 @@ export default function CitizenReports() {
     setSending(false);
   }
 
+  // Whether the signed-in user can remove a given message.
+  // RLS enforces this server-side too — this just hides the button when not allowed.
+  const isModerator = profile?.badge === "Meteorologist";
+  function canDelete(msg: Message) {
+    if (!user) return false;
+    return msg.user_id === user.id || isModerator;
+  }
+
+  async function deleteMessage(id: string) {
+    // Optimistic: remove locally; Realtime DELETE will keep other clients in sync.
+    setMessages((prev) => prev.filter((m) => m.id !== id));
+    const { error } = await supabase.from("messages").delete().eq("id", id);
+    if (error) {
+      console.error("Failed to delete message:", error);
+      // Re-fetch on failure so UI doesn't drift from the DB.
+      const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .gte("created_at", cutoff)
+        .order("created_at", { ascending: true });
+      if (data) setMessages(data as Message[]);
+    }
+  }
+
   return (
     <aside className="w-80 h-full border-l border-border bg-cockpit flex flex-col shrink-0">
       {/* Header */}
@@ -136,16 +161,26 @@ export default function CitizenReports() {
         ) : (
           stacks.map((stack) => {
             const isOpen = expanded.has(stack.id);
+            // Solo stack: the single representative report.
+            const soloReport = stack.reports[0];
+            const showSoloDelete = stack.count === 1 && canDelete(soloReport);
             return (
               <div
                 key={stack.id}
                 className="bg-shroud border border-border"
               >
                 {/* Stack header — clickable to expand */}
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggleExpand(stack.id)}
-                  className="w-full text-left px-2 py-1.5 space-y-1 hover:bg-background/30 transition-colors"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleExpand(stack.id);
+                    }
+                  }}
+                  className="w-full text-left px-2 py-1.5 space-y-1 hover:bg-background/30 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span
@@ -172,12 +207,26 @@ export default function CitizenReports() {
                       <span className="text-[9px] font-mono text-muted-foreground">
                         {isOpen ? "▾" : "▸"}
                       </span>
+                      {showSoloDelete && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteMessage(soloReport.id);
+                          }}
+                          aria-label="Remove report"
+                          title={isModerator && soloReport.user_id !== user?.id ? "Remove (moderator)" : "Remove"}
+                          className="text-[10px] font-mono leading-none px-1 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded transition-colors"
+                        >
+                          ×
+                        </button>
+                      )}
                     </span>
                   </div>
                   <p className="text-[11px] font-mono text-foreground/90 leading-snug break-words whitespace-pre-wrap">
                     {stack.topic}
                   </p>
-                </button>
+                </div>
 
                 {/* Expanded individual reports */}
                 {isOpen && stack.reports.length > 1 && (
@@ -188,11 +237,27 @@ export default function CitizenReports() {
                           <span className="text-[10px] font-mono font-bold text-card-foreground truncate">
                             {r.username}
                           </span>
-                          <span className="text-[9px] font-mono text-muted-foreground shrink-0">
-                            {new Date(r.created_at).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[9px] font-mono text-muted-foreground">
+                              {new Date(r.created_at).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            {canDelete(r) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteMessage(r.id);
+                                }}
+                                aria-label="Remove report"
+                                title={isModerator && r.user_id !== user?.id ? "Remove (moderator)" : "Remove"}
+                                className="text-[10px] font-mono leading-none px-1 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded transition-colors"
+                              >
+                                ×
+                              </button>
+                            )}
                           </span>
                         </div>
                         <p className="text-[10px] font-mono text-foreground/80 leading-snug break-words whitespace-pre-wrap">
