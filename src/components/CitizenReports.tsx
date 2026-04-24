@@ -491,7 +491,7 @@ export default function CitizenReports() {
 
       {/* Input */}
       <div className="p-3 border-t border-border bg-shroud/30">
-        {user && profile ? (
+        {user && profile && isModerator ? (
           <>
             <div className="flex gap-2">
               <input
@@ -520,10 +520,16 @@ export default function CitizenReports() {
               {input.length}/{MAX_MESSAGE_LENGTH}
             </p>
           </>
+        ) : user && profile ? (
+          <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
+            <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
+              Read-only — only Meteorologists can post reports
+            </p>
+          </div>
         ) : (
           <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
             <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
-              Sign in to report an event
+              Sign in as a Meteorologist to post reports
             </p>
           </div>
         )}
