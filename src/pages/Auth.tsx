@@ -221,13 +221,14 @@ const Auth = () => {
           </div>
 
           {/* Tabs */}
-          <div className="grid grid-cols-3 border-b border-border">
-            {(["login", "signup", "forgot"] as View[]).map((v) => {
+          <div className="grid grid-cols-4 border-b border-border">
+            {(["login", "signup", "forgot", "resend"] as View[]).map((v) => {
               const active = view === v;
               const labels: Record<View, string> = {
                 login: "Login",
                 signup: "Sign Up",
                 forgot: "Recover",
+                resend: "Resend",
               };
               return (
                 <button
