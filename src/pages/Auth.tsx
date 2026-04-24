@@ -68,7 +68,8 @@ const Auth = () => {
       if (!email.includes("@")) {
         const parsed = usernameSchema.safeParse(email);
         if (!parsed.success) {
-          toast.error(parsed.error.errors[0].message);
+          // Generic message to avoid revealing whether the username exists
+          toast.error(GENERIC_AUTH_ERROR);
           return;
         }
         const { data, error } = await supabase
@@ -77,14 +78,14 @@ const Auth = () => {
           .eq("username", parsed.data)
           .maybeSingle();
         if (error || !data) {
-          toast.error("No account found for that username");
+          toast.error(GENERIC_AUTH_ERROR);
           return;
         }
         email = data.email;
       } else {
         const parsed = emailSchema.safeParse(email);
         if (!parsed.success) {
-          toast.error(parsed.error.errors[0].message);
+          toast.error(GENERIC_AUTH_ERROR);
           return;
         }
         email = parsed.data;
@@ -95,7 +96,9 @@ const Auth = () => {
         password: loginPassword,
       });
       if (error) {
-        toast.error(error.message);
+        // Always return the same generic message — never reveal whether
+        // the email exists or whether only the password was wrong
+        toast.error(GENERIC_AUTH_ERROR);
         return;
       }
       toast.success("Signed in");
@@ -107,6 +110,11 @@ const Auth = () => {
 
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
+    // Honeypot check — silently reject bots without telling them why
+    if (suHoneypot.trim() !== "") {
+      toast.success("Check your email to confirm your account");
+      return;
+    }
     if (suPassword !== suConfirm) {
       toast.error("Passwords do not match");
       return;
