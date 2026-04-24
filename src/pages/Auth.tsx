@@ -1,3 +1,20 @@
+/**
+ * Auth.tsx — single page that hosts four auth flows behind a tabbed UI:
+ *   • login   — sign in with email OR username + password
+ *   • signup  — create account (with honeypot anti-bot field)
+ *   • forgot  — request a password reset email
+ *   • resend  — re-request the signup confirmation email
+ *
+ * Security hardening already applied here:
+ *   • Honeypot field on signup silently rejects bots
+ *   • Login errors are always the same generic "Invalid credentials" so
+ *     attackers can't enumerate which emails/usernames exist
+ *   • Password schema enforces ≥8 chars, ≥1 uppercase, ≥1 number
+ *   • Username schema only allows [a-zA-Z0-9_] which prevents HTML/SQL
+ *     injection at the validation layer
+ *   • All redirects after successful auth use hardcoded relative paths
+ *     (no open-redirect vector via query params)
+ */
 import { useState, FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LogIn, UserPlus, KeyRound, Loader2, ArrowLeft, MailCheck } from "lucide-react";
@@ -5,6 +22,14 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+/**
+ * Builds the URL Supabase should redirect users to after they click an
+ * email confirmation / password-reset link.
+ *
+ * When developing on localhost the redirect would land on a URL the
+ * Supabase project doesn't allow, so we hard-fall-back to the preview URL.
+ * In every other environment we use the current origin.
+ */
 const getAuthRedirectUrl = () => {
   if (typeof window === "undefined") return "/";
 
@@ -17,14 +42,20 @@ const getAuthRedirectUrl = () => {
   return `${origin}/`;
 };
 
+/** Which form is currently being shown. */
 type View = "login" | "signup" | "forgot" | "resend";
 
+// --- Validation schemas (zod) -------------------------------------------------
+// All user input runs through these BEFORE we touch Supabase. They double as
+// the source of truth for our error messages.
 const emailSchema = z.string().trim().email({ message: "Invalid email address" }).max(255);
 const usernameSchema = z
   .string()
   .trim()
   .min(3, { message: "Username must be at least 3 characters" })
   .max(32, { message: "Username must be 32 characters or less" })
+  // Restricting the alphabet here means usernames can never contain HTML
+  // tags, quotes, semicolons, etc. — a free input-sanitization layer.
   .regex(/^[a-zA-Z0-9_]+$/, { message: "Username may only contain letters, numbers, and underscores" });
 const passwordSchema = z
   .string()
@@ -33,7 +64,9 @@ const passwordSchema = z
   .regex(/[A-Z]/, { message: "Password must contain at least 1 uppercase letter" })
   .regex(/[0-9]/, { message: "Password must contain at least 1 number" });
 
+// Same string for every login failure so we don't leak which field was wrong.
 const GENERIC_AUTH_ERROR = "Invalid credentials";
+
 
 const Auth = () => {
   const navigate = useNavigate();
