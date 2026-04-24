@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { LogIn, User, Shield, ChevronDown } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { LogIn, LogOut, User, Shield, ChevronDown, UserCog } from "lucide-react";
 import { useSelectedCity } from "@/contexts/CityContext";
 import { useCurrentWeather } from "@/hooks/useCurrentWeather";
 import {
@@ -7,11 +8,15 @@ import {
   displayTemp,
   displayPressure,
 } from "@/hooks/useUnitSystem";
-
-interface Props {
-  userRole: "guest" | "citizen" | "meteorologist";
-  onSignIn: () => void;
-}
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const formatCoord = (lat: number, lon: number) => {
   const ns = lat >= 0 ? "N" : "S";
@@ -32,7 +37,14 @@ const renderValue = (
   return `${v.value.toFixed(digits)} ${v.unit}`;
 };
 
-const StatusBar = ({ userRole, onSignIn }: Props) => {
+const StatusBar = () => {
+  const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
+  const userRole: "guest" | "citizen" | "meteorologist" = !user
+    ? "guest"
+    : profile?.badge === "Meteorologist"
+      ? "meteorologist"
+      : "citizen";
   const [time, setTime] = useState(new Date());
   const { selectedCity } = useSelectedCity();
   const weather = useCurrentWeather(
@@ -134,7 +146,7 @@ const StatusBar = ({ userRole, onSignIn }: Props) => {
         {userRole === "guest" ? (
           <div className="flex items-center gap-2">
             <button
-              onClick={onSignIn}
+              onClick={() => navigate("/auth")}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground font-mono text-[10px] font-bold uppercase tracking-wider rounded-sm hover:brightness-110 transition-all neon-glow-amber"
             >
               <LogIn className="size-3" />
@@ -142,13 +154,49 @@ const StatusBar = ({ userRole, onSignIn }: Props) => {
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 px-2 py-1 glass-panel cursor-pointer hover:border-primary/30 transition-colors">
-            <div className="size-5 bg-secondary rounded flex items-center justify-center font-mono text-[9px] text-card-foreground">
-              EV
-            </div>
-            <span className="text-[10px] font-mono text-card-foreground">VANCE</span>
-            <ChevronDown className="size-3 text-muted-foreground" />
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex items-center gap-2 px-2 py-1 glass-panel cursor-pointer hover:border-primary/30 transition-colors"
+              >
+                <div className="size-5 bg-secondary rounded flex items-center justify-center font-mono text-[9px] text-card-foreground uppercase">
+                  {(profile?.username ?? user?.email ?? "??").slice(0, 2)}
+                </div>
+                <span className="text-[10px] font-mono text-card-foreground uppercase truncate max-w-[120px]">
+                  {profile?.username ?? user?.email ?? "Operator"}
+                </span>
+                <ChevronDown className="size-3 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 font-mono">
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Signed in as
+                <div className="text-card-foreground normal-case mt-0.5 truncate">
+                  {profile?.email ?? user?.email}
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => navigate("/account")}
+                className="text-[11px] uppercase tracking-wider cursor-pointer"
+              >
+                <UserCog className="size-3.5 mr-2" />
+                Account Center
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={async () => {
+                  await signOut();
+                  navigate("/auth");
+                }}
+                className="text-[11px] uppercase tracking-wider cursor-pointer text-destructive focus:text-destructive"
+              >
+                <LogOut className="size-3.5 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </header>
