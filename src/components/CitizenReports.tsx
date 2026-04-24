@@ -16,17 +16,12 @@
  *     with the user's own profile.username + badge so spoofing another user
  *     is blocked by the RLS check (auth.uid() = user_id).
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { groupMessages, type RawMessage } from "@/lib/reportGrouping";
 
-interface Message {
-  id: string;
-  username: string;
-  badge: string;
-  content: string;
-  created_at: string;
-}
+type Message = RawMessage;
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
@@ -36,7 +31,18 @@ export default function CitizenReports() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Derive grouped, ranked stacks from the live message list.
+  const stacks = useMemo(() => groupMessages(messages), [messages]);
+
+  function toggleExpand(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
 
   // ── Initial load: pull the last 2 hours of history ────────────────────
   useEffect(() => {
@@ -81,10 +87,7 @@ export default function CitizenReports() {
     };
   }, []);
 
-  // ── Auto-scroll to the newest message ─────────────────────────────────
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // (Auto-scroll removed — stacks are sorted by count, not chronology.)
 
   // ── Client-side expiry sweep (defense-in-depth vs server pg_cron) ─────
   useEffect(() => {
@@ -124,47 +127,85 @@ export default function CitizenReports() {
         </p>
       </div>
 
-      {/* Messages */}
+      {/* Stacked reports */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-        {messages.length === 0 ? (
+        {stacks.length === 0 ? (
           <p className="text-[10px] font-mono text-muted-foreground italic text-center pt-4">
-            No messages yet. Be the first to say something.
+            No reports yet. Be the first to report an event.
           </p>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className="bg-shroud border border-border px-2 py-1.5 space-y-1"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[10px] font-mono font-bold text-card-foreground truncate">
-                    {msg.username}
-                  </span>
-                  <span
-                    className={`text-[8px] font-mono px-1 py-0.5 border rounded uppercase shrink-0 ${
-                      msg.badge === "Meteorologist"
-                        ? "border-neon-green/30 text-neon-green bg-neon-green/5"
-                        : "border-border text-muted-foreground"
-                    }`}
-                  >
-                    {msg.badge}
-                  </span>
-                </div>
-                <span className="text-[9px] font-mono text-muted-foreground shrink-0">
-                  {new Date(msg.created_at).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+          stacks.map((stack) => {
+            const isOpen = expanded.has(stack.id);
+            return (
+              <div
+                key={stack.id}
+                className="bg-shroud border border-border"
+              >
+                {/* Stack header — clickable to expand */}
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(stack.id)}
+                  className="w-full text-left px-2 py-1.5 space-y-1 hover:bg-background/30 transition-colors"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`text-[8px] font-mono px-1 py-0.5 border rounded uppercase shrink-0 ${
+                        stack.badge === "Meteorologist"
+                          ? "border-neon-green/30 text-neon-green bg-neon-green/5"
+                          : "border-border text-muted-foreground"
+                      }`}
+                    >
+                      {stack.badge}
+                    </span>
+                    <span className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-[9px] font-mono text-muted-foreground">
+                        {new Date(stack.latestTime).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {stack.count > 1 && (
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-primary/15 border border-primary/30 text-primary rounded">
+                          ×{stack.count}
+                        </span>
+                      )}
+                      <span className="text-[9px] font-mono text-muted-foreground">
+                        {isOpen ? "▾" : "▸"}
+                      </span>
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-mono text-foreground/90 leading-snug break-words whitespace-pre-wrap">
+                    {stack.topic}
+                  </p>
+                </button>
+
+                {/* Expanded individual reports */}
+                {isOpen && stack.reports.length > 1 && (
+                  <ul className="border-t border-border bg-background/20 divide-y divide-border/50">
+                    {stack.reports.map((r) => (
+                      <li key={r.id} className="px-2 py-1.5 space-y-0.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[10px] font-mono font-bold text-card-foreground truncate">
+                            {r.username}
+                          </span>
+                          <span className="text-[9px] font-mono text-muted-foreground shrink-0">
+                            {new Date(r.created_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-mono text-foreground/80 leading-snug break-words whitespace-pre-wrap">
+                          {r.content}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-              <p className="text-[11px] font-mono text-foreground/90 leading-snug break-words whitespace-pre-wrap">
-                {msg.content}
-              </p>
-            </div>
-          ))
+            );
+          })
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* Input */}
