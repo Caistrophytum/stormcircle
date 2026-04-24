@@ -129,12 +129,41 @@ for (const group of SYNONYMS) {
 
 /* ── Tokenization & matching ───────────────────────────────────────────── */
 
-function tokenize(text: string): string[] {
-  return text
+interface TokenAnalysis {
+  tokens: string[];
+  specific: string[];
+  generic: string[];
+}
+
+// Cache token analysis per unique string so repeated grouping passes don't
+// re-tokenize. Bounded to avoid unbounded growth across long sessions.
+const tokenCache = new Map<string, TokenAnalysis>();
+const TOKEN_CACHE_MAX = 2000;
+
+function analyze(text: string): TokenAnalysis {
+  const cached = tokenCache.get(text);
+  if (cached) return cached;
+
+  const tokens = text
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter(Boolean);
+  const specific: string[] = [];
+  const generic: string[] = [];
+  for (const t of tokens) {
+    if (GENERIC_WORDS.has(t)) generic.push(t);
+    else specific.push(t);
+  }
+  const result: TokenAnalysis = { tokens, specific, generic };
+
+  if (tokenCache.size >= TOKEN_CACHE_MAX) {
+    // Evict oldest entry (Map preserves insertion order).
+    const firstKey = tokenCache.keys().next().value;
+    if (firstKey !== undefined) tokenCache.delete(firstKey);
+  }
+  tokenCache.set(text, result);
+  return result;
 }
 
 function getGroup(word: string): Set<string> | null {
@@ -162,38 +191,25 @@ function overlap(a: string[], b: string[]): number {
 }
 
 /**
- * Decide whether `candidate` belongs to the same event as `existing`.
+ * Decide whether two pre-analyzed messages belong to the same event.
  * Requires at least one specific (location-ish) overlap. Generic overlap
  * adds to the score but cannot match on its own.
  */
-function isMatch(candidate: string, existing: string): boolean {
-  const ta = tokenize(candidate);
-  const tb = tokenize(existing);
-
-  const specificA = ta.filter((w) => !GENERIC_WORDS.has(w));
-  const specificB = tb.filter((w) => !GENERIC_WORDS.has(w));
-  const genericA = ta.filter((w) => GENERIC_WORDS.has(w));
-  const genericB = tb.filter((w) => GENERIC_WORDS.has(w));
-
-  const specificScore = overlap(specificA, specificB);
-  const genericScore = overlap(genericA, genericB);
-
-  // Edge case: neither message has any specific (location-ish) tokens
-  // (e.g. "test", "hello", or short generic chatter). Fall back to pure
-  // token overlap so identical/near-identical messages still stack.
-  if (specificA.length === 0 && specificB.length === 0) {
-    const tokenScore = overlap(ta, tb);
-    const minLen = Math.min(ta.length, tb.length);
+function isMatchAnalyzed(a: TokenAnalysis, b: TokenAnalysis): boolean {
+  // Edge case: neither side has specific tokens (e.g. "test", "hello").
+  // Fall back to pure token overlap so identical chatter still stacks.
+  if (a.specific.length === 0 && b.specific.length === 0) {
+    const tokenScore = overlap(a.tokens, b.tokens);
+    const minLen = Math.min(a.tokens.length, b.tokens.length);
     if (minLen === 0) return false;
-    // Require most tokens to overlap when there's no location anchor.
     return tokenScore / minLen >= 0.6;
   }
 
-  // Otherwise: require at least one specific (location) overlap. Generic
-  // overlap adds to the score but cannot match on its own — this keeps
-  // "Hail in Tulsa" from merging with "Power outage in Tulsa".
+  const specificScore = overlap(a.specific, b.specific);
   if (specificScore === 0) return false;
-  if (genericScore === 0 && specificA.length > 0 && specificB.length > 0) return false;
+
+  const genericScore = overlap(a.generic, b.generic);
+  if (genericScore === 0 && a.specific.length > 0 && b.specific.length > 0) return false;
 
   return specificScore * 3 + genericScore >= 2;
 }
