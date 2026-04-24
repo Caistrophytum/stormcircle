@@ -210,6 +210,11 @@ const AccountCenter = () => {
     const subjectParsed = subjectSchema.safeParse(contactSubject);
     if (!subjectParsed.success) return toast.error("Invalid subject");
 
+    if (!isEmailJsConfigured()) {
+      toast.error("Email is not configured yet — message could not be sent.");
+      return;
+    }
+
     setSendingContact(true);
     try {
       await sendEmail(TEMPLATE_IDS.contactFeedback, {
