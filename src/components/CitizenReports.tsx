@@ -53,6 +53,9 @@ type Message = RawMessage;
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
+// Bound on how many messages we hold in client state at once. The oldest
+// 2-hour window holds whatever fits — older rows fall off as new ones arrive.
+const MAX_INITIAL_MESSAGES = 500;
 
 // Action queued behind the confirmation dialog.
 type PendingAction =
@@ -85,15 +88,19 @@ export default function CitizenReports() {
   }
 
   // ── Initial load ──────────────────────────────────────────────────────
+  // Cap at MAX_INITIAL_MESSAGES to bound memory & render cost during severe
+  // weather bursts. Fetch newest first so we keep the most-recent slice if
+  // we hit the cap, then reverse to oldest-first for grouping.
   useEffect(() => {
     const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
     supabase
       .from("messages")
       .select("*")
       .gte("created_at", cutoff)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
+      .limit(MAX_INITIAL_MESSAGES)
       .then(({ data }) => {
-        if (data) setMessages(data as Message[]);
+        if (data) setMessages((data as Message[]).slice().reverse());
       });
 
     supabase
@@ -115,7 +122,11 @@ export default function CitizenReports() {
           setMessages((prev) => {
             const next = payload.new as Message;
             if (prev.some((m) => m.id === next.id)) return prev;
-            return [...prev, next];
+            // Bound in-memory messages: drop the oldest if we exceed the cap.
+            const appended = [...prev, next];
+            return appended.length > MAX_INITIAL_MESSAGES
+              ? appended.slice(appended.length - MAX_INITIAL_MESSAGES)
+              : appended;
           });
         },
       )
@@ -216,8 +227,9 @@ export default function CitizenReports() {
         .from("messages")
         .select("*")
         .gte("created_at", cutoff)
-        .order("created_at", { ascending: true });
-      if (data) setMessages(data as Message[]);
+        .order("created_at", { ascending: false })
+        .limit(MAX_INITIAL_MESSAGES);
+      if (data) setMessages((data as Message[]).slice().reverse());
     } else {
       toast.success(ids.length === 1 ? "Report removed" : `${ids.length} reports removed`);
     }
