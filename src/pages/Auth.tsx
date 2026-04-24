@@ -1,6 +1,6 @@
 import { useState, FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn, UserPlus, KeyRound, Loader2, ArrowLeft } from "lucide-react";
+import { LogIn, UserPlus, KeyRound, Loader2, ArrowLeft, MailCheck } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
