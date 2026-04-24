@@ -419,6 +419,9 @@ const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
   };
 
   const handleSubmit = () => {
+    // Guests are not allowed to submit reports — must be signed in.
+    if (userRole === "guest") return;
+
     const trimmed = input.trim();
     if (!trimmed) return;
 
