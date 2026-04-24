@@ -145,11 +145,22 @@ const AccountCenter = () => {
     );
   }
 
+  /** Sign the user out and bounce them to the auth page. */
   const handleLogout = async () => {
     await signOut();
     navigate("/auth", { replace: true });
   };
 
+  /**
+   * Permanently deletes the account.
+   *   1. Verify the typed username matches EXACTLY (case-sensitive)
+   *   2. Best-effort delete of the profiles row (ON DELETE CASCADE on
+   *      auth.users → profiles also handles this, but doing it explicitly
+   *      avoids a momentary stale row in case the cascade is delayed)
+   *   3. Call the SECURITY DEFINER `delete_user` RPC, which removes the
+   *      row from auth.users (the user can't do that directly via RLS)
+   *   4. Sign out and redirect to /auth
+   */
   const handleDelete = async () => {
     if (deleteConfirmText !== profile.username) {
       toast.error("Username does not match");
@@ -173,6 +184,17 @@ const AccountCenter = () => {
     }
   };
 
+  /**
+   * Submits a Meteorologist badge application:
+   *   1. Validate inputs (length limits enforced both here AND via maxLength
+   *      on the inputs themselves)
+   *   2. Respect the shared 60s email cooldown
+   *   3. Try to send the EmailJS notification (best effort — we still mark
+   *      the application as submitted even if email fails)
+   *   4. Flip `meteorologist_applied` to true on the profile row. The
+   *      database trigger `prevent_meteorologist_reapply` makes sure the
+   *      user cannot flip it back later or change their badge themselves.
+   */
   const handleApplication = async (e: FormEvent) => {
     e.preventDefault();
     const first = appFirst.trim();
@@ -238,6 +260,10 @@ const AccountCenter = () => {
     }
   };
 
+  /**
+   * Sends a contact-form / feedback message via EmailJS. Same length
+   * limits, sanitization, and 60s cooldown as the application flow.
+   */
   const handleContact = async (e: FormEvent) => {
     e.preventDefault();
     const message = contactMessage.trim();
