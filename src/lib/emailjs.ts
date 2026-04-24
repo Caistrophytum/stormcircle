@@ -9,8 +9,8 @@ export const EMAILJS_SERVICE_ID = "service_xxk4g8g";
 export const EMAILJS_PUBLIC_KEY = "s0M3hsjSA8UikMSrN";
 
 export const TEMPLATE_IDS = {
-  meteorologistApplication: "YOUR_TEMPLATE_ID_1",
-  contactFeedback: "YOUR_TEMPLATE_ID_2",
+  meteorologistApplication: "template_idpisy9",
+  contactFeedback: "template_kcxfn6q",
 };
 
 export function isEmailJsConfigured() {
