@@ -87,10 +87,7 @@ export default function CitizenReports() {
     };
   }, []);
 
-  // ── Auto-scroll to the newest message ─────────────────────────────────
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  // (Auto-scroll removed — stacks are sorted by count, not chronology.)
 
   // ── Client-side expiry sweep (defense-in-depth vs server pg_cron) ─────
   useEffect(() => {
