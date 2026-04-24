@@ -2,39 +2,79 @@
  * CitizenReports — global citizen report stream with a 2-hour rolling history.
  *
  * Data flow:
- *   1. On mount, hydrate with messages from the last 2 hours (server-side filter).
- *   2. Subscribe to Supabase Realtime postgres_changes for INSERT/DELETE so
- *      every connected client stays in sync without polling.
+ *   1. On mount, hydrate with the last 2 hours of messages AND the current
+ *      set of approved topic signatures.
+ *   2. Subscribe to Supabase Realtime for INSERT/DELETE on `messages` and
+ *      INSERT/DELETE on `report_approvals` so every connected client stays
+ *      in sync without polling.
  *   3. Defensive client-side sweep every minute prunes anything older than 2h
- *      from local state in case a realtime DELETE event was missed (the
- *      server pg_cron job purges the row every 5 minutes).
+ *      from local state (the server pg_cron job purges rows every 5 min).
  *
  * Auth model:
- *   - Anyone (including guests) can READ the chat.
- *   - Only authenticated users can SEND. Input is hidden from guests.
- *   - Content is hard-capped at 500 chars client-side; the row is inserted
- *     with the user's own profile.username + badge so spoofing another user
- *     is blocked by the RLS check (auth.uid() = user_id).
+ *   - Anyone (including guests) can READ chat + approvals.
+ *   - Only authenticated users can SEND.
+ *   - Citizens can DELETE their own messages.
+ *   - Meteorologists can DELETE any message AND approve/unapprove topics.
+ *   - Meteorologist messages auto-approve their topic via a DB trigger.
+ *
+ * Approval model:
+ *   - Approval is keyed by a deterministic *signature* of the message
+ *     (lowercase, dedup tokens, sorted, "|"-joined). The same signature is
+ *     computed in JS (`messageSignature`) and SQL (`public.message_signature`),
+ *     so an approval persisted in `report_approvals` matches every report
+ *     that produces the same signature — present and future.
+ *
+ * Sort priority (top → bottom):
+ *   approved+trending → approved → unapproved+trending → unapproved
+ *   (within ties: count desc, then most-recent first).
  */
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { groupMessages, type RawMessage } from "@/lib/reportGrouping";
+import {
+  groupMessages,
+  messageSignature,
+  type RawMessage,
+  type StackedReport,
+} from "@/lib/reportGrouping";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 type Message = RawMessage;
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
 
+// Action queued behind the confirmation dialog.
+type PendingAction =
+  | { kind: "delete-message"; id: string; preview: string }
+  | { kind: "delete-stack"; ids: string[]; topic: string; count: number };
+
 export default function CitizenReports() {
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [approvedSigs, setApprovedSigs] = useState<Set<string>>(new Set());
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [pending, setPending] = useState<PendingAction | null>(null);
 
-  // Derive grouped, ranked stacks from the live message list.
-  const stacks = useMemo(() => groupMessages(messages), [messages]);
+  const isModerator = profile?.badge === "Meteorologist";
+
+  // ── Derive grouped, ranked stacks from live state ─────────────────────
+  const stacks = useMemo(
+    () => groupMessages(messages, approvedSigs),
+    [messages, approvedSigs],
+  );
 
   function toggleExpand(id: string) {
     setExpanded((prev) => {
@@ -44,7 +84,7 @@ export default function CitizenReports() {
     });
   }
 
-  // ── Initial load: pull the last 2 hours of history ────────────────────
+  // ── Initial load ──────────────────────────────────────────────────────
   useEffect(() => {
     const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
     supabase
@@ -55,30 +95,64 @@ export default function CitizenReports() {
       .then(({ data }) => {
         if (data) setMessages(data as Message[]);
       });
+
+    supabase
+      .from("report_approvals")
+      .select("signature")
+      .then(({ data }) => {
+        if (data) setApprovedSigs(new Set(data.map((r) => r.signature)));
+      });
   }, []);
 
-  // ── Realtime: live INSERT/DELETE updates ──────────────────────────────
+  // ── Realtime: messages + approvals ────────────────────────────────────
   useEffect(() => {
     const channel = supabase
-      .channel("public-chat")
+      .channel("citizen-reports")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },
         (payload) => {
           setMessages((prev) => {
             const next = payload.new as Message;
-            // Avoid dupes if the row was already in the initial fetch.
             if (prev.some((m) => m.id === next.id)) return prev;
             return [...prev, next];
           });
-        }
+        },
       )
       .on(
         "postgres_changes",
         { event: "DELETE", schema: "public", table: "messages" },
         (payload) => {
-          setMessages((prev) => prev.filter((m) => m.id !== (payload.old as { id: string }).id));
-        }
+          setMessages((prev) =>
+            prev.filter((m) => m.id !== (payload.old as { id: string }).id),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "report_approvals" },
+        (payload) => {
+          const sig = (payload.new as { signature: string }).signature;
+          setApprovedSigs((prev) => {
+            if (prev.has(sig)) return prev;
+            const next = new Set(prev);
+            next.add(sig);
+            return next;
+          });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "report_approvals" },
+        (payload) => {
+          const sig = (payload.old as { signature: string }).signature;
+          setApprovedSigs((prev) => {
+            if (!prev.has(sig)) return prev;
+            const next = new Set(prev);
+            next.delete(sig);
+            return next;
+          });
+        },
       )
       .subscribe();
 
@@ -87,19 +161,18 @@ export default function CitizenReports() {
     };
   }, []);
 
-  // (Auto-scroll removed — stacks are sorted by count, not chronology.)
-
   // ── Client-side expiry sweep (defense-in-depth vs server pg_cron) ─────
   useEffect(() => {
     const interval = setInterval(() => {
       const cutoff = Date.now() - TWO_HOURS_MS;
       setMessages((prev) =>
-        prev.filter((m) => new Date(m.created_at).getTime() > cutoff)
+        prev.filter((m) => new Date(m.created_at).getTime() > cutoff),
       );
     }, 60_000);
     return () => clearInterval(interval);
   }, []);
 
+  // ── Send ──────────────────────────────────────────────────────────────
   async function sendMessage() {
     const trimmed = input.trim();
     if (!trimmed || !user || !profile || sending) return;
@@ -110,24 +183,33 @@ export default function CitizenReports() {
       badge: profile.badge,
       content: trimmed.slice(0, MAX_MESSAGE_LENGTH),
     });
-    if (!error) setInput("");
+    if (error) {
+      toast.error("Failed to send report");
+    } else {
+      setInput("");
+    }
     setSending(false);
   }
 
-  // Whether the signed-in user can remove a given message.
-  // RLS enforces this server-side too — this just hides the button when not allowed.
-  const isModerator = profile?.badge === "Meteorologist";
+  // ── Permission helpers ────────────────────────────────────────────────
+  // (RLS enforces these server-side too — UI just hides disallowed buttons.)
   function canDelete(msg: Message) {
     if (!user) return false;
     return msg.user_id === user.id || isModerator;
   }
+  function canDeleteStack(stack: StackedReport) {
+    // Stack delete is moderator-only per requirement.
+    return isModerator;
+  }
 
-  async function deleteMessage(id: string) {
-    // Optimistic: remove locally; Realtime DELETE will keep other clients in sync.
-    setMessages((prev) => prev.filter((m) => m.id !== id));
-    const { error } = await supabase.from("messages").delete().eq("id", id);
+  // ── Mutations ─────────────────────────────────────────────────────────
+  async function reallyDeleteMessages(ids: string[]) {
+    // Optimistic: drop locally; Realtime DELETE keeps other clients in sync.
+    const idSet = new Set(ids);
+    setMessages((prev) => prev.filter((m) => !idSet.has(m.id)));
+    const { error } = await supabase.from("messages").delete().in("id", ids);
     if (error) {
-      console.error("Failed to delete message:", error);
+      toast.error("Failed to remove report");
       // Re-fetch on failure so UI doesn't drift from the DB.
       const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
       const { data } = await supabase
@@ -136,7 +218,67 @@ export default function CitizenReports() {
         .gte("created_at", cutoff)
         .order("created_at", { ascending: true });
       if (data) setMessages(data as Message[]);
+    } else {
+      toast.success(ids.length === 1 ? "Report removed" : `${ids.length} reports removed`);
     }
+  }
+
+  async function approveStack(stack: StackedReport) {
+    if (!user || !isModerator) return;
+    // Optimistic
+    setApprovedSigs((prev) => {
+      const next = new Set(prev);
+      next.add(stack.signature);
+      return next;
+    });
+    const { error } = await supabase.from("report_approvals").upsert(
+      { signature: stack.signature, approved_by: user.id },
+      { onConflict: "signature" },
+    );
+    if (error) {
+      toast.error("Failed to approve");
+      setApprovedSigs((prev) => {
+        const next = new Set(prev);
+        next.delete(stack.signature);
+        return next;
+      });
+    } else {
+      toast.success("Topic approved");
+    }
+  }
+
+  async function unapproveStack(stack: StackedReport) {
+    if (!user || !isModerator) return;
+    setApprovedSigs((prev) => {
+      const next = new Set(prev);
+      next.delete(stack.signature);
+      return next;
+    });
+    const { error } = await supabase
+      .from("report_approvals")
+      .delete()
+      .eq("signature", stack.signature);
+    if (error) {
+      toast.error("Failed to unapprove");
+      setApprovedSigs((prev) => {
+        const next = new Set(prev);
+        next.add(stack.signature);
+        return next;
+      });
+    } else {
+      toast.success("Approval removed");
+    }
+  }
+
+  // ── Confirmation dialog ───────────────────────────────────────────────
+  function confirmAndRun() {
+    if (!pending) return;
+    if (pending.kind === "delete-message") {
+      void reallyDeleteMessages([pending.id]);
+    } else {
+      void reallyDeleteMessages(pending.ids);
+    }
+    setPending(null);
   }
 
   return (
@@ -161,13 +303,20 @@ export default function CitizenReports() {
         ) : (
           stacks.map((stack) => {
             const isOpen = expanded.has(stack.id);
-            // Solo stack: the single representative report.
             const soloReport = stack.reports[0];
-            const showSoloDelete = stack.count === 1 && canDelete(soloReport);
+            const isSolo = stack.count === 1;
+            const showSoloDelete = isSolo && canDelete(soloReport);
+            const showStackDelete = !isSolo && canDeleteStack(stack);
+            const showApprove = isModerator && !stack.approved;
+            const showUnapprove = isModerator && stack.approved;
             return (
               <div
                 key={stack.id}
-                className="bg-shroud border border-border"
+                className={`bg-shroud border ${
+                  stack.approved
+                    ? "border-neon-green/40 shadow-[0_0_0_1px_hsl(var(--primary)/0.05)]"
+                    : "border-border"
+                }`}
               >
                 {/* Stack header — clickable to expand */}
                 <div
@@ -182,16 +331,23 @@ export default function CitizenReports() {
                   }}
                   className="w-full text-left px-2 py-1.5 space-y-1 hover:bg-background/30 transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`text-[8px] font-mono px-1 py-0.5 border rounded uppercase shrink-0 ${
-                        stack.badge === "Meteorologist"
-                          ? "border-neon-green/30 text-neon-green bg-neon-green/5"
-                          : "border-border text-muted-foreground"
-                      }`}
-                    >
-                      {stack.badge}
-                    </span>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span
+                        className={`text-[8px] font-mono px-1 py-0.5 border rounded uppercase shrink-0 ${
+                          stack.badge === "Meteorologist"
+                            ? "border-neon-green/30 text-neon-green bg-neon-green/5"
+                            : "border-border text-muted-foreground"
+                        }`}
+                      >
+                        {stack.badge}
+                      </span>
+                      {stack.approved && (
+                        <span className="text-[8px] font-mono px-1 py-0.5 border border-neon-green/40 bg-neon-green/10 text-neon-green rounded uppercase shrink-0">
+                          ✓ Approved
+                        </span>
+                      )}
+                    </div>
                     <span className="flex items-center gap-1.5 shrink-0">
                       <span className="text-[9px] font-mono text-muted-foreground">
                         {new Date(stack.latestTime).toLocaleTimeString([], {
@@ -207,25 +363,71 @@ export default function CitizenReports() {
                       <span className="text-[9px] font-mono text-muted-foreground">
                         {isOpen ? "▾" : "▸"}
                       </span>
-                      {showSoloDelete && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteMessage(soloReport.id);
-                          }}
-                          aria-label="Remove report"
-                          title={isModerator && soloReport.user_id !== user?.id ? "Remove (moderator)" : "Remove"}
-                          className="text-[10px] font-mono leading-none px-1 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded transition-colors"
-                        >
-                          ×
-                        </button>
-                      )}
                     </span>
                   </div>
                   <p className="text-[11px] font-mono text-foreground/90 leading-snug break-words whitespace-pre-wrap">
                     {stack.topic}
                   </p>
+
+                  {/* Action row (approve / delete) */}
+                  {(showApprove || showUnapprove || showSoloDelete || showStackDelete) && (
+                    <div
+                      className="flex items-center gap-1.5 pt-1"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {showApprove && (
+                        <button
+                          type="button"
+                          onClick={() => approveStack(stack)}
+                          className="text-[9px] font-mono uppercase font-bold px-2 py-0.5 border border-neon-green/40 text-neon-green hover:bg-neon-green/10 rounded transition-colors"
+                        >
+                          ✓ Approve
+                        </button>
+                      )}
+                      {showUnapprove && (
+                        <button
+                          type="button"
+                          onClick={() => unapproveStack(stack)}
+                          className="text-[9px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-foreground hover:text-foreground rounded transition-colors"
+                        >
+                          Unapprove
+                        </button>
+                      )}
+                      {showSoloDelete && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPending({
+                              kind: "delete-message",
+                              id: soloReport.id,
+                              preview: soloReport.content,
+                            })
+                          }
+                          aria-label="Remove report"
+                          className="ml-auto text-[10px] font-mono leading-none px-1.5 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded transition-colors"
+                        >
+                          ×
+                        </button>
+                      )}
+                      {showStackDelete && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setPending({
+                              kind: "delete-stack",
+                              ids: stack.reports.map((r) => r.id),
+                              topic: stack.topic,
+                              count: stack.count,
+                            })
+                          }
+                          aria-label="Remove entire stack"
+                          className="ml-auto text-[9px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded transition-colors"
+                        >
+                          × Remove all
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Expanded individual reports */}
@@ -247,12 +449,14 @@ export default function CitizenReports() {
                             {canDelete(r) && (
                               <button
                                 type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteMessage(r.id);
-                                }}
+                                onClick={() =>
+                                  setPending({
+                                    kind: "delete-message",
+                                    id: r.id,
+                                    preview: r.content,
+                                  })
+                                }
                                 aria-label="Remove report"
-                                title={isModerator && r.user_id !== user?.id ? "Remove (moderator)" : "Remove"}
                                 className="text-[10px] font-mono leading-none px-1 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded transition-colors"
                               >
                                 ×
@@ -312,6 +516,35 @@ export default function CitizenReports() {
           </div>
         )}
       </div>
+
+      {/* Deletion confirmation dialog */}
+      <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {pending?.kind === "delete-stack"
+                ? `Remove all ${pending.count} reports in this stack?`
+                : "Remove this report?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {pending?.kind === "delete-stack"
+                ? `Topic: "${pending.topic}". This will permanently remove every report grouped under this topic. This cannot be undone.`
+                : pending?.kind === "delete-message"
+                  ? `"${pending.preview}" will be permanently removed. This cannot be undone.`
+                  : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmAndRun}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }
