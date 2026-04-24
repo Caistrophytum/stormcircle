@@ -140,10 +140,13 @@ function dangerScore(a: Alert): number {
   else if (a.tags.includes("Destructive")) tagTier = 2;
   else if (a.tags.includes("Considerable")) tagTier = 3;
 
+  // Kind dominates so a Warning is always ranked above a Watch (and Watch above
+  // Advisory, etc.) regardless of NWS-assigned severity. Severity, tags,
+  // certainty, and urgency act as tiebreakers within the same kind.
   return (
+    KIND_ORDER[a.kind] * 1_000_000 +
     SEVERITY_ORDER[a.severity] * 100_000 +
     tagTier * 10_000 +
-    KIND_ORDER[a.kind] * 100 +
     CERTAINTY_ORDER[a.certainty] * 10 +
     URGENCY_ORDER[a.urgency]
   );
