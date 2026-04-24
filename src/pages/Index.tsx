@@ -6,16 +6,18 @@ import TacticalMap from "@/components/TacticalMap";
 import PeerReviewQueue from "@/components/PeerReviewQueue";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const [userRole, setUserRole] = useState<"guest" | "citizen" | "meteorologist">("meteorologist");
+  const { user, profile } = useAuth();
+  const userRole: "guest" | "citizen" | "meteorologist" = !user
+    ? "guest"
+    : profile?.badge === "Meteorologist"
+      ? "meteorologist"
+      : "citizen";
 
   const [rightOpen, setRightOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
-
-  const handleSignIn = () => {
-    setUserRole("citizen");
-  };
 
   const [viewportW, setViewportW] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth : 1920
@@ -45,7 +47,7 @@ const Index = () => {
     <CityProvider>
     <div className="flex h-screen overflow-hidden bg-background">
       <main className="flex-1 flex flex-col min-w-0">
-        <StatusBar userRole={userRole} onSignIn={handleSignIn} />
+        <StatusBar />
 
         <div className="flex-1 flex overflow-hidden">
           {/* Left: Integration panel */}
