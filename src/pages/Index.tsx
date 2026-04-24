@@ -27,17 +27,6 @@ import { CityProvider } from "@/contexts/CityContext";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  // Three-tier role:
-  //   guest         — not signed in
-  //   citizen       — signed in, default badge
-  //   meteorologist — signed in, badge has been promoted by an admin
-  const { user, profile } = useAuth();
-  const userRole: "guest" | "citizen" | "meteorologist" = !user
-    ? "guest"
-    : profile?.badge === "Meteorologist"
-      ? "meteorologist"
-      : "citizen";
-
   // Side-panel open/close state.
   const [rightOpen, setRightOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
