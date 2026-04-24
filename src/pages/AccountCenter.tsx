@@ -170,6 +170,12 @@ const AccountCenter = () => {
     if (!emailParsed.success) return toast.error("Invalid email address");
     if (desc.length < 50)
       return toast.error("Description must be at least 50 characters");
+    if (desc.length > 1000)
+      return toast.error("Description must be 1000 characters or less");
+
+    if (cooldownRemaining > 0) {
+      return toast.error(`Please wait ${cooldownRemaining}s before sending another email`);
+    }
 
     setSubmittingApp(true);
     try {
