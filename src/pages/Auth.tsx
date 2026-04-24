@@ -360,7 +360,7 @@ const Auth = () => {
                     value={suPassword}
                     onChange={(e) => setSuPassword(e.target.value)}
                     className={inputClass}
-                    placeholder="min. 8 characters"
+                    placeholder="8+ chars, 1 uppercase, 1 number"
                     required
                     maxLength={128}
                   />
