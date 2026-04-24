@@ -227,8 +227,9 @@ export default function CitizenReports() {
         .from("messages")
         .select("*")
         .gte("created_at", cutoff)
-        .order("created_at", { ascending: true });
-      if (data) setMessages(data as Message[]);
+        .order("created_at", { ascending: false })
+        .limit(MAX_INITIAL_MESSAGES);
+      if (data) setMessages((data as Message[]).slice().reverse());
     } else {
       toast.success(ids.length === 1 ? "Report removed" : `${ids.length} reports removed`);
     }
