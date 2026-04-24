@@ -29,7 +29,11 @@ const usernameSchema = z
 const passwordSchema = z
   .string()
   .min(8, { message: "Password must be at least 8 characters" })
-  .max(128, { message: "Password must be 128 characters or less" });
+  .max(128, { message: "Password must be 128 characters or less" })
+  .regex(/[A-Z]/, { message: "Password must contain at least 1 uppercase letter" })
+  .regex(/[0-9]/, { message: "Password must contain at least 1 number" });
+
+const GENERIC_AUTH_ERROR = "Invalid credentials";
 
 const Auth = () => {
   const navigate = useNavigate();
