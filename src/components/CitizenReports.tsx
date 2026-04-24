@@ -181,7 +181,7 @@ export default function CitizenReports() {
                     sendMessage();
                   }
                 }}
-                placeholder="Type a message..."
+                placeholder="Report an event..."
                 maxLength={MAX_MESSAGE_LENGTH}
                 disabled={sending}
                 className="flex-1 bg-background/50 border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 disabled:opacity-50"
@@ -201,7 +201,7 @@ export default function CitizenReports() {
         ) : (
           <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
             <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
-              Sign in to send messages
+              Sign in to report an event
             </p>
           </div>
         )}
