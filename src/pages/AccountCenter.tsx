@@ -451,28 +451,30 @@ const AccountCenter = () => {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className={labelClass} htmlFor="contact-message">Message</label>
+                <label className={labelClass} htmlFor="contact-message">
+                  Message ({contactMessage.trim().length}/500)
+                </label>
                 <textarea
                   id="contact-message"
                   value={contactMessage}
                   onChange={(e) => setContactMessage(e.target.value)}
                   className={`${inputClass} min-h-[120px] resize-y`}
                   placeholder="What's on your mind?"
-                  maxLength={2000}
+                  maxLength={500}
                   required
                 />
               </div>
               <button
                 type="submit"
-                disabled={sendingContact}
-                className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60"
+                disabled={sendingContact || cooldownRemaining > 0}
+                className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {sendingContact ? (
                   <Loader2 className="size-3.5 animate-spin" />
                 ) : (
                   <Send className="size-3.5" />
                 )}
-                Send Message
+                {cooldownRemaining > 0 ? `Wait ${cooldownRemaining}s` : "Send Message"}
               </button>
             </form>
           </div>
