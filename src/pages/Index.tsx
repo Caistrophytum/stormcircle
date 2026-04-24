@@ -21,23 +21,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import StatusBar from "@/components/StatusBar";
 import TacticalMap from "@/components/TacticalMap";
-import PeerReviewQueue from "@/components/PeerReviewQueue";
+import CitizenReports from "@/components/CitizenReports";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
-import { useAuth } from "@/hooks/useAuth";
+
 
 const Index = () => {
-  // Three-tier role:
-  //   guest         — not signed in
-  //   citizen       — signed in, default badge
-  //   meteorologist — signed in, badge has been promoted by an admin
-  const { user, profile } = useAuth();
-  const userRole: "guest" | "citizen" | "meteorologist" = !user
-    ? "guest"
-    : profile?.badge === "Meteorologist"
-      ? "meteorologist"
-      : "citizen";
-
   // Side-panel open/close state.
   const [rightOpen, setRightOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
@@ -125,7 +114,7 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Right: peer review */}
+          {/* Right: citizen reports (database-backed, 2h rolling history) */}
           <AnimatePresence>
             {rightOpen && (
               <motion.div
@@ -135,7 +124,7 @@ const Index = () => {
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 className="shrink-0 overflow-hidden h-full"
               >
-                <PeerReviewQueue userRole={userRole} />
+                <CitizenReports />
               </motion.div>
             )}
           </AnimatePresence>
