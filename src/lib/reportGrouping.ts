@@ -235,10 +235,20 @@ export function groupMessages(
   messages: RawMessage[],
   approvedSignatures: Set<string> = new Set(),
 ): StackedReport[] {
-  const stacks: StackedReport[] = [];
+  // Carry pre-computed analysis on each stack to avoid re-tokenizing the
+  // topic for every incoming message.
+  type WorkingStack = StackedReport & { _analysis: TokenAnalysis };
+  const stacks: WorkingStack[] = [];
 
   for (const msg of messages) {
-    const match = stacks.find((s) => isMatch(msg.content, s.topic));
+    const a = analyze(msg.content);
+    let match: WorkingStack | undefined;
+    for (const s of stacks) {
+      if (isMatchAnalyzed(a, s._analysis)) {
+        match = s;
+        break;
+      }
+    }
     if (match) {
       match.count += 1;
       match.reports.push(msg);
@@ -256,6 +266,7 @@ export function groupMessages(
         badge: msg.badge,
         reports: [msg],
         approved: approvedSignatures.has(sig),
+        _analysis: a,
       });
     }
   }
