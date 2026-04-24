@@ -388,11 +388,15 @@ const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [verified, setVerified] = useState<Set<string>>(new Set());
 
+  const canModerate = userRole === "meteorologist";
+
   const handleVerify = (id: string) => {
+    if (!canModerate) return;
     setVerified(prev => new Set(prev).add(id));
   };
 
   const handleRemove = (id: string) => {
+    if (!canModerate) return;
     setReports(prev => prev.filter(r => r.id !== id));
     setExpanded(prev => {
       const next = new Set(prev);
@@ -560,46 +564,48 @@ const PeerReviewQueue = ({ userRole }: PeerReviewQueueProps) => {
                   )}
                 </AnimatePresence>
 
-                {/* Verify + Remove */}
-                <div className="px-3 pb-3 flex gap-2">
-                  {!verified.has(report.id) && (
-                    <button
-                      onClick={() => handleVerify(report.id)}
-                      className="flex-1 py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green font-mono text-[10px] uppercase font-bold hover:bg-neon-green hover:text-background transition-all rounded-sm"
-                    >
-                      Verify
-                    </button>
-                  )}
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
+                {/* Verify + Remove (meteorologists only) */}
+                {canModerate && (
+                  <div className="px-3 pb-3 flex gap-2">
+                    {!verified.has(report.id) && (
                       <button
-                        aria-label="Remove report"
-                        className={`${verified.has(report.id) ? "ml-auto" : ""} size-7 flex items-center justify-center bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all rounded-sm shrink-0`}
+                        onClick={() => handleVerify(report.id)}
+                        className="flex-1 py-1.5 bg-neon-green/10 border border-neon-green/20 text-neon-green font-mono text-[10px] uppercase font-bold hover:bg-neon-green hover:text-background transition-all rounded-sm"
                       >
-                        <Trash2 className="size-3.5" />
+                        Verify
                       </button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="bg-cockpit border-border">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="font-mono text-card-foreground uppercase text-sm">
-                          Remove Report
-                        </AlertDialogTitle>
-                        <AlertDialogDescription className="font-mono text-xs text-muted-foreground leading-relaxed">
-                          Please remove a report only if it's a spam, a completely unrelated report, non-meteorological comment, or if it contains any links or dangerous material.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel className="font-mono text-[10px] uppercase">Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleRemove(report.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-mono text-[10px] uppercase"
+                    )}
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          aria-label="Remove report"
+                          className={`${verified.has(report.id) ? "ml-auto" : ""} size-7 flex items-center justify-center bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-all rounded-sm shrink-0`}
                         >
-                          Confirm
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-cockpit border-border">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="font-mono text-card-foreground uppercase text-sm">
+                            Remove Report
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="font-mono text-xs text-muted-foreground leading-relaxed">
+                            Please remove a report only if it's a spam, a completely unrelated report, non-meteorological comment, or if it contains any links or dangerous material.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="font-mono text-[10px] uppercase">Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleRemove(report.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90 font-mono text-[10px] uppercase"
+                          >
+                            Confirm
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                )}
               </motion.div>
             );
           })}
