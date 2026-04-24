@@ -48,6 +48,9 @@ const Auth = () => {
   // Forgot state
   const [forgotEmail, setForgotEmail] = useState("");
 
+  // Resend confirmation
+  const [resendEmail, setResendEmail] = useState("");
+
   const [submitting, setSubmitting] = useState(false);
 
   const handleLogin = async (e: FormEvent) => {
