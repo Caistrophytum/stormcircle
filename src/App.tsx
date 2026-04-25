@@ -21,6 +21,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import MobileGuard from "@/components/MobileGuard";
+import { useViewportScaling } from "@/hooks/useScaling";
 import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import AccountCenter from "./pages/AccountCenter.tsx";
@@ -30,7 +31,9 @@ import NotFound from "./pages/NotFound.tsx";
 // One QueryClient instance for the whole app — cache survives across pages.
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useViewportScaling();
+  return (
   <MobileGuard>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -48,7 +51,8 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
-  </MobileGuard>
-);
+    </MobileGuard>
+  );
+};
 
 export default App;
