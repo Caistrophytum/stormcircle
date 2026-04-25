@@ -238,7 +238,7 @@ const RadarMiniMap = ({
   const [lastTileUrl, setLastTileUrl] = useState<string | null>(null);
   const [miniMap, setMiniMap] = useState<L.Map | null>(null);
   if (!expanded) {
-    const circleSize = "clamp(160px, 18vw, 240px)";
+    const circleSize = "clamp(120px, 14dvw, 240px)";
 
     const stopClick = (e: React.MouseEvent) => {
       e.stopPropagation();
