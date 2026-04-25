@@ -341,17 +341,16 @@ function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
         <EventInfoPanel show="hazards" />
       </div>
 
-      {/* Most Dangerous: top-right. Capped to the left stack's height
-          (in pre-scale units, since the wrapper itself is scaled). Scrolls
-          internally when content exceeds the cap. */}
+      {/* Most Dangerous: top-right. Capped to the left stack's pre-scale
+          layout height (offsetHeight ignores CSS transforms). Both wrappers
+          are then scaled by the same overlayScale, so visual heights match
+          for any aspect ratio / scale factor. Scrolls internally when
+          content exceeds the cap. */}
       <div
         className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden no-scrollbar"
         style={{
           transform: `scale(${overlayScale})`,
-          maxHeight:
-            lockedHeight != null
-              ? `${lockedHeight / overlayScale}px`
-              : undefined,
+          maxHeight: lockedHeight != null ? `${lockedHeight}px` : undefined,
         }}
       >
         <EventInfoPanel show="dangerous" />
