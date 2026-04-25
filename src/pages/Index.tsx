@@ -71,7 +71,7 @@ const Index = () => {
 
   return (
     <CityProvider>
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-[100dvh] overflow-hidden bg-background">
       <main className="flex-1 flex flex-col min-w-0">
         <StatusBar />
 
