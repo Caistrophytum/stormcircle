@@ -1,4 +1,4 @@
-import { forwardRef, useState, useMemo, useRef, useEffect } from "react";
+import { forwardRef, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import RadarMiniMap from "./RadarMiniMap";
@@ -207,7 +207,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       <div
         className="absolute bottom-[5.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
         style={{
-          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(120px, 14dvw, 240px) + 1rem) * ${overlayScale})`,
         }}
       >
         <div className="flex gap-2 justify-between">
@@ -247,7 +247,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       <div
         className="absolute bottom-4 z-10 transition-all duration-300 ease-in-out"
         style={{
-          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(120px, 14dvw, 240px) + 1rem) * ${overlayScale})`,
           right: "calc(1rem + 160px + 0.5rem)",
         }}
       >
@@ -302,56 +302,24 @@ export default TacticalMap;
 /**
  * Left and right hazard overlay panels.
  *
- * The left wrapper holds the Top 5 Hazards + New Warnings stack and is
- * sized purely by its own content. We measure its rendered height with a
- * ResizeObserver and apply the same height (divided by overlayScale, so the
- * post-scale visual height matches) as a maxHeight on the right wrapper.
- *
- * Result: the bottom edge of the Top 6 Most Dangerous panel always lines
- * up with the bottom of the New Warnings card. When the right panel's
- * content exceeds that height, it scrolls internally (no page scroll).
+ * Heights are now driven entirely by CSS clamp() against dvh inside
+ * EventInfoPanel — no JS measurement needed. Both wrappers are scaled by
+ * the shared overlayScale, so visual alignment is preserved across
+ * aspect ratios because both sides shrink/grow from the same dvh basis.
  */
 function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
-  const leftStackRef = useRef<HTMLDivElement>(null);
-  const [lockedHeight, setLockedHeight] = useState<number | null>(null);
-
-  useEffect(() => {
-    const el = leftStackRef.current;
-    if (!el) return;
-    const measure = () => setLockedHeight(el.offsetHeight);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    window.addEventListener("resize", measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
-
   return (
     <>
-      {/* Top Hazards + New Warnings: top-left. Self-sized; drives the
-          right panel's max height. */}
       <div
-        ref={leftStackRef}
-        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
+        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out min-h-0 min-w-0"
         style={{ transform: `scale(${overlayScale})` }}
       >
         <EventInfoPanel show="hazards" />
       </div>
 
-      {/* Most Dangerous: top-right. Capped to the left stack's pre-scale
-          layout height (offsetHeight ignores CSS transforms). Both wrappers
-          are then scaled by the same overlayScale, so visual heights match
-          for any aspect ratio / scale factor. Scrolls internally when
-          content exceeds the cap. */}
       <div
-        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden no-scrollbar"
-        style={{
-          transform: `scale(${overlayScale})`,
-          maxHeight: lockedHeight != null ? `${lockedHeight}px` : undefined,
-        }}
+        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out min-h-0 min-w-0"
+        style={{ transform: `scale(${overlayScale})` }}
       >
         <EventInfoPanel show="dangerous" />
       </div>
