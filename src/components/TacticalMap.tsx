@@ -207,7 +207,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       <div
         className="absolute bottom-[5.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
         style={{
-          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(120px, 14dvw, 240px) + 1rem) * ${overlayScale})`,
         }}
       >
         <div className="flex gap-2 justify-between">
@@ -247,7 +247,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       <div
         className="absolute bottom-4 z-10 transition-all duration-300 ease-in-out"
         style={{
-          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(120px, 14dvw, 240px) + 1rem) * ${overlayScale})`,
           right: "calc(1rem + 160px + 0.5rem)",
         }}
       >
