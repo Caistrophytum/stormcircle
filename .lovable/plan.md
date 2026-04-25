@@ -1,28 +1,57 @@
+# Lock Top 6 Most Dangerous height to match left stack
 
+## Goal
 
-## Plan: Add WRS contribution triangles to data nodes
+The Top 6 Most Dangerous panel (top-right of map) should have its bottom edge land at the same y-position as the bottom of the New Warnings panel (left side). When its content exceeds that height, the panel scrolls internally instead of pushing further down.
 
-### What
-Add a right-pointing triangle on the right edge of each data node box (CAPE, CIN, SHEAR, SRH, LCL), colored neon white, displaying the score that variable contributes to the total WRS.
+Currently both panels are independently sized and the cap I added uses a viewport-relative formula (`100% - 9.5rem`). That's predictable but not "match the left stack exactly."
 
-### Changes
+## Behavior
 
-**1. `src/hooks/useWeatherData.ts`**
-- Compute each variable's individual WRS contribution and add it to the data node objects:
-  - CAPE: `(cape/5000) * 35`
-  - CIN: `cinScore * 8`
-  - SHEAR: `(shear/50) * 20`
-  - SRH: `(srh/600) * 25`
-  - LCL: `lclScore * 12`
-- Add a `wrsContribution: number` field to each data node entry.
-- Update the `WeatherData` interface accordingly.
+- Measure the rendered height of the left stack (Top 5 Hazards card + 8px gap + New Warnings card) at runtime.
+- Apply that exact height as `maxHeight` on the Top 6 panel wrapper.
+- The Top 6 panel scrolls vertically inside that bound; outer page never scrolls.
+- Re-measure on:
+  - viewport resize (shrinking/growing changes wrap and font scale)
+  - left-stack content changes (alert counts update on a refresh interval)
 
-**2. `src/components/TacticalMap.tsx`**
-- For each data node, add a CSS triangle (using `clip-path: polygon(0 0, 100% 50%, 0 100%)`) positioned on the right side of the box, extending outward.
-- The triangle will be neon white (`bg-white` or a custom neon-white color).
-- Inside the triangle, display the rounded WRS contribution number, styled small and dark for contrast.
-- Each node's container becomes `relative` with `overflow-visible` so the triangle can extend beyond.
+## Technical changes
 
-**3. `src/index.css`** (if needed)
-- Add a `--neon-white` CSS variable if not already present.
+**`src/components/TacticalMap.tsx`**
 
+1. Replace the two independent `EventInfoPanel` mounts (`show="hazards"` and `show="dangerous"`) with refs:
+   - `leftStackRef` on the top-left wrapper.
+   - `dangerousWrapperRef` on the top-right wrapper.
+2. Add a `useState<number | null>` for `lockedHeight`.
+3. Add a `ResizeObserver` on `leftStackRef` that writes its `offsetHeight` into `lockedHeight`. Also re-runs on window resize.
+4. Apply to top-right wrapper:
+   ```ts
+   style={{
+     transform: `scale(${overlayScale})`,
+     maxHeight: lockedHeight ? `${lockedHeight / overlayScale}px` : undefined,
+   }}
+   className="... overflow-y-auto overflow-x-hidden no-scrollbar"
+   ```
+   Dividing by `overlayScale` keeps the **post-scale** rendered height equal to the left stack (which uses the same `overlayScale`).
+5. Remove the previous `100% - 9.5rem` cap — replaced by this measured value.
+6. Keep `overflow-y-auto` so the panel scrolls internally; keep `overflow-x-hidden` so badges don't horizontally scroll.
+
+**`src/components/EventInfoPanel.tsx`** — no changes required; it already renders inside whatever wrapper it's given.
+
+## Edge cases
+
+- **First paint**: `lockedHeight` is `null` until the ResizeObserver fires (next frame). Until then the right panel is uncapped — same as today. Acceptable; the cap snaps in within ~1 frame.
+- **Left stack grows after Top 6 is already small**: ResizeObserver fires, `lockedHeight` increases, right panel cap relaxes — no scroll needed.
+- **Hazards data still loading**: left stack is shorter, so right panel cap is shorter too. Right panel scrolls. Once data loads, cap expands.
+- **Very narrow viewport (overlayScale < 1)**: both wrappers are scaled by the same factor, so visually they stay aligned at the bottom.
+
+## What stays the same
+
+- Both panels remain independently positioned (`top-3 left-3` and `top-3 right-3`).
+- Sounding parameter strip and WRS bar positions are unchanged.
+- No styling/visual changes inside `EventInfoPanel`.
+
+## Out of scope
+
+- Top 5 Hazards / New Warnings panels themselves (already sized by content; not capped).
+- Mobile guard, viewport scaling hook — unchanged.

@@ -202,3 +202,12 @@
 .report-glow {
   animation: report-glow-pulse 1s ease-in-out 2;
 }
+
+/* Hide scrollbar visuals while keeping scrollability (used by hazard overlays). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

@@ -1,4 +1,4 @@
-import { forwardRef, useState, useMemo } from "react";
+import { forwardRef, useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import RadarMiniMap from "./RadarMiniMap";
@@ -290,30 +290,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         </div>
       </div>
 
-      {/* Top Hazards: top-left.
-          maxHeight reserves ~9.5rem at the bottom for the sounding nodes +
-          WRS bar so the panel never overlaps them on short viewports.
-          The inner panel scrolls if its content exceeds this cap. */}
-      <div
-        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden no-scrollbar"
-        style={{
-          transform: `scale(${overlayScale})`,
-          maxHeight: `calc((100% - 9.5rem) / ${overlayScale})`,
-        }}
-      >
-        <EventInfoPanel show="hazards" />
-      </div>
-
-      {/* Most Dangerous: top-right (same height cap as above). */}
-      <div
-        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden no-scrollbar"
-        style={{
-          transform: `scale(${overlayScale})`,
-          maxHeight: `calc((100% - 9.5rem) / ${overlayScale})`,
-        }}
-      >
-        <EventInfoPanel show="dangerous" />
-      </div>
+      <LeftRightHazardOverlays overlayScale={overlayScale} />
     </motion.section>
   );
 });
@@ -321,3 +298,64 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 TacticalMap.displayName = "TacticalMap";
 
 export default TacticalMap;
+
+/**
+ * Left and right hazard overlay panels.
+ *
+ * The left wrapper holds the Top 5 Hazards + New Warnings stack and is
+ * sized purely by its own content. We measure its rendered height with a
+ * ResizeObserver and apply the same height (divided by overlayScale, so the
+ * post-scale visual height matches) as a maxHeight on the right wrapper.
+ *
+ * Result: the bottom edge of the Top 6 Most Dangerous panel always lines
+ * up with the bottom of the New Warnings card. When the right panel's
+ * content exceeds that height, it scrolls internally (no page scroll).
+ */
+function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
+  const leftStackRef = useRef<HTMLDivElement>(null);
+  const [lockedHeight, setLockedHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = leftStackRef.current;
+    if (!el) return;
+    const measure = () => setLockedHeight(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  return (
+    <>
+      {/* Top Hazards + New Warnings: top-left. Self-sized; drives the
+          right panel's max height. */}
+      <div
+        ref={leftStackRef}
+        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
+        style={{ transform: `scale(${overlayScale})` }}
+      >
+        <EventInfoPanel show="hazards" />
+      </div>
+
+      {/* Most Dangerous: top-right. Capped to the left stack's height
+          (in pre-scale units, since the wrapper itself is scaled). Scrolls
+          internally when content exceeds the cap. */}
+      <div
+        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden no-scrollbar"
+        style={{
+          transform: `scale(${overlayScale})`,
+          maxHeight:
+            lockedHeight != null
+              ? `${lockedHeight / overlayScale}px`
+              : undefined,
+        }}
+      >
+        <EventInfoPanel show="dangerous" />
+      </div>
+    </>
+  );
+}
