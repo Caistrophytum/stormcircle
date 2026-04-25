@@ -295,7 +295,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           WRS bar so the panel never overlaps them on short viewports.
           The inner panel scrolls if its content exceeds this cap. */}
       <div
-        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out overflow-hidden"
+        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden no-scrollbar"
         style={{
           transform: `scale(${overlayScale})`,
           maxHeight: `calc((100% - 9.5rem) / ${overlayScale})`,
@@ -306,7 +306,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 
       {/* Most Dangerous: top-right (same height cap as above). */}
       <div
-        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out overflow-hidden"
+        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden no-scrollbar"
         style={{
           transform: `scale(${overlayScale})`,
           maxHeight: `calc((100% - 9.5rem) / ${overlayScale})`,
