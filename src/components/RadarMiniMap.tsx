@@ -299,7 +299,7 @@ const RadarMiniMap = ({
   }
 
   return (
-    <div className="flex gap-3" style={{ height: "min(65vw, 620px)" }}>
+    <div className="flex gap-3" style={{ height: "clamp(300px, 55dvh, 620px)" }}>
       <div className="w-[220px] shrink-0 glass-panel p-3 flex flex-col gap-3">
         <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Radar Controls</span>
         <RadarControls
