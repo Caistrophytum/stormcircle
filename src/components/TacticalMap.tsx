@@ -290,21 +290,26 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         </div>
       </div>
 
-      {/* Top Hazards: top-left */}
+      {/* Top Hazards: top-left.
+          maxHeight reserves ~9.5rem at the bottom for the sounding nodes +
+          WRS bar so the panel never overlaps them on short viewports.
+          The inner panel scrolls if its content exceeds this cap. */}
       <div
-        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
+        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out overflow-hidden"
         style={{
           transform: `scale(${overlayScale})`,
+          maxHeight: `calc((100% - 9.5rem) / ${overlayScale})`,
         }}
       >
         <EventInfoPanel show="hazards" />
       </div>
 
-      {/* Most Dangerous: top-right */}
+      {/* Most Dangerous: top-right (same height cap as above). */}
       <div
-        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out"
+        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out overflow-hidden"
         style={{
           transform: `scale(${overlayScale})`,
+          maxHeight: `calc((100% - 9.5rem) / ${overlayScale})`,
         }}
       >
         <EventInfoPanel show="dangerous" />
