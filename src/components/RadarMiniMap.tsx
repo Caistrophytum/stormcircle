@@ -312,7 +312,7 @@ const RadarMiniMap = ({
         />
       </div>
 
-      <div className="glass-panel p-4 flex flex-col" style={{ width: "min(65vw, 620px)", height: "100%" }}>
+      <div className="glass-panel p-4 flex flex-col" style={{ width: "min(65vw, 620px)", height: "100%", minHeight: 0, minWidth: 0 }}>
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-3">
             <span className="text-[13px] font-mono text-muted-foreground uppercase tracking-wider">NEXRAD</span>
