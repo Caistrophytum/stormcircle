@@ -238,7 +238,7 @@ const RadarMiniMap = ({
   const [lastTileUrl, setLastTileUrl] = useState<string | null>(null);
   const [miniMap, setMiniMap] = useState<L.Map | null>(null);
   if (!expanded) {
-    const circleSize = "clamp(120px, 14dvw, 240px)";
+    const circleSize = "clamp(160px, 18vw, 240px)";
 
     const stopClick = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -299,7 +299,7 @@ const RadarMiniMap = ({
   }
 
   return (
-    <div className="flex gap-3" style={{ height: "clamp(300px, 55dvh, 620px)" }}>
+    <div className="flex gap-3" style={{ height: "min(65vw, 620px)" }}>
       <div className="w-[220px] shrink-0 glass-panel p-3 flex flex-col gap-3">
         <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">Radar Controls</span>
         <RadarControls
@@ -312,7 +312,7 @@ const RadarMiniMap = ({
         />
       </div>
 
-      <div className="glass-panel p-4 flex flex-col" style={{ width: "min(65vw, 620px)", height: "100%", minHeight: 0, minWidth: 0 }}>
+      <div className="glass-panel p-4 flex flex-col" style={{ width: "min(65vw, 620px)", height: "100%" }}>
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-3">
             <span className="text-[13px] font-mono text-muted-foreground uppercase tracking-wider">NEXRAD</span>
