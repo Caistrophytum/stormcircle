@@ -45,9 +45,29 @@ interface EventInfoPanelProps {
   stacked?: boolean;
   /** Which card(s) to render. Defaults to "both". */
   show?: "both" | "hazards" | "dangerous";
+  /** Refs for height-syncing the three panels. */
+  hazardsRef?: React.Ref<HTMLDivElement>;
+  newWarningsRef?: React.Ref<HTMLDivElement>;
+  dangerousRef?: React.Ref<HTMLDivElement>;
+  /** Inline style applied to the scrollable inner panels. */
+  hazardsStyle?: React.CSSProperties;
+  newWarningsStyle?: React.CSSProperties;
+  dangerousStyle?: React.CSSProperties;
+  /** Gap (px) between the two left/right stacked cards. */
+  stackGapPx?: number;
 }
 
-const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps) => {
+const EventInfoPanel = ({
+  stacked = false,
+  show = "both",
+  hazardsRef,
+  newWarningsRef,
+  dangerousRef,
+  hazardsStyle,
+  newWarningsStyle,
+  dangerousStyle,
+  stackGapPx,
+}: EventInfoPanelProps) => {
   const { mostDangerous, topHazards, newWarnings, loading, error, lastUpdated } = useAlerts();
   const [now, setNow] = useState(() => new Date());
 
