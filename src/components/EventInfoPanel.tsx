@@ -83,9 +83,16 @@ const EventInfoPanel = ({
       }`}
     >
       {show !== "dangerous" && (
-      <div className="flex flex-col gap-2 self-start">
+      <div
+        className="flex flex-col self-start"
+        style={{ gap: stackGapPx != null ? `${stackGapPx}px` : undefined }}
+      >
       {/* Top 5 Hazards */}
-      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]">
+      <div
+        ref={hazardsRef}
+        style={hazardsStyle}
+        className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]"
+      >
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 5 Hazards
         </h3>
