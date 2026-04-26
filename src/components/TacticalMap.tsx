@@ -328,7 +328,11 @@ function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
       // (top to bottom), regardless of background image cover-fit.
       const parent = containerRef.current?.offsetParent as HTMLElement | null;
       const availableH = parent?.offsetHeight ?? window.innerHeight;
-      const panelH = Math.floor(availableH * RATIO);
+      // Combined left stack (Top 5 + GAP + New Warnings) occupies RATIO of
+      // the section height. Each individual panel is therefore half of
+      // (combinedH - GAP).
+      const combinedH = Math.floor(availableH * RATIO);
+      const panelH = Math.max(0, Math.floor((combinedH - GAP) / 2));
 
       if (commonRef.current) {
         commonRef.current.style.height = `${panelH}px`;
@@ -339,8 +343,8 @@ function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
         newRef.current.style.maxHeight = `${panelH}px`;
       }
       if (dangerousRef.current) {
-        dangerousRef.current.style.height = `${panelH * 2 + GAP}px`;
-        dangerousRef.current.style.maxHeight = `${panelH * 2 + GAP}px`;
+        dangerousRef.current.style.height = `${combinedH}px`;
+        dangerousRef.current.style.maxHeight = `${combinedH}px`;
       }
     }
 
