@@ -314,15 +314,20 @@ export default TacticalMap;
 const PANEL_GAP = 12;
 
 function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const commonRef = useRef<HTMLDivElement>(null);
   const newRef = useRef<HTMLDivElement>(null);
   const dangerousRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const RATIO = 0.405; // 350/864
+    const GAP = PANEL_GAP;
+    const RATIO = 0.405;
 
     function recalculate() {
-      const availableH = window.innerHeight;
+      // Measure the actual parent container (the tactical map section)
+      // that holds all three alert panels, instead of the full window.
+      const parent = containerRef.current?.offsetParent as HTMLElement | null;
+      const availableH = parent?.offsetHeight ?? window.innerHeight;
       const panelH = Math.floor(availableH * RATIO);
 
       if (commonRef.current) {
@@ -334,15 +339,17 @@ function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
         newRef.current.style.maxHeight = `${panelH}px`;
       }
       if (dangerousRef.current) {
-        const totalH = panelH + panelH + PANEL_GAP;
-        dangerousRef.current.style.height = `${totalH}px`;
-        dangerousRef.current.style.maxHeight = `${totalH}px`;
+        dangerousRef.current.style.height = `${panelH * 2 + GAP}px`;
+        dangerousRef.current.style.maxHeight = `${panelH * 2 + GAP}px`;
       }
     }
 
+    const parent = containerRef.current?.offsetParent as HTMLElement | null;
+    const observer = new ResizeObserver(recalculate);
+    if (parent) observer.observe(parent);
+
     recalculate();
-    window.addEventListener("resize", recalculate);
-    return () => window.removeEventListener("resize", recalculate);
+    return () => observer.disconnect();
   }, []);
 
   // Shared scrollbar styling for all three panels. Heights are set
@@ -367,6 +374,9 @@ function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
 
   return (
     <>
+      {/* Zero-size sentinel used to measure the parent map container. */}
+      <div ref={containerRef} className="absolute inset-0 pointer-events-none" aria-hidden />
+
       <div
         className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
         style={{ transform: `scale(${overlayScale})` }}
