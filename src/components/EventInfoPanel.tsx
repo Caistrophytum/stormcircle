@@ -171,7 +171,11 @@ const EventInfoPanel = ({
       {show !== "hazards" && (
       <>
       {/* Top 6 Most Dangerous */}
-      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[260px]">
+      <div
+        ref={dangerousRef}
+        style={dangerousStyle}
+        className="glass-panel p-2.5 whitespace-nowrap min-w-[260px]"
+      >
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 6 Most Dangerous
         </h3>
