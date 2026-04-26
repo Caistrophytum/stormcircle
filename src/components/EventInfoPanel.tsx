@@ -130,7 +130,11 @@ const EventInfoPanel = ({
       </div>
 
       {/* New Warnings (last 5 refreshes) */}
-      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]">
+      <div
+        ref={newWarningsRef}
+        style={newWarningsStyle}
+        className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]"
+      >
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           New Warnings
         </h3>
