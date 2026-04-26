@@ -45,9 +45,29 @@ interface EventInfoPanelProps {
   stacked?: boolean;
   /** Which card(s) to render. Defaults to "both". */
   show?: "both" | "hazards" | "dangerous";
+  /** Refs for height-syncing the three panels. */
+  hazardsRef?: React.Ref<HTMLDivElement>;
+  newWarningsRef?: React.Ref<HTMLDivElement>;
+  dangerousRef?: React.Ref<HTMLDivElement>;
+  /** Inline style applied to the scrollable inner panels. */
+  hazardsStyle?: React.CSSProperties;
+  newWarningsStyle?: React.CSSProperties;
+  dangerousStyle?: React.CSSProperties;
+  /** Gap (px) between the two left/right stacked cards. */
+  stackGapPx?: number;
 }
 
-const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps) => {
+const EventInfoPanel = ({
+  stacked = false,
+  show = "both",
+  hazardsRef,
+  newWarningsRef,
+  dangerousRef,
+  hazardsStyle,
+  newWarningsStyle,
+  dangerousStyle,
+  stackGapPx,
+}: EventInfoPanelProps) => {
   const { mostDangerous, topHazards, newWarnings, loading, error, lastUpdated } = useAlerts();
   const [now, setNow] = useState(() => new Date());
 
@@ -63,9 +83,16 @@ const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps)
       }`}
     >
       {show !== "dangerous" && (
-      <div className="flex flex-col gap-2 self-start">
+      <div
+        className="flex flex-col self-start"
+        style={{ gap: stackGapPx != null ? `${stackGapPx}px` : undefined }}
+      >
       {/* Top 5 Hazards */}
-      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]">
+      <div
+        ref={hazardsRef}
+        style={hazardsStyle}
+        className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]"
+      >
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 5 Hazards
         </h3>
@@ -103,7 +130,11 @@ const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps)
       </div>
 
       {/* New Warnings (last 5 refreshes) */}
-      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]">
+      <div
+        ref={newWarningsRef}
+        style={newWarningsStyle}
+        className="glass-panel p-2.5 whitespace-nowrap min-w-[220px]"
+      >
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           New Warnings
         </h3>
@@ -140,7 +171,11 @@ const EventInfoPanel = ({ stacked = false, show = "both" }: EventInfoPanelProps)
       {show !== "hazards" && (
       <>
       {/* Top 6 Most Dangerous */}
-      <div className="glass-panel p-2.5 whitespace-nowrap min-w-[260px]">
+      <div
+        ref={dangerousRef}
+        style={dangerousStyle}
+        className="glass-panel p-2.5 whitespace-nowrap min-w-[260px]"
+      >
         <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
           Top 6 Most Dangerous
         </h3>
