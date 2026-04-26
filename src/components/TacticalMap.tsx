@@ -322,23 +322,12 @@ function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
   useEffect(() => {
     const GAP = PANEL_GAP;
     const RATIO = 0.405;
-    const IMG_ASPECT = 1920 / 1080; // intrinsic aspect of weather backgrounds
 
     function recalculate() {
-      // Reference height = the visible (object-cover) height of the inner
-      // background image inside the tactical map section. With object-cover,
-      // the image fills the box on the dominant axis; we compute the actual
-      // displayed image height so panel sizing matches what the user sees.
+      // Reference height = raw height of the tactical map section
+      // (top to bottom), regardless of background image cover-fit.
       const parent = containerRef.current?.offsetParent as HTMLElement | null;
-      const boxW = parent?.offsetWidth ?? window.innerWidth;
-      const boxH = parent?.offsetHeight ?? window.innerHeight;
-      const boxAspect = boxW / Math.max(boxH, 1);
-      // If box is wider than image aspect, image is scaled to box width and
-      // overflows vertically — visible height = boxH. Otherwise image is
-      // scaled to box height — visible height = boxW / IMG_ASPECT.
-      const visibleImgH =
-        boxAspect >= IMG_ASPECT ? boxH : Math.round(boxW / IMG_ASPECT);
-      const availableH = visibleImgH;
+      const availableH = parent?.offsetHeight ?? window.innerHeight;
       const panelH = Math.floor(availableH * RATIO);
 
       if (commonRef.current) {
