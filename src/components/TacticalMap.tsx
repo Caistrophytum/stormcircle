@@ -311,49 +311,79 @@ export default TacticalMap;
  * up with the bottom of the New Warnings card. When the right panel's
  * content exceeds that height, it scrolls internally (no page scroll).
  */
+const PANEL_GAP = 12;
+
 function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
-  const leftStackRef = useRef<HTMLDivElement>(null);
-  const [lockedHeight, setLockedHeight] = useState<number | null>(null);
+  const commonRef = useRef<HTMLDivElement>(null);
+  const newRef = useRef<HTMLDivElement>(null);
+  const dangerousRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const el = leftStackRef.current;
-    if (!el) return;
-    const measure = () => setLockedHeight(el.offsetHeight);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    window.addEventListener("resize", measure);
+    const sync = () => {
+      const commonH = commonRef.current?.offsetHeight ?? 0;
+      const newH = newRef.current?.offsetHeight ?? 0;
+      if (dangerousRef.current) {
+        dangerousRef.current.style.height = `${commonH + newH + PANEL_GAP}px`;
+      }
+    };
+    const ro = new ResizeObserver(sync);
+    if (commonRef.current) ro.observe(commonRef.current);
+    if (newRef.current) ro.observe(newRef.current);
+    sync();
+    window.addEventListener("resize", sync);
     return () => {
       ro.disconnect();
-      window.removeEventListener("resize", measure);
+      window.removeEventListener("resize", sync);
     };
   }, []);
 
+  // Shared scrollbar styling for all three panels.
+  const scrollStyle: React.CSSProperties = {
+    overflowY: "auto",
+    scrollbarWidth: "thin",
+    scrollbarColor: "rgba(100, 200, 255, 0.3) transparent",
+  };
+
+  // Most Common Alerts (Top 5 Hazards) and New Alerts: capped at 40.5dvh.
+  const leftPanelStyle: React.CSSProperties = {
+    ...scrollStyle,
+    maxHeight: "40.5dvh",
+    flexShrink: 1,
+    minHeight: 0,
+  };
+
+  // Top 6 Most Dangerous: height set imperatively by ResizeObserver above.
+  const dangerousStyle: React.CSSProperties = {
+    ...scrollStyle,
+    flexShrink: 0,
+    minHeight: 0,
+  };
+
   return (
     <>
-      {/* Top Hazards + New Warnings: top-left. Self-sized; drives the
-          right panel's max height. */}
       <div
-        ref={leftStackRef}
         className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
         style={{ transform: `scale(${overlayScale})` }}
       >
-        <EventInfoPanel show="hazards" />
+        <EventInfoPanel
+          show="hazards"
+          hazardsRef={commonRef}
+          newWarningsRef={newRef}
+          hazardsStyle={leftPanelStyle}
+          newWarningsStyle={leftPanelStyle}
+          stackGapPx={PANEL_GAP}
+        />
       </div>
 
-      {/* Most Dangerous: top-right. Capped to the left stack's pre-scale
-          layout height (offsetHeight ignores CSS transforms). Both wrappers
-          are then scaled by the same overlayScale, so visual heights match
-          for any aspect ratio / scale factor. Scrolls internally when
-          content exceeds the cap. */}
       <div
-        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out overflow-y-auto overflow-x-hidden no-scrollbar"
-        style={{
-          transform: `scale(${overlayScale})`,
-          maxHeight: lockedHeight != null ? `${lockedHeight}px` : undefined,
-        }}
+        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out"
+        style={{ transform: `scale(${overlayScale})` }}
       >
-        <EventInfoPanel show="dangerous" />
+        <EventInfoPanel
+          show="dangerous"
+          dangerousRef={dangerousRef}
+          dangerousStyle={dangerousStyle}
+        />
       </div>
     </>
   );
