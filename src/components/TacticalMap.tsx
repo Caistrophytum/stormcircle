@@ -319,40 +319,46 @@ function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
   const dangerousRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const sync = () => {
-      const commonH = commonRef.current?.offsetHeight ?? 0;
-      const newH = newRef.current?.offsetHeight ?? 0;
-      if (dangerousRef.current) {
-        dangerousRef.current.style.height = `${commonH + newH + PANEL_GAP}px`;
+    const RATIO = 0.405; // 350/864
+
+    function recalculate() {
+      const availableH = window.innerHeight;
+      const panelH = Math.floor(availableH * RATIO);
+
+      if (commonRef.current) {
+        commonRef.current.style.height = `${panelH}px`;
+        commonRef.current.style.maxHeight = `${panelH}px`;
       }
-    };
-    const ro = new ResizeObserver(sync);
-    if (commonRef.current) ro.observe(commonRef.current);
-    if (newRef.current) ro.observe(newRef.current);
-    sync();
-    window.addEventListener("resize", sync);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", sync);
-    };
+      if (newRef.current) {
+        newRef.current.style.height = `${panelH}px`;
+        newRef.current.style.maxHeight = `${panelH}px`;
+      }
+      if (dangerousRef.current) {
+        const totalH = panelH + panelH + PANEL_GAP;
+        dangerousRef.current.style.height = `${totalH}px`;
+        dangerousRef.current.style.maxHeight = `${totalH}px`;
+      }
+    }
+
+    recalculate();
+    window.addEventListener("resize", recalculate);
+    return () => window.removeEventListener("resize", recalculate);
   }, []);
 
-  // Shared scrollbar styling for all three panels.
+  // Shared scrollbar styling for all three panels. Heights are set
+  // imperatively by the useEffect above — do not set max-height in CSS.
   const scrollStyle: React.CSSProperties = {
     overflowY: "auto",
     scrollbarWidth: "thin",
     scrollbarColor: "rgba(100, 200, 255, 0.3) transparent",
   };
 
-  // Most Common Alerts (Top 5 Hazards) and New Alerts: capped at 40.5dvh.
   const leftPanelStyle: React.CSSProperties = {
     ...scrollStyle,
-    maxHeight: "40.5dvh",
-    flexShrink: 1,
+    flexShrink: 0,
     minHeight: 0,
   };
 
-  // Top 6 Most Dangerous: height set imperatively by ResizeObserver above.
   const dangerousStyle: React.CSSProperties = {
     ...scrollStyle,
     flexShrink: 0,
