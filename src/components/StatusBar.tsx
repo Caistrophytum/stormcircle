@@ -9,6 +9,7 @@ import {
   displayPressure,
 } from "@/hooks/useUnitSystem";
 import { useAuth } from "@/hooks/useAuth";
+import OnlineCounter from "@/components/OnlineCounter";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -142,6 +143,8 @@ const StatusBar = () => {
           <span className="block text-[9px] font-mono text-muted-foreground leading-none">Mission Time</span>
           <span className="text-xs font-mono text-card-foreground">{zulu} Z</span>
         </div>
+
+        <OnlineCounter />
 
         {userRole === "guest" ? (
           <div className="flex items-center gap-2">
