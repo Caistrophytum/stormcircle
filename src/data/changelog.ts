@@ -21,7 +21,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-04-27 20z",
     tag: "FIXED",
     title: "Radar button overlay and refresh rate",
-    body: "Radar buttond now clickable through polygons, and polygons should sync with warning list.",
+    body: "Radar buttons now clickable through polygons, and polygons should sync with the warning list.",
   },
   {
     date: "2026-04-27 9z",
