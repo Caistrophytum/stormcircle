@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { sendEmail, TEMPLATE_IDS, isEmailJsConfigured } from "@/lib/emailjs";
+import { changelog } from "@/data/changelog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -531,32 +532,7 @@ const AccountCenter = () => {
           />
           <div className="p-5">
             <ol className="relative border-l border-border/60 ml-2 space-y-5">
-              {[
-                {
-                  date: "2026-04-27",
-                  tag: "NEW",
-                  title: "Live online presence counter",
-                  body: "Top status bar now shows how many operators are connected in real time.",
-                },
-                {
-                  date: "2026-04-25",
-                  tag: "IMPROVED",
-                  title: "Tactical map alert panels",
-                  body: "Top Hazards, Most Dangerous and New Warnings now resize precisely with the map viewport.",
-                },
-                {
-                  date: "2026-04-20",
-                  tag: "NEW",
-                  title: "Account Center",
-                  body: "Manage your profile, apply for the Meteorologist badge and send feedback in one place.",
-                },
-                {
-                  date: "2026-04-15",
-                  tag: "FIXED",
-                  title: "Citizen reports stability",
-                  body: "Resolved duplicate-report flicker and tightened auto-approval rules for verified meteorologists.",
-                },
-              ].map((entry) => {
+              {changelog.map((entry) => {
                 const tagColor =
                   entry.tag === "NEW"
                     ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20"
