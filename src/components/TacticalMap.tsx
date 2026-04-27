@@ -151,7 +151,15 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   }, [threatLevel]);
 
   return (
-    <motion.section ref={ref} layout className="relative overflow-hidden flex-1">
+    <motion.section
+      ref={(el) => {
+        sectionRef.current = el as HTMLElement | null;
+        if (typeof ref === "function") ref(el as HTMLElement | null);
+        else if (ref) (ref as React.MutableRefObject<HTMLElement | null>).current = el as HTMLElement | null;
+      }}
+      layout
+      className="relative overflow-hidden flex-1"
+    >
       {/* Weather-responsive background */}
       <AnimatePresence mode="wait">
         <motion.img
