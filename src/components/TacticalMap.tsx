@@ -31,8 +31,6 @@ interface Props {
 }
 
 const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const [sectionH, setSectionH] = useState<number>(0);
   const { data } = useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
   const radar = useRadar();
@@ -40,28 +38,6 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
   );
   const unitSystem = useUnitSystem();
-
-  // Track the tactical map section height so the collapsed radar
-  // (circle + zoom buttons) can occupy exactly 25% of it.
-  useEffect(() => {
-    const el = sectionRef.current;
-    if (!el) return;
-    const update = () => setSectionH(el.offsetHeight);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  // Buttons extend ~18px above the circle (top: -18px on h-8 buttons).
-  // Visual height = circle diameter + 18px, scaled by overlayScale.
-  // Solve: (diameter + 18) * overlayScale = 0.25 * sectionH
-  const radarCircleSizePx = useMemo(() => {
-    if (!sectionH || !overlayScale) return null;
-    const target = 0.25 * sectionH;
-    const diameter = target / overlayScale - 18;
-    return diameter > 0 ? Math.floor(diameter) : null;
-  }, [sectionH, overlayScale]);
 
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
@@ -151,15 +127,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   }, [threatLevel]);
 
   return (
-    <motion.section
-      ref={(el) => {
-        sectionRef.current = el as HTMLElement | null;
-        if (typeof ref === "function") ref(el as HTMLElement | null);
-        else if (ref) (ref as React.MutableRefObject<HTMLElement | null>).current = el as HTMLElement | null;
-      }}
-      layout
-      className="relative overflow-hidden flex-1"
-    >
+    <motion.section ref={ref} layout className="relative overflow-hidden flex-1">
       {/* Weather-responsive background */}
       <AnimatePresence mode="wait">
         <motion.img
@@ -229,7 +197,6 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
                 tileUrl={radar.tileUrl}
-                circleSizePx={radarCircleSizePx}
               />
             </motion.div>
           )}
