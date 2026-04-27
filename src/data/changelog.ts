@@ -18,7 +18,13 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-04-27",
+    date: "2026-04-27 20z",
+    tag: "FIXED",
+    title: "Radar button overlay and refresh rate",
+    body: "Radar buttond now clickable through polygons, and polygons should sync with warning list.",
+  },
+  {
+    date: "2026-04-27 9z",
     tag: "NEW",
     title: "Live online presence counter",
     body: "Top status bar now shows how many operators are connected in real time.",
