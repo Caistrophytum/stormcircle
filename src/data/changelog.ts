@@ -26,7 +26,7 @@ export const changelog: ChangelogEntry[] = [
   {
     date: "2026-04-25",
     tag: "IMPROVED",
-    title: "Tactical map alert panels",
+    title: "Main screen alert panels",
     body: "Top Hazards, Most Dangerous and New Warnings now resize precisely with the map viewport.",
   },
   {
