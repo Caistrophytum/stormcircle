@@ -7,7 +7,14 @@ import { RadarStation, RADAR_STATIONS } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 import WarningPolygons, { WarningPolygonsHandle } from "./WarningPolygons";
+
+/** Custom Leaflet pane name for radar station markers. Sits above the
+ *  default overlay pane (where warning polygons render) so the clickable
+ *  station "buttons" are never occluded by warning shapes. */
+const RADAR_MARKERS_PANE = "radar-markers-pane";
+const RADAR_MARKERS_PANE_Z = 660; // above radar tiles (650) and warnings (400)
 
 interface Props {
   expanded: boolean;
@@ -53,14 +60,9 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   _ref,
 ) {
   const map = useMap();
-  const [cacheBust, setCacheBust] = useState(0);
-
-  // Refresh radar tiles every 60s, matching weather/sounding/warnings cadence.
-  useEffect(() => {
-    if (!tileUrl) return;
-    const id = setInterval(() => setCacheBust((n) => n + 1), 60_000);
-    return () => clearInterval(id);
-  }, [tileUrl]);
+  // Use the shared 60s refresh clock so radar tile cache-busts fire in
+  // lockstep with warnings, current conditions, and other 1-min sources.
+  const cacheBust = useRefreshTick();
 
   useEffect(() => {
     if (!tileUrl) return;
@@ -103,6 +105,20 @@ interface RadarStationMarkersProps {
   onProductSelect: (product: ProductCode) => void;
 }
 
+/** Creates a dedicated Leaflet pane for the radar station markers so they
+ *  always render above the warning polygon overlay pane. */
+const EnsureRadarMarkersPane = () => {
+  const map = useMap();
+  useEffect(() => {
+    if (!map.getPane(RADAR_MARKERS_PANE)) {
+      const pane = map.createPane(RADAR_MARKERS_PANE);
+      pane.style.zIndex = String(RADAR_MARKERS_PANE_Z);
+      pane.style.pointerEvents = "auto";
+    }
+  }, [map]);
+  return null;
+};
+
 const RadarStationMarkers = ({
   selectedStation,
   onStationSelect,
@@ -110,6 +126,7 @@ const RadarStationMarkers = ({
 }: RadarStationMarkersProps) => {
   return (
     <>
+      <EnsureRadarMarkersPane />
       {RADAR_STATIONS.map((station) => {
         const isSelected = selectedStation?.id === station.id;
         return (
@@ -117,6 +134,7 @@ const RadarStationMarkers = ({
             key={station.id}
             center={[station.lat, station.lon]}
             radius={isSelected ? 8 : 5}
+            pane={RADAR_MARKERS_PANE}
             pathOptions={{
               color: isSelected ? "#00ffff" : "#4af",
               fillColor: isSelected ? "#00ffff" : "#1a6aaa",
@@ -130,7 +148,13 @@ const RadarStationMarkers = ({
               },
             }}
           >
-            <Tooltip permanent direction="top" offset={[0, -6]} className="radar-station-label">
+            <Tooltip
+              permanent
+              direction="top"
+              offset={[0, -6]}
+              pane={RADAR_MARKERS_PANE}
+              className="radar-station-label"
+            >
               {station.id}
             </Tooltip>
           </CircleMarker>
