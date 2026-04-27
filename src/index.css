@@ -211,3 +211,17 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px #00ff88; }
+  50% { opacity: 0.5; box-shadow: 0 0 2px #00ff88; }
+}
+.online-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00ff88;
+  display: inline-block;
+  box-shadow: 0 0 6px #00ff88;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
