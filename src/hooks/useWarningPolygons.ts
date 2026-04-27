@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRefreshTick } from "./useRefreshTick";
 
 /** Color map for NWS event types. Unknown types fall back to #FFFFFF. */
 export const WARNING_COLORS: Record<string, string> = {
@@ -139,8 +140,6 @@ export interface WarningPolygonsData {
   lastUpdated: Date | null;
 }
 
-const REFRESH_INTERVAL_MS = 60_000; // 1 minute
-
 export function useWarningPolygons(): WarningPolygonsData {
   const [data, setData] = useState<WarningPolygonsData>({
     polygons: [],
@@ -148,6 +147,10 @@ export function useWarningPolygons(): WarningPolygonsData {
     error: null,
     lastUpdated: null,
   });
+
+  // Subscribe to the shared 60s refresh clock so warning fetches fire in
+  // lockstep with radar tile refreshes and other 1-minute data sources.
+  const tick = useRefreshTick();
 
   useEffect(() => {
     let cancelled = false;
@@ -164,9 +167,6 @@ export function useWarningPolygons(): WarningPolygonsData {
         const features: any[] = Array.isArray(json?.features) ? json.features : [];
 
         const polygons: WarningPolygon[] = features
-          // Only render alerts that have polygon geometry. County-based alerts
-          // (geometry: null, identified by SAME/UGC codes only) are intentionally
-          // excluded until county shape fetching is implemented.
           .filter(
             (f) =>
               f?.geometry != null &&
@@ -210,13 +210,11 @@ export function useWarningPolygons(): WarningPolygonsData {
     }
 
     fetchPolygons();
-    const intervalId = setInterval(fetchPolygons, REFRESH_INTERVAL_MS);
 
     return () => {
       cancelled = true;
-      clearInterval(intervalId);
     };
-  }, []);
+  }, [tick]);
 
   return data;
 }
