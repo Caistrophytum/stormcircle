@@ -22,6 +22,8 @@ interface Props {
   setSelectedProduct: (p: ProductCode) => void;
   tileUrl: string | null;
   warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
+  /** Optional pixel diameter override for the collapsed circle. */
+  circleSizePx?: number | null;
 }
 
 const DEFAULT_CENTER: [number, number] = [39.5, -98.35];
@@ -234,11 +236,15 @@ const RadarMiniMap = ({
   setSelectedProduct,
   tileUrl,
   warningsRef,
+  circleSizePx,
 }: Props) => {
   const [lastTileUrl, setLastTileUrl] = useState<string | null>(null);
   const [miniMap, setMiniMap] = useState<L.Map | null>(null);
   if (!expanded) {
-    const circleSize = "clamp(160px, 18vw, 240px)";
+    const circleSize =
+      circleSizePx != null && circleSizePx > 0
+        ? `${circleSizePx}px`
+        : "clamp(160px, 18vw, 240px)";
 
     const stopClick = (e: React.MouseEvent) => {
       e.stopPropagation();
