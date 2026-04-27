@@ -60,14 +60,9 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   _ref,
 ) {
   const map = useMap();
-  const [cacheBust, setCacheBust] = useState(0);
-
-  // Refresh radar tiles every 60s, matching weather/sounding/warnings cadence.
-  useEffect(() => {
-    if (!tileUrl) return;
-    const id = setInterval(() => setCacheBust((n) => n + 1), 60_000);
-    return () => clearInterval(id);
-  }, [tileUrl]);
+  // Use the shared 60s refresh clock so radar tile cache-busts fire in
+  // lockstep with warnings, current conditions, and other 1-min sources.
+  const cacheBust = useRefreshTick();
 
   useEffect(() => {
     if (!tileUrl) return;
