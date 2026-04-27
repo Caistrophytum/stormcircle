@@ -25,6 +25,7 @@ import {
   Mail,
   User as UserIcon,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -518,6 +519,73 @@ const AccountCenter = () => {
                 {cooldownRemaining > 0 ? `Wait ${cooldownRemaining}s` : "Send Message"}
               </button>
             </form>
+          </div>
+        </section>
+
+        {/* SECTION 4 — Recent Updates / Changelog */}
+        <section className="glass-panel rounded-sm overflow-hidden">
+          <SectionHeader
+            icon={Sparkles}
+            label="Recent Updates"
+            hint="What's new on StormCircle"
+          />
+          <div className="p-5">
+            <ol className="relative border-l border-border/60 ml-2 space-y-5">
+              {[
+                {
+                  date: "2026-04-27",
+                  tag: "NEW",
+                  title: "Live online presence counter",
+                  body: "Top status bar now shows how many operators are connected in real time.",
+                },
+                {
+                  date: "2026-04-25",
+                  tag: "IMPROVED",
+                  title: "Tactical map alert panels",
+                  body: "Top Hazards, Most Dangerous and New Warnings now resize precisely with the map viewport.",
+                },
+                {
+                  date: "2026-04-20",
+                  tag: "NEW",
+                  title: "Account Center",
+                  body: "Manage your profile, apply for the Meteorologist badge and send feedback in one place.",
+                },
+                {
+                  date: "2026-04-15",
+                  tag: "FIXED",
+                  title: "Citizen reports stability",
+                  body: "Resolved duplicate-report flicker and tightened auto-approval rules for verified meteorologists.",
+                },
+              ].map((entry) => {
+                const tagColor =
+                  entry.tag === "NEW"
+                    ? "bg-neon-blue/10 text-neon-blue border-neon-blue/20"
+                    : entry.tag === "FIXED"
+                      ? "bg-destructive/10 text-destructive border-destructive/20"
+                      : "bg-primary/10 text-primary border-primary/20";
+                return (
+                  <li key={entry.date + entry.title} className="ml-4">
+                    <div className="absolute -left-[5px] mt-1.5 size-2.5 rounded-full bg-primary border border-background" />
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span
+                        className={`px-1.5 py-0.5 border rounded-sm text-[9px] font-mono font-bold uppercase tracking-wider ${tagColor}`}
+                      >
+                        {entry.tag}
+                      </span>
+                      <time className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                        {entry.date}
+                      </time>
+                    </div>
+                    <h3 className="mt-1 text-sm font-mono font-semibold text-card-foreground">
+                      {entry.title}
+                    </h3>
+                    <p className="mt-0.5 text-xs font-mono text-muted-foreground leading-relaxed">
+                      {entry.body}
+                    </p>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
         </section>
       </div>
