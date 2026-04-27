@@ -7,7 +7,14 @@ import { RadarStation, RADAR_STATIONS } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 import WarningPolygons, { WarningPolygonsHandle } from "./WarningPolygons";
+
+/** Custom Leaflet pane name for radar station markers. Sits above the
+ *  default overlay pane (where warning polygons render) so the clickable
+ *  station "buttons" are never occluded by warning shapes. */
+const RADAR_MARKERS_PANE = "radar-markers-pane";
+const RADAR_MARKERS_PANE_Z = 660; // above radar tiles (650) and warnings (400)
 
 interface Props {
   expanded: boolean;
