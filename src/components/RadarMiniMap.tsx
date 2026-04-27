@@ -22,6 +22,8 @@ interface Props {
   setSelectedProduct: (p: ProductCode) => void;
   tileUrl: string | null;
   warningsRef?: MutableRefObject<WarningPolygonsHandle | null>;
+  /** Optional pixel diameter override for the collapsed circle. */
+  circleSizePx?: number | null;
 }
 
 const DEFAULT_CENTER: [number, number] = [39.5, -98.35];
