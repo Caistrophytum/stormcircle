@@ -229,6 +229,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
                 selectedProduct={radar.selectedProduct}
                 setSelectedProduct={radar.setSelectedProduct}
                 tileUrl={radar.tileUrl}
+                circleSizePx={radarCircleSizePx}
               />
             </motion.div>
           )}
