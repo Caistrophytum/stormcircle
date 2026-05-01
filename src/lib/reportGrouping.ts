@@ -51,15 +51,22 @@ export function messageSignature(content: string): string {
 
 /* ── Vocabulary ────────────────────────────────────────────────────────── */
 
-// Words that describe the EVENT, INTENSITY, or ACTION rather than the place.
-// These are filtered out before computing "specific" overlap.
-const GENERIC_WORDS = new Set<string>([
-  // structural / filler
+// Pure structural / filler words — not meteorological signal, not a location.
+// Their presence (alone) does NOT mark a message as weather-related.
+const FILLER_WORDS = new Set<string>([
   "the", "a", "an", "and", "or", "of", "in", "on", "at", "to", "near",
   "by", "with", "from", "is", "was", "are", "were", "be", "been", "for",
   "this", "that", "these", "those", "it", "its", "as", "but", "just",
   "now", "very", "really", "some", "any", "all", "report", "reports",
   "spotted", "seen", "observed", "happening", "occurring", "currently",
+]);
+
+// Meteorological generic vocabulary — weather phenomena, impact terms,
+// intensity descriptors, and action verbs that describe weather events.
+// A message containing ANY of these (or any place / synonym-group word)
+// is classified as meteorological. Everything else falls through to the
+// shared "General" stack.
+const METEO_WORDS = new Set<string>([
   // weather phenomena
   "hail", "tornado", "twister", "funnel", "cloud", "wall", "rotation",
   "wedge", "stovepipe", "vortex", "mesocyclone", "supercell", "storm",
@@ -85,6 +92,10 @@ const GENERIC_WORDS = new Set<string>([
   "falling", "coming", "moving", "tracking", "approaching", "incoming",
   "rolling", "passing", "sweeping", "dumping",
 ]);
+
+// Words filtered out when computing "specific" (location-ish) overlap.
+// Includes both pure fillers AND meteorological generics.
+const GENERIC_WORDS = new Set<string>([...FILLER_WORDS, ...METEO_WORDS]);
 
 // Multi-word place names that collapse to a single token before tokenization,
 // so they can be aliased via SYNONYMS (e.g. "new jersey" → "newjersey" → "nj").
@@ -259,12 +270,24 @@ interface TokenAnalysis {
   tokens: string[];
   specific: string[];
   generic: string[];
+  /** True when at least one token is meteorological vocabulary
+   *  (weather phenomenon, weather-related action/intensity, or a known
+   *  place from the SYNONYMS table). Messages without ANY such token
+   *  fall through to the shared "General" stack. */
+  isMeteorological: boolean;
 }
 
 // Cache token analysis per unique string so repeated grouping passes don't
 // re-tokenize. Bounded to avoid unbounded growth across long sessions.
 const tokenCache = new Map<string, TokenAnalysis>();
 const TOKEN_CACHE_MAX = 2000;
+
+/** True if `word` is part of the meteorological vocabulary — any
+ *  weather-related generic OR any word in a synonym group (places +
+ *  weather families). */
+function isMeteoToken(word: string): boolean {
+  return METEO_WORDS.has(word) || WORD_TO_GROUP.has(word);
+}
 
 function analyze(text: string): TokenAnalysis {
   const cached = tokenCache.get(text);
@@ -290,11 +313,13 @@ function analyze(text: string): TokenAnalysis {
     .filter(Boolean);
   const specific: string[] = [];
   const generic: string[] = [];
+  let isMeteorological = false;
   for (const t of tokens) {
     if (GENERIC_WORDS.has(t)) generic.push(t);
     else specific.push(t);
+    if (!isMeteorological && isMeteoToken(t)) isMeteorological = true;
   }
-  const result: TokenAnalysis = { tokens, specific, generic };
+  const result: TokenAnalysis = { tokens, specific, generic, isMeteorological };
 
   if (tokenCache.size >= TOKEN_CACHE_MAX) {
     // Evict oldest entry (Map preserves insertion order).
@@ -379,10 +404,44 @@ export function groupMessages(
   type WorkingStack = StackedReport & { _analysis: TokenAnalysis };
   const stacks: WorkingStack[] = [];
 
+  // Stable signature for the catch-all "General" stack. Any non-meteorological
+  // message lands here regardless of its words, so all such chatter shares
+  // a single visible group.
+  const GENERAL_SIGNATURE = "__general__";
+  let generalStack: WorkingStack | undefined;
+
   for (const msg of messages) {
     const a = analyze(msg.content);
+
+    // Non-meteorological → route to the shared General stack (creating it
+    // on first occurrence).
+    if (!a.isMeteorological) {
+      if (!generalStack) {
+        generalStack = {
+          id: msg.id,
+          signature: GENERAL_SIGNATURE,
+          topic: "General",
+          count: 1,
+          latestTime: msg.created_at,
+          badge: msg.badge,
+          reports: [msg],
+          approved: approvedSignatures.has(GENERAL_SIGNATURE),
+          _analysis: a,
+        };
+        stacks.push(generalStack);
+      } else {
+        generalStack.count += 1;
+        generalStack.reports.push(msg);
+        if (new Date(msg.created_at) > new Date(generalStack.latestTime)) {
+          generalStack.latestTime = msg.created_at;
+        }
+      }
+      continue;
+    }
+
     let match: WorkingStack | undefined;
     for (const s of stacks) {
+      if (s.signature === GENERAL_SIGNATURE) continue; // never merge into General
       if (isMatchAnalyzed(a, s._analysis)) {
         match = s;
         break;
