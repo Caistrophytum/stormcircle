@@ -285,8 +285,9 @@ export default function CitizenReports() {
             const isSolo = stack.count === 1;
             const showSoloDelete = isSolo && canDelete(soloReport);
             const showStackDelete = !isSolo && canDeleteStack(stack);
-            const showApprove = isModerator && !stack.approved;
-            const showUnapprove = isModerator && stack.approved;
+                const isGeneral = stack.signature === "__general__";
+                const showApprove = isModerator && !stack.approved && !isGeneral;
+                const showUnapprove = isModerator && stack.approved && !isGeneral;
             return (
               <div
                 key={stack.id}
