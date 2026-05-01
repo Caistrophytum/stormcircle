@@ -342,9 +342,9 @@ export default function CitizenReports() {
                   <p className="text-[11px] font-mono text-foreground/90 leading-snug break-words whitespace-pre-wrap">
                     {stack.topic}
                   </p>
-                  {stack.count > 1 && (() => {
+                  {(() => {
                     const latest = stack.reports[stack.reports.length - 1];
-                    if (!latest || latest.content === stack.topic) return null;
+                    if (!latest) return null;
                     return (
                       <div className="pt-1 pl-2 border-l border-primary/30">
                         <p className="text-[8px] font-mono text-muted-foreground uppercase tracking-wide mb-0.5">
