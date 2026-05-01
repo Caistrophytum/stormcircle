@@ -209,7 +209,7 @@ export function useAlerts(): AlertsData {
 
         const mostDangerous = [...alerts]
           .sort((a, b) => dangerScore(a) - dangerScore(b))
-          .slice(0, 6);
+          .slice(0, 10);
 
         const counts = new Map<string, number>();
         for (const a of alerts) {
@@ -218,7 +218,7 @@ export function useAlerts(): AlertsData {
         const topHazards: TopHazard[] = Array.from(counts.entries())
           .map(([event, count]) => ({ event, count }))
           .sort((a, b) => b.count - a.count)
-          .slice(0, 5);
+          .slice(0, 10);
 
         // Increment cycle counter. On the very first fetch (cycle becomes 1),
         // we treat everything as "pre-existing" to avoid flagging the entire
