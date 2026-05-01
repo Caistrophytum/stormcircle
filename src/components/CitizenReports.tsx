@@ -344,7 +344,9 @@ export default function CitizenReports() {
                     {stack.topic}
                   </p>
                   {(() => {
-                    const latest = stack.reports[stack.reports.length - 1];
+                    const latest = isGeneral
+                      ? stack.reports[0]
+                      : stack.reports[stack.reports.length - 1];
                     if (!latest) return null;
                     if (!isGeneral && latest.content === stack.topic) return null;
                     return (
