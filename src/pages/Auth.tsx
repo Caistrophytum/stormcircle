@@ -30,16 +30,21 @@ import { toast } from "sonner";
  * Supabase project doesn't allow, so we hard-fall-back to the preview URL.
  * In every other environment we use the current origin.
  */
+const CANONICAL_AUTH_REDIRECT_URL = "https://www.stormcircle.net/";
+
 const getAuthRedirectUrl = () => {
-  if (typeof window === "undefined") return "/";
+  if (typeof window === "undefined") return CANONICAL_AUTH_REDIRECT_URL;
 
   const { origin, hostname } = window.location;
 
-  if (hostname === "localhost" || hostname === "127.0.0.1") {
-    return "https://id-preview--bce5fa05-5c8e-4487-b852-7382c0d3ff7e.lovable.app/";
+  if (
+    hostname === "www.stormcircle.net" ||
+    hostname === "stormcircle.net"
+  ) {
+    return `${origin}/`;
   }
 
-  return `${origin}/`;
+  return CANONICAL_AUTH_REDIRECT_URL;
 };
 
 /** Which form is currently being shown. */
