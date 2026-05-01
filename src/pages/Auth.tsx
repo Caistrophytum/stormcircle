@@ -37,10 +37,7 @@ const getAuthRedirectUrl = () => {
 
   const { origin, hostname } = window.location;
 
-  if (
-    hostname === "www.stormcircle.net" ||
-    hostname === "stormcircle.net"
-  ) {
+  if (hostname === "www.stormcircle.net" || hostname === "stormcircle.net") {
     return `${origin}/`;
   }
 
@@ -71,7 +68,6 @@ const passwordSchema = z
 
 // Same string for every login failure so we don't leak which field was wrong.
 const GENERIC_AUTH_ERROR = "Invalid credentials";
-
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -306,7 +302,9 @@ const Auth = () => {
             <h1 className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-card-foreground">
               {titles[view].label}
             </h1>
-            <span className="ml-auto text-[9px] font-mono text-muted-foreground">STRATO.OPS</span>
+            <span className="ml-auto text-[9px] font-mono text-muted-foreground">
+              StormCircle - Creating Aware Communities
+            </span>
           </div>
 
           {/* Tabs */}
@@ -340,7 +338,9 @@ const Auth = () => {
             {view === "login" && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="login-id">Email or Username</label>
+                  <label className={labelClass} htmlFor="login-id">
+                    Email or Username
+                  </label>
                   <input
                     id="login-id"
                     autoComplete="username"
@@ -353,7 +353,9 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="login-pw">Password</label>
+                  <label className={labelClass} htmlFor="login-pw">
+                    Password
+                  </label>
                   <input
                     id="login-pw"
                     type="password"
@@ -375,10 +377,18 @@ const Auth = () => {
                   Login
                 </button>
                 <div className="flex items-center justify-between pt-1 text-[10px] font-mono">
-                  <button type="button" onClick={() => setView("signup")} className="text-muted-foreground hover:text-primary transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setView("signup")}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
                     Create account →
                   </button>
-                  <button type="button" onClick={() => setView("forgot")} className="text-muted-foreground hover:text-primary transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setView("forgot")}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
                     Forgot password?
                   </button>
                 </div>
@@ -388,7 +398,10 @@ const Auth = () => {
             {view === "signup" && (
               <form onSubmit={handleSignUp} className="space-y-4">
                 {/* Honeypot — hidden from real users; bots will auto-fill it */}
-                <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+                <div
+                  aria-hidden="true"
+                  style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}
+                >
                   <label htmlFor="su-website">Website</label>
                   <input
                     id="su-website"
@@ -401,7 +414,9 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="su-username">Username</label>
+                  <label className={labelClass} htmlFor="su-username">
+                    Username
+                  </label>
                   <input
                     id="su-username"
                     value={suUsername}
@@ -413,7 +428,9 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="su-email">Email</label>
+                  <label className={labelClass} htmlFor="su-email">
+                    Email
+                  </label>
                   <input
                     id="su-email"
                     type="email"
@@ -427,7 +444,9 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="su-pw">Password</label>
+                  <label className={labelClass} htmlFor="su-pw">
+                    Password
+                  </label>
                   <input
                     id="su-pw"
                     type="password"
@@ -441,7 +460,9 @@ const Auth = () => {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="su-confirm">Confirm Password</label>
+                  <label className={labelClass} htmlFor="su-confirm">
+                    Confirm Password
+                  </label>
                   <input
                     id="su-confirm"
                     type="password"
@@ -463,7 +484,11 @@ const Auth = () => {
                   Create Account
                 </button>
                 <div className="text-[10px] font-mono text-center pt-1">
-                  <button type="button" onClick={() => setView("login")} className="text-muted-foreground hover:text-primary transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setView("login")}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
                     ← Already have an account? Login
                   </button>
                 </div>
@@ -476,7 +501,9 @@ const Auth = () => {
                   Enter the email associated with your account. We'll send a recovery link.
                 </p>
                 <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="fp-email">Email</label>
+                  <label className={labelClass} htmlFor="fp-email">
+                    Email
+                  </label>
                   <input
                     id="fp-email"
                     type="email"
@@ -498,7 +525,11 @@ const Auth = () => {
                   Send Reset Link
                 </button>
                 <div className="text-[10px] font-mono text-center pt-1">
-                  <button type="button" onClick={() => setView("login")} className="text-muted-foreground hover:text-primary transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setView("login")}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
                     ← Back to Login
                   </button>
                 </div>
@@ -511,7 +542,9 @@ const Auth = () => {
                   Didn't get the confirmation email? Enter your registered email and we'll send a fresh link.
                 </p>
                 <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="rs-email">Email</label>
+                  <label className={labelClass} htmlFor="rs-email">
+                    Email
+                  </label>
                   <input
                     id="rs-email"
                     type="email"
@@ -533,7 +566,11 @@ const Auth = () => {
                   Resend Confirmation
                 </button>
                 <div className="text-[10px] font-mono text-center pt-1">
-                  <button type="button" onClick={() => setView("login")} className="text-muted-foreground hover:text-primary transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setView("login")}
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
                     ← Back to Login
                   </button>
                 </div>
