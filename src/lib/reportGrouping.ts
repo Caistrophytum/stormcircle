@@ -277,6 +277,10 @@ interface TokenAnalysis {
   isMeteorological: boolean;
 }
 
+// Common greetings should stay in General even if they collide with a state
+// abbreviation like "HI" for Hawaii.
+const GENERAL_CHAT_EXACT_WORDS = new Set<string>(["hi"]);
+
 // Cache token analysis per unique string so repeated grouping passes don't
 // re-tokenize. Bounded to avoid unbounded growth across long sessions.
 const tokenCache = new Map<string, TokenAnalysis>();
@@ -311,6 +315,23 @@ function analyze(text: string): TokenAnalysis {
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter(Boolean);
+
+  if (tokens.length === 1 && GENERAL_CHAT_EXACT_WORDS.has(tokens[0])) {
+    const result: TokenAnalysis = {
+      tokens,
+      specific: tokens,
+      generic: [],
+      isMeteorological: false,
+    };
+
+    if (tokenCache.size >= TOKEN_CACHE_MAX) {
+      const firstKey = tokenCache.keys().next().value;
+      if (firstKey !== undefined) tokenCache.delete(firstKey);
+    }
+    tokenCache.set(text, result);
+    return result;
+  }
+
   const specific: string[] = [];
   const generic: string[] = [];
   let isMeteorological = false;
