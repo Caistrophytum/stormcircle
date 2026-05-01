@@ -344,10 +344,9 @@ export default function CitizenReports() {
                     {stack.topic}
                   </p>
                   {(() => {
-                    if (isGeneral) return null;
                     const latest = stack.reports[stack.reports.length - 1];
                     if (!latest) return null;
-                    if (latest.content === stack.topic) return null;
+                    if (!isGeneral && latest.content === stack.topic) return null;
                     return (
                       <div className="pt-1 pl-2 border-l border-primary/30">
                         <p className="text-[8px] font-mono text-muted-foreground uppercase tracking-wide mb-0.5">
