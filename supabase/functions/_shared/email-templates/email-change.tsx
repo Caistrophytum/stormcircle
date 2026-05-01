@@ -11,15 +11,12 @@ import {
   Html,
   Link,
   Preview,
+  Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
 
 interface EmailChangeEmailProps {
   siteName: string
-  // oldEmail is the user's current address (HookData.OldEmail). For the
-  // NEW-recipient half of a secure email_change fanout, `email` equals the
-  // recipient (NEW), so the "from" line must render oldEmail to read
-  // "from OLD to NEW" instead of "from NEW to NEW".
   oldEmail: string
   email: string
   newEmail: string
@@ -37,27 +34,24 @@ export const EmailChangeEmail = ({
     <Preview>Confirm your email change for {siteName}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm your email change</Heading>
+        <Section style={header}>
+          <Text style={brand}>STRATO.OPS</Text>
+          <Text style={tagline}>// CALLSIGN UPDATE</Text>
+        </Section>
+        <Heading style={h1}>Confirm email change</Heading>
         <Text style={text}>
-          You requested to change your email address for {siteName} from{' '}
-          <Link href={`mailto:${oldEmail}`} style={link}>
-            {oldEmail}
-          </Link>{' '}
+          You requested to change your {siteName} email from{' '}
+          <Link href={`mailto:${oldEmail}`} style={link}>{oldEmail}</Link>{' '}
           to{' '}
-          <Link href={`mailto:${newEmail}`} style={link}>
-            {newEmail}
-          </Link>
-          .
+          <Link href={`mailto:${newEmail}`} style={link}>{newEmail}</Link>.
         </Text>
-        <Text style={text}>
-          Click the button below to confirm this change:
-        </Text>
-        <Button style={button} href={confirmationUrl}>
-          Confirm Email Change
-        </Button>
+        <Section style={{ textAlign: 'center', margin: '32px 0' }}>
+          <Button style={button} href={confirmationUrl}>
+            CONFIRM CHANGE
+          </Button>
+        </Section>
         <Text style={footer}>
-          If you didn't request this change, please secure your account
-          immediately.
+          If you didn't request this change, secure your account immediately.
         </Text>
       </Container>
     </Body>
@@ -66,27 +60,16 @@ export const EmailChangeEmail = ({
 
 export default EmailChangeEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const link = { color: 'inherit', textDecoration: 'underline' }
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const mono = "'JetBrains Mono', 'Courier New', Courier, monospace"
+const sans = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
+
+const main = { backgroundColor: '#ffffff', fontFamily: sans, margin: 0, padding: 0 }
+const container = { padding: '32px 28px', maxWidth: '560px' }
+const header = { borderBottom: '2px solid #ff9d00', paddingBottom: '12px', marginBottom: '28px' }
+const brand = { fontFamily: mono, fontSize: '18px', fontWeight: 'bold' as const, color: '#050505', letterSpacing: '2px', margin: 0 }
+const tagline = { fontFamily: mono, fontSize: '11px', color: '#ff9d00', letterSpacing: '1px', margin: '4px 0 0' }
+const h1 = { fontFamily: mono, fontSize: '22px', fontWeight: 'bold' as const, color: '#050505', margin: '0 0 20px', letterSpacing: '0.5px' }
+const text = { fontFamily: sans, fontSize: '14px', color: '#3a3a3a', lineHeight: '1.6', margin: '0 0 18px' }
+const link = { color: '#ff9d00', textDecoration: 'underline' }
+const button = { fontFamily: mono, backgroundColor: '#050505', color: '#ff9d00', fontSize: '13px', fontWeight: 'bold' as const, borderRadius: '4px', padding: '14px 28px', textDecoration: 'none', letterSpacing: '1.5px', border: '1px solid #ff9d00' }
+const footer = { fontFamily: mono, fontSize: '11px', color: '#888888', margin: '32px 0 0', borderTop: '1px solid #e5e5e5', paddingTop: '16px', letterSpacing: '0.5px' }

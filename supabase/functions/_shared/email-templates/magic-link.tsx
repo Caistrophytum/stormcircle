@@ -10,6 +10,7 @@ import {
   Heading,
   Html,
   Preview,
+  Section,
   Text,
 } from 'npm:@react-email/components@0.0.22'
 
@@ -24,17 +25,22 @@ export const MagicLinkEmail = ({
 }: MagicLinkEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Your login link for {siteName}</Preview>
+    <Preview>Your {siteName} access link</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Your login link</Heading>
+        <Section style={header}>
+          <Text style={brand}>STRATO.OPS</Text>
+          <Text style={tagline}>// SECURE ACCESS LINK</Text>
+        </Section>
+        <Heading style={h1}>Access link inbound</Heading>
         <Text style={text}>
-          Click the button below to log in to {siteName}. This link will expire
-          shortly.
+          Use the link below to log in to {siteName}. Link expires shortly.
         </Text>
-        <Button style={button} href={confirmationUrl}>
-          Log In
-        </Button>
+        <Section style={{ textAlign: 'center', margin: '32px 0' }}>
+          <Button style={button} href={confirmationUrl}>
+            LOG IN
+          </Button>
+        </Section>
         <Text style={footer}>
           If you didn't request this link, you can safely ignore this email.
         </Text>
@@ -45,26 +51,15 @@ export const MagicLinkEmail = ({
 
 export default MagicLinkEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const button = {
-  backgroundColor: '#000000',
-  color: '#ffffff',
-  fontSize: '14px',
-  borderRadius: '8px',
-  padding: '12px 20px',
-  textDecoration: 'none',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const mono = "'JetBrains Mono', 'Courier New', Courier, monospace"
+const sans = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
+
+const main = { backgroundColor: '#ffffff', fontFamily: sans, margin: 0, padding: 0 }
+const container = { padding: '32px 28px', maxWidth: '560px' }
+const header = { borderBottom: '2px solid #ff9d00', paddingBottom: '12px', marginBottom: '28px' }
+const brand = { fontFamily: mono, fontSize: '18px', fontWeight: 'bold' as const, color: '#050505', letterSpacing: '2px', margin: 0 }
+const tagline = { fontFamily: mono, fontSize: '11px', color: '#ff9d00', letterSpacing: '1px', margin: '4px 0 0' }
+const h1 = { fontFamily: mono, fontSize: '22px', fontWeight: 'bold' as const, color: '#050505', margin: '0 0 20px', letterSpacing: '0.5px' }
+const text = { fontFamily: sans, fontSize: '14px', color: '#3a3a3a', lineHeight: '1.6', margin: '0 0 18px' }
+const button = { fontFamily: mono, backgroundColor: '#050505', color: '#ff9d00', fontSize: '13px', fontWeight: 'bold' as const, borderRadius: '4px', padding: '14px 28px', textDecoration: 'none', letterSpacing: '1.5px', border: '1px solid #ff9d00' }
+const footer = { fontFamily: mono, fontSize: '11px', color: '#888888', margin: '32px 0 0', borderTop: '1px solid #e5e5e5', paddingTop: '16px', letterSpacing: '0.5px' }
