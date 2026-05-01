@@ -51,15 +51,22 @@ export function messageSignature(content: string): string {
 
 /* ── Vocabulary ────────────────────────────────────────────────────────── */
 
-// Words that describe the EVENT, INTENSITY, or ACTION rather than the place.
-// These are filtered out before computing "specific" overlap.
-const GENERIC_WORDS = new Set<string>([
-  // structural / filler
+// Pure structural / filler words — not meteorological signal, not a location.
+// Their presence (alone) does NOT mark a message as weather-related.
+const FILLER_WORDS = new Set<string>([
   "the", "a", "an", "and", "or", "of", "in", "on", "at", "to", "near",
   "by", "with", "from", "is", "was", "are", "were", "be", "been", "for",
   "this", "that", "these", "those", "it", "its", "as", "but", "just",
   "now", "very", "really", "some", "any", "all", "report", "reports",
   "spotted", "seen", "observed", "happening", "occurring", "currently",
+]);
+
+// Meteorological generic vocabulary — weather phenomena, impact terms,
+// intensity descriptors, and action verbs that describe weather events.
+// A message containing ANY of these (or any place / synonym-group word)
+// is classified as meteorological. Everything else falls through to the
+// shared "General" stack.
+const METEO_WORDS = new Set<string>([
   // weather phenomena
   "hail", "tornado", "twister", "funnel", "cloud", "wall", "rotation",
   "wedge", "stovepipe", "vortex", "mesocyclone", "supercell", "storm",
@@ -85,6 +92,10 @@ const GENERIC_WORDS = new Set<string>([
   "falling", "coming", "moving", "tracking", "approaching", "incoming",
   "rolling", "passing", "sweeping", "dumping",
 ]);
+
+// Words filtered out when computing "specific" (location-ish) overlap.
+// Includes both pure fillers AND meteorological generics.
+const GENERIC_WORDS = new Set<string>([...FILLER_WORDS, ...METEO_WORDS]);
 
 // Multi-word place names that collapse to a single token before tokenization,
 // so they can be aliased via SYNONYMS (e.g. "new jersey" → "newjersey" → "nj").
