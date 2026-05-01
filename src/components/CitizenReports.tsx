@@ -31,12 +31,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  groupMessages,
-  messageSignature,
-  type RawMessage,
-  type StackedReport,
-} from "@/lib/reportGrouping";
+import { groupMessages, messageSignature, type RawMessage, type StackedReport } from "@/lib/reportGrouping";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -74,10 +69,7 @@ export default function CitizenReports() {
   const isModerator = profile?.badge === "Meteorologist";
 
   // ── Derive grouped, ranked stacks from live state ─────────────────────
-  const stacks = useMemo(
-    () => groupMessages(messages, approvedSigs),
-    [messages, approvedSigs],
-  );
+  const stacks = useMemo(() => groupMessages(messages, approvedSigs), [messages, approvedSigs]);
 
   function toggleExpand(id: string) {
     setExpanded((prev) => {
@@ -115,56 +107,38 @@ export default function CitizenReports() {
   useEffect(() => {
     const channel = supabase
       .channel("citizen-reports")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        (payload) => {
-          setMessages((prev) => {
-            const next = payload.new as Message;
-            if (prev.some((m) => m.id === next.id)) return prev;
-            // Bound in-memory messages: drop the oldest if we exceed the cap.
-            const appended = [...prev, next];
-            return appended.length > MAX_INITIAL_MESSAGES
-              ? appended.slice(appended.length - MAX_INITIAL_MESSAGES)
-              : appended;
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "messages" },
-        (payload) => {
-          setMessages((prev) =>
-            prev.filter((m) => m.id !== (payload.old as { id: string }).id),
-          );
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "report_approvals" },
-        (payload) => {
-          const sig = (payload.new as { signature: string }).signature;
-          setApprovedSigs((prev) => {
-            if (prev.has(sig)) return prev;
-            const next = new Set(prev);
-            next.add(sig);
-            return next;
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "report_approvals" },
-        (payload) => {
-          const sig = (payload.old as { signature: string }).signature;
-          setApprovedSigs((prev) => {
-            if (!prev.has(sig)) return prev;
-            const next = new Set(prev);
-            next.delete(sig);
-            return next;
-          });
-        },
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        setMessages((prev) => {
+          const next = payload.new as Message;
+          if (prev.some((m) => m.id === next.id)) return prev;
+          // Bound in-memory messages: drop the oldest if we exceed the cap.
+          const appended = [...prev, next];
+          return appended.length > MAX_INITIAL_MESSAGES
+            ? appended.slice(appended.length - MAX_INITIAL_MESSAGES)
+            : appended;
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (payload) => {
+        setMessages((prev) => prev.filter((m) => m.id !== (payload.old as { id: string }).id));
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_approvals" }, (payload) => {
+        const sig = (payload.new as { signature: string }).signature;
+        setApprovedSigs((prev) => {
+          if (prev.has(sig)) return prev;
+          const next = new Set(prev);
+          next.add(sig);
+          return next;
+        });
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "report_approvals" }, (payload) => {
+        const sig = (payload.old as { signature: string }).signature;
+        setApprovedSigs((prev) => {
+          if (!prev.has(sig)) return prev;
+          const next = new Set(prev);
+          next.delete(sig);
+          return next;
+        });
+      })
       .subscribe();
 
     return () => {
@@ -176,9 +150,7 @@ export default function CitizenReports() {
   useEffect(() => {
     const interval = setInterval(() => {
       const cutoff = Date.now() - TWO_HOURS_MS;
-      setMessages((prev) =>
-        prev.filter((m) => new Date(m.created_at).getTime() > cutoff),
-      );
+      setMessages((prev) => prev.filter((m) => new Date(m.created_at).getTime() > cutoff));
     }, 60_000);
     return () => clearInterval(interval);
   }, []);
@@ -243,10 +215,9 @@ export default function CitizenReports() {
       next.add(stack.signature);
       return next;
     });
-    const { error } = await supabase.from("report_approvals").upsert(
-      { signature: stack.signature, approved_by: user.id },
-      { onConflict: "signature" },
-    );
+    const { error } = await supabase
+      .from("report_approvals")
+      .upsert({ signature: stack.signature, approved_by: user.id }, { onConflict: "signature" });
     if (error) {
       toast.error("Failed to approve");
       setApprovedSigs((prev) => {
@@ -266,10 +237,7 @@ export default function CitizenReports() {
       next.delete(stack.signature);
       return next;
     });
-    const { error } = await supabase
-      .from("report_approvals")
-      .delete()
-      .eq("signature", stack.signature);
+    const { error } = await supabase.from("report_approvals").delete().eq("signature", stack.signature);
     if (error) {
       toast.error("Failed to unapprove");
       setApprovedSigs((prev) => {
@@ -299,11 +267,9 @@ export default function CitizenReports() {
       <div className="p-4 border-b border-border bg-shroud/30">
         <h3 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
           <span className="size-1.5 bg-primary rounded-full animate-pulse" />
-          Citizen Reports
+          Citizen Reports - Chatroom
         </h3>
-        <p className="text-[9px] font-mono text-muted-foreground mt-1 uppercase">
-          2-hour rolling history
-        </p>
+        <p className="text-[9px] font-mono text-muted-foreground mt-1 uppercase">2-hour rolling history</p>
       </div>
 
       {/* Stacked reports */}
@@ -325,9 +291,7 @@ export default function CitizenReports() {
               <div
                 key={stack.id}
                 className={`bg-shroud border ${
-                  stack.approved
-                    ? "border-neon-green/40 shadow-[0_0_0_1px_hsl(var(--primary)/0.05)]"
-                    : "border-border"
+                  stack.approved ? "border-neon-green/40 shadow-[0_0_0_1px_hsl(var(--primary)/0.05)]" : "border-border"
                 }`}
               >
                 {/* Stack header — clickable to expand */}
@@ -372,9 +336,7 @@ export default function CitizenReports() {
                           ×{stack.count}
                         </span>
                       )}
-                      <span className="text-[9px] font-mono text-muted-foreground">
-                        {isOpen ? "▾" : "▸"}
-                      </span>
+                      <span className="text-[9px] font-mono text-muted-foreground">{isOpen ? "▾" : "▸"}</span>
                     </span>
                   </div>
                   <p className="text-[11px] font-mono text-foreground/90 leading-snug break-words whitespace-pre-wrap">
@@ -383,10 +345,7 @@ export default function CitizenReports() {
 
                   {/* Action row (approve / delete) */}
                   {(showApprove || showUnapprove || showSoloDelete || showStackDelete) && (
-                    <div
-                      className="flex items-center gap-1.5 pt-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
+                    <div className="flex items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
                       {showApprove && (
                         <button
                           type="button"
