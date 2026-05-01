@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-01 14z",
+    tag: "FIXED",
+    title: "Signup bottleneck, verifications not working",
+    body: "Whoops. Now users should eb able to verify themselves when signing up. It should work.",
+  },
+  {
     date: "2026-05-01 13z",
     tag: "NEW",
     title: "Chat category added: General Chatbox",
