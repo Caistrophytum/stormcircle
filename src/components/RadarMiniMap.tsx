@@ -133,7 +133,7 @@ const RadarStationMarkers = ({
           <CircleMarker
             key={station.id}
             center={[station.lat, station.lon]}
-            radius={isSelected ? 8 : 5}
+            radius={isSelected ? 14 : 10}
             pane={RADAR_MARKERS_PANE}
             pathOptions={{
               color: isSelected ? "#00ffff" : "#4af",
