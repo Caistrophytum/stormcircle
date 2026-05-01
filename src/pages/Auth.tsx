@@ -195,7 +195,7 @@ const Auth = () => {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: email.data,
         password: password.data,
         options: {
@@ -204,7 +204,18 @@ const Auth = () => {
         },
       });
       if (error) {
-        toast.error(error.message);
+        // Supabase returns explicit errors like "User already registered"
+        // when anti-enumeration is OFF. Surface a clear message.
+        const msg = /already|registered|exists/i.test(error.message)
+          ? "An account with this email already exists"
+          : error.message;
+        toast.error(msg);
+        return;
+      }
+      // With anti-enumeration ON (default), duplicate signups return success
+      // but `identities` is an empty array. Detect and report it.
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        toast.error("An account with this email already exists");
         return;
       }
       toast.success("Check your email to confirm your account");
