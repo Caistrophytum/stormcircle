@@ -420,7 +420,7 @@ export function groupMessages(
         generalStack = {
           id: msg.id,
           signature: GENERAL_SIGNATURE,
-          topic: "General",
+          topic: "General Chatbox",
           count: 1,
           latestTime: msg.created_at,
           badge: msg.badge,
@@ -471,6 +471,14 @@ export function groupMessages(
 
   // Re-evaluate approval after stacks are built (sig is set on first msg).
   for (const s of stacks) s.approved = approvedSignatures.has(s.signature);
+
+  // The General Chatbox is a catch-all and not a single event, so its
+  // individual messages should read newest-first instead of chronological.
+  if (generalStack) {
+    generalStack.reports.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  }
 
   function tier(s: StackedReport): number {
     const trending = s.count >= TRENDING_THRESHOLD;
