@@ -270,12 +270,24 @@ interface TokenAnalysis {
   tokens: string[];
   specific: string[];
   generic: string[];
+  /** True when at least one token is meteorological vocabulary
+   *  (weather phenomenon, weather-related action/intensity, or a known
+   *  place from the SYNONYMS table). Messages without ANY such token
+   *  fall through to the shared "General" stack. */
+  isMeteorological: boolean;
 }
 
 // Cache token analysis per unique string so repeated grouping passes don't
 // re-tokenize. Bounded to avoid unbounded growth across long sessions.
 const tokenCache = new Map<string, TokenAnalysis>();
 const TOKEN_CACHE_MAX = 2000;
+
+/** True if `word` is part of the meteorological vocabulary — any
+ *  weather-related generic OR any word in a synonym group (places +
+ *  weather families). */
+function isMeteoToken(word: string): boolean {
+  return METEO_WORDS.has(word) || WORD_TO_GROUP.has(word);
+}
 
 function analyze(text: string): TokenAnalysis {
   const cached = tokenCache.get(text);
@@ -301,11 +313,13 @@ function analyze(text: string): TokenAnalysis {
     .filter(Boolean);
   const specific: string[] = [];
   const generic: string[] = [];
+  let isMeteorological = false;
   for (const t of tokens) {
     if (GENERIC_WORDS.has(t)) generic.push(t);
     else specific.push(t);
+    if (!isMeteorological && isMeteoToken(t)) isMeteorological = true;
   }
-  const result: TokenAnalysis = { tokens, specific, generic };
+  const result: TokenAnalysis = { tokens, specific, generic, isMeteorological };
 
   if (tokenCache.size >= TOKEN_CACHE_MAX) {
     // Evict oldest entry (Map preserves insertion order).
