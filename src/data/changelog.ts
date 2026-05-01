@@ -18,6 +18,18 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-01 13z",
+    tag: "NEW",
+    title: "Chat category added: General Chatbox",
+    body: "For any messages that aren't meteorological - will be grouped into the General Chatbox group.",
+  },
+  {
+    date: "2026-05-01 13z",
+    tag: "IMPROVED",
+    title: "Radar buttons size enlarged and alert number in lists improved",
+    body: "Radar blue buttons now made larger to allow easier clicking, and more alerts (10) appear in the lists.",
+  },
+  {
     date: "2026-04-27 20z",
     tag: "FIXED",
     title: "Radar button overlay and refresh rate",
