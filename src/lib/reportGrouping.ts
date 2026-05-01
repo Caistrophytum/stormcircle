@@ -420,7 +420,7 @@ export function groupMessages(
         generalStack = {
           id: msg.id,
           signature: GENERAL_SIGNATURE,
-          topic: "General",
+          topic: "General Chatbox",
           count: 1,
           latestTime: msg.created_at,
           badge: msg.badge,
