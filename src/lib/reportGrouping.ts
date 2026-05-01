@@ -404,10 +404,44 @@ export function groupMessages(
   type WorkingStack = StackedReport & { _analysis: TokenAnalysis };
   const stacks: WorkingStack[] = [];
 
+  // Stable signature for the catch-all "General" stack. Any non-meteorological
+  // message lands here regardless of its words, so all such chatter shares
+  // a single visible group.
+  const GENERAL_SIGNATURE = "__general__";
+  let generalStack: WorkingStack | undefined;
+
   for (const msg of messages) {
     const a = analyze(msg.content);
+
+    // Non-meteorological → route to the shared General stack (creating it
+    // on first occurrence).
+    if (!a.isMeteorological) {
+      if (!generalStack) {
+        generalStack = {
+          id: msg.id,
+          signature: GENERAL_SIGNATURE,
+          topic: "General",
+          count: 1,
+          latestTime: msg.created_at,
+          badge: msg.badge,
+          reports: [msg],
+          approved: approvedSignatures.has(GENERAL_SIGNATURE),
+          _analysis: a,
+        };
+        stacks.push(generalStack);
+      } else {
+        generalStack.count += 1;
+        generalStack.reports.push(msg);
+        if (new Date(msg.created_at) > new Date(generalStack.latestTime)) {
+          generalStack.latestTime = msg.created_at;
+        }
+      }
+      continue;
+    }
+
     let match: WorkingStack | undefined;
     for (const s of stacks) {
+      if (s.signature === GENERAL_SIGNATURE) continue; // never merge into General
       if (isMatchAnalyzed(a, s._analysis)) {
         match = s;
         break;
