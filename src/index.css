@@ -225,3 +225,8 @@
   box-shadow: 0 0 6px #00ff88;
   animation: pulse-dot 2s ease-in-out infinite;
 }
+
+/* Globally hide the Lovable badge. */
+#lovable-badge {
+  display: none !important;
+}
