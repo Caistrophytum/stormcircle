@@ -377,17 +377,16 @@ async function fetchAndProcessOutlook(
   }
 }
 
-export function useSPCOutlook(): { loading: boolean } {
+export function useSPCOutlook(): void {
   const lastIssueRef = useRef<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (started) return;
     started = true;
 
-    void fetchAndProcessOutlook(lastIssueRef, setLoading);
+    void fetchAndProcessOutlook(lastIssueRef, setLoadingShared);
     const id = setInterval(() => {
-      void fetchAndProcessOutlook(lastIssueRef, setLoading);
+      void fetchAndProcessOutlook(lastIssueRef, setLoadingShared);
     }, POLL_INTERVAL_MS);
 
     return () => {
@@ -395,6 +394,21 @@ export function useSPCOutlook(): { loading: boolean } {
       started = false;
     };
   }, []);
+}
 
-  return { loading };
+/**
+ * Subscribe to the SPC bot's "currently fetching" flag from anywhere in
+ * the tree. Flips true while the hook is reverse-geocoding a new
+ * outlook, false otherwise.
+ */
+export function useSPCOutlookLoading(): boolean {
+  const [loading, setLoading] = useState(loadingState);
+  useEffect(() => {
+    setLoading(loadingState);
+    loadingSubs.add(setLoading);
+    return () => {
+      loadingSubs.delete(setLoading);
+    };
+  }, []);
+  return loading;
 }
