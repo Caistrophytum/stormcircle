@@ -139,8 +139,11 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
-          width={1920}
-          height={1080}
+          width={1600}
+          height={900}
+          decoding="async"
+          // @ts-expect-error fetchpriority is a valid HTML attribute not yet in React types
+          fetchpriority="high"
         />
       </AnimatePresence>
 
