@@ -43,6 +43,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { SystemMessageCard } from "@/components/SystemMessageCard";
 
 type Message = RawMessage;
 
