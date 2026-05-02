@@ -23,7 +23,7 @@
  * (badge "System"), allowlisted by RLS to insert/delete its own messages
  * without an authenticated session, and excluded from the 2h cron cleanup.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const SPC_URL =
@@ -66,6 +66,15 @@ const RISK_RANK: Record<string, number> = {
 // Module-level singleton guard so HMR / multiple mounts don't spawn
 // parallel polling loops.
 let started = false;
+
+// Tiny pub/sub for the "currently fetching outlook" flag so any component
+// (regardless of where the polling hook is mounted) can subscribe.
+let loadingState = false;
+const loadingSubs = new Set<(v: boolean) => void>();
+function setLoadingShared(v: boolean) {
+  loadingState = v;
+  loadingSubs.forEach((fn) => fn(v));
+}
 
 interface SPCFeature {
   properties: { label?: string; label2?: string; issue?: string; expire?: string };
@@ -258,7 +267,10 @@ function buildMessage(issue: string, groups: RiskGroup[]): string {
   return lines.join("\n");
 }
 
-async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }): Promise<void> {
+async function fetchAndProcessOutlook(
+  lastIssueRef: { current: string | null },
+  setLoading: (v: boolean) => void,
+): Promise<void> {
   let geo: { features: SPCFeature[] };
   try {
     const res = await fetch(SPC_URL);
@@ -301,61 +313,68 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
     return;
   }
 
-  // For each relevant risk polygon, sample multiple interior points and
-  // resolve them to (county, state) pairs via the NWS /points endpoint.
-  // Dedupe per polygon so each county appears at most once per risk tier.
-  const groups: RiskGroup[] = [];
-  for (const feat of relevant) {
-    const samples = samplePointsInside(feat.geometry);
-    if (!samples.length) continue;
+  // We're about to do the long geocoding work — flip on the loading flag
+  // so the chat can render a placeholder while counties are resolved.
+  setLoading(true);
+  try {
+    // For each relevant risk polygon, sample multiple interior points and
+    // resolve them to (county, state) pairs via the NWS /points endpoint.
+    // Dedupe per polygon so each county appears at most once per risk tier.
+    const groups: RiskGroup[] = [];
+    for (const feat of relevant) {
+      const samples = samplePointsInside(feat.geometry);
+      if (!samples.length) continue;
 
-    const seen = new Set<string>();
-    const counties: RiskCounty[] = [];
-    for (const [lon, lat] of samples) {
-      const place = await reverseGeocodeCounty(lat, lon);
-      await delay(REVERSE_GEOCODE_DELAY_MS);
-      if (!place) continue;
-      const key = `${place.county}|${place.state}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      counties.push(place);
+      const seen = new Set<string>();
+      const counties: RiskCounty[] = [];
+      for (const [lon, lat] of samples) {
+        const place = await reverseGeocodeCounty(lat, lon);
+        await delay(REVERSE_GEOCODE_DELAY_MS);
+        if (!place) continue;
+        const key = `${place.county}|${place.state}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        counties.push(place);
+      }
+      if (!counties.length) continue;
+      counties.sort((a, b) =>
+        a.state === b.state ? a.county.localeCompare(b.county) : a.state.localeCompare(b.state),
+      );
+
+      const label = feat.properties.label!;
+      groups.push({ label, riskLabel: RISK_LABELS[label], counties });
     }
-    if (!counties.length) continue;
-    counties.sort((a, b) =>
-      a.state === b.state ? a.county.localeCompare(b.county) : a.state.localeCompare(b.state),
-    );
+    if (!groups.length) {
+      lastIssueRef.current = latestIssue;
+      return;
+    }
 
-    const label = feat.properties.label!;
-    groups.push({ label, riskLabel: RISK_LABELS[label], counties });
-  }
-  if (!groups.length) {
+    groups.sort((a, b) => (RISK_RANK[b.label] ?? 0) - (RISK_RANK[a.label] ?? 0));
+    const content = buildMessage(latestIssue, groups);
+
+    // Replace any existing bot messages with the new one. Delete-then-insert
+    // (rather than UPDATE) because the messages table is append-only by
+    // policy and Realtime subscribers expect INSERT events for fresh rows.
+    const { error: delErr } = await supabase.from("messages").delete().eq("user_id", BOT_USER_ID);
+    if (delErr) {
+      console.warn("[useSPCOutlook] failed to clear previous bot message:", delErr);
+    }
+
+    const { error: insErr } = await supabase.from("messages").insert({
+      user_id: BOT_USER_ID,
+      username: "SPC Bot",
+      badge: "System",
+      content,
+    });
+    if (insErr) {
+      lastIssueRef.current = null;
+      console.warn("[useSPCOutlook] failed to post bot message:", insErr);
+      return;
+    }
     lastIssueRef.current = latestIssue;
-    return;
+  } finally {
+    setLoading(false);
   }
-
-  groups.sort((a, b) => (RISK_RANK[b.label] ?? 0) - (RISK_RANK[a.label] ?? 0));
-  const content = buildMessage(latestIssue, groups);
-
-  // Replace any existing bot messages with the new one. Delete-then-insert
-  // (rather than UPDATE) because the messages table is append-only by
-  // policy and Realtime subscribers expect INSERT events for fresh rows.
-  const { error: delErr } = await supabase.from("messages").delete().eq("user_id", BOT_USER_ID);
-  if (delErr) {
-    console.warn("[useSPCOutlook] failed to clear previous bot message:", delErr);
-  }
-
-  const { error: insErr } = await supabase.from("messages").insert({
-    user_id: BOT_USER_ID,
-    username: "SPC Bot",
-    badge: "System",
-    content,
-  });
-  if (insErr) {
-    lastIssueRef.current = null;
-    console.warn("[useSPCOutlook] failed to post bot message:", insErr);
-    return;
-  }
-  lastIssueRef.current = latestIssue;
 }
 
 export function useSPCOutlook(): void {
@@ -365,9 +384,9 @@ export function useSPCOutlook(): void {
     if (started) return;
     started = true;
 
-    void fetchAndProcessOutlook(lastIssueRef);
+    void fetchAndProcessOutlook(lastIssueRef, setLoadingShared);
     const id = setInterval(() => {
-      void fetchAndProcessOutlook(lastIssueRef);
+      void fetchAndProcessOutlook(lastIssueRef, setLoadingShared);
     }, POLL_INTERVAL_MS);
 
     return () => {
@@ -375,4 +394,21 @@ export function useSPCOutlook(): void {
       started = false;
     };
   }, []);
+}
+
+/**
+ * Subscribe to the SPC bot's "currently fetching" flag from anywhere in
+ * the tree. Flips true while the hook is reverse-geocoding a new
+ * outlook, false otherwise.
+ */
+export function useSPCOutlookLoading(): boolean {
+  const [loading, setLoading] = useState(loadingState);
+  useEffect(() => {
+    setLoading(loadingState);
+    loadingSubs.add(setLoading);
+    return () => {
+      loadingSubs.delete(setLoading);
+    };
+  }, []);
+  return loading;
 }

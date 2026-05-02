@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
+import { useSPCOutlookLoading } from "@/hooks/useSPCOutlook";
 
 type Message = RawMessage;
 
@@ -66,6 +67,7 @@ export default function CitizenReports() {
   const [sending, setSending] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<PendingAction | null>(null);
+  const spcLoading = useSPCOutlookLoading();
 
   const isModerator = profile?.badge === "Meteorologist";
 
@@ -295,6 +297,30 @@ export default function CitizenReports() {
         {systemMessages.map((sys) => (
           <SystemMessageCard key={sys.id} message={sys} expandedKey={expanded} toggle={toggleExpand} />
         ))}
+
+        {/* Loading placeholder while the SPC bot reverse-geocodes a fresh
+            outlook. Only shown when there's no existing bot card to display
+            so we never blank out a still-valid prior outlook. */}
+        {spcLoading && systemMessages.length === 0 && (
+          <div
+            className="rounded border px-3 py-2 font-mono text-[11px]"
+            style={{
+              background: "rgba(255, 165, 0, 0.08)",
+              borderColor: "rgba(255, 165, 0, 0.3)",
+              color: "#ffa500",
+            }}
+          >
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className="text-[9px] uppercase tracking-wide opacity-80">
+                SPC Bot · System
+              </span>
+              <span className="size-1.5 bg-primary rounded-full animate-pulse" />
+            </div>
+            <p className="opacity-90">
+              Fetching latest SPC Day 1 Outlook and resolving affected counties…
+            </p>
+          </div>
+        )}
 
         {stacks.length === 0 && systemMessages.length === 0 ? (
           <p className="text-[10px] font-mono text-muted-foreground italic text-center pt-4">
