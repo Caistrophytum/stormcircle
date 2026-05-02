@@ -271,52 +271,50 @@ async function fetchAndProcessOutlook(
   lastIssueRef: { current: string | null },
   setLoading: (v: boolean) => void,
 ): Promise<void> {
-  let geo: { features: SPCFeature[] };
-  try {
-    const res = await fetch(SPC_URL);
-    if (!res.ok) return;
-    geo = await res.json();
-  } catch {
-    return;
-  }
-  if (!geo?.features?.length) return;
-
-  const issueTimes = geo.features
-    .map((f) => f.properties?.issue)
-    .filter((v): v is string => typeof v === "string" && v.length >= 12);
-  if (!issueTimes.length) return;
-  const latestIssue = issueTimes.sort().reverse()[0];
-
-  // First poll after mount: reconcile against whatever's already in the DB
-  // so a user who just opened the page still sees the current outlook.
-  if (lastIssueRef.current === null) {
-    const stored = await getStoredIssue();
-    if (stored && stored >= latestIssue) {
-      // DB already has the latest (or newer) — nothing to do.
-      lastIssueRef.current = stored;
-      return;
-    }
-    // Stored is older or missing — fall through and (re)post.
-  } else if (latestIssue === lastIssueRef.current) {
-    return; // no new issuance since we last posted
-  }
-
-  // Filter to the latest issuance and exclude TSTM.
-  const relevant = geo.features.filter((f) => {
-    const label = f.properties?.label;
-    return f.properties?.issue === latestIssue && label && label !== "TSTM" && RISK_LABELS[label];
-  });
-  if (!relevant.length) {
-    // Quiet day at the new issuance — record the timestamp so we don't
-    // re-evaluate it again, but don't post or wipe an existing bot row.
-    lastIssueRef.current = latestIssue;
-    return;
-  }
-
-  // We're about to do the long geocoding work — flip on the loading flag
-  // so the chat can render a placeholder while counties are resolved.
   setLoading(true);
   try {
+    let geo: { features: SPCFeature[] };
+    try {
+      const res = await fetch(SPC_URL);
+      if (!res.ok) return;
+      geo = await res.json();
+    } catch {
+      return;
+    }
+    if (!geo?.features?.length) return;
+
+    const issueTimes = geo.features
+      .map((f) => f.properties?.issue)
+      .filter((v): v is string => typeof v === "string" && v.length >= 12);
+    if (!issueTimes.length) return;
+    const latestIssue = issueTimes.sort().reverse()[0];
+
+    // First poll after mount: reconcile against whatever's already in the DB
+    // so a user who just opened the page still sees the current outlook.
+    if (lastIssueRef.current === null) {
+      const stored = await getStoredIssue();
+      if (stored && stored >= latestIssue) {
+        // DB already has the latest (or newer) — nothing to do.
+        lastIssueRef.current = stored;
+        return;
+      }
+      // Stored is older or missing — fall through and (re)post.
+    } else if (latestIssue === lastIssueRef.current) {
+      return; // no new issuance since we last posted
+    }
+
+    // Filter to the latest issuance and exclude TSTM.
+    const relevant = geo.features.filter((f) => {
+      const label = f.properties?.label;
+      return f.properties?.issue === latestIssue && label && label !== "TSTM" && RISK_LABELS[label];
+    });
+    if (!relevant.length) {
+      // Quiet day at the new issuance — record the timestamp so we don't
+      // re-evaluate it again, but don't post or wipe an existing bot row.
+      lastIssueRef.current = latestIssue;
+      return;
+    }
+
     // For each relevant risk polygon, sample multiple interior points and
     // resolve them to (county, state) pairs via the NWS /points endpoint.
     // Dedupe per polygon so each county appears at most once per risk tier.
