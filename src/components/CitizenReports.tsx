@@ -68,8 +68,20 @@ export default function CitizenReports() {
 
   const isModerator = profile?.badge === "Meteorologist";
 
-  // ── Derive grouped, ranked stacks from live state ─────────────────────
-  const stacks = useMemo(() => groupMessages(messages, approvedSigs), [messages, approvedSigs]);
+  // ── Split out automated bot messages (badge "System") ────────────────
+  // System messages (e.g. SPC Bot outlook updates) bypass grouping and
+  // render as standalone styled cards pinned above the regular stacks.
+  const { systemMessages, userMessages } = useMemo(() => {
+    const sys: Message[] = [];
+    const usr: Message[] = [];
+    for (const m of messages) (m.badge === "System" ? sys : usr).push(m);
+    // Newest system messages first.
+    sys.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return { systemMessages: sys, userMessages: usr };
+  }, [messages]);
+
+  // ── Derive grouped, ranked stacks from non-system messages ──────────
+  const stacks = useMemo(() => groupMessages(userMessages, approvedSigs), [userMessages, approvedSigs]);
 
   function toggleExpand(id: string) {
     setExpanded((prev) => {
@@ -147,10 +159,14 @@ export default function CitizenReports() {
   }, []);
 
   // ── Client-side expiry sweep (defense-in-depth vs server pg_cron) ─────
+  // System (bot) messages are exempt — they persist until replaced by a
+  // newer issuance.
   useEffect(() => {
     const interval = setInterval(() => {
       const cutoff = Date.now() - TWO_HOURS_MS;
-      setMessages((prev) => prev.filter((m) => new Date(m.created_at).getTime() > cutoff));
+      setMessages((prev) =>
+        prev.filter((m) => m.badge === "System" || new Date(m.created_at).getTime() > cutoff),
+      );
     }, 60_000);
     return () => clearInterval(interval);
   }, []);
@@ -274,7 +290,33 @@ export default function CitizenReports() {
 
       {/* Stacked reports */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-        {stacks.length === 0 ? (
+        {/* Pinned automated bot messages (e.g. SPC outlook updates). */}
+        {systemMessages.map((sys) => (
+          <div
+            key={sys.id}
+            className="rounded border px-3 py-2 font-mono text-[11px] whitespace-pre-line"
+            style={{
+              background: "rgba(255, 165, 0, 0.08)",
+              borderColor: "rgba(255, 165, 0, 0.3)",
+              color: "#ffa500",
+            }}
+          >
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className="text-[9px] uppercase tracking-wide opacity-80">
+                {sys.username} · System
+              </span>
+              <span className="text-[9px] opacity-70">
+                {new Date(sys.created_at).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            </div>
+            {sys.content}
+          </div>
+        ))}
+
+        {stacks.length === 0 && systemMessages.length === 0 ? (
           <p className="text-[10px] font-mono text-muted-foreground italic text-center pt-4">
             No reports yet. Be the first to report an event.
           </p>

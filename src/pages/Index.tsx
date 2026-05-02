@@ -25,9 +25,14 @@ import CitizenReports from "@/components/CitizenReports";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
 import { useNewReportPing } from "@/hooks/useNewReportPing";
+import { useSPCOutlook } from "@/hooks/useSPCOutlook";
 
 
 const Index = () => {
+  // Kick off SPC Day 1 outlook polling — posts an automated bot message to
+  // the chat whenever a new outlook issuance is detected.
+  useSPCOutlook();
+
   // Side-panel open/close state.
   const [rightOpen, setRightOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
