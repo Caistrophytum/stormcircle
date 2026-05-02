@@ -299,9 +299,9 @@ export default function CitizenReports() {
         ))}
 
         {/* Loading placeholder while the SPC bot reverse-geocodes a fresh
-            outlook. Only shown when there's no existing bot card to display
-            so we never blank out a still-valid prior outlook. */}
-        {spcLoading && systemMessages.length === 0 && (
+            outlook. Keep it visible even if an older valid outlook card is
+            still pinned below so users can tell the bot is actively refreshing. */}
+        {spcLoading && (
           <div
             className="rounded border px-3 py-2 font-mono text-[11px]"
             style={{
@@ -317,12 +317,14 @@ export default function CitizenReports() {
               <span className="size-1.5 bg-primary rounded-full animate-pulse" />
             </div>
             <p className="opacity-90">
-              Fetching latest SPC Day 1 Outlook and resolving affected counties…
+              {systemMessages.length > 0
+                ? "Refreshing SPC Day 1 Outlook and resolving updated counties…"
+                : "Fetching latest SPC Day 1 Outlook and resolving affected counties…"}
             </p>
           </div>
         )}
 
-        {stacks.length === 0 && systemMessages.length === 0 ? (
+        {stacks.length === 0 && systemMessages.length === 0 && !spcLoading ? (
           <p className="text-[10px] font-mono text-muted-foreground italic text-center pt-4">
             No reports yet. Be the first to report an event.
           </p>
