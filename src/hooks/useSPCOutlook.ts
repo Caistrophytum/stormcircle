@@ -271,6 +271,8 @@ async function fetchAndProcessOutlook(
   lastIssueRef: { current: string | null },
   setLoading: (v: boolean) => void,
 ): Promise<void> {
+  setLoading(true);
+
   let geo: { features: SPCFeature[] };
   try {
     const res = await fetch(SPC_URL);
@@ -313,9 +315,6 @@ async function fetchAndProcessOutlook(
     return;
   }
 
-  // We're about to do the long geocoding work — flip on the loading flag
-  // so the chat can render a placeholder while counties are resolved.
-  setLoading(true);
   try {
     // For each relevant risk polygon, sample multiple interior points and
     // resolve them to (county, state) pairs via the NWS /points endpoint.
