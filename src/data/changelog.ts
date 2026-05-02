@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-02 10z",
+    tag: "NEW",
+    title: "SPC Day 1 risk areas in the chat",
+    body: "A new SPC Bot entity collects SPC SPC D-1 data, showing them as a form of a chat message.",
+  },
+  {
     date: "2026-05-01 15z",
     tag: "IMPROVED",
     title: "Chat system, message sorting, grouping behaviour",
