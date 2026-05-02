@@ -1,7 +1,6 @@
-import { forwardRef, useState, useMemo, useRef, useEffect } from "react";
+import { forwardRef, lazy, Suspense, useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import RadarMiniMap from "./RadarMiniMap";
 import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
@@ -12,18 +11,19 @@ import {
   displayLengthM,
 } from "@/hooks/useUnitSystem";
 
-import weatherSunny from "@/assets/weather-calm.jpg";
-import weatherCloudy from "@/assets/weather-overcast.jpg";
-import weatherRainy from "@/assets/weather-rainy.jpg";
-import weatherStormy from "@/assets/weather-stormy.jpg";
+// Code-split the radar mini-map: pulls leaflet + react-leaflet (~150KB gz)
+// out of the initial bundle so first paint isn't blocked by it.
+const RadarMiniMap = lazy(() => import("./RadarMiniMap"));
 
 type WeatherCondition = "sunny" | "cloudy" | "rainy" | "stormy";
 
+// Lazy-resolved URLs — only the active background is requested by the browser.
+// Vite still fingerprints them via new URL(...) so caching works as usual.
 const weatherBackgrounds: Record<WeatherCondition, string> = {
-  sunny: weatherSunny,
-  cloudy: weatherCloudy,
-  rainy: weatherRainy,
-  stormy: weatherStormy,
+  sunny: new URL("../assets/weather-calm.jpg", import.meta.url).href,
+  cloudy: new URL("../assets/weather-overcast.jpg", import.meta.url).href,
+  rainy: new URL("../assets/weather-rainy.jpg", import.meta.url).href,
+  stormy: new URL("../assets/weather-stormy.jpg", import.meta.url).href,
 };
 
 interface Props {
@@ -139,8 +139,11 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
-          width={1920}
-          height={1080}
+          width={1600}
+          height={900}
+          decoding="async"
+          // @ts-expect-error fetchpriority is a valid HTML attribute not yet in React types
+          fetchpriority="high"
         />
       </AnimatePresence>
 
@@ -164,19 +167,21 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               exit={{ scale: 0.3, opacity: 0 }}
               transition={{ type: "spring", damping: 20, stiffness: 200 }}
             >
-              <RadarMiniMap
-                expanded
-                onCollapse={() => setRadarExpanded(false)}
-                selectedCity={radar.selectedCity}
-                setSelectedCity={radar.setSelectedCity}
-                selectedStation={radar.selectedStation}
-                setSelectedStation={radar.setSelectedStation}
-                onStationMarkerSelect={radar.selectStationByMarker}
-                stationDistanceKm={radar.stationDistanceKm}
-                selectedProduct={radar.selectedProduct}
-                setSelectedProduct={radar.setSelectedProduct}
-                tileUrl={radar.tileUrl}
-              />
+              <Suspense fallback={<div className="glass-panel rounded" style={{ width: "min(65vw, 620px)", height: "min(65vw, 620px)" }} />}>
+                <RadarMiniMap
+                  expanded
+                  onCollapse={() => setRadarExpanded(false)}
+                  selectedCity={radar.selectedCity}
+                  setSelectedCity={radar.setSelectedCity}
+                  selectedStation={radar.selectedStation}
+                  setSelectedStation={radar.setSelectedStation}
+                  onStationMarkerSelect={radar.selectStationByMarker}
+                  stationDistanceKm={radar.stationDistanceKm}
+                  selectedProduct={radar.selectedProduct}
+                  setSelectedProduct={radar.setSelectedProduct}
+                  tileUrl={radar.tileUrl}
+                />
+              </Suspense>
             </motion.div>
           ) : (
             <motion.div
@@ -185,19 +190,21 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
             >
-              <RadarMiniMap
-                expanded={false}
-                onCollapse={() => setRadarExpanded(true)}
-                selectedCity={radar.selectedCity}
-                setSelectedCity={radar.setSelectedCity}
-                selectedStation={radar.selectedStation}
-                setSelectedStation={radar.setSelectedStation}
-                onStationMarkerSelect={radar.selectStationByMarker}
-                stationDistanceKm={radar.stationDistanceKm}
-                selectedProduct={radar.selectedProduct}
-                setSelectedProduct={radar.setSelectedProduct}
-                tileUrl={radar.tileUrl}
-              />
+              <Suspense fallback={<div className="rounded-full glass-panel" style={{ width: "clamp(160px, 18vw, 240px)", height: "clamp(160px, 18vw, 240px)" }} />}>
+                <RadarMiniMap
+                  expanded={false}
+                  onCollapse={() => setRadarExpanded(true)}
+                  selectedCity={radar.selectedCity}
+                  setSelectedCity={radar.setSelectedCity}
+                  selectedStation={radar.selectedStation}
+                  setSelectedStation={radar.setSelectedStation}
+                  onStationMarkerSelect={radar.selectStationByMarker}
+                  stationDistanceKm={radar.stationDistanceKm}
+                  selectedProduct={radar.selectedProduct}
+                  setSelectedProduct={radar.setSelectedProduct}
+                  tileUrl={radar.tileUrl}
+                />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>

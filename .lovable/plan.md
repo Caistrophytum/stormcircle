@@ -1,57 +1,45 @@
-# Lock Top 6 Most Dangerous height to match left stack
+## Why it feels slow
 
-## Goal
+Two distinct bottlenecks were found:
 
-The Top 6 Most Dangerous panel (top-right of map) should have its bottom edge land at the same y-position as the bottom of the New Warnings panel (left side). When its content exceeds that height, the panel scrolls internally instead of pushing further down.
+1. **Initial page load** is dominated by the weather background images. The four JPGs in `src/assets/` total **~5.4 MB** (`weather-rainy.jpg` alone is 2.3 MB, `weather-overcast.jpg` is 1.9 MB). They are all `import`-ed eagerly in `TacticalMap.tsx`, so Vite bundles all four into the initial chunk — even though only one is shown at a time.
+2. **Radar mini-map "buffering"** happens because the small circular preview mounts a full Leaflet `MapContainer` with:
+   - 3 base/label tile layers from CARTO + a US-states overlay (4 sets of tiles fetched on every render),
+   - **144 `CircleMarker`s with permanent tooltips** (one per NEXRAD station) drawn at zoom 4 — most of which overlap into illegible clusters and are pure DOM/SVG overhead,
+   - a NEXRAD radar tile layer that re-creates itself every time `cacheBust` ticks (every 60 s) instead of swapping the URL on the existing layer.
+   
+   On top of that, the mini-map and the expanded map are two separate `MapContainer` instances, so opening the expanded view re-downloads every tile from scratch.
 
-Currently both panels are independently sized and the cap I added uses a viewport-relative formula (`100% - 9.5rem`). That's predictable but not "match the left stack exactly."
+## Plan
 
-## Behavior
+### 1. Shrink and lazy-load the weather backgrounds
+- Re-encode the four JPGs to ~1600 px wide, quality ~70, and add WebP variants. Target: each file under ~150 KB (≈95% smaller than today).
+- Stop eagerly importing all four. Build a small map of URLs (`new URL('../assets/weather-*.webp', import.meta.url)`) and only set the `<img src>` for the currently active condition; preload the next-most-likely one (`sunny`) idly.
+- Add `loading="eager"` + `fetchpriority="high"` to the active background and `decoding="async"` so it doesn't block paint.
 
-- Measure the rendered height of the left stack (Top 5 Hazards card + 8px gap + New Warnings card) at runtime.
-- Apply that exact height as `maxHeight` on the Top 6 panel wrapper.
-- The Top 6 panel scrolls vertically inside that bound; outer page never scrolls.
-- Re-measure on:
-  - viewport resize (shrinking/growing changes wrap and font scale)
-  - left-stack content changes (alert counts update on a refresh interval)
+### 2. Code-split the radar map
+- Wrap `RadarMiniMap` (and its Leaflet imports) in `React.lazy` + `Suspense` with a lightweight placeholder (the existing circular glass panel + a small spinner). Leaflet + react-leaflet + the leaflet CSS are ~150 KB gzipped and currently sit in the main bundle.
+- Same treatment for `WarningPolygons` (only needed once the map mounts).
 
-## Technical changes
+### 3. Make the mini-map cheap
+- In the **collapsed** (circular) view, render only the basemap + the radar tile + the selected station marker. Skip the 144-marker layer and the labels tile (`dark_only_labels`) — they're invisible at that size anyway.
+- Render the full station marker set + labels layer only when `expanded` is true.
+- Replace the `useEffect` that recreates `L.tileLayer` on every `cacheBust` with a ref that calls `radarLayer.setUrl(busted)` in place. Avoids a full tile redownload every minute.
+- Memoize `RadarStationMarkers` and stop passing inline arrow functions in `eventHandlers` so React-Leaflet can skip re-renders on parent state changes.
 
-**`src/components/TacticalMap.tsx`**
+### 4. Share one map instance between collapsed and expanded
+- Hoist the `MapContainer` into a single mounted instance and toggle its container size/interactivity via CSS + `map.invalidateSize()` on expand. Eliminates the second tile fetch storm when the user opens the radar.
 
-1. Replace the two independent `EventInfoPanel` mounts (`show="hazards"` and `show="dangerous"`) with refs:
-   - `leftStackRef` on the top-left wrapper.
-   - `dangerousWrapperRef` on the top-right wrapper.
-2. Add a `useState<number | null>` for `lockedHeight`.
-3. Add a `ResizeObserver` on `leftStackRef` that writes its `offsetHeight` into `lockedHeight`. Also re-runs on window resize.
-4. Apply to top-right wrapper:
-   ```ts
-   style={{
-     transform: `scale(${overlayScale})`,
-     maxHeight: lockedHeight ? `${lockedHeight / overlayScale}px` : undefined,
-   }}
-   className="... overflow-y-auto overflow-x-hidden no-scrollbar"
-   ```
-   Dividing by `overlayScale` keeps the **post-scale** rendered height equal to the left stack (which uses the same `overlayScale`).
-5. Remove the previous `100% - 9.5rem` cap — replaced by this measured value.
-6. Keep `overflow-y-auto` so the panel scrolls internally; keep `overflow-x-hidden` so badges don't horizontally scroll.
+### 5. Small wins
+- Add `<link rel="preconnect">` in `index.html` for `mesonet.agron.iastate.edu` and `basemaps.cartocdn.com` so TLS handshakes start before React mounts.
+- Add `loading="lazy"` to the three non-active weather backgrounds if any are kept in the DOM.
+- Memoize `soundingNodes` dependencies in `TacticalMap` so they don't recompute every weather poll (15 s cadence currently triggers a full re-render of the map subtree).
 
-**`src/components/EventInfoPanel.tsx`** — no changes required; it already renders inside whatever wrapper it's given.
+### Out of scope
+- No backend changes; tile providers stay the same.
+- No visual redesign — the circular mini-map, expanded panel, and station-picking UX stay identical.
 
-## Edge cases
-
-- **First paint**: `lockedHeight` is `null` until the ResizeObserver fires (next frame). Until then the right panel is uncapped — same as today. Acceptable; the cap snaps in within ~1 frame.
-- **Left stack grows after Top 6 is already small**: ResizeObserver fires, `lockedHeight` increases, right panel cap relaxes — no scroll needed.
-- **Hazards data still loading**: left stack is shorter, so right panel cap is shorter too. Right panel scrolls. Once data loads, cap expands.
-- **Very narrow viewport (overlayScale < 1)**: both wrappers are scaled by the same factor, so visually they stay aligned at the bottom.
-
-## What stays the same
-
-- Both panels remain independently positioned (`top-3 left-3` and `top-3 right-3`).
-- Sounding parameter strip and WRS bar positions are unchanged.
-- No styling/visual changes inside `EventInfoPanel`.
-
-## Out of scope
-
-- Top 5 Hazards / New Warnings panels themselves (already sized by content; not capped).
-- Mobile guard, viewport scaling hook — unchanged.
+### Expected impact
+- Initial JS+image payload: from ~5.5 MB to **<700 KB** on first paint.
+- Radar mini-map mount time: from "buffer for several seconds" to roughly the time of one tile request (~200–400 ms on a warm CDN).
+- Expanding the radar: near-instant instead of re-fetching every tile.

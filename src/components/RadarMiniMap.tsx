@@ -1,6 +1,6 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { forwardRef, MutableRefObject, useEffect, useState } from "react";
+import { forwardRef, MutableRefObject, useEffect, useRef, useState } from "react";
 import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
 import { Maximize2, Minimize2, Plus, Minus } from "lucide-react";
 import { RadarStation, RADAR_STATIONS } from "@/config/radarStations";
@@ -63,7 +63,9 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   // Use the shared 60s refresh clock so radar tile cache-busts fire in
   // lockstep with warnings, current conditions, and other 1-min sources.
   const cacheBust = useRefreshTick();
+  const layerRef = useRef<L.TileLayer | null>(null);
 
+  // Create the layer once per tileUrl change.
   useEffect(() => {
     if (!tileUrl) return;
 
@@ -81,7 +83,6 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
 
     radarLayer.on("tileloadstart", (e: L.TileEvent) => {
       const src = (e.tile as HTMLImageElement).src;
-      console.log("[Radar] tile request:", src);
       onTileRequest?.(src);
     });
     radarLayer.on("tileerror", (e: L.TileErrorEvent) => {
@@ -90,11 +91,22 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
 
     radarLayer.addTo(map);
     radarLayer.bringToFront();
+    layerRef.current = radarLayer;
 
     return () => {
       map.removeLayer(radarLayer);
+      layerRef.current = null;
     };
-  }, [map, tileUrl, cacheBust, onTileRequest]);
+    // Intentionally exclude cacheBust — it's handled by the next effect via setUrl.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, tileUrl, onTileRequest]);
+
+  // Cache-bust without recreating the layer (avoids a full tile re-fetch storm).
+  useEffect(() => {
+    if (!layerRef.current || !tileUrl) return;
+    const bustedUrl = tileUrl + (tileUrl.includes("?") ? "&" : "?") + "_t=" + cacheBust;
+    layerRef.current.setUrl(bustedUrl, false);
+  }, [cacheBust, tileUrl, layerRef]);
 
   return null;
 });
@@ -220,25 +232,31 @@ const LeafletRadar = ({
         subdomains="abcd"
         maxZoom={20}
       />
-      <TileLayer
-        url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
-        opacity={0.6}
-        attribution=""
-      />
-      <RadarStationMarkers
-        selectedStation={selectedStation}
-        onStationSelect={onStationMarkerSelect}
-        onProductSelect={setSelectedProduct}
-      />
+      {interactive && (
+        <TileLayer
+          url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
+          opacity={0.6}
+          attribution=""
+        />
+      )}
+      {interactive && (
+        <RadarStationMarkers
+          selectedStation={selectedStation}
+          onStationSelect={onStationMarkerSelect}
+          onProductSelect={setSelectedProduct}
+        />
+      )}
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
-      <WarningPolygons ref={warningsRef} polygons={polygons} />
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
-        subdomains="abcd"
-        opacity={0.9}
-        attribution=""
-        zIndex={1000}
-      />
+      {interactive && <WarningPolygons ref={warningsRef} polygons={polygons} />}
+      {interactive && (
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          opacity={0.9}
+          attribution=""
+          zIndex={1000}
+        />
+      )}
       <Recenter station={station} />
       {onMap && <MapRefCapture onMap={onMap} />}
     </MapContainer>
