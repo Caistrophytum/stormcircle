@@ -23,7 +23,7 @@
  * (badge "System"), allowlisted by RLS to insert/delete its own messages
  * without an authenticated session, and excluded from the 2h cron cleanup.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const SPC_URL =
