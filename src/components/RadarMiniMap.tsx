@@ -63,7 +63,9 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   // Use the shared 60s refresh clock so radar tile cache-busts fire in
   // lockstep with warnings, current conditions, and other 1-min sources.
   const cacheBust = useRefreshTick();
+  const layerRef = useState<{ current: L.TileLayer | null }>(() => ({ current: null }))[0];
 
+  // Create the layer once per tileUrl change.
   useEffect(() => {
     if (!tileUrl) return;
 
@@ -81,7 +83,6 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
 
     radarLayer.on("tileloadstart", (e: L.TileEvent) => {
       const src = (e.tile as HTMLImageElement).src;
-      console.log("[Radar] tile request:", src);
       onTileRequest?.(src);
     });
     radarLayer.on("tileerror", (e: L.TileErrorEvent) => {
@@ -90,11 +91,22 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
 
     radarLayer.addTo(map);
     radarLayer.bringToFront();
+    layerRef.current = radarLayer;
 
     return () => {
       map.removeLayer(radarLayer);
+      layerRef.current = null;
     };
-  }, [map, tileUrl, cacheBust, onTileRequest]);
+    // Intentionally exclude cacheBust — it's handled by the next effect via setUrl.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, tileUrl, onTileRequest]);
+
+  // Cache-bust without recreating the layer (avoids a full tile re-fetch storm).
+  useEffect(() => {
+    if (!layerRef.current || !tileUrl) return;
+    const bustedUrl = tileUrl + (tileUrl.includes("?") ? "&" : "?") + "_t=" + cacheBust;
+    layerRef.current.setUrl(bustedUrl, false);
+  }, [cacheBust, tileUrl, layerRef]);
 
   return null;
 });
