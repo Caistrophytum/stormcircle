@@ -312,7 +312,7 @@ export default function CitizenReports() {
                 })}
               </span>
             </div>
-            {sys.content}
+            {sys.content.replace(/\s*<!--issue:\d{8}_\d{4}-->\s*$/, "")}
           </div>
         ))}
 
