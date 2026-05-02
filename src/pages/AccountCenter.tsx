@@ -46,26 +46,13 @@ import {
 
 const inputClass =
   "w-full bg-cockpit/60 border border-border focus:border-primary/60 focus:outline-none rounded-sm px-3 py-2 text-sm font-mono text-card-foreground placeholder:text-muted-foreground/60 transition-colors disabled:opacity-60";
-const labelClass =
-  "text-[10px] font-mono uppercase tracking-wider text-muted-foreground";
+const labelClass = "text-[10px] font-mono uppercase tracking-wider text-muted-foreground";
 
-const SectionHeader = ({
-  icon: Icon,
-  label,
-  hint,
-}: {
-  icon: typeof UserIcon;
-  label: string;
-  hint?: string;
-}) => (
+const SectionHeader = ({ icon: Icon, label, hint }: { icon: typeof UserIcon; label: string; hint?: string }) => (
   <div className="border-b border-border bg-cockpit/80 px-5 py-3 flex items-center gap-2">
     <Icon className="size-4 text-primary" />
-    <h2 className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-card-foreground">
-      {label}
-    </h2>
-    {hint && (
-      <span className="ml-auto text-[9px] font-mono text-muted-foreground">{hint}</span>
-    )}
+    <h2 className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-card-foreground">{label}</h2>
+    {hint && <span className="ml-auto text-[9px] font-mono text-muted-foreground">{hint}</span>}
   </div>
 );
 
@@ -86,12 +73,7 @@ const BadgeChip = ({ badge }: { badge: string }) => {
   );
 };
 
-const subjectSchema = z.enum([
-  "General Feedback",
-  "Bug Report",
-  "Feature Request",
-  "Other",
-]);
+const subjectSchema = z.enum(["General Feedback", "Bug Report", "Feature Request", "Other"]);
 
 const AccountCenter = () => {
   const navigate = useNavigate();
@@ -115,9 +97,9 @@ const AccountCenter = () => {
   const [submittingApp, setSubmittingApp] = useState(false);
 
   // Contact / feedback state
-  const [contactSubject, setContactSubject] = useState<
-    "General Feedback" | "Bug Report" | "Feature Request" | "Other"
-  >("General Feedback");
+  const [contactSubject, setContactSubject] = useState<"General Feedback" | "Bug Report" | "Feature Request" | "Other">(
+    "General Feedback",
+  );
   const [contactMessage, setContactMessage] = useState("");
   const [sendingContact, setSendingContact] = useState(false);
 
@@ -207,10 +189,8 @@ const AccountCenter = () => {
     if (!first || !last) return toast.error("First and last name are required");
     const emailParsed = z.string().email().max(255).safeParse(email);
     if (!emailParsed.success) return toast.error("Invalid email address");
-    if (desc.length < 50)
-      return toast.error("Description must be at least 50 characters");
-    if (desc.length > 1000)
-      return toast.error("Description must be 1000 characters or less");
+    if (desc.length < 50) return toast.error("Description must be at least 50 characters");
+    if (desc.length > 1000) return toast.error("Description must be 1000 characters or less");
 
     if (cooldownRemaining > 0) {
       return toast.error(`Please wait ${cooldownRemaining}s before sending another email`);
@@ -240,10 +220,7 @@ const AccountCenter = () => {
       }
 
       // Always record the application in the database so the UI reflects it.
-      const { error } = await supabase
-        .from("profiles")
-        .update({ meteorologist_applied: true })
-        .eq("id", user.id);
+      const { error } = await supabase.from("profiles").update({ meteorologist_applied: true }).eq("id", user.id);
       if (error) {
         toast.error(`Could not save application: ${error.message}`);
         return;
@@ -304,10 +281,8 @@ const AccountCenter = () => {
     }
   };
 
-  const showApplication =
-    profile.badge === "Citizen" && !profile.meteorologist_applied;
-  const showUnderReview =
-    profile.badge === "Citizen" && profile.meteorologist_applied;
+  const showApplication = profile.badge === "Citizen" && !profile.meteorologist_applied;
+  const showUnderReview = profile.badge === "Citizen" && profile.meteorologist_applied;
 
   return (
     <main className="min-h-screen w-full bg-background py-8 px-4 md:px-6">
@@ -336,15 +311,11 @@ const AccountCenter = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <div className={labelClass}>Username</div>
-                <div className="text-sm font-mono text-card-foreground mt-1">
-                  {profile.username}
-                </div>
+                <div className="text-sm font-mono text-card-foreground mt-1">{profile.username}</div>
               </div>
               <div>
                 <div className={labelClass}>Email</div>
-                <div className="text-sm font-mono text-card-foreground mt-1 break-all">
-                  {profile.email}
-                </div>
+                <div className="text-sm font-mono text-card-foreground mt-1 break-all">{profile.email}</div>
               </div>
               <div>
                 <div className={labelClass}>Badge</div>
@@ -384,19 +355,18 @@ const AccountCenter = () => {
               {showUnderReview ? (
                 <div className="flex items-center gap-3 p-4 border border-neon-blue/30 bg-neon-blue/5 rounded-sm">
                   <CloudLightning className="size-4 text-neon-blue" />
-                  <p className="text-xs font-mono text-card-foreground">
-                    Your application is under review.
-                  </p>
+                  <p className="text-xs font-mono text-card-foreground">Your application is under review.</p>
                 </div>
               ) : (
                 <form onSubmit={handleApplication} className="space-y-4">
                   <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
-                    Apply for the Meteorologist badge. Tell us about your
-                    background — minimum 50 characters.
+                    Apply for the Meteorologist badge. Tell us about your background — minimum 50 characters.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className={labelClass} htmlFor="app-first">First Name</label>
+                      <label className={labelClass} htmlFor="app-first">
+                        First Name
+                      </label>
                       <input
                         id="app-first"
                         value={appFirst}
@@ -407,7 +377,9 @@ const AccountCenter = () => {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className={labelClass} htmlFor="app-last">Last Name</label>
+                      <label className={labelClass} htmlFor="app-last">
+                        Last Name
+                      </label>
                       <input
                         id="app-last"
                         value={appLast}
@@ -419,7 +391,9 @@ const AccountCenter = () => {
                     </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className={labelClass} htmlFor="app-email">Email Address</label>
+                    <label className={labelClass} htmlFor="app-email">
+                      Email Address
+                    </label>
                     <input
                       id="app-email"
                       type="email"
@@ -449,14 +423,8 @@ const AccountCenter = () => {
                     disabled={submittingApp || cooldownRemaining > 0}
                     className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    {submittingApp ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <Send className="size-3.5" />
-                    )}
-                    {cooldownRemaining > 0
-                      ? `Wait ${cooldownRemaining}s`
-                      : "Submit Application"}
+                    {submittingApp ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
+                    {cooldownRemaining > 0 ? `Wait ${cooldownRemaining}s` : "Submit Application"}
                   </button>
                 </form>
               )}
@@ -480,7 +448,9 @@ const AccountCenter = () => {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className={labelClass} htmlFor="contact-subject">Subject</label>
+                <label className={labelClass} htmlFor="contact-subject">
+                  Subject
+                </label>
                 <select
                   id="contact-subject"
                   value={contactSubject}
@@ -512,11 +482,7 @@ const AccountCenter = () => {
                 disabled={sendingContact || cooldownRemaining > 0}
                 className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {sendingContact ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <Send className="size-3.5" />
-                )}
+                {sendingContact ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
                 {cooldownRemaining > 0 ? `Wait ${cooldownRemaining}s` : "Send Message"}
               </button>
             </form>
@@ -525,11 +491,7 @@ const AccountCenter = () => {
 
         {/* SECTION 4 — Recent Updates / Changelog */}
         <section className="glass-panel rounded-sm overflow-hidden">
-          <SectionHeader
-            icon={Sparkles}
-            label="Recent Updates"
-            hint="What's new on StormCircle"
-          />
+          <SectionHeader icon={Sparkles} label="Recent Updates" hint="What's new on StormCircle™, 04/26" />
           <div className="p-5">
             <ol className="relative border-l border-border/60 ml-2 space-y-5">
               {changelog.map((entry) => {
@@ -552,12 +514,8 @@ const AccountCenter = () => {
                         {entry.date}
                       </time>
                     </div>
-                    <h3 className="mt-1 text-sm font-mono font-semibold text-card-foreground">
-                      {entry.title}
-                    </h3>
-                    <p className="mt-0.5 text-xs font-mono text-muted-foreground leading-relaxed">
-                      {entry.body}
-                    </p>
+                    <h3 className="mt-1 text-sm font-mono font-semibold text-card-foreground">{entry.title}</h3>
+                    <p className="mt-0.5 text-xs font-mono text-muted-foreground leading-relaxed">{entry.body}</p>
                   </li>
                 );
               })}
@@ -570,16 +528,10 @@ const AccountCenter = () => {
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-mono uppercase tracking-wider">
-              Delete account
-            </AlertDialogTitle>
+            <AlertDialogTitle className="font-mono uppercase tracking-wider">Delete account</AlertDialogTitle>
             <AlertDialogDescription className="font-mono text-xs">
-              This permanently deletes your account, profile, and access. To
-              confirm, type your username{" "}
-              <span className="text-card-foreground font-bold">
-                {profile.username}
-              </span>{" "}
-              below.
+              This permanently deletes your account, profile, and access. To confirm, type your username{" "}
+              <span className="text-card-foreground font-bold">{profile.username}</span> below.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <input
@@ -599,11 +551,7 @@ const AccountCenter = () => {
               disabled={deleting || deleteConfirmText !== profile.username}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? (
-                <Loader2 className="size-3.5 animate-spin mr-1.5" />
-              ) : (
-                <Trash2 className="size-3.5 mr-1.5" />
-              )}
+              {deleting ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Trash2 className="size-3.5 mr-1.5" />}
               Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>
