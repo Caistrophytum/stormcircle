@@ -165,8 +165,8 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
   if (!geo?.features?.length) return;
 
   const issueTimes = geo.features
-    .map((f) => f.properties?.ISSUE)
-    .filter((v): v is string => typeof v === "string" && v.length >= 11);
+    .map((f) => f.properties?.issue)
+    .filter((v): v is string => typeof v === "string" && v.length >= 12);
   if (!issueTimes.length) return;
   const latestIssue = issueTimes.sort().reverse()[0];
 
@@ -186,8 +186,8 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
 
   // Filter to the latest issuance and exclude TSTM.
   const relevant = geo.features.filter((f) => {
-    const label = f.properties?.LABEL;
-    return f.properties?.ISSUE === latestIssue && label && label !== "TSTM" && RISK_LABELS[label];
+    const label = f.properties?.label;
+    return f.properties?.issue === latestIssue && label && label !== "TSTM" && RISK_LABELS[label];
   });
   if (!relevant.length) {
     // Quiet day at the new issuance — record the timestamp so we don't
