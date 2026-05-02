@@ -36,7 +36,8 @@ const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
 // Marker embedded in the bot message so we can recover the originating
 // ISSUE timestamp from the persisted row on later page loads. Hidden in
 // a HTML comment so it doesn't visually clutter the message.
-const ISSUE_MARKER_RE = /<!--issue:(\d{8}_\d{4})-->/;
+// SPC ISSUE format is "YYYYMMDDHHmm" (12 digits, no separator).
+const ISSUE_MARKER_RE = /<!--issue:(\d{12})-->/;
 
 const RISK_LABELS: Record<string, string> = {
   TSTM: "General Thunderstorm",
