@@ -159,10 +159,14 @@ export default function CitizenReports() {
   }, []);
 
   // ── Client-side expiry sweep (defense-in-depth vs server pg_cron) ─────
+  // System (bot) messages are exempt — they persist until replaced by a
+  // newer issuance.
   useEffect(() => {
     const interval = setInterval(() => {
       const cutoff = Date.now() - TWO_HOURS_MS;
-      setMessages((prev) => prev.filter((m) => new Date(m.created_at).getTime() > cutoff));
+      setMessages((prev) =>
+        prev.filter((m) => m.badge === "System" || new Date(m.created_at).getTime() > cutoff),
+      );
     }, 60_000);
     return () => clearInterval(interval);
   }, []);
