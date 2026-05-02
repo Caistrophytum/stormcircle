@@ -75,11 +75,15 @@ interface SPCFeature {
   };
 }
 
-interface RiskArea {
+interface RiskCounty {
+  county: string;
+  state: string;
+}
+
+interface RiskGroup {
   label: string;
   riskLabel: string;
-  city: string;
-  state: string;
+  counties: RiskCounty[]; // already deduped + sorted
 }
 
 function formatIssueTime(issue: string): string {
@@ -98,27 +102,113 @@ function formatIssueTime(issue: string): string {
   return `${formatted}. ${hour}z`;
 }
 
-function flattenCoords(geom: SPCFeature["geometry"]): number[][] {
-  const out: number[][] = [];
-  if (geom.type === "Polygon") {
-    for (const ring of geom.coordinates as number[][][]) for (const pt of ring) out.push(pt);
-  } else {
-    for (const poly of geom.coordinates as number[][][][])
-      for (const ring of poly) for (const pt of ring) out.push(pt);
+/** Standard ray-casting point-in-polygon for [lon, lat] rings. */
+function pointInRing(pt: [number, number], ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    const intersect =
+      yi > pt[1] !== yj > pt[1] &&
+      pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi + 1e-12) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function pointInGeometry(pt: [number, number], geom: SPCFeature["geometry"]): boolean {
+  const polys =
+    geom.type === "Polygon"
+      ? [geom.coordinates as number[][][]]
+      : (geom.coordinates as number[][][][]);
+  for (const poly of polys) {
+    if (!poly.length) continue;
+    if (!pointInRing(pt, poly[0])) continue;
+    // Subtract holes
+    let inHole = false;
+    for (let h = 1; h < poly.length; h++) {
+      if (pointInRing(pt, poly[h])) {
+        inHole = true;
+        break;
+      }
+    }
+    if (!inHole) return true;
+  }
+  return false;
+}
+
+function bbox(geom: SPCFeature["geometry"]): [number, number, number, number] {
+  let minX = Infinity,
+    minY = Infinity,
+    maxX = -Infinity,
+    maxY = -Infinity;
+  const visit = (rings: number[][][]) => {
+    for (const ring of rings)
+      for (const [x, y] of ring) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+  };
+  if (geom.type === "Polygon") visit(geom.coordinates as number[][][]);
+  else for (const poly of geom.coordinates as number[][][][]) visit(poly);
+  return [minX, minY, maxX, maxY];
+}
+
+/** Sample up to MAX_SAMPLES_PER_POLYGON points inside the polygon via a
+ *  grid over its bounding box, filtered by point-in-polygon. */
+function samplePointsInside(geom: SPCFeature["geometry"]): [number, number][] {
+  const [minX, minY, maxX, maxY] = bbox(geom);
+  // Choose grid density so we get up to ~MAX_SAMPLES candidate cells.
+  const grid = Math.max(3, Math.ceil(Math.sqrt(MAX_SAMPLES_PER_POLYGON * 2)));
+  const out: [number, number][] = [];
+  for (let i = 0; i < grid; i++) {
+    for (let j = 0; j < grid; j++) {
+      const x = minX + ((maxX - minX) * (i + 0.5)) / grid;
+      const y = minY + ((maxY - minY) * (j + 0.5)) / grid;
+      if (pointInGeometry([x, y], geom)) out.push([x, y]);
+    }
+  }
+  // If too many, evenly downsample.
+  if (out.length > MAX_SAMPLES_PER_POLYGON) {
+    const step = out.length / MAX_SAMPLES_PER_POLYGON;
+    const sampled: [number, number][] = [];
+    for (let k = 0; k < MAX_SAMPLES_PER_POLYGON; k++) {
+      sampled.push(out[Math.floor(k * step)]);
+    }
+    return sampled;
   }
   return out;
 }
 
-async function reverseGeocode(lat: number, lon: number): Promise<{ city: string; state: string } | null> {
+/** Reverse-geocode to a county + state using the NWS /points endpoint.
+ *  Returns null if NWS doesn't cover the point (outside US). */
+async function reverseGeocodeCounty(
+  lat: number,
+  lon: number,
+): Promise<{ county: string; state: string } | null> {
   try {
-    const res = await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`, {
-      headers: { "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)" },
-    });
+    const res = await fetch(
+      `https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`,
+      { headers: { "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)" } },
+    );
     if (!res.ok) return null;
     const data = await res.json();
-    const rel = data?.properties?.relativeLocation?.properties;
-    if (!rel?.city || !rel?.state) return null;
-    return { city: rel.city, state: rel.state };
+    const props = data?.properties;
+    const state: string | undefined = props?.relativeLocation?.properties?.state;
+    // `county` is a URL like ".../zones/county/FLC123" — fetch the zone for
+    // its human-readable name.
+    const countyUrl: string | undefined = props?.county;
+    if (!state || !countyUrl) return null;
+    const zoneRes = await fetch(countyUrl, {
+      headers: { "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)" },
+    });
+    if (!zoneRes.ok) return null;
+    const zone = await zoneRes.json();
+    const name: string | undefined = zone?.properties?.name;
+    if (!name) return null;
+    return { county: name, state };
   } catch {
     return null;
   }
