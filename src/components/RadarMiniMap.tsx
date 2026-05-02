@@ -237,20 +237,24 @@ const LeafletRadar = ({
         opacity={0.6}
         attribution=""
       />
-      <RadarStationMarkers
-        selectedStation={selectedStation}
-        onStationSelect={onStationMarkerSelect}
-        onProductSelect={setSelectedProduct}
-      />
+      {interactive && (
+        <RadarStationMarkers
+          selectedStation={selectedStation}
+          onStationSelect={onStationMarkerSelect}
+          onProductSelect={setSelectedProduct}
+        />
+      )}
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
-      <WarningPolygons ref={warningsRef} polygons={polygons} />
-      <TileLayer
-        url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
-        subdomains="abcd"
-        opacity={0.9}
-        attribution=""
-        zIndex={1000}
-      />
+      {interactive && <WarningPolygons ref={warningsRef} polygons={polygons} />}
+      {interactive && (
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          opacity={0.9}
+          attribution=""
+          zIndex={1000}
+        />
+      )}
       <Recenter station={station} />
       {onMap && <MapRefCapture onMap={onMap} />}
     </MapContainer>
