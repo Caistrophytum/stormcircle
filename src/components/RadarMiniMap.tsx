@@ -63,7 +63,7 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   // Use the shared 60s refresh clock so radar tile cache-busts fire in
   // lockstep with warnings, current conditions, and other 1-min sources.
   const cacheBust = useRefreshTick();
-  const layerRef = useState<{ current: L.TileLayer | null }>(() => ({ current: null }))[0];
+  const layerRef = useRef<L.TileLayer | null>(null);
 
   // Create the layer once per tileUrl change.
   useEffect(() => {
