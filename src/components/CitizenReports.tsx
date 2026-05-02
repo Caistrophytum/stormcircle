@@ -28,7 +28,7 @@
  *   approved+trending → approved → unapproved+trending → unapproved
  *   (within ties: count desc, then most-recent first).
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { groupMessages, messageSignature, type RawMessage, type StackedReport } from "@/lib/reportGrouping";
@@ -94,21 +94,36 @@ export default function CitizenReports() {
     });
   }
 
-  // ── Initial load ──────────────────────────────────────────────────────
-  // Cap at MAX_INITIAL_MESSAGES to bound memory & render cost during severe
-  // weather bursts. Fetch newest first so we keep the most-recent slice if
-  // we hit the cap, then reverse to oldest-first for grouping.
-  useEffect(() => {
+  const reloadMessages = useCallback(async () => {
     const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
-    supabase
-      .from("messages")
-      .select("*")
-      .gte("created_at", cutoff)
-      .order("created_at", { ascending: false })
-      .limit(MAX_INITIAL_MESSAGES)
-      .then(({ data }) => {
-        if (data) setMessages((data as Message[]).slice().reverse());
-      });
+
+    const [{ data: recent }, { data: system }] = await Promise.all([
+      supabase
+        .from("messages")
+        .select("*")
+        .neq("badge", "System")
+        .gte("created_at", cutoff)
+        .order("created_at", { ascending: false })
+        .limit(MAX_INITIAL_MESSAGES),
+      supabase
+        .from("messages")
+        .select("*")
+        .eq("badge", "System")
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+
+    const merged = [...(recent as Message[] | null | undefined ?? []), ...(system as Message[] | null | undefined ?? [])];
+    const deduped = Array.from(new Map(merged.map((message) => [message.id, message])).values());
+    deduped.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    setMessages(deduped);
+  }, []);
+
+  // ── Initial load ──────────────────────────────────────────────────────
+  // Regular user reports are limited to the last 2 hours, while system
+  // outlooks stay visible until replaced by a newer issuance.
+  useEffect(() => {
+    void reloadMessages();
 
     supabase
       .from("report_approvals")
@@ -116,7 +131,7 @@ export default function CitizenReports() {
       .then(({ data }) => {
         if (data) setApprovedSigs(new Set(data.map((r) => r.signature)));
       });
-  }, []);
+  }, [reloadMessages]);
 
   // ── Realtime: messages + approvals ────────────────────────────────────
   useEffect(() => {
@@ -213,14 +228,7 @@ export default function CitizenReports() {
     if (error) {
       toast.error("Failed to remove report");
       // Re-fetch on failure so UI doesn't drift from the DB.
-      const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
-      const { data } = await supabase
-        .from("messages")
-        .select("*")
-        .gte("created_at", cutoff)
-        .order("created_at", { ascending: false })
-        .limit(MAX_INITIAL_MESSAGES);
-      if (data) setMessages((data as Message[]).slice().reverse());
+      await reloadMessages();
     } else {
       toast.success(ids.length === 1 ? "Report removed" : `${ids.length} reports removed`);
     }
