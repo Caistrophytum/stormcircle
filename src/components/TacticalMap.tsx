@@ -167,19 +167,21 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               exit={{ scale: 0.3, opacity: 0 }}
               transition={{ type: "spring", damping: 20, stiffness: 200 }}
             >
-              <RadarMiniMap
-                expanded
-                onCollapse={() => setRadarExpanded(false)}
-                selectedCity={radar.selectedCity}
-                setSelectedCity={radar.setSelectedCity}
-                selectedStation={radar.selectedStation}
-                setSelectedStation={radar.setSelectedStation}
-                onStationMarkerSelect={radar.selectStationByMarker}
-                stationDistanceKm={radar.stationDistanceKm}
-                selectedProduct={radar.selectedProduct}
-                setSelectedProduct={radar.setSelectedProduct}
-                tileUrl={radar.tileUrl}
-              />
+              <Suspense fallback={<div className="glass-panel rounded" style={{ width: "min(65vw, 620px)", height: "min(65vw, 620px)" }} />}>
+                <RadarMiniMap
+                  expanded
+                  onCollapse={() => setRadarExpanded(false)}
+                  selectedCity={radar.selectedCity}
+                  setSelectedCity={radar.setSelectedCity}
+                  selectedStation={radar.selectedStation}
+                  setSelectedStation={radar.setSelectedStation}
+                  onStationMarkerSelect={radar.selectStationByMarker}
+                  stationDistanceKm={radar.stationDistanceKm}
+                  selectedProduct={radar.selectedProduct}
+                  setSelectedProduct={radar.setSelectedProduct}
+                  tileUrl={radar.tileUrl}
+                />
+              </Suspense>
             </motion.div>
           ) : (
             <motion.div
@@ -188,19 +190,21 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
             >
-              <RadarMiniMap
-                expanded={false}
-                onCollapse={() => setRadarExpanded(true)}
-                selectedCity={radar.selectedCity}
-                setSelectedCity={radar.setSelectedCity}
-                selectedStation={radar.selectedStation}
-                setSelectedStation={radar.setSelectedStation}
-                onStationMarkerSelect={radar.selectStationByMarker}
-                stationDistanceKm={radar.stationDistanceKm}
-                selectedProduct={radar.selectedProduct}
-                setSelectedProduct={radar.setSelectedProduct}
-                tileUrl={radar.tileUrl}
-              />
+              <Suspense fallback={<div className="rounded-full glass-panel" style={{ width: "clamp(160px, 18vw, 240px)", height: "clamp(160px, 18vw, 240px)" }} />}>
+                <RadarMiniMap
+                  expanded={false}
+                  onCollapse={() => setRadarExpanded(true)}
+                  selectedCity={radar.selectedCity}
+                  setSelectedCity={radar.setSelectedCity}
+                  selectedStation={radar.selectedStation}
+                  setSelectedStation={radar.setSelectedStation}
+                  onStationMarkerSelect={radar.selectStationByMarker}
+                  stationDistanceKm={radar.stationDistanceKm}
+                  selectedProduct={radar.selectedProduct}
+                  setSelectedProduct={radar.setSelectedProduct}
+                  tileUrl={radar.tileUrl}
+                />
+              </Suspense>
             </motion.div>
           )}
         </AnimatePresence>
