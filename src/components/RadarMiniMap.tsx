@@ -232,11 +232,13 @@ const LeafletRadar = ({
         subdomains="abcd"
         maxZoom={20}
       />
-      <TileLayer
-        url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
-        opacity={0.6}
-        attribution=""
-      />
+      {interactive && (
+        <TileLayer
+          url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
+          opacity={0.6}
+          attribution=""
+        />
+      )}
       {interactive && (
         <RadarStationMarkers
           selectedStation={selectedStation}
