@@ -159,17 +159,8 @@ const RadarStationMarkers = ({
                 onProductSelect("N0B");
               },
             }}
-          >
-            <Tooltip
-              permanent
-              direction="top"
-              offset={[0, -6]}
-              pane={RADAR_MARKERS_PANE}
-              className="radar-station-label"
-            >
-              {station.id}
-            </Tooltip>
-          </CircleMarker>
+          />
+
         );
       })}
     </>
