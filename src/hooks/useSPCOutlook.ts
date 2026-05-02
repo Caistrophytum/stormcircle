@@ -210,7 +210,7 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
     await delay(REVERSE_GEOCODE_DELAY_MS);
     if (!place) continue;
 
-    const label = feat.properties.LABEL!;
+    const label = feat.properties.label!;
     areas.push({ label, riskLabel: RISK_LABELS[label], city: place.city, state: place.state });
   }
   if (!areas.length) {
