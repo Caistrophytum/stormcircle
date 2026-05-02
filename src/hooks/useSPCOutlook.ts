@@ -34,10 +34,15 @@ const REVERSE_GEOCODE_DELAY_MS = 500;
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 // Marker embedded in the bot message so we can recover the originating
-// ISSUE timestamp from the persisted row on later page loads. Hidden in
-// a HTML comment so it doesn't visually clutter the message.
+// ISSUE timestamp + structured payload from the persisted row on later
+// page loads. Hidden in HTML comments so they don't visually clutter the
+// rendered text.
 // SPC ISSUE format is "YYYYMMDDHHmm" (12 digits, no separator).
 const ISSUE_MARKER_RE = /<!--issue:(\d{12})-->/;
+const DATA_MARKER_RE = /<!--data:([\s\S]*?)-->/;
+// Cap reverse-geocode calls per polygon to keep total API usage bounded
+// even when the SPC issues a large outlook.
+const MAX_SAMPLES_PER_POLYGON = 12;
 
 const RISK_LABELS: Record<string, string> = {
   TSTM: "General Thunderstorm",
