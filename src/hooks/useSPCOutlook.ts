@@ -36,7 +36,8 @@ const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
 // Marker embedded in the bot message so we can recover the originating
 // ISSUE timestamp from the persisted row on later page loads. Hidden in
 // a HTML comment so it doesn't visually clutter the message.
-const ISSUE_MARKER_RE = /<!--issue:(\d{8}_\d{4})-->/;
+// SPC ISSUE format is "YYYYMMDDHHmm" (12 digits, no separator).
+const ISSUE_MARKER_RE = /<!--issue:(\d{12})-->/;
 
 const RISK_LABELS: Record<string, string> = {
   TSTM: "General Thunderstorm",
@@ -62,7 +63,7 @@ const RISK_RANK: Record<string, number> = {
 let started = false;
 
 interface SPCFeature {
-  properties: { LABEL?: string; LABEL2?: string; ISSUE?: string; EXPIRE?: string };
+  properties: { label?: string; label2?: string; issue?: string; expire?: string };
   geometry: {
     type: "Polygon" | "MultiPolygon";
     coordinates: number[][][] | number[][][][];
@@ -77,11 +78,11 @@ interface RiskArea {
 }
 
 function formatIssueTime(issue: string): string {
-  // ISSUE format: "YYYYMMDD_HHmm" → "Month D, YYYY. HHz"
+  // ISSUE format: "YYYYMMDDHHmm" → "Month D, YYYY. HHz"
   const year = issue.slice(0, 4);
   const month = issue.slice(4, 6);
   const day = issue.slice(6, 8);
-  const hour = issue.slice(9, 11);
+  const hour = issue.slice(8, 10);
   const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
   const formatted = date.toLocaleDateString("en-US", {
     month: "long",
@@ -164,8 +165,8 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
   if (!geo?.features?.length) return;
 
   const issueTimes = geo.features
-    .map((f) => f.properties?.ISSUE)
-    .filter((v): v is string => typeof v === "string" && v.length >= 11);
+    .map((f) => f.properties?.issue)
+    .filter((v): v is string => typeof v === "string" && v.length >= 12);
   if (!issueTimes.length) return;
   const latestIssue = issueTimes.sort().reverse()[0];
 
@@ -185,8 +186,8 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
 
   // Filter to the latest issuance and exclude TSTM.
   const relevant = geo.features.filter((f) => {
-    const label = f.properties?.LABEL;
-    return f.properties?.ISSUE === latestIssue && label && label !== "TSTM" && RISK_LABELS[label];
+    const label = f.properties?.label;
+    return f.properties?.issue === latestIssue && label && label !== "TSTM" && RISK_LABELS[label];
   });
   if (!relevant.length) {
     // Quiet day at the new issuance — record the timestamp so we don't
@@ -209,7 +210,7 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
     await delay(REVERSE_GEOCODE_DELAY_MS);
     if (!place) continue;
 
-    const label = feat.properties.LABEL!;
+    const label = feat.properties.label!;
     areas.push({ label, riskLabel: RISK_LABELS[label], city: place.city, state: place.state });
   }
   if (!areas.length) {
