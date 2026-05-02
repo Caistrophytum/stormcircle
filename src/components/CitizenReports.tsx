@@ -67,6 +67,7 @@ export default function CitizenReports() {
   const [sending, setSending] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<PendingAction | null>(null);
+  const spcLoading = useSPCOutlookLoading();
 
   const isModerator = profile?.badge === "Meteorologist";
 
