@@ -68,8 +68,20 @@ export default function CitizenReports() {
 
   const isModerator = profile?.badge === "Meteorologist";
 
-  // ── Derive grouped, ranked stacks from live state ─────────────────────
-  const stacks = useMemo(() => groupMessages(messages, approvedSigs), [messages, approvedSigs]);
+  // ── Split out automated bot messages (badge "System") ────────────────
+  // System messages (e.g. SPC Bot outlook updates) bypass grouping and
+  // render as standalone styled cards pinned above the regular stacks.
+  const { systemMessages, userMessages } = useMemo(() => {
+    const sys: Message[] = [];
+    const usr: Message[] = [];
+    for (const m of messages) (m.badge === "System" ? sys : usr).push(m);
+    // Newest system messages first.
+    sys.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return { systemMessages: sys, userMessages: usr };
+  }, [messages]);
+
+  // ── Derive grouped, ranked stacks from non-system messages ──────────
+  const stacks = useMemo(() => groupMessages(userMessages, approvedSigs), [userMessages, approvedSigs]);
 
   function toggleExpand(id: string) {
     setExpanded((prev) => {
