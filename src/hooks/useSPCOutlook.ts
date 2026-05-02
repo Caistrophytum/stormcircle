@@ -67,6 +67,15 @@ const RISK_RANK: Record<string, number> = {
 // parallel polling loops.
 let started = false;
 
+// Tiny pub/sub for the "currently fetching outlook" flag so any component
+// (regardless of where the polling hook is mounted) can subscribe.
+let loadingState = false;
+const loadingSubs = new Set<(v: boolean) => void>();
+function setLoadingShared(v: boolean) {
+  loadingState = v;
+  loadingSubs.forEach((fn) => fn(v));
+}
+
 interface SPCFeature {
   properties: { label?: string; label2?: string; issue?: string; expire?: string };
   geometry: {
