@@ -234,16 +234,26 @@ async function getStoredIssue(): Promise<string | null> {
 }
 
 /**
- * Build the message body for a given issuance + risk area set.
- * Includes a hidden HTML-comment marker so future page loads can recover
- * the ISSUE timestamp without a separate metadata column.
+ * Build the message body for a given issuance + risk groups.
+ * Embeds two HTML-comment markers:
+ *   • <!--issue:...-->  ISSUE timestamp recovery
+ *   • <!--data:...-->   structured JSON payload (rendered by the UI as
+ *     expandable per-risk dropdowns of affected counties).
+ *
+ * The plain-text fallback (visible if a client doesn't parse the data
+ * marker) summarizes the same info as a one-line-per-risk list.
  */
-function buildMessage(issue: string, areas: RiskArea[]): string {
+function buildMessage(issue: string, groups: RiskGroup[]): string {
+  const summary = groups.map(
+    (g) => `${g.riskLabel}: ${g.counties.length} ${g.counties.length === 1 ? "county" : "counties"}`,
+  );
+  const payload = JSON.stringify({ issue, groups });
   const lines = [
     `⚡ SPC Day 1 Outlook Update — ${formatIssueTime(issue)}`,
     ``,
-    ...areas.map((a) => `${a.city}, ${a.state} under a ${a.riskLabel}.`),
+    ...summary,
     `<!--issue:${issue}-->`,
+    `<!--data:${payload}-->`,
   ];
   return lines.join("\n");
 }
@@ -291,30 +301,40 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
     return;
   }
 
-  // Reverse-geocode each polygon centroid sequentially with a 500ms gap.
-  const areas: RiskArea[] = [];
+  // For each relevant risk polygon, sample multiple interior points and
+  // resolve them to (county, state) pairs via the NWS /points endpoint.
+  // Dedupe per polygon so each county appears at most once per risk tier.
+  const groups: RiskGroup[] = [];
   for (const feat of relevant) {
-    const coords = flattenCoords(feat.geometry);
-    if (!coords.length) continue;
-    const lats = coords.map((c) => c[1]);
-    const lons = coords.map((c) => c[0]);
-    const centerLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-    const centerLon = (Math.min(...lons) + Math.max(...lons)) / 2;
+    const samples = samplePointsInside(feat.geometry);
+    if (!samples.length) continue;
 
-    const place = await reverseGeocode(centerLat, centerLon);
-    await delay(REVERSE_GEOCODE_DELAY_MS);
-    if (!place) continue;
+    const seen = new Set<string>();
+    const counties: RiskCounty[] = [];
+    for (const [lon, lat] of samples) {
+      const place = await reverseGeocodeCounty(lat, lon);
+      await delay(REVERSE_GEOCODE_DELAY_MS);
+      if (!place) continue;
+      const key = `${place.county}|${place.state}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      counties.push(place);
+    }
+    if (!counties.length) continue;
+    counties.sort((a, b) =>
+      a.state === b.state ? a.county.localeCompare(b.county) : a.state.localeCompare(b.state),
+    );
 
     const label = feat.properties.label!;
-    areas.push({ label, riskLabel: RISK_LABELS[label], city: place.city, state: place.state });
+    groups.push({ label, riskLabel: RISK_LABELS[label], counties });
   }
-  if (!areas.length) {
+  if (!groups.length) {
     lastIssueRef.current = latestIssue;
     return;
   }
 
-  areas.sort((a, b) => (RISK_RANK[b.label] ?? 0) - (RISK_RANK[a.label] ?? 0));
-  const content = buildMessage(latestIssue, areas);
+  groups.sort((a, b) => (RISK_RANK[b.label] ?? 0) - (RISK_RANK[a.label] ?? 0));
+  const content = buildMessage(latestIssue, groups);
 
   // Replace any existing bot messages with the new one. Delete-then-insert
   // (rather than UPDATE) because the messages table is append-only by
@@ -322,7 +342,6 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
   const { error: delErr } = await supabase.from("messages").delete().eq("user_id", BOT_USER_ID);
   if (delErr) {
     console.warn("[useSPCOutlook] failed to clear previous bot message:", delErr);
-    // Don't bail — try the insert anyway; worst case there are two rows.
   }
 
   const { error: insErr } = await supabase.from("messages").insert({
@@ -332,7 +351,6 @@ async function fetchAndProcessOutlook(lastIssueRef: { current: string | null }):
     content,
   });
   if (insErr) {
-    // Roll back so the next poll retries.
     lastIssueRef.current = null;
     console.warn("[useSPCOutlook] failed to post bot message:", insErr);
     return;
