@@ -292,28 +292,7 @@ export default function CitizenReports() {
       <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
         {/* Pinned automated bot messages (e.g. SPC outlook updates). */}
         {systemMessages.map((sys) => (
-          <div
-            key={sys.id}
-            className="rounded border px-3 py-2 font-mono text-[11px] whitespace-pre-line"
-            style={{
-              background: "rgba(255, 165, 0, 0.08)",
-              borderColor: "rgba(255, 165, 0, 0.3)",
-              color: "#ffa500",
-            }}
-          >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-[9px] uppercase tracking-wide opacity-80">
-                {sys.username} · System
-              </span>
-              <span className="text-[9px] opacity-70">
-                {new Date(sys.created_at).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-            {sys.content.replace(/\s*<!--issue:\d{8}_\d{4}-->\s*$/, "")}
-          </div>
+          <SystemMessageCard key={sys.id} message={sys} expandedKey={expanded} toggle={toggleExpand} />
         ))}
 
         {stacks.length === 0 && systemMessages.length === 0 ? (
