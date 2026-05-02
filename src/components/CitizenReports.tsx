@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
+import { useSPCOutlookLoading } from "@/hooks/useSPCOutlook";
 
 type Message = RawMessage;
 
