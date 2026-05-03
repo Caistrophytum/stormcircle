@@ -80,7 +80,20 @@ export default function CitizenReports() {
     for (const m of messages) (m.badge === "System" ? sys : usr).push(m);
     // Newest system messages first.
     sys.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    return { systemMessages: sys, userMessages: usr };
+    // Defensive dedupe: if a race in the SPC bot ever produces multiple rows
+    // for the same outlook, only render the newest one per (user_id, issue
+    // timestamp). Falls back to user_id when the marker is absent so legacy
+    // bots collapse to a single card too.
+    const seen = new Set<string>();
+    const dedupedSys: Message[] = [];
+    for (const m of sys) {
+      const issueMatch = m.content.match(/<!--issue:(\d{12})-->/);
+      const key = `${m.user_id}::${issueMatch ? issueMatch[1] : "noissue"}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      dedupedSys.push(m);
+    }
+    return { systemMessages: dedupedSys, userMessages: usr };
   }, [messages]);
 
   // ── Derive grouped, ranked stacks from non-system messages ──────────

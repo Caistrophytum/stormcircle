@@ -358,17 +358,35 @@ async function fetchAndProcessOutlook(
       console.warn("[useSPCOutlook] failed to clear previous bot message:", delErr);
     }
 
-    const { error: insErr } = await supabase.from("messages").insert({
-      user_id: BOT_USER_ID,
-      username: "SPC Bot",
-      badge: "System",
-      content,
-    });
-    if (insErr) {
+    const { data: inserted, error: insErr } = await supabase
+      .from("messages")
+      .insert({
+        user_id: BOT_USER_ID,
+        username: "SPC Bot",
+        badge: "System",
+        content,
+      })
+      .select("id, created_at")
+      .single();
+    if (insErr || !inserted) {
       lastIssueRef.current = null;
       console.warn("[useSPCOutlook] failed to post bot message:", insErr);
       return;
     }
+
+    // Race-condition cleanup: if another tab/session inserted a duplicate
+    // bot row in parallel, delete every bot row that isn't the one we just
+    // inserted. Whichever client wins this last write produces the single
+    // surviving row, and Realtime DELETE events propagate to all clients.
+    const { error: cleanupErr } = await supabase
+      .from("messages")
+      .delete()
+      .eq("user_id", BOT_USER_ID)
+      .neq("id", inserted.id);
+    if (cleanupErr) {
+      console.warn("[useSPCOutlook] failed to cleanup duplicate bot rows:", cleanupErr);
+    }
+
     lastIssueRef.current = latestIssue;
   } finally {
     setLoading(false);
