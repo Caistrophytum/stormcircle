@@ -123,8 +123,11 @@
 }
 .leaflet-tooltip.warning-tooltip {
   padding: 8px 10px !important;
-  max-width: 240px;
+  max-width: 360px;
+  min-width: 200px;
   white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 .leaflet-tooltip.warning-tooltip::before { display: none; }
 .leaflet-popup.warning-popup .leaflet-popup-content {
