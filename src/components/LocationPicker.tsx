@@ -23,6 +23,9 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
   const [pending, setPending] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const { results, loading } = useCitySearch(query);
+  const rowClass = pending
+    ? "grid grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)_auto] items-center gap-2"
+    : "grid grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)] items-center gap-2";
 
   const formatCity = (name: string, admin1?: string) =>
     admin1 ? `${name}, ${admin1}` : name;
@@ -67,11 +70,11 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className={rowClass}>
         {/* Current city readout */}
-        <div className="flex items-center gap-1.5 text-sm font-mono text-card-foreground shrink-0">
+        <div className="flex min-w-0 items-center gap-1.5 text-sm font-mono text-card-foreground">
           <MapPin className="size-3.5 text-primary" />
-          <span>{currentLocation ?? "No home city set"}</span>
+          <span className="truncate">{currentLocation ?? "No home city set"}</span>
           {currentLocation && (
             <button
               type="button"
@@ -86,7 +89,7 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
         </div>
 
         {/* Search bar */}
-        <div className="relative flex-1 min-w-[180px]">
+        <div className="relative min-w-0">
           <input
             type="text"
             value={query}
@@ -126,7 +129,7 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
 
         {/* Save / cancel inline */}
         {pending && (
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 justify-self-end shrink-0">
             <button
               type="button"
               onClick={() => handleSave(pending)}
