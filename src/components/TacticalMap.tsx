@@ -130,6 +130,27 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     return "sunny";
   }, [threatLevel]);
 
+  // Risk label derived from current WRS threat level.
+  const riskLabel = useMemo(() => {
+    if (threatLevel > 85) return "EXTREME";
+    if (threatLevel >= 61) return "HIGH";
+    if (threatLevel >= 31) return "MODERATE";
+    return "LOW";
+  }, [threatLevel]);
+
+  // Most severe local Warning/Watch matching the user's saved home city.
+  const localAlert = useMemo(() => {
+    if (!profile?.location) return null;
+    const parts = profile.location.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (parts.length === 0) return null;
+    const candidates = alerts.mostDangerous.filter((a) => {
+      if (a.kind !== "Warning" && a.kind !== "Watch" && a.kind !== "Emergency") return false;
+      const area = a.areaDesc.toLowerCase();
+      return parts.some((p) => area.includes(p));
+    });
+    return candidates[0] ?? null;
+  }, [alerts.mostDangerous, profile?.location]);
+
   return (
     <motion.section ref={ref} layout className="relative overflow-hidden flex-1">
       {/* Weather-responsive background */}
