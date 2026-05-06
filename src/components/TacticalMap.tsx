@@ -5,6 +5,8 @@ import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
+import { useAlerts } from "@/hooks/useAlerts";
+import { useAuth } from "@/hooks/useAuth";
 import {
   useUnitSystem,
   displayTemp,
@@ -38,6 +40,8 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
   );
   const unitSystem = useUnitSystem();
+  const alerts = useAlerts();
+  const { profile } = useAuth();
 
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
@@ -126,6 +130,27 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     return "sunny";
   }, [threatLevel]);
 
+  // Risk label derived from current WRS threat level.
+  const riskLabel = useMemo(() => {
+    if (threatLevel > 85) return "EXTREME";
+    if (threatLevel >= 61) return "HIGH";
+    if (threatLevel >= 31) return "MODERATE";
+    return "LOW";
+  }, [threatLevel]);
+
+  // Most severe local Warning/Watch matching the user's saved home city.
+  const localAlert = useMemo(() => {
+    if (!profile?.location) return null;
+    const parts = profile.location.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (parts.length === 0) return null;
+    const candidates = alerts.mostDangerous.filter((a) => {
+      if (a.kind !== "Warning" && a.kind !== "Watch" && a.kind !== "Emergency") return false;
+      const area = a.areaDesc.toLowerCase();
+      return parts.some((p) => area.includes(p));
+    });
+    return candidates[0] ?? null;
+  }, [alerts.mostDangerous, profile?.location]);
+
   return (
     <motion.section ref={ref} layout className="relative overflow-hidden flex-1">
       {/* Weather-responsive background */}
@@ -209,6 +234,23 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Home-city risk strip — spans CAPE → LCL */}
+      {profile?.location && (
+        <div
+          className="absolute bottom-[8.75rem] right-4 z-10 transition-all duration-300 ease-in-out"
+          style={{
+            left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+          }}
+        >
+          <div className="bg-neon-red/90 px-3 py-1.5 border-l-2 border-neon-red flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold text-background uppercase tracking-wide truncate">
+              Now in your home city {profile.location}: {riskLabel} risk
+              {localAlert ? ` · ${localAlert.event}` : ""}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Data nodes – full width to right edge */}
       <div
