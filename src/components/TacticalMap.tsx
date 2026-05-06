@@ -40,6 +40,8 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
   );
   const unitSystem = useUnitSystem();
+  const alerts = useAlerts();
+  const { profile } = useAuth();
 
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
