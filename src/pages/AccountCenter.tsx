@@ -78,7 +78,7 @@ const subjectSchema = z.enum(["General Feedback", "Bug Report", "Feature Request
 
 const AccountCenter = () => {
   const navigate = useNavigate();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, refreshProfile } = useAuth();
 
   // Redirect to /auth when not signed in
   useEffect(() => {
