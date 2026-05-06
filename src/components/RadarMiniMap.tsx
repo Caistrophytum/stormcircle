@@ -137,11 +137,18 @@ const RadarStationMarkers = ({
   onStationSelect,
   onProductSelect,
 }: RadarStationMarkersProps) => {
+  const lastReceived = useRadarStationStatus();
+  const now = Date.now();
+  const STALE_MS = 20 * 60 * 1000;
   return (
     <>
       <EnsureRadarMarkersPane />
       {RADAR_STATIONS.map((station) => {
         const isSelected = selectedStation?.id === station.id;
+        const ts = lastReceived[station.id];
+        const isStale = ts !== undefined && now - ts > STALE_MS;
+        const baseColor = isSelected ? "#00ffff" : isStale ? "#ff3838" : "#4af";
+        const fillColor = isSelected ? "#00ffff" : isStale ? "#aa1111" : "#1a6aaa";
         return (
           <CircleMarker
             key={station.id}
@@ -149,8 +156,8 @@ const RadarStationMarkers = ({
             radius={isSelected ? 14 : 10}
             pane={RADAR_MARKERS_PANE}
             pathOptions={{
-              color: isSelected ? "#00ffff" : "#4af",
-              fillColor: isSelected ? "#00ffff" : "#1a6aaa",
+              color: baseColor,
+              fillColor: fillColor,
               fillOpacity: isSelected ? 0.9 : 0.6,
               weight: isSelected ? 2 : 1,
             }}
