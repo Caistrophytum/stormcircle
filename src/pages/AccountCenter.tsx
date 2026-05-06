@@ -31,6 +31,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import LocationPicker from "@/components/LocationPicker";
 import { sendEmail, TEMPLATE_IDS, isEmailJsConfigured } from "@/lib/emailjs";
 import { changelog } from "@/data/changelog";
 import {
@@ -77,7 +78,7 @@ const subjectSchema = z.enum(["General Feedback", "Bug Report", "Feature Request
 
 const AccountCenter = () => {
   const navigate = useNavigate();
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, refreshProfile } = useAuth();
 
   // Redirect to /auth when not signed in
   useEffect(() => {
@@ -322,7 +323,16 @@ const AccountCenter = () => {
                 <div className="mt-1">
                   <BadgeChip badge={profile.badge} />
                 </div>
-              </div>
+            </div>
+
+            <div className="pt-2 border-t border-border space-y-2">
+              <div className={labelClass}>Home City</div>
+              <LocationPicker
+                userId={user.id}
+                currentLocation={profile.location}
+                onSaved={refreshProfile}
+              />
+            </div>
             </div>
 
             <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
