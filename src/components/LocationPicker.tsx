@@ -3,7 +3,7 @@
  * Account Center to let a user set/change their saved home city. Uses
  * Open-Meteo geocoding via useCitySearch and persists to profiles.location.
  */
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Loader2, MapPin, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +22,7 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
   const [query, setQuery] = useState("");
   const [pending, setPending] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const touchStartY = useRef<number | null>(null);
   const { results, loading } = useCitySearch(query);
   const rowClass = pending
     ? "grid grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)_auto] items-center gap-2"
@@ -108,17 +109,35 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
 
           {query.trim().length >= 2 && results.length > 0 && !pending && (
             <ul
-              className="absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto overscroll-contain bg-cockpit border border-border rounded-sm shadow-lg"
+              className="absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto overscroll-y-contain bg-cockpit border border-border rounded-sm shadow-lg [scrollbar-gutter:stable] [touch-action:pan-y]"
               style={{ WebkitOverflowScrolling: "touch" }}
               onWheel={(e) => {
                 const el = e.currentTarget;
-                const atTop = el.scrollTop === 0;
-                const atBottom =
-                  el.scrollHeight - el.scrollTop - el.clientHeight <= 1;
-                // Prevent parent page from scrolling when list can scroll
-                if ((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atBottom)) {
+                if (el.scrollHeight > el.clientHeight) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  el.scrollTop += e.deltaY;
+                }
+              }}
+              onTouchStart={(e) => {
+                touchStartY.current = e.touches[0]?.clientY ?? null;
+              }}
+              onTouchMove={(e) => {
+                const el = e.currentTarget;
+                const currentY = e.touches[0]?.clientY;
+
+                if (touchStartY.current === null || currentY === undefined) return;
+
+                if (el.scrollHeight > el.clientHeight) {
+                  const deltaY = touchStartY.current - currentY;
+                  el.scrollTop += deltaY;
+                  touchStartY.current = currentY;
+                  e.preventDefault();
                   e.stopPropagation();
                 }
+              }}
+              onTouchEnd={() => {
+                touchStartY.current = null;
               }}
             >
               {results.map((r) => {
