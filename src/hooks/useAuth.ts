@@ -103,5 +103,20 @@ export function useAuth() {
     setProfile(null);
   };
 
-  return { user, profile, loading, signOut };
+  // Re-fetch the current user's profile (e.g. after they update their location).
+  const refreshProfile = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (error) {
+      console.error("Failed to refresh profile:", error);
+      return;
+    }
+    setProfile(data as Profile | null);
+  };
+
+  return { user, profile, loading, signOut, refreshProfile };
 }
