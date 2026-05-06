@@ -306,7 +306,7 @@ const AccountCenter = () => {
         </header>
 
         {/* SECTION 1 — Profile */}
-        <section className="glass-panel rounded-sm overflow-hidden">
+        <section className="glass-panel relative z-20 rounded-sm overflow-visible">
           <SectionHeader icon={UserIcon} label="Operator Profile" hint="STRATO.OPS" />
           <div className="p-5 space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
