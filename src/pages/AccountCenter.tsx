@@ -325,7 +325,7 @@ const AccountCenter = () => {
                 </div>
             </div>
 
-            <div className="pt-2 border-t border-border space-y-2">
+            <div className="pt-2 border-t border-border space-y-2 md:col-span-3">
               <div className={labelClass}>Home City</div>
               <LocationPicker
                 userId={user.id}
