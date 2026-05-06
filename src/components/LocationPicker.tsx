@@ -107,7 +107,20 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
           )}
 
           {query.trim().length >= 2 && results.length > 0 && !pending && (
-            <ul className="absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-cockpit border border-border rounded-sm shadow-lg">
+            <ul
+              className="absolute z-20 left-0 right-0 mt-1 max-h-56 overflow-y-auto overscroll-contain bg-cockpit border border-border rounded-sm shadow-lg"
+              style={{ WebkitOverflowScrolling: "touch" }}
+              onWheel={(e) => {
+                const el = e.currentTarget;
+                const atTop = el.scrollTop === 0;
+                const atBottom =
+                  el.scrollHeight - el.scrollTop - el.clientHeight <= 1;
+                // Prevent parent page from scrolling when list can scroll
+                if ((e.deltaY < 0 && !atTop) || (e.deltaY > 0 && !atBottom)) {
+                  e.stopPropagation();
+                }
+              }}
+            >
               {results.map((r) => {
                 const label = formatCity(r.name, r.admin1);
                 return (
