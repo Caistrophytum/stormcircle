@@ -26,6 +26,7 @@ export interface Profile {
   email: string;
   badge: string;                  // "Citizen" | "Meteorologist"
   meteorologist_applied: boolean; // true once user has submitted application
+  location: string | null;        // user's saved home city, e.g. "Norman, Oklahoma"
   created_at: string | null;
 }
 
