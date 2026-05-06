@@ -153,8 +153,6 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
           Set <span className="text-card-foreground">{pending}</span> as your home city?
         </p>
       )}
-        </div>
-      )}
     </div>
   );
 };
