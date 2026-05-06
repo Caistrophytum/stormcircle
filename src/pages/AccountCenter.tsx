@@ -31,6 +31,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import LocationPicker from "@/components/LocationPicker";
 import { sendEmail, TEMPLATE_IDS, isEmailJsConfigured } from "@/lib/emailjs";
 import { changelog } from "@/data/changelog";
 import {
