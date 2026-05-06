@@ -5,6 +5,8 @@ import EventInfoPanel from "./EventInfoPanel";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
+import { useAlerts } from "@/hooks/useAlerts";
+import { useAuth } from "@/hooks/useAuth";
 import {
   useUnitSystem,
   displayTemp,
