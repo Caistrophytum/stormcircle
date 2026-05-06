@@ -134,6 +134,7 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          location: string | null
           meteorologist_applied: boolean
           username: string
         }
@@ -142,6 +143,7 @@ export type Database = {
           created_at?: string | null
           email: string
           id: string
+          location?: string | null
           meteorologist_applied?: boolean
           username: string
         }
@@ -150,6 +152,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          location?: string | null
           meteorologist_applied?: boolean
           username?: string
         }
