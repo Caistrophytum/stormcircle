@@ -10,8 +10,13 @@
  * No application logic lives here on purpose — keep it minimal.
  */
 import { createRoot } from "react-dom/client";
+import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 
 // The "!" tells TypeScript "trust me, #root exists" — index.html guarantees it.
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <HelmetProvider>
+    <App />
+  </HelmetProvider>
+);

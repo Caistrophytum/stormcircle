@@ -18,6 +18,7 @@
  */
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Helmet } from "react-helmet-async";
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import StatusBar from "@/components/StatusBar";
 import TacticalMap from "@/components/TacticalMap";
@@ -75,7 +76,20 @@ const Index = () => {
   const overlayScale = Math.min(1, Math.max(0.6, centerWidth / topOverlayIntrinsic));
 
   return (
-    <CityProvider>
+    <>
+      <Helmet>
+        <title>StormCircle — Weather Social Network for Meteorologists</title>
+        <meta name="description" content="StormCircle connects meteorologists and the public for real-time storm reporting, weather communication, and meteorological information sharing." />
+
+        {/* Open Graph for social sharing */}
+        <meta property="og:title" content="StormCircle — Weather Social Network" />
+        <meta property="og:description" content="Real-time storm reports, meteorologist verified alerts, and community weather communication." />
+        <meta property="og:url" content="https://stormcircle.net" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://stormcircle.net/og-image.png" />
+      </Helmet>
+
+      <CityProvider>
     <div className="flex h-[100dvh] overflow-hidden bg-background">
       <main className="flex-1 flex flex-col min-w-0">
         <StatusBar />
@@ -150,6 +164,7 @@ const Index = () => {
       </main>
     </div>
     </CityProvider>
+    </>
   );
 };
 
