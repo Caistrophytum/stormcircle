@@ -164,6 +164,7 @@ const Index = () => {
       </main>
     </div>
     </CityProvider>
+    </>
   );
 };
 
