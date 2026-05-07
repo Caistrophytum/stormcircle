@@ -237,22 +237,49 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         </AnimatePresence>
       </div>
 
-      {/* Home-city risk strip — spans CAPE → LCL */}
-      {profile?.location && (
-        <div
-          className="absolute bottom-[9.75rem] right-4 z-10 transition-all duration-300 ease-in-out"
-          style={{
-            left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
-          }}
-        >
-          <div className="bg-neon-red/90 px-3 py-1.5 border-l-2 border-neon-red flex items-center gap-2">
-            <span className="text-[10px] font-mono font-bold text-background uppercase tracking-wide truncate">
-              Now in your home city {profile.location}: {riskLabel} risk
-              {localAlert ? ` · ${localAlert.event}` : ""}
-            </span>
+      {/* Home-city SPC risk strip — spans CAPE → LCL */}
+      {user && (() => {
+        const RISK_TEXT: Record<SPCRiskLevel, string> = {
+          NONE: "No Severe Risk",
+          TSTM: "General Thunderstorm",
+          MRGL: "Marginal Risk",
+          SLGT: "Slight Risk",
+          ENH: "Enhanced Risk",
+          MDT: "Moderate Risk",
+          HIGH: "High Risk",
+        };
+        // Pastel green / green / yellow / orange / red / purple
+        const RISK_BG: Record<SPCRiskLevel, string> = {
+          NONE: "hsl(120 45% 70%)",
+          TSTM: "hsl(120 45% 70%)",
+          MRGL: "hsl(120 60% 40%)",
+          SLGT: "hsl(50 95% 55%)",
+          ENH: "hsl(28 95% 55%)",
+          MDT: "hsl(0 80% 50%)",
+          HIGH: "hsl(280 70% 55%)",
+        };
+        const hasLocation = !!profile?.location;
+        const bg = hasLocation ? RISK_BG[homeRisk.risk] : "hsl(0 80% 50%)";
+        return (
+          <div
+            className="absolute bottom-[9.75rem] right-4 z-10 transition-all duration-300 ease-in-out"
+            style={{
+              left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+            }}
+          >
+            <div
+              className="px-3 py-1.5 border-l-2 flex items-center gap-2"
+              style={{ background: bg, borderLeftColor: bg }}
+            >
+              <span className="text-[10px] font-mono font-bold text-background uppercase tracking-wide truncate">
+                {hasLocation
+                  ? `Now in your home city of ${profile!.location}: ${RISK_TEXT[homeRisk.risk]}.`
+                  : "Please choose a hometown from the account center portal"}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Data nodes – full width to right edge */}
       <div
