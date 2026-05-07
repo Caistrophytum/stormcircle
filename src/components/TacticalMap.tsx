@@ -7,6 +7,7 @@ import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useAuth } from "@/hooks/useAuth";
+import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import {
   useUnitSystem,
   displayTemp,
