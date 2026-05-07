@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-07 06z",
+    tag: "NEW",
+    title: "News bar, google indexing",
+    body: "A new news bar in the bottom of the screen, showing your local risk factor based on your entered home town. Also, StormCircle is not indexable!,
+  },
+  {
     date: "2026-05-02 10z",
     tag: "NEW",
     title: "SPC Day 1 risk areas in the chat",
