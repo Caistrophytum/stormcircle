@@ -20,8 +20,8 @@ export const changelog: ChangelogEntry[] = [
   {
     date: "2026-05-07 06z",
     tag: "NEW",
-    title: "News bar, google indexing",
-    body: "A new bar in the bottom of the screen, showing your local risk factor based on your entered home town. Also, StormCircle is now indexable!,
+    title: "News bar",
+    body: "A new bar in the bottom of the screen, showing your local risk factor based on your entered home town.",
   },
   {
     date: "2026-05-02 10z",
