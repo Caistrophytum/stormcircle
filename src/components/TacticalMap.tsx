@@ -238,9 +238,9 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       {/* Home-city risk strip — spans CAPE → LCL */}
       {profile?.location && (
         <div
-          className="absolute bottom-[8.75rem] right-4 z-10 transition-all duration-300 ease-in-out"
+          className="absolute bottom-[9.75rem] right-4 z-10 transition-all duration-300 ease-in-out"
           style={{
-            left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+            left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 2.5rem) * ${overlayScale})`,
           }}
         >
           <div className="bg-neon-red/90 px-3 py-1.5 border-l-2 border-neon-red flex items-center gap-2">
