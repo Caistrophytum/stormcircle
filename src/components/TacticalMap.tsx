@@ -1,4 +1,4 @@
-import { forwardRef, lazy, Suspense, useState, useMemo, useRef, useEffect } from "react";
+import { forwardRef, lazy, Suspense, useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import EventInfoPanel from "./EventInfoPanel";
@@ -8,6 +8,7 @@ import { useSoundingData } from "@/hooks/useSoundingData";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
+import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import {
   useUnitSystem,
   displayTemp,
@@ -29,6 +30,111 @@ const weatherBackgrounds: Record<WeatherCondition, string> = {
   stormy: new URL("../assets/weather-stormy.jpg", import.meta.url).href,
 };
 
+// ─── Home-city bar helpers ──────────────────────────────────────────────
+// Tier ranking for "most dangerous" warning polygon. Higher wins.
+function rankWarning(p: WarningPolygon): number | null {
+  const ev = p.event;
+  const text = `${p.description} ${p.headline}`.toLowerCase();
+  const pds = /particularly dangerous situation|\bpds\b/.test(text);
+  if (ev === "Tornado Warning") {
+    if (text.includes("tornado emergency")) return 8;
+    if (pds) return 7;
+    return 6;
+  }
+  if (ev === "Flash Flood Warning") {
+    if (text.includes("flash flood emergency")) return 5;
+    return 2;
+  }
+  if (ev === "Severe Thunderstorm Warning") {
+    if (pds) return 4;
+    return 3;
+  }
+  if (ev.endsWith("Warning")) return 1;
+  return null;
+}
+
+function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function nearestVertexKm(
+  origin: { lat: number; lon: number },
+  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+): number {
+  const polys: number[][][][] =
+    geom.type === "Polygon"
+      ? [geom.coordinates as number[][][]]
+      : (geom.coordinates as number[][][][]);
+  let best = Infinity;
+  for (const poly of polys) {
+    if (!poly.length) continue;
+    for (const [lon, lat] of poly[0]) {
+      const d = haversineKm(origin, { lat, lon });
+      if (d < best) best = d;
+    }
+  }
+  return best;
+}
+
+// Marquee — auto-scrolls horizontally only when text overflows.
+function MarqueeText({ text, className }: { text: string; className?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const [overflow, setOverflow] = useState(false);
+  const [duration, setDuration] = useState(20);
+
+  useLayoutEffect(() => {
+    const c = containerRef.current;
+    const m = measureRef.current;
+    if (!c || !m) return;
+    const recalc = () => {
+      const overflows = m.scrollWidth > c.clientWidth + 1;
+      setOverflow(overflows);
+      if (overflows) {
+        // ~80px per second
+        setDuration(Math.max(12, (m.scrollWidth + c.clientWidth) / 80));
+      }
+    };
+    recalc();
+    const ro = new ResizeObserver(recalc);
+    ro.observe(c);
+    ro.observe(m);
+    return () => ro.disconnect();
+  }, [text]);
+
+  if (!overflow) {
+    return (
+      <div ref={containerRef} className="flex-1 overflow-hidden">
+        <span ref={measureRef} className={`${className ?? ""} whitespace-nowrap inline-block`}>
+          {text}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div ref={containerRef} className="flex-1 overflow-hidden">
+      <div
+        className="animate-marquee flex w-max"
+        style={{ animationDuration: `${duration}s` }}
+      >
+        <span ref={measureRef} className={`${className ?? ""} whitespace-nowrap inline-block pr-12`}>
+          {text}
+        </span>
+        <span className={`${className ?? ""} whitespace-nowrap inline-block pr-12`} aria-hidden>
+          {text}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   overlayScale: number;
 }
@@ -44,6 +150,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const alerts = useAlerts();
   const { user, profile } = useAuth();
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
+  const warningPolygons = useWarningPolygons();
 
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
@@ -153,6 +260,38 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     return candidates[0] ?? null;
   }, [alerts.mostDangerous, profile?.location]);
 
+  // Nearest most-dangerous warning polygon to the user's home city.
+  const nearestDanger = useMemo(() => {
+    const coords = homeRisk.coords;
+    if (!coords || warningPolygons.polygons.length === 0) return null;
+    let bestRank = -1;
+    let bestDist = Infinity;
+    let bestEvent = "";
+    for (const p of warningPolygons.polygons) {
+      const r = rankWarning(p);
+      if (r === null) continue;
+      if (r < bestRank) continue;
+      const d = nearestVertexKm(coords, p.geometry);
+      if (r > bestRank || d < bestDist) {
+        bestRank = r;
+        bestDist = d;
+        // Use a more descriptive label for emergencies / PDS.
+        const text = `${p.description} ${p.headline}`.toLowerCase();
+        if (p.event === "Tornado Warning" && text.includes("tornado emergency")) {
+          bestEvent = "Tornado Emergency";
+        } else if (p.event === "Flash Flood Warning" && text.includes("flash flood emergency")) {
+          bestEvent = "Flash Flood Emergency";
+        } else if (/particularly dangerous situation|\bpds\b/.test(text)) {
+          bestEvent = `PDS ${p.event}`;
+        } else {
+          bestEvent = p.event;
+        }
+      }
+    }
+    if (bestRank < 0) return null;
+    return { event: bestEvent, distanceKm: bestDist };
+  }, [warningPolygons.polygons, homeRisk.coords]);
+
   return (
     <motion.section ref={ref} layout className="relative overflow-hidden flex-1">
       {/* Weather-responsive background */}
@@ -260,6 +399,22 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         };
         const hasLocation = !!profile?.location;
         const bg = hasLocation ? RISK_BG[homeRisk.risk] : "hsl(0 80% 50%)";
+
+        let text: string;
+        if (!hasLocation) {
+          text = "Please choose a hometown from the account center portal";
+        } else {
+          text = `Now in your home city of ${profile!.location}: ${RISK_TEXT[homeRisk.risk]}.`;
+          if (nearestDanger) {
+            const km = nearestDanger.distanceKm;
+            const useMiles = unitSystem === "imperial";
+            const val = useMiles ? km * 0.621371 : km;
+            const unit = useMiles ? "mi" : "km";
+            const formatted = val < 10 ? val.toFixed(1) : Math.round(val).toLocaleString();
+            text += ` Nearest ${nearestDanger.event}: ${formatted} ${unit} away.`;
+          }
+        }
+
         return (
           <div
             className="absolute bottom-[9.75rem] right-4 z-10 transition-all duration-300 ease-in-out"
@@ -268,14 +423,13 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
             }}
           >
             <div
-              className="px-3 py-1.5 border-l-2 flex items-center gap-2"
+              className="px-3 py-1.5 border-l-2 flex items-center gap-2 overflow-hidden"
               style={{ background: bg, borderLeftColor: bg }}
             >
-              <span className="text-[10px] font-mono font-bold text-background uppercase tracking-wide truncate">
-                {hasLocation
-                  ? `Now in your home city of ${profile!.location}: ${RISK_TEXT[homeRisk.risk]}.`
-                  : "Please choose a hometown from the account center portal"}
-              </span>
+              <MarqueeText
+                text={text}
+                className="text-[10px] font-mono font-bold text-background uppercase tracking-wide"
+              />
             </div>
           </div>
         );

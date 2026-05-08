@@ -1,45 +1,64 @@
-## Why it feels slow
+## Goal
 
-Two distinct bottlenecks were found:
+Extend the red home-city bar so it also shows the distance to the nearest "most dangerous" active warning polygon, and auto-scroll the bar horizontally when text overflows.
 
-1. **Initial page load** is dominated by the weather background images. The four JPGs in `src/assets/` total **~5.4 MB** (`weather-rainy.jpg` alone is 2.3 MB, `weather-overcast.jpg` is 1.9 MB). They are all `import`-ed eagerly in `TacticalMap.tsx`, so Vite bundles all four into the initial chunk — even though only one is shown at a time.
-2. **Radar mini-map "buffering"** happens because the small circular preview mounts a full Leaflet `MapContainer` with:
-   - 3 base/label tile layers from CARTO + a US-states overlay (4 sets of tiles fetched on every render),
-   - **144 `CircleMarker`s with permanent tooltips** (one per NEXRAD station) drawn at zoom 4 — most of which overlap into illegible clusters and are pure DOM/SVG overhead,
-   - a NEXRAD radar tile layer that re-creates itself every time `cacheBust` ticks (every 60 s) instead of swapping the URL on the existing layer.
-   
-   On top of that, the mini-map and the expanded map are two separate `MapContainer` instances, so opening the expanded view re-downloads every tile from scratch.
+## Behavior
 
-## Plan
+When a signed-in user has a home city set, the bar text becomes:
 
-### 1. Shrink and lazy-load the weather backgrounds
-- Re-encode the four JPGs to ~1600 px wide, quality ~70, and add WebP variants. Target: each file under ~150 KB (≈95% smaller than today).
-- Stop eagerly importing all four. Build a small map of URLs (`new URL('../assets/weather-*.webp', import.meta.url)`) and only set the `<img src>` for the currently active condition; preload the next-most-likely one (`sunny`) idly.
-- Add `loading="eager"` + `fetchpriority="high"` to the active background and `decoding="async"` so it doesn't block paint.
+```
+Now in your home city of [city]: [SPC risk]. Nearest [event]: [X] mi away.
+```
 
-### 2. Code-split the radar map
-- Wrap `RadarMiniMap` (and its Leaflet imports) in `React.lazy` + `Suspense` with a lightweight placeholder (the existing circular glass panel + a small spinner). Leaflet + react-leaflet + the leaflet CSS are ~150 KB gzipped and currently sit in the main bundle.
-- Same treatment for `WarningPolygons` (only needed once the map mounts).
+If no qualifying polygon exists anywhere in the active feed, the trailing sentence is omitted (bar still shows the SPC risk part). The "no hometown" and "signed out" states are unchanged.
 
-### 3. Make the mini-map cheap
-- In the **collapsed** (circular) view, render only the basemap + the radar tile + the selected station marker. Skip the 144-marker layer and the labels tile (`dark_only_labels`) — they're invisible at that size anyway.
-- Render the full station marker set + labels layer only when `expanded` is true.
-- Replace the `useEffect` that recreates `L.tileLayer` on every `cacheBust` with a ref that calls `radarLayer.setUrl(busted)` in place. Avoids a full tile redownload every minute.
-- Memoize `RadarStationMarkers` and stop passing inline arrow functions in `eventHandlers` so React-Leaflet can skip re-renders on parent state changes.
+If the rendered text is wider than the bar, it auto-scrolls horizontally as a continuous marquee. If it fits, no animation runs.
 
-### 4. Share one map instance between collapsed and expanded
-- Hoist the `MapContainer` into a single mounted instance and toggle its container size/interactivity via CSS + `map.invalidateSize()` on expand. Eliminates the second tile fetch storm when the user opens the radar.
+## What counts as "most dangerous"
 
-### 5. Small wins
-- Add `<link rel="preconnect">` in `index.html` for `mesonet.agron.iastate.edu` and `basemaps.cartocdn.com` so TLS handshakes start before React mounts.
-- Add `loading="lazy"` to the three non-active weather backgrounds if any are kept in the DOM.
-- Memoize `soundingNodes` dependencies in `TacticalMap` so they don't recompute every weather poll (15 s cadence currently triggers a full re-render of the map subtree).
+Rank polygons by event severity (highest first). Within the highest tier present in the feed, pick the polygon whose nearest edge is closest to the home city.
 
-### Out of scope
-- No backend changes; tile providers stay the same.
-- No visual redesign — the circular mini-map, expanded panel, and station-picking UX stay identical.
+Tiering (top wins):
+1. Tornado Emergency
+2. PDS Tornado Warning
+3. Tornado Warning
+4. Flash Flood Emergency
+5. PDS Severe Thunderstorm Warning
+6. Severe Thunderstorm Warning
+7. Flash Flood Warning
+8. Other Warnings (any "...Warning" event)
 
-### Expected impact
-- Initial JS+image payload: from ~5.5 MB to **<700 KB** on first paint.
-- Radar mini-map mount time: from "buffer for several seconds" to roughly the time of one tile request (~200–400 ms on a warm CDN).
-- Expanding the radar: near-instant instead of re-fetching every tile.
+Watches/advisories are ignored — bar only highlights warning-tier hazards.
+
+## Distance
+
+Haversine distance from the home city's lat/lon to the nearest vertex of the polygon's outer ring(s). Display in miles when the user's unit system is imperial, kilometres when metric, rounded to the nearest whole unit (or 1 decimal under 10).
+
+## Implementation outline
+
+### `src/hooks/useHomeCityRisk.ts`
+- Also expose the resolved `coords` (`{ lat, lon } | null`) alongside `risk` / `loading`. Keep current SPC logic intact.
+
+### New helper inside `TacticalMap.tsx` (or small util in `src/lib/`)
+- `rankPolygon(p)` returns a numeric tier from the list above, or `null` to exclude.
+- `nearestVertexDistanceKm(coords, geometry)` walks the polygon/multipolygon outer rings using haversine.
+
+### `src/components/TacticalMap.tsx`
+- Pull `useWarningPolygons()` and `useUnitSystem()` (already imported).
+- Compute `nearestDanger` with `useMemo` over polygons + home coords: filter to ranked polygons, group by highest tier present, pick min distance.
+- Build the bar text in one string. Append `"Nearest <event>: <X> <unit> away."` when available.
+- Replace the current single `<span>` with a marquee container:
+  - Outer div: `overflow-hidden`, full bar width.
+  - Inner flex with the text rendered twice back-to-back (for seamless loop), animated with a CSS keyframe `translateX(0) → translateX(-50%)`.
+  - Use a `ResizeObserver` (or measure on mount + on text change) to compare `scrollWidth` vs `clientWidth`; toggle a `data-scroll` attribute that enables/disables the animation. When not overflowing, render a single span with `truncate` removed so full text shows.
+  - Animation duration scales with text length (e.g. `text.length * 0.18s`, min 12s) so longer text scrolls at a steady speed.
+
+### `src/index.css`
+- Add a `@keyframes marquee` (0 → -50% translateX) and a `.animate-marquee` utility class referencing it. Pause on hover for accessibility.
+
+## Notes / trade-offs
+
+- Distance uses nearest *vertex* rather than nearest *edge* — vertex is sufficient at NWS polygon resolution (typically <5 km between vertices) and avoids segment-projection math.
+- `useWarningPolygons` already refreshes every 60s via the shared tick, so the bar updates without extra plumbing.
+- Marquee uses pure CSS transform — no JS animation loop, no layout thrash.
+- No backend or schema changes.

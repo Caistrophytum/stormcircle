@@ -93,25 +93,31 @@ async function geocodeCity(label: string): Promise<{ lat: number; lon: number } 
 export function useHomeCityRisk(location: string | null): {
   risk: SPCRiskLevel;
   loading: boolean;
+  coords: { lat: number; lon: number } | null;
 } {
   const [risk, setRisk] = useState<SPCRiskLevel>("NONE");
   const [loading, setLoading] = useState(false);
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
 
   useEffect(() => {
     if (!location) {
       setRisk("NONE");
+      setCoords(null);
       return;
     }
 
     let cancelled = false;
-    let coords: { lat: number; lon: number } | null = null;
+    let resolved: { lat: number; lon: number } | null = null;
 
     async function evaluate() {
       if (cancelled) return;
       setLoading(true);
       try {
-        if (!coords) coords = await geocodeCity(location!);
-        if (!coords || cancelled) {
+        if (!resolved) {
+          resolved = await geocodeCity(location!);
+          if (!cancelled) setCoords(resolved);
+        }
+        if (!resolved || cancelled) {
           setRisk("NONE");
           return;
         }
@@ -119,7 +125,7 @@ export function useHomeCityRisk(location: string | null): {
         if (!res.ok || cancelled) return;
         const geo: { features: SPCFeature[] } = await res.json();
         if (cancelled) return;
-        const pt: [number, number] = [coords.lon, coords.lat];
+        const pt: [number, number] = [resolved.lon, resolved.lat];
         let highest: SPCRiskLevel = "NONE";
         let highestRank = -1;
         for (const f of geo.features ?? []) {
@@ -148,5 +154,5 @@ export function useHomeCityRisk(location: string | null): {
     };
   }, [location]);
 
-  return { risk, loading };
+  return { risk, loading, coords };
 }

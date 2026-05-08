@@ -233,3 +233,16 @@
 #lovable-badge {
   display: none !important;
 }
+
+/* Horizontal marquee for the home-city status bar. */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee linear infinite;
+  will-change: transform;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
