@@ -260,6 +260,38 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     return candidates[0] ?? null;
   }, [alerts.mostDangerous, profile?.location]);
 
+  // Nearest most-dangerous warning polygon to the user's home city.
+  const nearestDanger = useMemo(() => {
+    const coords = homeRisk.coords;
+    if (!coords || warningPolygons.polygons.length === 0) return null;
+    let bestRank = -1;
+    let bestDist = Infinity;
+    let bestEvent = "";
+    for (const p of warningPolygons.polygons) {
+      const r = rankWarning(p);
+      if (r === null) continue;
+      if (r < bestRank) continue;
+      const d = nearestVertexKm(coords, p.geometry);
+      if (r > bestRank || d < bestDist) {
+        bestRank = r;
+        bestDist = d;
+        // Use a more descriptive label for emergencies / PDS.
+        const text = `${p.description} ${p.headline}`.toLowerCase();
+        if (p.event === "Tornado Warning" && text.includes("tornado emergency")) {
+          bestEvent = "Tornado Emergency";
+        } else if (p.event === "Flash Flood Warning" && text.includes("flash flood emergency")) {
+          bestEvent = "Flash Flood Emergency";
+        } else if (/particularly dangerous situation|\bpds\b/.test(text)) {
+          bestEvent = `PDS ${p.event}`;
+        } else {
+          bestEvent = p.event;
+        }
+      }
+    }
+    if (bestRank < 0) return null;
+    return { event: bestEvent, distanceKm: bestDist };
+  }, [warningPolygons.polygons, homeRisk.coords]);
+
   return (
     <motion.section ref={ref} layout className="relative overflow-hidden flex-1">
       {/* Weather-responsive background */}
