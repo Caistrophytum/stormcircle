@@ -1,4 +1,4 @@
-import { forwardRef, lazy, Suspense, useState, useMemo, useRef, useEffect } from "react";
+import { forwardRef, lazy, Suspense, useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 import EventInfoPanel from "./EventInfoPanel";
@@ -8,6 +8,7 @@ import { useSoundingData } from "@/hooks/useSoundingData";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
+import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import {
   useUnitSystem,
   displayTemp,
