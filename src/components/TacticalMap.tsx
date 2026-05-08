@@ -30,6 +30,111 @@ const weatherBackgrounds: Record<WeatherCondition, string> = {
   stormy: new URL("../assets/weather-stormy.jpg", import.meta.url).href,
 };
 
+// ─── Home-city bar helpers ──────────────────────────────────────────────
+// Tier ranking for "most dangerous" warning polygon. Higher wins.
+function rankWarning(p: WarningPolygon): number | null {
+  const ev = p.event;
+  const text = `${p.description} ${p.headline}`.toLowerCase();
+  const pds = /particularly dangerous situation|\bpds\b/.test(text);
+  if (ev === "Tornado Warning") {
+    if (text.includes("tornado emergency")) return 8;
+    if (pds) return 7;
+    return 6;
+  }
+  if (ev === "Flash Flood Warning") {
+    if (text.includes("flash flood emergency")) return 5;
+    return 2;
+  }
+  if (ev === "Severe Thunderstorm Warning") {
+    if (pds) return 4;
+    return 3;
+  }
+  if (ev.endsWith("Warning")) return 1;
+  return null;
+}
+
+function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function nearestVertexKm(
+  origin: { lat: number; lon: number },
+  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+): number {
+  const polys: number[][][][] =
+    geom.type === "Polygon"
+      ? [geom.coordinates as number[][][]]
+      : (geom.coordinates as number[][][][]);
+  let best = Infinity;
+  for (const poly of polys) {
+    if (!poly.length) continue;
+    for (const [lon, lat] of poly[0]) {
+      const d = haversineKm(origin, { lat, lon });
+      if (d < best) best = d;
+    }
+  }
+  return best;
+}
+
+// Marquee — auto-scrolls horizontally only when text overflows.
+function MarqueeText({ text, className }: { text: string; className?: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLSpanElement>(null);
+  const [overflow, setOverflow] = useState(false);
+  const [duration, setDuration] = useState(20);
+
+  useLayoutEffect(() => {
+    const c = containerRef.current;
+    const m = measureRef.current;
+    if (!c || !m) return;
+    const recalc = () => {
+      const overflows = m.scrollWidth > c.clientWidth + 1;
+      setOverflow(overflows);
+      if (overflows) {
+        // ~80px per second
+        setDuration(Math.max(12, (m.scrollWidth + c.clientWidth) / 80));
+      }
+    };
+    recalc();
+    const ro = new ResizeObserver(recalc);
+    ro.observe(c);
+    ro.observe(m);
+    return () => ro.disconnect();
+  }, [text]);
+
+  if (!overflow) {
+    return (
+      <div ref={containerRef} className="flex-1 overflow-hidden">
+        <span ref={measureRef} className={`${className ?? ""} whitespace-nowrap inline-block`}>
+          {text}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div ref={containerRef} className="flex-1 overflow-hidden">
+      <div
+        className="animate-marquee flex w-max"
+        style={{ animationDuration: `${duration}s` }}
+      >
+        <span ref={measureRef} className={`${className ?? ""} whitespace-nowrap inline-block pr-12`}>
+          {text}
+        </span>
+        <span className={`${className ?? ""} whitespace-nowrap inline-block pr-12`} aria-hidden>
+          {text}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 interface Props {
   overlayScale: number;
 }
