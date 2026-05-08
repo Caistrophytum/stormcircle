@@ -152,6 +152,23 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
   const warningPolygons = useWarningPolygons();
 
+  // On first load: auto-pan radar to the station nearest the user's home city,
+  // unless they've already picked a different city this session.
+  const homePannedRef = useRef(false);
+  useEffect(() => {
+    if (homePannedRef.current) return;
+    if (radar.selectedCity) return; // user already has a city
+    if (!homeRisk.coords || !profile?.location) return;
+    homePannedRef.current = true;
+    const cityName = profile.location.split(",")[0].trim();
+    radar.setSelectedCity({
+      name: cityName,
+      lat: homeRisk.coords.lat,
+      lon: homeRisk.coords.lon,
+    });
+  }, [homeRisk.coords, profile?.location, radar.selectedCity, radar]);
+
+
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
   const { soundingNodes, threatLevel } = useMemo(() => {
