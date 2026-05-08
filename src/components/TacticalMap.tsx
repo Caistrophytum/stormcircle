@@ -399,6 +399,22 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         };
         const hasLocation = !!profile?.location;
         const bg = hasLocation ? RISK_BG[homeRisk.risk] : "hsl(0 80% 50%)";
+
+        let text: string;
+        if (!hasLocation) {
+          text = "Please choose a hometown from the account center portal";
+        } else {
+          text = `Now in your home city of ${profile!.location}: ${RISK_TEXT[homeRisk.risk]}.`;
+          if (nearestDanger) {
+            const km = nearestDanger.distanceKm;
+            const useMiles = unitSystem === "imperial";
+            const val = useMiles ? km * 0.621371 : km;
+            const unit = useMiles ? "mi" : "km";
+            const formatted = val < 10 ? val.toFixed(1) : Math.round(val).toLocaleString();
+            text += ` Nearest ${nearestDanger.event}: ${formatted} ${unit} away.`;
+          }
+        }
+
         return (
           <div
             className="absolute bottom-[9.75rem] right-4 z-10 transition-all duration-300 ease-in-out"
@@ -407,14 +423,13 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
             }}
           >
             <div
-              className="px-3 py-1.5 border-l-2 flex items-center gap-2"
+              className="px-3 py-1.5 border-l-2 flex items-center gap-2 overflow-hidden"
               style={{ background: bg, borderLeftColor: bg }}
             >
-              <span className="text-[10px] font-mono font-bold text-background uppercase tracking-wide truncate">
-                {hasLocation
-                  ? `Now in your home city of ${profile!.location}: ${RISK_TEXT[homeRisk.risk]}.`
-                  : "Please choose a hometown from the account center portal"}
-              </span>
+              <MarqueeText
+                text={text}
+                className="text-[10px] font-mono font-bold text-background uppercase tracking-wide"
+              />
             </div>
           </div>
         );
