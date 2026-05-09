@@ -90,10 +90,18 @@ export default function CitizenReports() {
   const { user, profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [approvedSigs, setApprovedSigs] = useState<Set<string>>(new Set());
-  const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<PendingAction | null>(null);
+
+  // Structured composer state
+  const [phenomenon, setPhenomenon] = useState<string | null>(null);
+  const [relation, setRelation] = useState<Relation | null>(null);
+  const [placeQuery, setPlaceQuery] = useState("");
+  const [placeLabel, setPlaceLabel] = useState<string | null>(null);
+  const placeTouchStartY = useRef<number | null>(null);
+  const { results: placeResults, loading: placeLoading } = useCitySearch(placeQuery);
+
   const spcLoading = useSPCOutlookLoading();
 
   const isModerator = profile?.badge === "Meteorologist";
