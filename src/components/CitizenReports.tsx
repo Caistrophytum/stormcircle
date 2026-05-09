@@ -238,20 +238,28 @@ export default function CitizenReports() {
   }, []);
 
   // ── Send ──────────────────────────────────────────────────────────────
-  async function sendMessage() {
-    const trimmed = input.trim();
-    if (!trimmed || !user || !profile || sending) return;
+  function resetComposer() {
+    setPhenomenon(null);
+    setRelation(null);
+    setPlaceQuery("");
+    setPlaceLabel(null);
+  }
+
+  async function sendReport() {
+    if (!user || !profile || sending) return;
+    if (!phenomenon || !relation || !placeLabel) return;
+    const content = `${phenomenon} ${relation} ${placeLabel}`.slice(0, MAX_MESSAGE_LENGTH);
     setSending(true);
     const { error } = await supabase.from("messages").insert({
       user_id: user.id,
       username: profile.username,
       badge: profile.badge,
-      content: trimmed.slice(0, MAX_MESSAGE_LENGTH),
+      content,
     });
     if (error) {
       toast.error("Failed to send report");
     } else {
-      setInput("");
+      resetComposer();
     }
     setSending(false);
   }
