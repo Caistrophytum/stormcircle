@@ -642,3 +642,236 @@ export default function CitizenReports() {
     </aside>
   );
 }
+
+/* ── Upward-opening dropdown composer ───────────────────────────────── */
+
+type MenuKey = "phenom" | "rel" | "place" | null;
+
+interface ComposerProps {
+  phenomenon: string | null;
+  relation: Relation | null;
+  placeLabel: string | null;
+  placeQuery: string;
+  placeResults: GeocodedCity[];
+  placeLoading: boolean;
+  sending: boolean;
+  onPickPhenomenon: (v: string) => void;
+  onPickRelation: (v: Relation) => void;
+  onPickPlace: (v: string) => void;
+  onChangePlaceQuery: (v: string) => void;
+  onSend: () => void;
+  onReset: () => void;
+}
+
+function ComposerDropdowns({
+  phenomenon,
+  relation,
+  placeLabel,
+  placeQuery,
+  placeResults,
+  placeLoading,
+  sending,
+  onPickPhenomenon,
+  onPickRelation,
+  onPickPlace,
+  onChangePlaceQuery,
+  onSend,
+  onReset,
+}: ComposerProps) {
+  const [open, setOpen] = useState<MenuKey>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(null);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(null);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const canSend = !!phenomenon && !!relation && !!placeLabel && !sending;
+  const hasAny = !!phenomenon || !!relation || !!placeLabel;
+
+  const triggerCls = (active: boolean, filled: boolean) =>
+    `w-full flex items-center justify-between gap-1 px-2 py-1.5 text-[10px] font-mono border rounded-sm transition-colors min-w-0 ${
+      active
+        ? "border-primary/60 text-primary bg-primary/5"
+        : filled
+          ? "border-border text-foreground bg-background/40 hover:border-primary/40"
+          : "border-border text-muted-foreground bg-background/40 hover:border-primary/40 hover:text-foreground"
+    }`;
+
+  const panelCls =
+    "absolute z-30 left-0 right-0 bottom-full mb-1 max-h-56 overflow-y-auto bg-cockpit border border-border rounded-sm shadow-lg";
+
+  return (
+    <div ref={rootRef} className="space-y-2">
+      <div className="grid grid-cols-[1.1fr_0.9fr_1.3fr_auto] gap-1.5">
+        {/* Phenomenon */}
+        <div className="relative min-w-0">
+          <button
+            type="button"
+            onClick={() => setOpen(open === "phenom" ? null : "phenom")}
+            className={triggerCls(open === "phenom", !!phenomenon)}
+          >
+            <span className="truncate">{phenomenon ?? "Phenomenon"}</span>
+            <ChevronDown className="size-3 shrink-0 opacity-60" />
+          </button>
+          {open === "phenom" && (
+            <ul className={panelCls}>
+              {PHENOMENA.map((p) => (
+                <li key={p.value}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPickPhenomenon(p.value);
+                      setOpen("rel");
+                    }}
+                    className={`w-full text-left px-2 py-1.5 text-[11px] font-mono hover:bg-primary/10 hover:text-primary transition-colors ${
+                      phenomenon === p.value ? "text-primary" : "text-card-foreground"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Relation */}
+        <div className="relative min-w-0">
+          <button
+            type="button"
+            disabled={!phenomenon}
+            onClick={() => setOpen(open === "rel" ? null : "rel")}
+            className={`${triggerCls(open === "rel", !!relation)} disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            <span className="truncate">{relation ?? "Relation"}</span>
+            <ChevronDown className="size-3 shrink-0 opacity-60" />
+          </button>
+          {open === "rel" && (
+            <ul className={panelCls}>
+              {RELATIONS.map((r) => (
+                <li key={r}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPickRelation(r);
+                      setOpen("place");
+                    }}
+                    className={`w-full text-left px-2 py-1.5 text-[11px] font-mono hover:bg-primary/10 hover:text-primary transition-colors ${
+                      relation === r ? "text-primary" : "text-card-foreground"
+                    }`}
+                  >
+                    {r}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Place (with search) */}
+        <div className="relative min-w-0">
+          <button
+            type="button"
+            disabled={!relation}
+            onClick={() => setOpen(open === "place" ? null : "place")}
+            className={`${triggerCls(open === "place", !!placeLabel)} disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            <span className="truncate flex items-center gap-1">
+              {placeLabel && <MapPin className="size-3 shrink-0 opacity-70" />}
+              <span className="truncate">{placeLabel ?? "Place"}</span>
+            </span>
+            <ChevronDown className="size-3 shrink-0 opacity-60" />
+          </button>
+          {open === "place" && (
+            <div className={panelCls}>
+              <div className="sticky top-0 bg-cockpit border-b border-border p-1.5">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={placeQuery}
+                    onChange={(e) => onChangePlaceQuery(e.target.value)}
+                    placeholder="Search a US city..."
+                    maxLength={80}
+                    autoFocus
+                    className="w-full bg-background/50 border border-border px-2 py-1 text-[11px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 rounded-sm"
+                  />
+                  {placeLoading && (
+                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 size-3 animate-spin text-primary" />
+                  )}
+                </div>
+              </div>
+              <ul>
+                {placeQuery.trim().length < 2 ? (
+                  <li className="px-2 py-2 text-[10px] font-mono text-muted-foreground italic">
+                    Type at least 2 characters…
+                  </li>
+                ) : placeResults.length === 0 && !placeLoading ? (
+                  <li className="px-2 py-2 text-[10px] font-mono text-muted-foreground italic">
+                    No matches.
+                  </li>
+                ) : (
+                  placeResults.map((r) => {
+                    const label = r.admin1 ? `${r.name}, ${r.admin1}` : r.name;
+                    return (
+                      <li key={r.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onPickPlace(label);
+                            setOpen(null);
+                          }}
+                          className="w-full text-left px-2 py-1.5 text-[11px] font-mono text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+                        >
+                          <MapPin className="size-3 text-muted-foreground" />
+                          {label}
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Send */}
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={!canSend}
+          className="px-3 py-1.5 bg-primary/10 border border-primary/20 text-primary font-mono text-[10px] uppercase font-bold hover:bg-primary hover:text-background transition-all rounded-sm disabled:opacity-40 disabled:hover:bg-primary/10 disabled:hover:text-primary"
+        >
+          {sending ? "..." : "Send"}
+        </button>
+      </div>
+
+      {hasAny && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] font-mono text-muted-foreground truncate">
+            {phenomenon ?? "—"} {relation ?? "—"} {placeLabel ?? "—"}
+          </p>
+          <button
+            type="button"
+            onClick={onReset}
+            disabled={sending}
+            className="flex items-center gap-1 text-[9px] font-mono uppercase text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <XIcon className="size-3" /> Reset
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
