@@ -580,37 +580,196 @@ export default function CitizenReports() {
         )}
       </div>
 
-      {/* Input */}
+      {/* Structured composer */}
       <div className="p-3 border-t border-border bg-shroud/30">
         {user && profile ? (
-          <>
-            <div className="flex gap-2">
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                placeholder="Report an event..."
-                maxLength={MAX_MESSAGE_LENGTH}
-                disabled={sending}
-                className="flex-1 bg-background/50 border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 disabled:opacity-50"
-              />
-              <button
-                onClick={sendMessage}
-                disabled={sending || !input.trim()}
-                className="px-3 py-1.5 bg-primary/10 border border-primary/20 text-primary font-mono text-[10px] uppercase font-bold hover:bg-primary hover:text-background transition-all rounded-sm disabled:opacity-40 disabled:hover:bg-primary/10 disabled:hover:text-primary"
-              >
-                {sending ? "..." : "Send"}
-              </button>
+          <div className="space-y-2">
+            {/* Step indicator / breadcrumb */}
+            <div className="flex items-center gap-1 text-[9px] font-mono uppercase text-muted-foreground">
+              <span className={phenomenon ? "text-primary" : "text-foreground"}>1·What</span>
+              <span>›</span>
+              <span className={relation ? "text-primary" : phenomenon ? "text-foreground" : "opacity-40"}>
+                2·Where-rel
+              </span>
+              <span>›</span>
+              <span className={placeLabel ? "text-primary" : relation ? "text-foreground" : "opacity-40"}>
+                3·Place
+              </span>
+              {(phenomenon || relation || placeLabel) && (
+                <button
+                  type="button"
+                  onClick={resetComposer}
+                  disabled={sending}
+                  className="ml-auto text-muted-foreground hover:text-destructive transition-colors normal-case"
+                >
+                  Reset
+                </button>
+              )}
             </div>
-            <p className="text-[9px] font-mono text-muted-foreground mt-1.5 text-right">
-              {input.length}/{MAX_MESSAGE_LENGTH}
-            </p>
-          </>
+
+            {/* Step 1 — phenomenon */}
+            {!phenomenon && (
+              <>
+                <p className="text-[10px] font-mono text-muted-foreground uppercase">Pick a phenomenon</p>
+                <div className="flex flex-wrap gap-1">
+                  {PHENOMENA.map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setPhenomenon(p.value)}
+                      className="px-2 py-1 text-[10px] font-mono border border-border bg-background/40 text-foreground hover:border-primary/60 hover:text-primary rounded-sm transition-colors"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Step 2 — relation */}
+            {phenomenon && !relation && (
+              <>
+                <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                  <button
+                    type="button"
+                    onClick={() => setPhenomenon(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Back"
+                  >
+                    <ChevronLeft className="size-3.5" />
+                  </button>
+                  <span className="text-primary">{phenomenon}</span>
+                  <span className="text-muted-foreground">— pick a relation</span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {RELATIONS.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRelation(r)}
+                      className="px-2 py-1 text-[10px] font-mono border border-border bg-background/40 text-foreground hover:border-primary/60 hover:text-primary rounded-sm transition-colors"
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Step 3 — place */}
+            {phenomenon && relation && !placeLabel && (
+              <>
+                <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                  <button
+                    type="button"
+                    onClick={() => setRelation(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Back"
+                  >
+                    <ChevronLeft className="size-3.5" />
+                  </button>
+                  <span className="text-primary">
+                    {phenomenon} {relation}
+                  </span>
+                  <span className="text-muted-foreground">— search a place</span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={placeQuery}
+                    onChange={(e) => setPlaceQuery(e.target.value)}
+                    placeholder="Search a US city..."
+                    maxLength={80}
+                    autoFocus
+                    className="w-full bg-background/50 border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
+                  />
+                  {placeLoading && (
+                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 size-3.5 animate-spin text-primary" />
+                  )}
+                  {placeQuery.trim().length >= 2 && placeResults.length > 0 && (
+                    <ul
+                      className="absolute z-20 left-0 right-0 bottom-full mb-1 max-h-44 overflow-y-auto overscroll-y-contain bg-cockpit border border-border rounded-sm shadow-lg [scrollbar-gutter:stable] [touch-action:pan-y]"
+                      style={{ WebkitOverflowScrolling: "touch" }}
+                      onWheel={(e) => {
+                        const el = e.currentTarget;
+                        if (el.scrollHeight > el.clientHeight) {
+                          e.stopPropagation();
+                        }
+                      }}
+                      onTouchStart={(e) => {
+                        placeTouchStartY.current = e.touches[0]?.clientY ?? null;
+                      }}
+                      onTouchMove={(e) => {
+                        const el = e.currentTarget;
+                        const currentY = e.touches[0]?.clientY;
+                        if (placeTouchStartY.current === null || currentY === undefined) return;
+                        if (el.scrollHeight > el.clientHeight) {
+                          const deltaY = placeTouchStartY.current - currentY;
+                          el.scrollTop += deltaY;
+                          placeTouchStartY.current = currentY;
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      }}
+                      onTouchEnd={() => {
+                        placeTouchStartY.current = null;
+                      }}
+                    >
+                      {placeResults.map((r) => {
+                        const label = r.admin1 ? `${r.name}, ${r.admin1}` : r.name;
+                        return (
+                          <li key={r.id}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlaceLabel(label);
+                                setPlaceQuery("");
+                              }}
+                              className="w-full text-left px-2 py-1.5 text-[11px] font-mono text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+                            >
+                              <MapPin className="size-3 text-muted-foreground" />
+                              {label}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Step 4 — preview & send */}
+            {phenomenon && relation && placeLabel && (
+              <>
+                <div className="flex items-center gap-1.5 text-[10px] font-mono">
+                  <button
+                    type="button"
+                    onClick={() => setPlaceLabel(null)}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Back"
+                    disabled={sending}
+                  >
+                    <ChevronLeft className="size-3.5" />
+                  </button>
+                  <span className="text-muted-foreground">Preview</span>
+                </div>
+                <p className="text-[12px] font-mono text-foreground bg-background/40 border border-border px-2 py-1.5 rounded-sm">
+                  {phenomenon} {relation} {placeLabel}
+                </p>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={sendReport}
+                    disabled={sending}
+                    className="px-3 py-1.5 bg-primary/10 border border-primary/20 text-primary font-mono text-[10px] uppercase font-bold hover:bg-primary hover:text-background transition-all rounded-sm disabled:opacity-40"
+                  >
+                    {sending ? "Sending..." : "Send report"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         ) : (
           <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
             <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
