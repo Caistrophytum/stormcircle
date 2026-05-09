@@ -29,7 +29,8 @@
  *   (within ties: count desc, then most-recent first).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, MapPin, ChevronLeft } from "lucide-react";
+import { Loader2, MapPin, ChevronDown, X as XIcon } from "lucide-react";
+import type { GeocodedCity } from "@/hooks/useCitySearch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCitySearch } from "@/hooks/useCitySearch";
