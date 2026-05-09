@@ -28,10 +28,37 @@
  *   approved+trending → approved → unapproved+trending → unapproved
  *   (within ties: count desc, then most-recent first).
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, MapPin, ChevronLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCitySearch } from "@/hooks/useCitySearch";
 import { groupMessages, messageSignature, type RawMessage, type StackedReport } from "@/lib/reportGrouping";
+
+/** Curated list of reportable phenomena. Labels are inserted verbatim into
+ *  the composed message, so they should already match grouping vocabulary
+ *  in `reportGrouping.ts` (METEO_WORDS / SYNONYMS). */
+const PHENOMENA: { label: string; value: string }[] = [
+  { label: "Tornado", value: "Tornado" },
+  { label: "Funnel cloud", value: "Funnel cloud" },
+  { label: "Wall cloud", value: "Wall cloud" },
+  { label: "Hail", value: "Hail" },
+  { label: "Heavy rain", value: "Heavy rain" },
+  { label: "Thunderstorm", value: "Thunderstorm" },
+  { label: "Lightning", value: "Lightning" },
+  { label: "Damaging wind", value: "Damaging wind" },
+  { label: "Flooding", value: "Flooding" },
+  { label: "Snow", value: "Snow" },
+  { label: "Blizzard", value: "Blizzard" },
+  { label: "Ice / freezing rain", value: "Freezing rain" },
+  { label: "Fog", value: "Fog" },
+  { label: "Power outage", value: "Power outage" },
+  { label: "Tree down", value: "Tree down" },
+  { label: "Road flooded", value: "Road flooded" },
+];
+
+const RELATIONS = ["in", "near", "heading towards"] as const;
+type Relation = (typeof RELATIONS)[number];
 import {
   AlertDialog,
   AlertDialogAction,
