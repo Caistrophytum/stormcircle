@@ -29,7 +29,8 @@
  *   (within ties: count desc, then most-recent first).
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, MapPin, ChevronLeft } from "lucide-react";
+import { Loader2, MapPin, ChevronDown, X as XIcon } from "lucide-react";
+import type { GeocodedCity } from "@/hooks/useCitySearch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCitySearch } from "@/hooks/useCitySearch";
@@ -580,196 +581,27 @@ export default function CitizenReports() {
         )}
       </div>
 
-      {/* Structured composer */}
+      {/* Structured composer — three upward dropdowns */}
       <div className="p-3 border-t border-border bg-shroud/30">
         {user && profile ? (
-          <div className="space-y-2">
-            {/* Step indicator / breadcrumb */}
-            <div className="flex items-center gap-1 text-[9px] font-mono uppercase text-muted-foreground">
-              <span className={phenomenon ? "text-primary" : "text-foreground"}>1·What</span>
-              <span>›</span>
-              <span className={relation ? "text-primary" : phenomenon ? "text-foreground" : "opacity-40"}>
-                2·Where-rel
-              </span>
-              <span>›</span>
-              <span className={placeLabel ? "text-primary" : relation ? "text-foreground" : "opacity-40"}>
-                3·Place
-              </span>
-              {(phenomenon || relation || placeLabel) && (
-                <button
-                  type="button"
-                  onClick={resetComposer}
-                  disabled={sending}
-                  className="ml-auto text-muted-foreground hover:text-destructive transition-colors normal-case"
-                >
-                  Reset
-                </button>
-              )}
-            </div>
-
-            {/* Step 1 — phenomenon */}
-            {!phenomenon && (
-              <>
-                <p className="text-[10px] font-mono text-muted-foreground uppercase">Pick a phenomenon</p>
-                <div className="flex flex-wrap gap-1">
-                  {PHENOMENA.map((p) => (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => setPhenomenon(p.value)}
-                      className="px-2 py-1 text-[10px] font-mono border border-border bg-background/40 text-foreground hover:border-primary/60 hover:text-primary rounded-sm transition-colors"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Step 2 — relation */}
-            {phenomenon && !relation && (
-              <>
-                <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                  <button
-                    type="button"
-                    onClick={() => setPhenomenon(null)}
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label="Back"
-                  >
-                    <ChevronLeft className="size-3.5" />
-                  </button>
-                  <span className="text-primary">{phenomenon}</span>
-                  <span className="text-muted-foreground">— pick a relation</span>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {RELATIONS.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setRelation(r)}
-                      className="px-2 py-1 text-[10px] font-mono border border-border bg-background/40 text-foreground hover:border-primary/60 hover:text-primary rounded-sm transition-colors"
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Step 3 — place */}
-            {phenomenon && relation && !placeLabel && (
-              <>
-                <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                  <button
-                    type="button"
-                    onClick={() => setRelation(null)}
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label="Back"
-                  >
-                    <ChevronLeft className="size-3.5" />
-                  </button>
-                  <span className="text-primary">
-                    {phenomenon} {relation}
-                  </span>
-                  <span className="text-muted-foreground">— search a place</span>
-                </div>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={placeQuery}
-                    onChange={(e) => setPlaceQuery(e.target.value)}
-                    placeholder="Search a US city..."
-                    maxLength={80}
-                    autoFocus
-                    className="w-full bg-background/50 border border-border px-2 py-1.5 text-xs font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
-                  />
-                  {placeLoading && (
-                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 size-3.5 animate-spin text-primary" />
-                  )}
-                  {placeQuery.trim().length >= 2 && placeResults.length > 0 && (
-                    <ul
-                      className="absolute z-20 left-0 right-0 bottom-full mb-1 max-h-44 overflow-y-auto overscroll-y-contain bg-cockpit border border-border rounded-sm shadow-lg [scrollbar-gutter:stable] [touch-action:pan-y]"
-                      style={{ WebkitOverflowScrolling: "touch" }}
-                      onWheel={(e) => {
-                        const el = e.currentTarget;
-                        if (el.scrollHeight > el.clientHeight) {
-                          e.stopPropagation();
-                        }
-                      }}
-                      onTouchStart={(e) => {
-                        placeTouchStartY.current = e.touches[0]?.clientY ?? null;
-                      }}
-                      onTouchMove={(e) => {
-                        const el = e.currentTarget;
-                        const currentY = e.touches[0]?.clientY;
-                        if (placeTouchStartY.current === null || currentY === undefined) return;
-                        if (el.scrollHeight > el.clientHeight) {
-                          const deltaY = placeTouchStartY.current - currentY;
-                          el.scrollTop += deltaY;
-                          placeTouchStartY.current = currentY;
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }
-                      }}
-                      onTouchEnd={() => {
-                        placeTouchStartY.current = null;
-                      }}
-                    >
-                      {placeResults.map((r) => {
-                        const label = r.admin1 ? `${r.name}, ${r.admin1}` : r.name;
-                        return (
-                          <li key={r.id}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPlaceLabel(label);
-                                setPlaceQuery("");
-                              }}
-                              className="w-full text-left px-2 py-1.5 text-[11px] font-mono text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
-                            >
-                              <MapPin className="size-3 text-muted-foreground" />
-                              {label}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Step 4 — preview & send */}
-            {phenomenon && relation && placeLabel && (
-              <>
-                <div className="flex items-center gap-1.5 text-[10px] font-mono">
-                  <button
-                    type="button"
-                    onClick={() => setPlaceLabel(null)}
-                    className="text-muted-foreground hover:text-foreground"
-                    aria-label="Back"
-                    disabled={sending}
-                  >
-                    <ChevronLeft className="size-3.5" />
-                  </button>
-                  <span className="text-muted-foreground">Preview</span>
-                </div>
-                <p className="text-[12px] font-mono text-foreground bg-background/40 border border-border px-2 py-1.5 rounded-sm">
-                  {phenomenon} {relation} {placeLabel}
-                </p>
-                <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={sendReport}
-                    disabled={sending}
-                    className="px-3 py-1.5 bg-primary/10 border border-primary/20 text-primary font-mono text-[10px] uppercase font-bold hover:bg-primary hover:text-background transition-all rounded-sm disabled:opacity-40"
-                  >
-                    {sending ? "Sending..." : "Send report"}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <ComposerDropdowns
+            phenomenon={phenomenon}
+            relation={relation}
+            placeLabel={placeLabel}
+            placeQuery={placeQuery}
+            placeResults={placeResults}
+            placeLoading={placeLoading}
+            sending={sending}
+            onPickPhenomenon={(v) => setPhenomenon(v)}
+            onPickRelation={(v) => setRelation(v)}
+            onPickPlace={(v) => {
+              setPlaceLabel(v);
+              setPlaceQuery("");
+            }}
+            onChangePlaceQuery={setPlaceQuery}
+            onSend={sendReport}
+            onReset={resetComposer}
+          />
         ) : (
           <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
             <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
@@ -808,5 +640,238 @@ export default function CitizenReports() {
         </AlertDialogContent>
       </AlertDialog>
     </aside>
+  );
+}
+
+/* ── Upward-opening dropdown composer ───────────────────────────────── */
+
+type MenuKey = "phenom" | "rel" | "place" | null;
+
+interface ComposerProps {
+  phenomenon: string | null;
+  relation: Relation | null;
+  placeLabel: string | null;
+  placeQuery: string;
+  placeResults: GeocodedCity[];
+  placeLoading: boolean;
+  sending: boolean;
+  onPickPhenomenon: (v: string) => void;
+  onPickRelation: (v: Relation) => void;
+  onPickPlace: (v: string) => void;
+  onChangePlaceQuery: (v: string) => void;
+  onSend: () => void;
+  onReset: () => void;
+}
+
+function ComposerDropdowns({
+  phenomenon,
+  relation,
+  placeLabel,
+  placeQuery,
+  placeResults,
+  placeLoading,
+  sending,
+  onPickPhenomenon,
+  onPickRelation,
+  onPickPlace,
+  onChangePlaceQuery,
+  onSend,
+  onReset,
+}: ComposerProps) {
+  const [open, setOpen] = useState<MenuKey>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(null);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(null);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const canSend = !!phenomenon && !!relation && !!placeLabel && !sending;
+  const hasAny = !!phenomenon || !!relation || !!placeLabel;
+
+  const triggerCls = (active: boolean, filled: boolean) =>
+    `w-full flex items-center justify-between gap-1 px-2 py-1.5 text-[10px] font-mono border rounded-sm transition-colors min-w-0 ${
+      active
+        ? "border-primary/60 text-primary bg-primary/5"
+        : filled
+          ? "border-border text-foreground bg-background/40 hover:border-primary/40"
+          : "border-border text-muted-foreground bg-background/40 hover:border-primary/40 hover:text-foreground"
+    }`;
+
+  const panelCls =
+    "absolute z-30 left-0 right-0 bottom-full mb-1 max-h-56 overflow-y-auto bg-cockpit border border-border rounded-sm shadow-lg";
+
+  return (
+    <div ref={rootRef} className="space-y-2">
+      <div className="grid grid-cols-[1.1fr_0.9fr_1.3fr_auto] gap-1.5">
+        {/* Phenomenon */}
+        <div className="relative min-w-0">
+          <button
+            type="button"
+            onClick={() => setOpen(open === "phenom" ? null : "phenom")}
+            className={triggerCls(open === "phenom", !!phenomenon)}
+          >
+            <span className="truncate">{phenomenon ?? "Phenomenon"}</span>
+            <ChevronDown className="size-3 shrink-0 opacity-60" />
+          </button>
+          {open === "phenom" && (
+            <ul className={panelCls}>
+              {PHENOMENA.map((p) => (
+                <li key={p.value}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPickPhenomenon(p.value);
+                      setOpen("rel");
+                    }}
+                    className={`w-full text-left px-2 py-1.5 text-[11px] font-mono hover:bg-primary/10 hover:text-primary transition-colors ${
+                      phenomenon === p.value ? "text-primary" : "text-card-foreground"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Relation */}
+        <div className="relative min-w-0">
+          <button
+            type="button"
+            disabled={!phenomenon}
+            onClick={() => setOpen(open === "rel" ? null : "rel")}
+            className={`${triggerCls(open === "rel", !!relation)} disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            <span className="truncate">{relation ?? "Relation"}</span>
+            <ChevronDown className="size-3 shrink-0 opacity-60" />
+          </button>
+          {open === "rel" && (
+            <ul className={panelCls}>
+              {RELATIONS.map((r) => (
+                <li key={r}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPickRelation(r);
+                      setOpen("place");
+                    }}
+                    className={`w-full text-left px-2 py-1.5 text-[11px] font-mono hover:bg-primary/10 hover:text-primary transition-colors ${
+                      relation === r ? "text-primary" : "text-card-foreground"
+                    }`}
+                  >
+                    {r}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Place (with search) */}
+        <div className="relative min-w-0">
+          <button
+            type="button"
+            disabled={!relation}
+            onClick={() => setOpen(open === "place" ? null : "place")}
+            className={`${triggerCls(open === "place", !!placeLabel)} disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            <span className="truncate flex items-center gap-1">
+              {placeLabel && <MapPin className="size-3 shrink-0 opacity-70" />}
+              <span className="truncate">{placeLabel ?? "Place"}</span>
+            </span>
+            <ChevronDown className="size-3 shrink-0 opacity-60" />
+          </button>
+          {open === "place" && (
+            <div className={panelCls}>
+              <div className="sticky top-0 bg-cockpit border-b border-border p-1.5">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={placeQuery}
+                    onChange={(e) => onChangePlaceQuery(e.target.value)}
+                    placeholder="Search a US city..."
+                    maxLength={80}
+                    autoFocus
+                    className="w-full bg-background/50 border border-border px-2 py-1 text-[11px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 rounded-sm"
+                  />
+                  {placeLoading && (
+                    <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 size-3 animate-spin text-primary" />
+                  )}
+                </div>
+              </div>
+              <ul>
+                {placeQuery.trim().length < 2 ? (
+                  <li className="px-2 py-2 text-[10px] font-mono text-muted-foreground italic">
+                    Type at least 2 characters…
+                  </li>
+                ) : placeResults.length === 0 && !placeLoading ? (
+                  <li className="px-2 py-2 text-[10px] font-mono text-muted-foreground italic">
+                    No matches.
+                  </li>
+                ) : (
+                  placeResults.map((r) => {
+                    const label = r.admin1 ? `${r.name}, ${r.admin1}` : r.name;
+                    return (
+                      <li key={r.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onPickPlace(label);
+                            setOpen(null);
+                          }}
+                          className="w-full text-left px-2 py-1.5 text-[11px] font-mono text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
+                        >
+                          <MapPin className="size-3 text-muted-foreground" />
+                          {label}
+                        </button>
+                      </li>
+                    );
+                  })
+                )}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Send */}
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={!canSend}
+          className="px-3 py-1.5 bg-primary/10 border border-primary/20 text-primary font-mono text-[10px] uppercase font-bold hover:bg-primary hover:text-background transition-all rounded-sm disabled:opacity-40 disabled:hover:bg-primary/10 disabled:hover:text-primary"
+        >
+          {sending ? "..." : "Send"}
+        </button>
+      </div>
+
+      {hasAny && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] font-mono text-muted-foreground truncate">
+            {phenomenon ?? "—"} {relation ?? "—"} {placeLabel ?? "—"}
+          </p>
+          <button
+            type="button"
+            onClick={onReset}
+            disabled={sending}
+            className="flex items-center gap-1 text-[9px] font-mono uppercase text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <XIcon className="size-3" /> Reset
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
