@@ -19,6 +19,12 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
   {
     date: "2026-05-07 06z",
+    tag: "IMPROVED",
+    title: "A new chat system introduced",
+    body: "An improved, flow-based chat system has been implemented to reduce risk of report mistakes. More incoming.",
+  },
+  {
+    date: "2026-05-07 06z",
     tag: "NEW",
     title: "News bar",
     body: "A new bar in the bottom of the screen, showing your local risk factor based on your entered home town.",
