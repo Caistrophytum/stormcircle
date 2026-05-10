@@ -145,7 +145,9 @@ const Index = () => {
                 </button>
                 <button
                   onClick={() => setRightOpen(!rightOpen)}
-                  className="px-4 h-[50px] glass-panel hover:border-primary/50 transition-all flex flex-col justify-center items-center gap-0.5 min-w-[75px]"
+                  className={`px-4 h-[50px] glass-panel hover:border-primary/50 transition-all flex flex-col justify-center items-center gap-0.5 min-w-[75px] ${
+                    rightGlow ? "report-glow" : ""
+                  }`}
                   title={rightOpen ? "Collapse right panel" : "Expand right panel"}
                 >
                   {rightOpen
