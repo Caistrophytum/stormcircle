@@ -26,6 +26,7 @@ import CitizenReports from "@/components/CitizenReports";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
 import { useNewReportPing } from "@/hooks/useNewReportPing";
+import { useNewLSRPing } from "@/hooks/useNewLSRPing";
 import { useSPCOutlook } from "@/hooks/useSPCOutlook";
 
 
@@ -38,15 +39,25 @@ const Index = () => {
   const [rightOpen, setRightOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
 
-  // Glow the left menu button for ~2s whenever a new SKYWARN report arrives.
-  const reportPing = useNewReportPing();
+  // Glow the LEFT menu button (~2s) whenever a new SKYWARN/LSR report arrives.
+  const lsrPing = useNewLSRPing();
   const [leftGlow, setLeftGlow] = useState(false);
   useEffect(() => {
-    if (reportPing === 0) return;
+    if (lsrPing === 0) return;
     setLeftGlow(true);
     const t = setTimeout(() => setLeftGlow(false), 2000);
     return () => clearTimeout(t);
-  }, [reportPing]);
+  }, [lsrPing]);
+
+  // Glow the RIGHT panel button (~2s) whenever a new chat message arrives.
+  const chatPing = useNewReportPing();
+  const [rightGlow, setRightGlow] = useState(false);
+  useEffect(() => {
+    if (chatPing === 0) return;
+    setRightGlow(true);
+    const t = setTimeout(() => setRightGlow(false), 2000);
+    return () => clearTimeout(t);
+  }, [chatPing]);
 
   // Track viewport width so we can recompute the overlay scale on resize.
   const [viewportW, setViewportW] = useState(() =>
@@ -134,7 +145,9 @@ const Index = () => {
                 </button>
                 <button
                   onClick={() => setRightOpen(!rightOpen)}
-                  className="px-4 h-[50px] glass-panel hover:border-primary/50 transition-all flex flex-col justify-center items-center gap-0.5 min-w-[75px]"
+                  className={`px-4 h-[50px] glass-panel hover:border-primary/50 transition-all flex flex-col justify-center items-center gap-0.5 min-w-[75px] ${
+                    rightGlow ? "report-glow" : ""
+                  }`}
                   title={rightOpen ? "Collapse right panel" : "Expand right panel"}
                 >
                   {rightOpen
