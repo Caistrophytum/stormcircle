@@ -26,6 +26,7 @@ import CitizenReports from "@/components/CitizenReports";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
 import { useNewReportPing } from "@/hooks/useNewReportPing";
+import { useNewLSRPing } from "@/hooks/useNewLSRPing";
 import { useSPCOutlook } from "@/hooks/useSPCOutlook";
 
 
