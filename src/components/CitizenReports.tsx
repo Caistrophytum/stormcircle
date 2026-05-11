@@ -35,6 +35,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCitySearch } from "@/hooks/useCitySearch";
 import { groupMessages, messageSignature, type RawMessage, type StackedReport } from "@/lib/reportGrouping";
+import { useReportDistances } from "@/hooks/useReportDistances";
+
+type SortMode = "default" | "newest" | "nearest";
 
 /** Curated list of reportable phenomena. Labels are inserted verbatim into
  *  the composed message, so they should already match grouping vocabulary
