@@ -466,7 +466,7 @@ export default function CitizenReports() {
             No reports yet. Be the first to report an event.
           </p>
         ) : (
-          stacks.map((stack) => {
+          sortedStacks.map((stack) => {
             const isOpen = expanded.has(stack.id);
             const soloReport = stack.reports[0];
             const isSolo = stack.count === 1;
