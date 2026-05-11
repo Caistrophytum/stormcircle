@@ -21,7 +21,7 @@ function getMagnitudeUnit(typetext: string): string {
 }
 
 const IntegrationPanel = () => {
-  const { reports, loading, error, lastUpdated } = useLSR();
+  const { reports, lastUpdated } = useLSR();
 
   return (
     <div className="flex flex-col h-full">
@@ -32,22 +32,6 @@ const IntegrationPanel = () => {
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2 w-fit">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full flex-col gap-2">
-              <div className="glass-panel flex flex-wrap gap-x-3 gap-y-1 p-2 text-[10px] font-mono font-bold uppercase">
-                {["TORNADO", "LARGE HAIL", "DAMAGING WIND", "FLOOD", "FLASH FLOOD"].map((type) => {
-                  const count = reports.filter((report) =>
-                    report.typetext.toUpperCase().includes(type)
-                  ).length;
-                  if (count === 0) return null;
-                  return (
-                    <span key={type} style={{ color: getLSRColor(type) }}>
-                      {type}: {count}
-                    </span>
-                  );
-                })}
-                {loading && <span className="text-muted-foreground">LOADING LSR...</span>}
-                {error && <span className="text-destructive">LSR ERROR</span>}
-              </div>
-
               <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                 {reports.map((report) => (
                   <div
