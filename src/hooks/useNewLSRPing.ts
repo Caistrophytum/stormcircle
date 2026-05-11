@@ -1,6 +1,6 @@
 /**
  * useNewLSRPing — polls the IEM LSR feed every minute and emits an
- * incrementing counter whenever a *newer* SKYWARN/LSR report appears
+ * incrementing counter whenever a *newer* Professional Weather Report appears
  * (i.e. one with a `valid` timestamp later than the latest seen so far).
  *
  * The first fetch after mount establishes the baseline and does NOT count
