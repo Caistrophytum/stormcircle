@@ -387,6 +387,45 @@ export default function CitizenReports() {
           Public Weather Reports
         </h3>
         <p className="text-[9px] font-mono text-muted-foreground mt-1 uppercase">2-hour rolling history</p>
+
+        {/* Sort selector */}
+        <div className="mt-2 flex items-center gap-1">
+          <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-wide shrink-0">
+            Sort
+          </span>
+          <div className="flex flex-1 gap-1">
+            {(
+              [
+                { v: "default", label: "Priority" },
+                { v: "newest", label: "Newest" },
+                { v: "nearest", label: "Nearest" },
+              ] as { v: SortMode; label: string }[]
+            ).map(({ v, label }) => {
+              const disabled = v === "nearest" && !canSortByLocation;
+              const active = sortMode === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => setSortMode(v)}
+                  title={
+                    disabled
+                      ? "Sign in and set a home city to sort by nearest"
+                      : undefined
+                  }
+                  className={`flex-1 text-[9px] font-mono uppercase px-1.5 py-0.5 border rounded-sm transition-colors ${
+                    active
+                      ? "border-primary/60 text-primary bg-primary/10"
+                      : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  } disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:text-muted-foreground`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Stacked reports */}
