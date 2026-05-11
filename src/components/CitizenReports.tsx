@@ -351,7 +351,7 @@ export default function CitizenReports() {
       <div className="p-4 border-b border-border bg-shroud/30">
         <h3 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
           <span className="size-1.5 bg-primary rounded-full animate-pulse" />
-          Citizen Reports - Chatroom
+          Public Weather Reports
         </h3>
         <p className="text-[9px] font-mono text-muted-foreground mt-1 uppercase">2-hour rolling history</p>
       </div>
