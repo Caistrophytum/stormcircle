@@ -97,6 +97,7 @@ export default function CitizenReports() {
   const [sending, setSending] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<PendingAction | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("default");
 
   // Structured composer state
   const [phenomenon, setPhenomenon] = useState<string | null>(null);
