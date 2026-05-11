@@ -35,6 +35,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCitySearch } from "@/hooks/useCitySearch";
 import { groupMessages, messageSignature, type RawMessage, type StackedReport } from "@/lib/reportGrouping";
+import { useReportDistances } from "@/hooks/useReportDistances";
+
+type SortMode = "default" | "newest" | "nearest";
 
 /** Curated list of reportable phenomena. Labels are inserted verbatim into
  *  the composed message, so they should already match grouping vocabulary
@@ -94,6 +97,7 @@ export default function CitizenReports() {
   const [sending, setSending] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<PendingAction | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("default");
 
   // Structured composer state
   const [phenomenon, setPhenomenon] = useState<string | null>(null);
@@ -134,6 +138,35 @@ export default function CitizenReports() {
 
   // ── Derive grouped, ranked stacks from non-system messages ──────────
   const stacks = useMemo(() => groupMessages(userMessages, approvedSigs), [userMessages, approvedSigs]);
+
+  const homeLocation = profile?.location ?? null;
+  const canSortByLocation = !!user && !!homeLocation;
+
+  // If user picks "nearest" then loses eligibility, fall back to default.
+  useEffect(() => {
+    if (sortMode === "nearest" && !canSortByLocation) setSortMode("default");
+  }, [sortMode, canSortByLocation]);
+
+  const distances = useReportDistances(stacks, homeLocation, sortMode === "nearest");
+
+  const sortedStacks = useMemo(() => {
+    if (sortMode === "default") return stacks;
+    const arr = [...stacks];
+    if (sortMode === "newest") {
+      arr.sort(
+        (a, b) => new Date(b.latestTime).getTime() - new Date(a.latestTime).getTime(),
+      );
+      return arr;
+    }
+    // nearest
+    arr.sort((a, b) => {
+      const da = distances.get(a.id) ?? Infinity;
+      const db = distances.get(b.id) ?? Infinity;
+      if (da !== db) return da - db;
+      return new Date(b.latestTime).getTime() - new Date(a.latestTime).getTime();
+    });
+    return arr;
+  }, [stacks, sortMode, distances]);
 
   function toggleExpand(id: string) {
     setExpanded((prev) => {
@@ -354,6 +387,45 @@ export default function CitizenReports() {
           Public Weather Reports
         </h3>
         <p className="text-[9px] font-mono text-muted-foreground mt-1 uppercase">2-hour rolling history</p>
+
+        {/* Sort selector */}
+        <div className="mt-2 flex items-center gap-1">
+          <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-wide shrink-0">
+            Sort
+          </span>
+          <div className="flex flex-1 gap-1">
+            {(
+              [
+                { v: "default", label: "Priority" },
+                { v: "newest", label: "Newest" },
+                { v: "nearest", label: "Nearest" },
+              ] as { v: SortMode; label: string }[]
+            ).map(({ v, label }) => {
+              const disabled = v === "nearest" && !canSortByLocation;
+              const active = sortMode === v;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => setSortMode(v)}
+                  title={
+                    disabled
+                      ? "Sign in and set a home city to sort by nearest"
+                      : undefined
+                  }
+                  className={`flex-1 text-[9px] font-mono uppercase px-1.5 py-0.5 border rounded-sm transition-colors ${
+                    active
+                      ? "border-primary/60 text-primary bg-primary/10"
+                      : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                  } disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:text-muted-foreground`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Stacked reports */}
@@ -394,7 +466,7 @@ export default function CitizenReports() {
             No reports yet. Be the first to report an event.
           </p>
         ) : (
-          stacks.map((stack) => {
+          sortedStacks.map((stack) => {
             const isOpen = expanded.has(stack.id);
             const soloReport = stack.reports[0];
             const isSolo = stack.count === 1;
