@@ -191,7 +191,7 @@
 
 
 
-/* Pulsing glow on the left menu button when a new SKYWARN report arrives. */
+/* Pulsing glow on the left menu button when a new Professional Weather Report arrives. */
 @keyframes report-glow-pulse {
   0%, 100% {
     box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
