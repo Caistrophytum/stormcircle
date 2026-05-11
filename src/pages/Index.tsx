@@ -39,7 +39,7 @@ const Index = () => {
   const [rightOpen, setRightOpen] = useState(true);
   const [leftOpen, setLeftOpen] = useState(false);
 
-  // Glow the LEFT menu button (~2s) whenever a new SKYWARN/LSR report arrives.
+  // Glow the LEFT menu button (~2s) whenever a new Professional Weather Report arrives.
   const lsrPing = useNewLSRPing();
   const [leftGlow, setLeftGlow] = useState(false);
   useEffect(() => {
