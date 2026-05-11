@@ -139,6 +139,35 @@ export default function CitizenReports() {
   // ── Derive grouped, ranked stacks from non-system messages ──────────
   const stacks = useMemo(() => groupMessages(userMessages, approvedSigs), [userMessages, approvedSigs]);
 
+  const homeLocation = profile?.location ?? null;
+  const canSortByLocation = !!user && !!homeLocation;
+
+  // If user picks "nearest" then loses eligibility, fall back to default.
+  useEffect(() => {
+    if (sortMode === "nearest" && !canSortByLocation) setSortMode("default");
+  }, [sortMode, canSortByLocation]);
+
+  const distances = useReportDistances(stacks, homeLocation, sortMode === "nearest");
+
+  const sortedStacks = useMemo(() => {
+    if (sortMode === "default") return stacks;
+    const arr = [...stacks];
+    if (sortMode === "newest") {
+      arr.sort(
+        (a, b) => new Date(b.latestTime).getTime() - new Date(a.latestTime).getTime(),
+      );
+      return arr;
+    }
+    // nearest
+    arr.sort((a, b) => {
+      const da = distances.get(a.id) ?? Infinity;
+      const db = distances.get(b.id) ?? Infinity;
+      if (da !== db) return da - db;
+      return new Date(b.latestTime).getTime() - new Date(a.latestTime).getTime();
+    });
+    return arr;
+  }, [stacks, sortMode, distances]);
+
   function toggleExpand(id: string) {
     setExpanded((prev) => {
       const next = new Set(prev);
