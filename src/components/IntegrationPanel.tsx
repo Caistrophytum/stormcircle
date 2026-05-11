@@ -21,7 +21,7 @@ function getMagnitudeUnit(typetext: string): string {
 }
 
 const IntegrationPanel = () => {
-  const { reports, loading, error, lastUpdated } = useLSR();
+  const { reports, lastUpdated } = useLSR();
 
   return (
     <div className="flex flex-col h-full">
