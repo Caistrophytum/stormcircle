@@ -713,6 +713,21 @@ export default function CitizenReports() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Nearest sort unavailable dialog */}
+      <AlertDialog open={showNearestDialog} onOpenChange={(o) => !o && setShowNearestDialog(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Location sorting unavailable</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please sign in and set a home town in the Account Center to sort reports by distance.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowNearestDialog(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }
