@@ -395,7 +395,7 @@ export default function CitizenReports() {
             Sort
           </span>
           <div className="flex flex-1 gap-1">
-            {(
+          {(
               [
                 { v: "default", label: "Priority" },
                 { v: "newest", label: "Newest" },
@@ -408,18 +408,19 @@ export default function CitizenReports() {
                 <button
                   key={v}
                   type="button"
-                  disabled={disabled}
-                  onClick={() => setSortMode(v)}
-                  title={
-                    disabled
-                      ? "Sign in and set a home city to sort by nearest"
-                      : undefined
-                  }
+                  disabled={disabled && v !== "nearest"}
+                  onClick={() => {
+                    if (v === "nearest" && !canSortByLocation) {
+                      setShowNearestDialog(true);
+                    } else {
+                      setSortMode(v);
+                    }
+                  }}
                   className={`flex-1 text-[9px] font-mono uppercase px-1.5 py-0.5 border rounded-sm transition-colors ${
                     active
                       ? "border-primary/60 text-primary bg-primary/10"
                       : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                  } disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:text-muted-foreground`}
+                  } ${disabled ? "opacity-40 cursor-not-allowed hover:border-border hover:text-muted-foreground" : ""}`}
                 >
                   {label}
                 </button>
