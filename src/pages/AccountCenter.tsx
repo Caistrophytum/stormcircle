@@ -575,6 +575,7 @@ const AccountCenter = () => {
         </AlertDialogContent>
       </AlertDialog>
     </main>
+    </>
   );
 };
 
