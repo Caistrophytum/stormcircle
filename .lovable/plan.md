@@ -1,64 +1,37 @@
 ## Goal
 
-Extend the red home-city bar so it also shows the distance to the nearest "most dangerous" active warning polygon, and auto-scroll the bar horizontally when text overflows.
+Add a "Join Report" button to each report stack in the Public Weather Reports panel. Logged-in users can click it once per stack to post a "[username] has joined the report." message into that stack's topic.
 
-## Behavior
+## UX
 
-When a signed-in user has a home city set, the bar text becomes:
+- Button appears centered in the stack header, always visible (collapsed or expanded), only for signed-in users — guests see nothing.
+- Sits on its own row beneath the topic text so it doesn't crowd the meta row.
+- Once the user has joined that stack (i.e. the stack already contains a join message authored by them), the button is replaced with a muted "✓ Joined" label.
+- Clicking the button is independent of expand/collapse (stop event propagation).
 
-```
-Now in your home city of [city]: [SPC risk]. Nearest [event]: [X] mi away.
-```
+## Message format
 
-If no qualifying polygon exists anywhere in the active feed, the trailing sentence is omitted (bar still shows the SPC risk part). The "no hometown" and "signed out" states are unchanged.
+- Content sent: `{username} has joined the report.`
+- Posted as a normal `messages` row using the existing INSERT path (same RLS, same realtime feed).
+- The grouping signature of "has joined the report" is shared across all join messages, so they would normally collapse into their own stack. To keep the join inside its parent topic, the inserted message will reuse the parent stack's topic text by appending it: `{username} has joined the report — {stack.topic}`. This makes the signature match the parent stack, so it appears nested inside it.
 
-If the rendered text is wider than the bar, it auto-scrolls horizontally as a continuous marquee. If it fits, no animation runs.
+## Detecting "already joined"
 
-## What counts as "most dangerous"
+- Check `stack.reports` for any message where `user_id === currentUser.id` and `content` starts with `"{username} has joined the report"`.
+- Purely client-side derivation; no schema changes.
 
-Rank polygons by event severity (highest first). Within the highest tier present in the feed, pick the polygon whose nearest edge is closest to the home city.
+## Implementation details
 
-Tiering (top wins):
-1. Tornado Emergency
-2. PDS Tornado Warning
-3. Tornado Warning
-4. Flash Flood Emergency
-5. PDS Severe Thunderstorm Warning
-6. Severe Thunderstorm Warning
-7. Flash Flood Warning
-8. Other Warnings (any "...Warning" event)
+- File: `src/components/CitizenReports.tsx` only. No DB migration, no new hook.
+- Add `joinReport(stack)` async handler near `approveStack`/`unapproveStack` that inserts the message via `supabase.from("messages").insert(...)`. Toast on error.
+- In the stack header render block (around line 547, after the latest-comment preview, before the action row), render:
+  - If `!user`: nothing.
+  - If user already joined: centered `<span>✓ Joined</span>` styled muted/mono.
+  - Else: centered `<button>Join Report</button>` styled with neon-amber border (matches existing approve button language but in primary color).
+- Wrap in a flex `justify-center` container with `pt-1`, and call `e.stopPropagation()` on the click so it doesn't toggle expand.
 
-Watches/advisories are ignored — bar only highlights warning-tier hazards.
+## Out of scope
 
-## Distance
-
-Haversine distance from the home city's lat/lon to the nearest vertex of the polygon's outer ring(s). Display in miles when the user's unit system is imperial, kilometres when metric, rounded to the nearest whole unit (or 1 decimal under 10).
-
-## Implementation outline
-
-### `src/hooks/useHomeCityRisk.ts`
-- Also expose the resolved `coords` (`{ lat, lon } | null`) alongside `risk` / `loading`. Keep current SPC logic intact.
-
-### New helper inside `TacticalMap.tsx` (or small util in `src/lib/`)
-- `rankPolygon(p)` returns a numeric tier from the list above, or `null` to exclude.
-- `nearestVertexDistanceKm(coords, geometry)` walks the polygon/multipolygon outer rings using haversine.
-
-### `src/components/TacticalMap.tsx`
-- Pull `useWarningPolygons()` and `useUnitSystem()` (already imported).
-- Compute `nearestDanger` with `useMemo` over polygons + home coords: filter to ranked polygons, group by highest tier present, pick min distance.
-- Build the bar text in one string. Append `"Nearest <event>: <X> <unit> away."` when available.
-- Replace the current single `<span>` with a marquee container:
-  - Outer div: `overflow-hidden`, full bar width.
-  - Inner flex with the text rendered twice back-to-back (for seamless loop), animated with a CSS keyframe `translateX(0) → translateX(-50%)`.
-  - Use a `ResizeObserver` (or measure on mount + on text change) to compare `scrollWidth` vs `clientWidth`; toggle a `data-scroll` attribute that enables/disables the animation. When not overflowing, render a single span with `truncate` removed so full text shows.
-  - Animation duration scales with text length (e.g. `text.length * 0.18s`, min 12s) so longer text scrolls at a steady speed.
-
-### `src/index.css`
-- Add a `@keyframes marquee` (0 → -50% translateX) and a `.animate-marquee` utility class referencing it. Pause on hover for accessibility.
-
-## Notes / trade-offs
-
-- Distance uses nearest *vertex* rather than nearest *edge* — vertex is sufficient at NWS polygon resolution (typically <5 km between vertices) and avoids segment-projection math.
-- `useWarningPolygons` already refreshes every 60s via the shared tick, so the bar updates without extra plumbing.
-- Marquee uses pure CSS transform — no JS animation loop, no layout thrash.
-- No backend or schema changes.
+- No new table, no per-user join tracking table.
+- No "leave report" action.
+- Join messages still obey the 2-hour rolling window like every other message.

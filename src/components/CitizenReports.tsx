@@ -325,6 +325,23 @@ export default function CitizenReports() {
     }
   }
 
+  async function joinReport(stack: StackedReport) {
+    if (!user || !profile) return;
+    // Embed the topic so the message groups into this stack via the
+    // overlap-based matcher in reportGrouping.ts.
+    const content = `${stack.topic} — ${profile.username} has joined the report.`.slice(
+      0,
+      MAX_MESSAGE_LENGTH,
+    );
+    const { error } = await supabase.from("messages").insert({
+      user_id: user.id,
+      username: profile.username,
+      badge: profile.badge,
+      content,
+    });
+    if (error) toast.error("Failed to join report");
+  }
+
   async function approveStack(stack: StackedReport) {
     if (!user || !isModerator) return;
     // Optimistic
@@ -541,6 +558,30 @@ export default function CitizenReports() {
                         <p className="text-[10px] font-mono text-foreground/70 leading-snug break-words whitespace-pre-wrap line-clamp-2">
                           {latest.content}
                         </p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Join Report — signed-in users only, once per stack */}
+                  {user && !isGeneral && (() => {
+                    const alreadyJoined = stack.reports.some(
+                      (r) => r.user_id === user.id && /has joined the report/i.test(r.content),
+                    );
+                    return (
+                      <div className="flex justify-center pt-1" onClick={(e) => e.stopPropagation()}>
+                        {alreadyJoined ? (
+                          <span className="text-[9px] font-mono uppercase tracking-wide px-2 py-0.5 border border-neon-green/30 text-neon-green/80 bg-neon-green/5 rounded">
+                            ✓ Joined
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => joinReport(stack)}
+                            className="text-[9px] font-mono uppercase font-bold px-3 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 rounded transition-colors"
+                          >
+                            Join Report
+                          </button>
+                        )}
                       </div>
                     );
                   })()}
