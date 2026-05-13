@@ -325,6 +325,23 @@ export default function CitizenReports() {
     }
   }
 
+  async function joinReport(stack: StackedReport) {
+    if (!user || !profile) return;
+    // Embed the topic so the message groups into this stack via the
+    // overlap-based matcher in reportGrouping.ts.
+    const content = `${stack.topic} — ${profile.username} has joined the report.`.slice(
+      0,
+      MAX_MESSAGE_LENGTH,
+    );
+    const { error } = await supabase.from("messages").insert({
+      user_id: user.id,
+      username: profile.username,
+      badge: profile.badge,
+      content,
+    });
+    if (error) toast.error("Failed to join report");
+  }
+
   async function approveStack(stack: StackedReport) {
     if (!user || !isModerator) return;
     // Optimistic
