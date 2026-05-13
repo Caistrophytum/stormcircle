@@ -71,7 +71,13 @@ const ResetPassword = () => {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-background p-4">
+    <>
+      <Helmet>
+        <title>Reset Password — StormCircle</title>
+        <meta name="description" content="Reset your StormCircle account password to regain access to real-time storm reporting and weather alerts." />
+        <link rel="canonical" href="https://stormcircle.net/reset-password" />
+      </Helmet>
+      <main className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6 rounded-lg border border-border bg-card p-8 shadow-lg">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Reset password</h1>
