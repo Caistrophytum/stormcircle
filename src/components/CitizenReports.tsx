@@ -562,6 +562,30 @@ export default function CitizenReports() {
                     );
                   })()}
 
+                  {/* Join Report — signed-in users only, once per stack */}
+                  {user && !isGeneral && (() => {
+                    const alreadyJoined = stack.reports.some(
+                      (r) => r.user_id === user.id && /has joined the report/i.test(r.content),
+                    );
+                    return (
+                      <div className="flex justify-center pt-1" onClick={(e) => e.stopPropagation()}>
+                        {alreadyJoined ? (
+                          <span className="text-[9px] font-mono uppercase tracking-wide px-2 py-0.5 border border-neon-green/30 text-neon-green/80 bg-neon-green/5 rounded">
+                            ✓ Joined
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => joinReport(stack)}
+                            className="text-[9px] font-mono uppercase font-bold px-3 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 rounded transition-colors"
+                          >
+                            Join Report
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Action row (approve / delete) */}
                   {(showApprove || showUnapprove || showSoloDelete || showStackDelete) && (
                     <div className="flex items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
