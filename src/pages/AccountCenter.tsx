@@ -14,6 +14,7 @@
  * `delete_user` is invoked.
  */
 import { useEffect, useState, FormEvent } from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -286,7 +287,13 @@ const AccountCenter = () => {
   const showUnderReview = profile.badge === "Citizen" && profile.meteorologist_applied;
 
   return (
-    <main className="min-h-screen w-full bg-background py-8 px-4 md:px-6">
+    <>
+      <Helmet>
+        <title>Account Center — StormCircle</title>
+        <meta name="description" content="Manage your StormCircle operator profile, meteorologist badge application, home city, and account settings." />
+        <link rel="canonical" href="https://stormcircle.net/account" />
+      </Helmet>
+      <main className="min-h-screen w-full bg-background py-8 px-4 md:px-6">
       <div className="max-w-3xl mx-auto space-y-6">
         <Link
           to="/"
@@ -568,6 +575,7 @@ const AccountCenter = () => {
         </AlertDialogContent>
       </AlertDialog>
     </main>
+    </>
   );
 };
 

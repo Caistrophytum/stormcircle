@@ -16,6 +16,7 @@
  *     (no open-redirect vector via query params)
  */
 import { useState, FormEvent } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { LogIn, UserPlus, KeyRound, Loader2, ArrowLeft, MailCheck } from "lucide-react";
 import { z } from "zod";
@@ -285,7 +286,13 @@ const Auth = () => {
   const labelClass = "text-[10px] font-mono uppercase tracking-wider text-muted-foreground";
 
   return (
-    <main className="min-h-screen w-full bg-background flex items-center justify-center p-6">
+    <>
+      <Helmet>
+        <title>Sign In — StormCircle</title>
+        <meta name="description" content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city." />
+        <link rel="canonical" href="https://stormcircle.net/auth" />
+      </Helmet>
+      <main className="min-h-screen w-full bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <Link
           to="/"
@@ -580,6 +587,7 @@ const Auth = () => {
         </div>
       </div>
     </main>
+    </>
   );
 };
 
