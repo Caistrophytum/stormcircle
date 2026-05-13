@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const inputClass =
-  "w-full bg-cockpit/60 border border-border focus:border-primary/60 focus:outline-none rounded-sm px-3 py-2 text-sm font-mono text-card-foreground placeholder:text-muted-foreground/60 transition-colors disabled:opacity-60";
+  "w-full bg-cockpit/60 border border-border focus:border-primary/60 focus:outline-none rounded-sm px-3 py-2 text-sm font-mono text-card-foreground placeholder:text-muted-foreground transition-colors disabled:opacity-60";
 const labelClass = "text-[10px] font-mono uppercase tracking-wider text-muted-foreground";
 
 const SectionHeader = ({ icon: Icon, label, hint }: { icon: typeof UserIcon; label: string; hint?: string }) => (

@@ -45,7 +45,7 @@ export default function MobileGuard({ children }: { children: React.ReactNode })
           StormCircle is optimized for desktop and landscape use. Please rotate your device or
           switch to a larger screen for the best experience.
         </p>
-        <p style={{ color: "#555", fontSize: "0.7rem", marginTop: "2rem" }}>
+        <p style={{ color: "#999", fontSize: "0.7rem", marginTop: "2rem" }}>
           Rotate to landscape to continue on this device.
         </p>
       </div>

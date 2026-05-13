@@ -16,7 +16,7 @@ interface Props {
 }
 
 const inputClass =
-  "w-full bg-cockpit/60 border border-border focus:border-primary/60 focus:outline-none rounded-sm px-3 py-2 text-sm font-mono text-card-foreground placeholder:text-muted-foreground/60 transition-colors disabled:opacity-60";
+  "w-full bg-cockpit/60 border border-border focus:border-primary/60 focus:outline-none rounded-sm px-3 py-2 text-sm font-mono text-card-foreground placeholder:text-muted-foreground transition-colors disabled:opacity-60";
 
 const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
   const [query, setQuery] = useState("");
