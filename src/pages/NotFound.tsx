@@ -6,6 +6,7 @@
  * broken links) and offer a one-click way back to the home page.
  */
 import { useLocation } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { useEffect } from "react";
 
 const NotFound = () => {

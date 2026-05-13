@@ -9,6 +9,7 @@
  * via the recovery token but hasn't chosen a new password yet.
  */
 import { FormEvent, useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { toast } from "sonner";

@@ -16,6 +16,7 @@
  *     (no open-redirect vector via query params)
  */
 import { useState, FormEvent } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { LogIn, UserPlus, KeyRound, Loader2, ArrowLeft, MailCheck } from "lucide-react";
 import { z } from "zod";
