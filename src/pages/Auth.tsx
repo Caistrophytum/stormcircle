@@ -291,6 +291,9 @@ const Auth = () => {
         <title>Sign In — StormCircle</title>
         <meta name="description" content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city." />
         <link rel="canonical" href="https://stormcircle.net/auth" />
+        <meta property="og:title" content="Sign In — StormCircle" />
+        <meta property="og:description" content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city." />
+        <meta property="og:url" content="https://stormcircle.net/auth" />
       </Helmet>
       <main className="min-h-screen w-full bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md">
