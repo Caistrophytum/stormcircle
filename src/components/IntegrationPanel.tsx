@@ -25,10 +25,10 @@ const IntegrationPanel = () => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex w-full items-center justify-center gap-1.5 border-b-2 border-primary bg-primary/5 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-primary">
+      <h2 className="flex w-full items-center justify-center gap-1.5 border-b-2 border-primary bg-primary/5 px-4 py-2 text-[10px] font-mono font-bold uppercase tracking-wider text-primary">
         <Radio className="size-3" />
         Professional Weather Reports
-      </div>
+      </h2>
 
       <div className="flex-1 overflow-y-auto p-3 space-y-2 w-fit">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full flex-col gap-2">
