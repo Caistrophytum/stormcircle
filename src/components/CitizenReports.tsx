@@ -400,7 +400,7 @@ export default function CitizenReports() {
     <aside className="w-80 h-full border-l border-border bg-cockpit flex flex-col shrink-0">
       {/* Header */}
       <div className="p-4 border-b border-border bg-shroud/30">
-        <h3 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
+        <h2 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
           <span className="size-1.5 bg-primary rounded-full animate-pulse" />
           Public Weather Reports
         </h3>
