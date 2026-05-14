@@ -893,6 +893,7 @@ function ComposerDropdowns({
                   value={placeQuery}
                   onChange={(e) => onChangePlaceQuery(e.target.value)}
                   placeholder="Search a US city..."
+                  aria-label="Search for a US city"
                   maxLength={80}
                   autoFocus
                   className="w-full bg-background/50 border border-border px-2 py-1 text-[11px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 rounded-sm"
