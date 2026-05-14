@@ -400,10 +400,10 @@ export default function CitizenReports() {
     <aside className="w-80 h-full border-l border-border bg-cockpit flex flex-col shrink-0">
       {/* Header */}
       <div className="p-4 border-b border-border bg-shroud/30">
-        <h3 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
+        <h2 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
           <span className="size-1.5 bg-primary rounded-full animate-pulse" />
           Public Weather Reports
-        </h3>
+        </h2>
         <p className="text-[9px] font-mono text-muted-foreground mt-1 uppercase">2-hour rolling history</p>
 
         {/* Sort selector */}
@@ -893,6 +893,7 @@ function ComposerDropdowns({
                   value={placeQuery}
                   onChange={(e) => onChangePlaceQuery(e.target.value)}
                   placeholder="Search a US city..."
+                  aria-label="Search for a US city"
                   maxLength={80}
                   autoFocus
                   className="w-full bg-background/50 border border-border px-2 py-1 text-[11px] font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40 rounded-sm"

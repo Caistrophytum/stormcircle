@@ -100,6 +100,7 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
             }}
             maxLength={80}
             placeholder="Search a city..."
+            aria-label="Search for a city"
             className={inputClass}
             disabled={saving}
           />
