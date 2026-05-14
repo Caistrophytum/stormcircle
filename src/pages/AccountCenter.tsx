@@ -292,6 +292,9 @@ const AccountCenter = () => {
         <title>Account Center — StormCircle</title>
         <meta name="description" content="Manage your StormCircle operator profile, meteorologist badge application, home city, and account settings." />
         <link rel="canonical" href="https://stormcircle.net/account" />
+        <meta property="og:title" content="Account Center — StormCircle" />
+        <meta property="og:description" content="Manage your StormCircle operator profile, meteorologist badge application, home city, and account settings." />
+        <meta property="og:url" content="https://stormcircle.net/account" />
       </Helmet>
       <main className="min-h-screen w-full bg-background py-8 px-4 md:px-6">
       <div className="max-w-3xl mx-auto space-y-6">
