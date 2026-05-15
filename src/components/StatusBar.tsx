@@ -95,6 +95,15 @@ const StatusBar = () => {
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider">{badge.label}</span>
           </div>
         )}
+        <button
+          onClick={() => navigate("/faq")}
+          aria-label="Open Frequently Asked Questions"
+          title="FAQ"
+          className="flex items-center gap-1.5 px-2 py-1 border border-primary/25 bg-primary/5 text-primary rounded-sm hover:bg-primary/10 hover:border-primary/50 transition-colors"
+        >
+          <HelpCircle className="size-3" />
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider">FAQ</span>
+        </button>
         <div className="flex flex-col">
           <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">
             {selectedCity ? selectedCity.name : "Coord"}
