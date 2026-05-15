@@ -14,17 +14,17 @@ const faqs = [
   {
     question: "What is StormCircle?",
     answer:
-      "StormCircle is a free weather social network where anyone — from curious members of the public to professional meteorologists — can share real-time storm reports, follow severe weather events, and stay informed during active weather situations across the USA.",
+      "StormCircle is a free weather social network where anyone, from curious members of the public to professional meteorologists can share real-time storm reports, follow severe weather events, and stay informed during active weather situations across the USA.",
   },
   {
     question: "Who is StormCircle for?",
     answer:
-      "StormCircle is built for everyone. Whether you're a professional meteorologist sharing a verified severe weather warning, a storm enthusiast tracking a supercell, or an everyday person wanting to know if that dark cloud is something to worry about — StormCircle connects you with the right information at the right time.",
+      "StormCircle is built for everyone. Whether you're a professional meteorologist sharing a verified severe weather warning, a storm enthusiast tracking a supercell, or an everyday person wanting to know if that dark cloud is something to worry about - StormCircle connects you with the right information at the right time.",
   },
   {
     question: "How do I report severe weather on StormCircle?",
     answer:
-      "Simply create a free account, log in, and post your storm report to the live community feed. Describe what you're observing — wind, hail, flooding, rotation — and your report becomes instantly visible to other users and meteorologists monitoring the platform.",
+      "Simply create a free account, log in, and post your storm report to the live community feed. Describe what you're observing: wind, hail, flooding, rotation, and your report becomes instantly visible to other users and meteorologists monitoring the platform.",
   },
   {
     question: "Is StormCircle free to use?",
@@ -34,12 +34,12 @@ const faqs = [
   {
     question: "How is StormCircle different from other weather apps?",
     answer:
-      "Most weather apps give you forecasts. StormCircle gives you a community. It's the only platform designed specifically to bridge professional meteorologists and the general public in a shared, real-time space — combining social networking with live severe weather data, NEXRAD radar overlays, and SPC outlook information.",
+      "Most weather apps give you forecasts. StormCircle gives you a community. It's the only platform designed specifically to bridge professional meteorologists and the general public in a shared, real-time space, combining social networking with live severe weather data, NEXRAD radar overlays, and SPC outlook information.",
   },
   {
     question: "Can meteorologists use StormCircle professionally?",
     answer:
-      "Absolutely. StormCircle features a verified Meteorologist badge for credentialed professionals. Meteorologists can use the platform to share situational awareness updates, communicate warnings directly to the public, and monitor citizen storm reports as ground-truth data during active weather events.",
+      "Absolutely. StormCircle features a verified Meteorologist badge for credentialed professionals. Meteorologists can use the platform to share situational awareness updates, communicate warnings directly to the public, and monitor citizen storm reports as ground-truth data during active weather events. If you're a certified, known meteorologist, you can apply to get your badge in the Contact section, which sits in the Account Center.",
   },
   {
     question: "What severe weather data does StormCircle show?",
@@ -49,7 +49,7 @@ const faqs = [
   {
     question: "Does StormCircle cover weather outside the USA?",
     answer:
-      "StormCircle currently focuses on the United States, where our severe weather data integrations — including NEXRAD radar and NWS alerts — provide the most comprehensive coverage. International expansion is on our roadmap.",
+      "StormCircle currently focuses on the United States, where our severe weather data integrations, including NEXRAD radar and NWS alerts provide the most comprehensive coverage. International expansion is on our roadmap.",
   },
   {
     question: "Where can I find real-time storm reports near me?",
@@ -59,7 +59,7 @@ const faqs = [
   {
     question: "How do I get started on StormCircle?",
     answer:
-      "Visit StormCircle.net, create a free account, and you're in. No app download required — StormCircle runs entirely in your browser. Join the community, follow active weather discussions, and start contributing reports from your area.",
+      "Visit StormCircle.net, create a free account, and you're in. No app download required: StormCircle runs entirely in your browser. Join the community, follow active weather discussions, and start contributing reports from your area.",
   },
 ];
 
@@ -100,16 +100,14 @@ export default function FAQ() {
           <div className="mb-10">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-primary/30 bg-primary/10 text-primary rounded-sm mb-5">
               <HelpCircle className="size-3" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
-                Knowledge Base
-              </span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Knowledge Base</span>
             </div>
             <h1 className="font-mono text-3xl md:text-4xl font-bold tracking-tight text-card-foreground mb-3">
               Frequently Asked Questions
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-              Everything you need to know about StormCircle — the weather social
-              network connecting meteorologists and the public in real time.
+              Everything you need to know about StormCircle — the weather social network connecting meteorologists and
+              the public in real time.
             </p>
           </div>
 
@@ -129,9 +127,7 @@ export default function FAQ() {
                     aria-expanded={open}
                     className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left"
                   >
-                    <span className="text-sm md:text-[0.95rem] font-medium text-card-foreground">
-                      {faq.question}
-                    </span>
+                    <span className="text-sm md:text-[0.95rem] font-medium text-card-foreground">{faq.question}</span>
                     <span
                       className={`shrink-0 size-7 rounded-full border border-primary/40 flex items-center justify-center text-primary transition-transform duration-300 ${
                         open ? "rotate-45 bg-primary/15" : ""
@@ -148,9 +144,7 @@ export default function FAQ() {
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeInOut" }}
                       >
-                        <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">
-                          {faq.answer}
-                        </p>
+                        <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
                       </motion.div>
                     )}
                   </AnimatePresence>
