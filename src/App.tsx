@@ -26,6 +26,7 @@ import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import AccountCenter from "./pages/AccountCenter.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
+import FAQ from "./pages/FAQ.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 // One QueryClient instance for the whole app — cache survives across pages.
