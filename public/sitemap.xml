@@ -19,5 +19,9 @@
     <loc>https://stormcircle.net/reset-password</loc>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
+  <url>
+    <loc>https://stormcircle.net/faq</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
 </urlset>
