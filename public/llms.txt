@@ -1,0 +1,10 @@
+# StormCircle
+
+> A weather social network connecting meteorologists and the public for real-time storm reporting, alerts, and community weather communication.
+
+StormCircle combines live radar data, severe weather outlooks, and citizen reports into a single tactical map interface. Users can view real-time storm conditions, submit verified weather reports, and communicate with a community of meteorologists and weather enthusiasts.
+
+## Pages
+
+- [Home](/): Real-time tactical weather map with radar, storm outlooks, and citizen reports.
+- [Account](/account): Operator profile, meteorologist badge application, and account settings.
