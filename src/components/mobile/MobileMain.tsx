@@ -335,58 +335,42 @@ export default function MobileMain() {
           textTransform: "uppercase",
           letterSpacing: "0.04em",
           borderRadius: "2px",
+          whiteSpace: "pre-line",
         }}
       >
         {hometownText}
       </div>
 
-      {/* 3. SPC bot message */}
-      <div
-        style={{
-          padding: "8px 10px",
-          border: "1px solid rgba(255,165,0,0.3)",
-          background: "rgba(255,165,0,0.08)",
-          borderRadius: "2px",
-          color: "#ffa500",
-          fontSize: "11px",
-        }}
-      >
-        <div style={{ fontSize: "9px", letterSpacing: "0.15em", fontWeight: 700, opacity: 0.85, marginBottom: "4px" }}>
-          SPC BOT · LATEST OUTLOOK
+      {/* 3. SPC bot message — interactive (expandable per-risk dropdowns) */}
+      {botMsg ? (
+        <SystemMessageCard
+          message={
+            {
+              id: botMsg.id,
+              user_id: BOT_USER_ID,
+              username: "SPC Bot",
+              badge: "System",
+              content: botMsg.content,
+              created_at: botMsg.created_at,
+            } satisfies RawMessage
+          }
+          expandedKey={expandedKey}
+          toggle={toggleKey}
+        />
+      ) : (
+        <div
+          style={{
+            padding: "8px 10px",
+            border: "1px solid rgba(255,165,0,0.3)",
+            background: "rgba(255,165,0,0.08)",
+            borderRadius: "2px",
+            color: "#888",
+            fontSize: "11px",
+          }}
+        >
+          No SPC outlook yet.
         </div>
-        {!botMsg && <div style={{ color: "#888" }}>No outlook yet.</div>}
-        {botMsg && (
-          <>
-            <div style={{ marginBottom: "4px" }}>{botHeader}</div>
-            {botPayload ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                {botPayload.groups.map((g) => (
-                  <div
-                    key={g.label}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "8px",
-                      padding: "3px 6px",
-                      background: "rgba(255,255,255,0.04)",
-                      borderRadius: "2px",
-                      fontSize: "10px",
-                    }}
-                  >
-                    <span style={{ fontWeight: 700, textTransform: "uppercase" }}>{g.riskLabel}</span>
-                    <span style={{ opacity: 0.8 }}>
-                      {g.counties.length} {g.counties.length === 1 ? "county" : "counties"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              botBody && <div style={{ whiteSpace: "pre-line", opacity: 0.9 }}>{botBody}</div>
-            )}
-          </>
-        )}
-      </div>
-
+      )}
       {/* 4. Environmental metrics */}
       <div
         style={{
