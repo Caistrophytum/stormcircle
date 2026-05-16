@@ -16,16 +16,23 @@ export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen
   ];
 
   return (
-    <>
+    <div
+      style={{
+        position: "fixed",
+        bottom: "20px",
+        right: "12px",
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: "10px",
+        zIndex: 500,
+      }}
+    >
       <div
         style={{
-          position: "fixed",
-          top: "12dvh",
-          right: "12px",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
           gap: "10px",
-          zIndex: 500,
           opacity: buttonsVisible ? 1 : 0,
           pointerEvents: buttonsVisible ? "auto" : "none",
           transition: "opacity 0.25s ease",
@@ -48,6 +55,7 @@ export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen
               justifyContent: "center",
               cursor: "pointer",
               boxShadow: `0 0 8px ${btn.color}33`,
+              flexShrink: 0,
             }}
           >
             {btn.icon}
@@ -59,11 +67,8 @@ export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen
         aria-label={buttonsVisible ? "Hide actions" : "Show actions"}
         onClick={onToggle}
         style={{
-          position: "fixed",
-          bottom: "20px",
-          right: "12px",
-          width: "36px",
-          height: "36px",
+          width: "44px",
+          height: "44px",
           borderRadius: "50%",
           background: "rgba(10,10,14,0.85)",
           border: "1px solid rgba(255,157,0,0.4)",
@@ -72,15 +77,15 @@ export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen
           alignItems: "center",
           justifyContent: "center",
           cursor: "pointer",
-          zIndex: 501,
           opacity: buttonsVisible ? 1 : 0.5,
           transition: "opacity 0.25s ease",
           fontSize: "16px",
           fontWeight: 700,
+          flexShrink: 0,
         }}
       >
         {buttonsVisible ? "›" : "‹"}
       </button>
-    </>
+    </div>
   );
 }
