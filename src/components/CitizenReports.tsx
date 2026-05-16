@@ -762,7 +762,7 @@ export default function CitizenReports() {
 
       {/* Nearest sort unavailable dialog */}
       <AlertDialog open={showNearestDialog} onOpenChange={(o) => !o && setShowNearestDialog(false)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg rounded-lg p-4 sm:p-6">
           <AlertDialogHeader>
             <AlertDialogTitle>Location sorting unavailable</AlertDialogTitle>
             <AlertDialogDescription>
