@@ -8,7 +8,7 @@
  *   4. Environmental metrics (5 sounding nodes w/ WRS contributions)
  *   5. WRS bar (0–100)
  */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
@@ -16,10 +16,11 @@ import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import { useUnitSystem, displayTemp, displayLengthM } from "@/hooks/useUnitSystem";
+import { SystemMessageCard } from "@/components/SystemMessageCard";
+import type { RawMessage } from "@/lib/reportGrouping";
 
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
-const ALL_MARKERS_RE = /\s*<!--(?:issue|data):[\s\S]*?-->\s*/g;
-const DATA_MARKER_RE = /<!--data:([\s\S]*?)-->/;
+
 
 const RISK_TEXT: Record<SPCRiskLevel, string> = {
   NONE: "No Severe Risk",
@@ -135,6 +136,25 @@ export default function MobileMain() {
   const unitSystem = useUnitSystem();
   const warningPolygons = useWarningPolygons();
   const botMsg = useSPCBotMessage();
+  const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
+  const toggleKey = (id: string) =>
+    setExpandedKey((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // Pre-set radar to hometown on first load (parallel to desktop TacticalMap).
+  const homePannedRef = useRef(false);
+  useEffect(() => {
+    if (homePannedRef.current) return;
+    if (radar.selectedCity) return;
+    if (!homeRisk.coords || !profile?.location) return;
+    homePannedRef.current = true;
+    const cityName = profile.location.split(",")[0].trim();
+    radar.setSelectedCity({ name: cityName, lat: homeRisk.coords.lat, lon: homeRisk.coords.lon });
+  }, [homeRisk.coords, profile?.location, radar]);
 
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
 
@@ -247,26 +267,12 @@ export default function MobileMain() {
       const val = useMiles ? km * 0.621371 : km;
       const unit = useMiles ? "mi" : "km";
       const formatted = val < 10 ? val.toFixed(1) : Math.round(val).toLocaleString();
-      hometownText += ` Nearest ${nearestDanger.event}: ${formatted} ${unit} away.`;
+      hometownText += `\n\nNearest ${nearestDanger.event}: ${formatted} ${unit} away.`;
     }
   }
 
-  // ── SPC bot rendering ────────────────────────────────────────────
-  const botStripped = botMsg ? botMsg.content.replace(ALL_MARKERS_RE, "").trim() : "";
-  const botHeader = botStripped.split("\n")[0] ?? "SPC Day 1 Outlook";
-  const botBody = botStripped.split("\n").slice(1).join("\n").trim();
-  const botPayload = useMemo(() => {
-    if (!botMsg) return null;
-    const m = botMsg.content.match(DATA_MARKER_RE);
-    if (!m) return null;
-    try {
-      const p = JSON.parse(m[1]);
-      if (!p || !Array.isArray(p.groups)) return null;
-      return p as { groups: { label: string; riskLabel: string; counties: { county: string; state: string }[] }[] };
-    } catch {
-      return null;
-    }
-  }, [botMsg]);
+  // SPC bot rendering is delegated to SystemMessageCard (handles markers, payload, dropdowns).
+
 
   const threatColor =
     threatLevel > 85 ? "#ff3b3b" : threatLevel >= 61 ? "#ff8c00" : threatLevel >= 31 ? "#ff9d00" : "#7CFC00";
@@ -314,58 +320,42 @@ export default function MobileMain() {
           textTransform: "uppercase",
           letterSpacing: "0.04em",
           borderRadius: "2px",
+          whiteSpace: "pre-line",
         }}
       >
         {hometownText}
       </div>
 
-      {/* 3. SPC bot message */}
-      <div
-        style={{
-          padding: "8px 10px",
-          border: "1px solid rgba(255,165,0,0.3)",
-          background: "rgba(255,165,0,0.08)",
-          borderRadius: "2px",
-          color: "#ffa500",
-          fontSize: "11px",
-        }}
-      >
-        <div style={{ fontSize: "9px", letterSpacing: "0.15em", fontWeight: 700, opacity: 0.85, marginBottom: "4px" }}>
-          SPC BOT · LATEST OUTLOOK
+      {/* 3. SPC bot message — interactive (expandable per-risk dropdowns) */}
+      {botMsg ? (
+        <SystemMessageCard
+          message={
+            {
+              id: botMsg.id,
+              user_id: BOT_USER_ID,
+              username: "SPC Bot",
+              badge: "System",
+              content: botMsg.content,
+              created_at: botMsg.created_at,
+            } satisfies RawMessage
+          }
+          expandedKey={expandedKey}
+          toggle={toggleKey}
+        />
+      ) : (
+        <div
+          style={{
+            padding: "8px 10px",
+            border: "1px solid rgba(255,165,0,0.3)",
+            background: "rgba(255,165,0,0.08)",
+            borderRadius: "2px",
+            color: "#888",
+            fontSize: "11px",
+          }}
+        >
+          No SPC outlook yet.
         </div>
-        {!botMsg && <div style={{ color: "#888" }}>No outlook yet.</div>}
-        {botMsg && (
-          <>
-            <div style={{ marginBottom: "4px" }}>{botHeader}</div>
-            {botPayload ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                {botPayload.groups.map((g) => (
-                  <div
-                    key={g.label}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: "8px",
-                      padding: "3px 6px",
-                      background: "rgba(255,255,255,0.04)",
-                      borderRadius: "2px",
-                      fontSize: "10px",
-                    }}
-                  >
-                    <span style={{ fontWeight: 700, textTransform: "uppercase" }}>{g.riskLabel}</span>
-                    <span style={{ opacity: 0.8 }}>
-                      {g.counties.length} {g.counties.length === 1 ? "county" : "counties"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              botBody && <div style={{ whiteSpace: "pre-line", opacity: 0.9 }}>{botBody}</div>
-            )}
-          </>
-        )}
-      </div>
-
+      )}
       {/* 4. Environmental metrics */}
       <div
         style={{
