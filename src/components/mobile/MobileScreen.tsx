@@ -49,39 +49,79 @@ export default function MobileScreen({ screen, onClose }: Props) {
 
         {screen === "alerts" && (
           <div style={{ padding: "12px 12px 88px", display: "flex", flexDirection: "column", gap: "6px" }}>
-            {allAlerts.length === 0 && (
-              <div style={{ color: "#666", fontSize: "11px" }}>No active alerts.</div>
+            <div
+              style={{
+                color: "#ff9d00",
+                fontSize: "10px",
+                fontWeight: 700,
+                letterSpacing: "0.15em",
+                marginBottom: "4px",
+              }}
+            >
+              LATEST SKYWARN REPORTS
+            </div>
+            {lsrLoading && lsrReports.length === 0 && (
+              <div style={{ color: "#666", fontSize: "11px" }}>Loading reports…</div>
             )}
-            {allAlerts.map((alert, i) => (
-              <div
-                key={i}
-                style={{
-                  borderLeft: `3px solid ${getWarningColor(alert)}`,
-                  padding: "6px 10px",
-                  background: "rgba(255,255,255,0.03)",
-                  borderRadius: "2px",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "6px" }}>
-                  <span style={{ color: "#fff", fontSize: "12px", fontWeight: 600 }}>{alert.event}</span>
-                  <span
-                    style={{
-                      fontSize: "9px",
-                      padding: "1px 5px",
-                      borderRadius: "2px",
-                      background: "rgba(255,255,255,0.08)",
-                      color: "#aaa",
-                      flexShrink: 0,
-                    }}
-                  >
-                    {alert.severity}
-                  </span>
+            {!lsrLoading && lsrReports.length === 0 && (
+              <div style={{ color: "#666", fontSize: "11px" }}>No recent reports.</div>
+            )}
+            {lsrReports.map((r, i) => {
+              const typeColor = getLSRColor(r.typetext);
+              const srcColor = getSourceColor(r.source);
+              const location = [r.city, r.state].filter(Boolean).join(", ");
+              const mag =
+                r.magnitude !== null && r.magnitude !== 0
+                  ? `${r.magnitude}${/wind/i.test(r.typetext) ? " mph" : /hail/i.test(r.typetext) ? '"' : ""}`
+                  : "";
+              return (
+                <div
+                  key={`${r.valid}-${i}`}
+                  style={{
+                    borderLeft: `3px solid ${typeColor}`,
+                    padding: "6px 10px",
+                    background: "rgba(255,255,255,0.03)",
+                    borderRadius: "2px",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "6px" }}>
+                    <span style={{ color: "#fff", fontSize: "12px", fontWeight: 600 }}>
+                      {r.typetext}
+                      {mag && <span style={{ color: typeColor, marginLeft: 6 }}>{mag}</span>}
+                    </span>
+                    <span style={{ color: "#888", fontSize: "10px", flexShrink: 0 }}>
+                      {formatLSRTime(r.valid)}
+                    </span>
+                  </div>
+                  <div style={{ color: "#aaa", fontSize: "10px", marginTop: "3px", lineHeight: 1.4 }}>
+                    {location || r.county}
+                    {r.county && location && ` (${r.county} Co.)`}
+                  </div>
+                  {r.source && (
+                    <div
+                      style={{
+                        marginTop: "3px",
+                        display: "inline-block",
+                        fontSize: "9px",
+                        padding: "1px 5px",
+                        borderRadius: "2px",
+                        background: "rgba(255,255,255,0.06)",
+                        color: srcColor,
+                        fontWeight: 700,
+                        letterSpacing: "0.05em",
+                      }}
+                    >
+                      {r.source}
+                    </div>
+                  )}
+                  {r.remark && (
+                    <div style={{ color: "#888", fontSize: "10px", marginTop: "4px", lineHeight: 1.4 }}>
+                      {r.remark}
+                    </div>
+                  )}
                 </div>
-                <div style={{ color: "#888", fontSize: "10px", marginTop: "3px", lineHeight: 1.4 }}>
-                  {alert.areaDesc}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
