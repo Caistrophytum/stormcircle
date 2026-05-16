@@ -363,7 +363,7 @@ const RadarMiniMap = ({
               </span>
             )}
           </div>
-          <button onClick={onCollapse} aria-label="Minimize radar" className="glass-panel p-1 hover:border-primary/50 transition-colors">
+          <button onClick={onCollapse} aria-label="Minimize radar" className="glass-panel p-1 hover:border-primary/50 transition-colors hidden lg:block">
             <Minimize2 className="size-4 text-primary" />
           </button>
         </div>
