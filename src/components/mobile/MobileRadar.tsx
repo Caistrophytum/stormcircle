@@ -35,8 +35,8 @@ export default function MobileRadar() {
 
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>
-      {/* Top 80% — radar map */}
-      <div style={{ height: "80%", position: "relative", background: "#1a1a2e" }}>
+      {/* Top 85% — radar map */}
+      <div style={{ height: "85%", position: "relative", background: "#1a1a2e" }}>
         <LeafletRadar
           station={selectedStation}
           tileUrl={tileUrl}
@@ -47,10 +47,10 @@ export default function MobileRadar() {
         />
       </div>
 
-      {/* Bottom 20% — controls */}
+      {/* Bottom 15% — controls */}
       <div
         style={{
-          height: "20%",
+          height: "15%",
           display: "flex",
           gap: "8px",
           padding: "10px 12px",
