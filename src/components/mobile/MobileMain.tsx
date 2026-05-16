@@ -272,22 +272,8 @@ export default function MobileMain() {
     }
   }
 
-  // ── SPC bot rendering ────────────────────────────────────────────
-  const botStripped = botMsg ? botMsg.content.replace(ALL_MARKERS_RE, "").trim() : "";
-  const botHeader = botStripped.split("\n")[0] ?? "SPC Day 1 Outlook";
-  const botBody = botStripped.split("\n").slice(1).join("\n").trim();
-  const botPayload = useMemo(() => {
-    if (!botMsg) return null;
-    const m = botMsg.content.match(DATA_MARKER_RE);
-    if (!m) return null;
-    try {
-      const p = JSON.parse(m[1]);
-      if (!p || !Array.isArray(p.groups)) return null;
-      return p as { groups: { label: string; riskLabel: string; counties: { county: string; state: string }[] }[] };
-    } catch {
-      return null;
-    }
-  }, [botMsg]);
+  // SPC bot rendering is delegated to SystemMessageCard (handles markers, payload, dropdowns).
+
 
   const threatColor =
     threatLevel > 85 ? "#ff3b3b" : threatLevel >= 61 ? "#ff8c00" : threatLevel >= 31 ? "#ff9d00" : "#7CFC00";
