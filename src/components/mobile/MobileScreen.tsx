@@ -32,25 +32,8 @@ export default function MobileScreen({ screen, onClose }: Props) {
         {screen === "account" && <AccountCenter />}
 
         {screen === "chat" && (
-          <div
-            style={{
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "24px",
-              textAlign: "center",
-              color: "#888",
-              fontSize: "12px",
-              lineHeight: 1.6,
-            }}
-          >
-            <div>
-              <div style={{ color: "#ff9d00", fontSize: "14px", marginBottom: "8px", fontWeight: 700 }}>
-                Live chat coming soon
-              </div>
-              Real-time community chat is in the works. Check back shortly.
-            </div>
+          <div style={{ height: "100%", padding: "8px 8px 80px" }}>
+            <CitizenReports />
           </div>
         )}
 
