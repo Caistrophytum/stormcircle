@@ -175,6 +175,12 @@ export default function MobileMain() {
   const unitSystem = useUnitSystem();
   const warningPolygons = useWarningPolygons();
   const botMsg = useSPCBotMessage();
+  const chatMsgs = useRecentChatMessages(30);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = chatScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [chatMsgs.length]);
   const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
   const toggleKey = (id: string) =>
     setExpandedKey((prev) => {
