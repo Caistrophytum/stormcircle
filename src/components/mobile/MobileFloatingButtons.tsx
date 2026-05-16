@@ -5,7 +5,7 @@
  *   • FAQ      — opens the FAQ page overlay (mirrors the desktop StatusBar FAQ link)
  *   • Account  — opens AccountCenter (sign in / profile / hometown / settings)
  *   • Chat     — opens CitizenReports (the public chat / report feed)
- *   • Alerts   — opens the latest SKYWARN / LSR report list
+ *   • Alerts   — opens the latest Professional Weather Reports / LSR report list
  *   • Radar    — opens the full-screen radar mini-map
  *
  * A trailing chevron toggles the whole row so the user can hide the buttons

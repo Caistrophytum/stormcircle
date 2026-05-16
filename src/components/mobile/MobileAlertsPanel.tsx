@@ -7,7 +7,7 @@
  *   3. New Warnings            (first-seen in the last 5 refresh cycles,
  *                               from useAlerts.newWarnings — same rolling
  *                               window timer as the desktop card)
- *   4. SKYWARN Reports         (latest LSRs from useLSR)
+ *   4. Professional Weather Reports (latest LSRs from useLSR)
  *
  * All four sections use the same underlying 60 s refresh cadence as the
  * desktop (useAlerts polls api.weather.gov/alerts/active every 60 s; useLSR
@@ -338,9 +338,9 @@ export default function MobileAlertsPanel() {
         ))}
       </Section>
 
-      {/* 4. SKYWARN Reports — latest LSRs from IEM (2 h rolling window) */}
+      {/* 4. Professional Weather Reports — latest LSRs from IEM (2 h rolling window) */}
       <Section
-        title="SKYWARN Reports"
+        title="Professional Weather Reports"
         open={openLSR}
         onToggle={() => setOpenLSR((v) => !v)}
         footer={lsrUpdated ? `Last updated ${formatRelativeTime(lsrUpdated, now)}` : undefined}
