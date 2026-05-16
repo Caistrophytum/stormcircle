@@ -32,6 +32,8 @@ export interface AlertsData {
   topHazards: TopHazard[];
   /** Warnings that appeared (by alert id) within the last 5 refresh cycles. */
   newWarnings: NewWarning[];
+  /** Individual alerts whose ids first appeared in the rolling window, newest first. */
+  recentAlerts: Alert[];
   loading: boolean;
   error: string | null;
   lastUpdated: Date | null;
@@ -160,6 +162,7 @@ export function useAlerts(): AlertsData {
     mostDangerous: [],
     topHazards: [],
     newWarnings: [],
+    recentAlerts: [],
     loading: true,
     error: null,
     lastUpdated: null,
@@ -174,6 +177,9 @@ export function useAlerts(): AlertsData {
     // First-seen cycle index per alert id (so we can age entries out of the window).
     // Also remember the event label so it survives even if the alert drops from the feed.
     const firstSeen = new Map<string, { cycle: number; event: string }>();
+    // Per-id snapshot of the actual alert payload, so recentAlerts survives
+    // even if the alert briefly drops from the active feed.
+    const recentById = new Map<string, { cycle: number; alert: Alert }>();
 
     async function fetchAlerts() {
       try {
@@ -188,6 +194,7 @@ export function useAlerts(): AlertsData {
         const alerts: Alert[] = [];
         const currentIds = new Set<string>();
         const idToEvent = new Map<string, string>();
+        const idToAlert = new Map<string, Alert>();
 
         for (const f of features) {
           const p = f?.properties ?? {};
@@ -195,7 +202,7 @@ export function useAlerts(): AlertsData {
           const id = String(f?.id ?? p.id ?? `${event}|${p.sent ?? ""}|${p.areaDesc ?? ""}`);
           currentIds.add(id);
           idToEvent.set(id, event);
-          alerts.push({
+          const a: Alert = {
             event,
             severity: normalizeSeverity(p.severity),
             headline: String(p.headline ?? ""),
@@ -204,7 +211,9 @@ export function useAlerts(): AlertsData {
             certainty: normalizeCertainty(p.certainty),
             urgency: normalizeUrgency(p.urgency),
             tags: extractTags(p),
-          });
+          };
+          alerts.push(a);
+          idToAlert.set(id, a);
         }
 
         const mostDangerous = [...alerts]
@@ -234,6 +243,8 @@ export function useAlerts(): AlertsData {
               const kind = deriveKind(event);
               if (kind === "Warning" || kind === "Emergency" || kind === "Watch") {
                 firstSeen.set(id, { cycle, event });
+                const a = idToAlert.get(id);
+                if (a) recentById.set(id, { cycle, alert: a });
               }
             }
           }
@@ -256,11 +267,26 @@ export function useAlerts(): AlertsData {
           .sort((a, b) => b.count - a.count)
           .slice(0, 5);
 
+        // Age out recentById in the same window, then sort newest-first.
+        const recentEntries: { cycle: number; alert: Alert }[] = [];
+        for (const [id, info] of recentById) {
+          if (cycle - info.cycle < REFRESH_HISTORY_WINDOW) {
+            recentEntries.push(info);
+          } else {
+            recentById.delete(id);
+          }
+        }
+        const recentAlerts: Alert[] = recentEntries
+          .sort((a, b) => b.cycle - a.cycle)
+          .map((e) => e.alert)
+          .slice(0, 10);
+
         if (!cancelled) {
           setData({
             mostDangerous,
             topHazards,
             newWarnings,
+            recentAlerts,
             loading: false,
             error: null,
             lastUpdated: new Date(),
