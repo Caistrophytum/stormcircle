@@ -733,7 +733,7 @@ export default function CitizenReports() {
 
       {/* Deletion confirmation dialog */}
       <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-lg rounded-lg p-4 sm:p-6">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {pending?.kind === "delete-stack"
