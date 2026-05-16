@@ -83,7 +83,9 @@ export default function MobileRadar() {
             <PopoverContent
               side="top"
               align="start"
-              className="w-[--radix-popover-trigger-width] p-0 z-[1200]"
+              sideOffset={8}
+              collisionPadding={0}
+              className="w-screen max-w-[100vw] rounded-none border-x-0 p-0 z-[1200]"
             >
               <Command shouldFilter={false}>
                 <CommandInput
