@@ -5,7 +5,7 @@
  *   • faq      → embedded FAQ page (mirrors /faq from desktop StatusBar)
  *   • account  → AccountCenter (auth, profile, hometown picker, settings)
  *   • chat     → CitizenReports (public chat feed + post composer)
- *   • alerts   → latest SKYWARN / LSR reports (color-coded, time-sorted)
+ *   • alerts   → latest Professional Weather Reports / LSR reports (color-coded, time-sorted)
  *   • radar    → MobileRadar full-screen tactical radar with station picker
  *
  * A single floating "Return" button (bottom-right) closes the overlay and

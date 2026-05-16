@@ -8,7 +8,7 @@
  *   • Floating action buttons (bottom-right): FAQ, Account, Chat, Alerts, Radar
  *   • MobileScreen   — full-screen overlay rendered when a floating button
  *                       is activated. Hosts FAQ / AccountCenter / CitizenReports
- *                       / SKYWARN reports list / MobileRadar.
+ *                       / Professional Weather Reports list / MobileRadar.
  *
  * The CityProvider wraps everything so hooks that depend on the selected city
  * (radar, weather, sounding) work consistently with the desktop tree.
