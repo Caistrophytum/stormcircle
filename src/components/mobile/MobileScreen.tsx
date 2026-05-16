@@ -58,7 +58,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
                 marginBottom: "4px",
               }}
             >
-              Professional Weather Reports
+              PROFESSIONAL WEATHER REPORTS
             </div>
             {lsrLoading && lsrReports.length === 0 && (
               <div style={{ color: "#666", fontSize: "11px" }}>Loading reports…</div>
