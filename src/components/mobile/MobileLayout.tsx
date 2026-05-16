@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { CityProvider } from "@/contexts/CityContext";
 import MobileHeader from "./MobileHeader";
-import MobileAlerts from "./MobileAlerts";
-import MobileHazards from "./MobileHazards";
+import MobileMain from "./MobileMain";
 import MobileFloatingButtons from "./MobileFloatingButtons";
 import MobileScreen from "./MobileScreen";
 
