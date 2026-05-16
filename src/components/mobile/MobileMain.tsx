@@ -268,7 +268,7 @@ export default function MobileMain() {
       const val = useMiles ? km * 0.621371 : km;
       const unit = useMiles ? "mi" : "km";
       const formatted = val < 10 ? val.toFixed(1) : Math.round(val).toLocaleString();
-      hometownText += ` Nearest ${nearestDanger.event}: ${formatted} ${unit} away.`;
+      hometownText += `\n\nNearest ${nearestDanger.event}: ${formatted} ${unit} away.`;
     }
   }
 
