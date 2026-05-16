@@ -137,6 +137,25 @@ export default function MobileMain() {
   const unitSystem = useUnitSystem();
   const warningPolygons = useWarningPolygons();
   const botMsg = useSPCBotMessage();
+  const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
+  const toggleKey = (id: string) =>
+    setExpandedKey((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // Pre-set radar to hometown on first load (parallel to desktop TacticalMap).
+  const homePannedRef = useRef(false);
+  useEffect(() => {
+    if (homePannedRef.current) return;
+    if (radar.selectedCity) return;
+    if (!homeRisk.coords || !profile?.location) return;
+    homePannedRef.current = true;
+    const cityName = profile.location.split(",")[0].trim();
+    radar.setSelectedCity({ name: cityName, lat: homeRisk.coords.lat, lon: homeRisk.coords.lon });
+  }, [homeRisk.coords, profile?.location, radar]);
 
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
 
