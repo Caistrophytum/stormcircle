@@ -1,4 +1,17 @@
-import { User, MessageCircle, AlertTriangle, Radio } from "lucide-react";
+/**
+ * MobileFloatingButtons — the bottom-right action row on mobile.
+ *
+ * Buttons (left → right):
+ *   • FAQ      — opens the FAQ page overlay (mirrors the desktop StatusBar FAQ link)
+ *   • Account  — opens AccountCenter (sign in / profile / hometown / settings)
+ *   • Chat     — opens CitizenReports (the public chat / report feed)
+ *   • Alerts   — opens the latest SKYWARN / LSR report list
+ *   • Radar    — opens the full-screen radar mini-map
+ *
+ * A trailing chevron toggles the whole row so the user can hide the buttons
+ * when they obscure underlying content. The chevron itself stays visible.
+ */
+import { User, MessageCircle, AlertTriangle, Radio, HelpCircle } from "lucide-react";
 import type { MobileScreenId } from "./MobileLayout";
 
 interface Props {
@@ -8,7 +21,10 @@ interface Props {
 }
 
 export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen }: Props) {
+  // Order matters — FAQ is placed first (leftmost) per spec, immediately
+  // followed by Account so the help affordance sits next to the user's hub.
   const buttons = [
+    { id: "faq" as const, icon: <HelpCircle size={18} />, color: "#ff9d00", label: "FAQ" },
     { id: "account" as const, icon: <User size={18} />, color: "#7dd3fc", label: "Account" },
     { id: "chat" as const, icon: <MessageCircle size={18} />, color: "#00ff88", label: "Chat" },
     { id: "alerts" as const, icon: <AlertTriangle size={18} />, color: "#ff9d00", label: "All alerts" },
@@ -28,6 +44,7 @@ export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen
         zIndex: 500,
       }}
     >
+      {/* The action button group — fades out (pointer-events disabled) when hidden. */}
       <div
         style={{
           display: "flex",
@@ -63,6 +80,7 @@ export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen
         ))}
       </div>
 
+      {/* Persistent toggle chevron — always interactive so users can re-show the row. */}
       <button
         aria-label={buttonsVisible ? "Hide actions" : "Show actions"}
         onClick={onToggle}
