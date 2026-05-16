@@ -146,7 +146,7 @@ function useRecentChatMessages(limit = 30) {
         .neq("user_id", BOT_USER_ID)
         .order("created_at", { ascending: false })
         .limit(limit);
-      if (!cancelled && data) setMsgs((data as ChatMessage[]).slice().reverse());
+      if (!cancelled && data) setMsgs(data as ChatMessage[]);
     };
     void load();
     const ch = supabase
