@@ -126,6 +126,45 @@ function useSPCBotMessage() {
   return msg;
 }
 
+interface ChatMessage {
+  id: string;
+  username: string;
+  badge: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+}
+
+function useRecentChatMessages(limit = 30) {
+  const [msgs, setMsgs] = useState<ChatMessage[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("id,username,badge,content,created_at,user_id")
+        .neq("user_id", BOT_USER_ID)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (!cancelled && data) setMsgs((data as ChatMessage[]).slice().reverse());
+    };
+    void load();
+    const ch = supabase
+      .channel("mobile-main-chat")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages" },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(ch);
+    };
+  }, [limit]);
+  return msgs;
+}
+
 export default function MobileMain() {
   const { user, profile } = useAuth();
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
