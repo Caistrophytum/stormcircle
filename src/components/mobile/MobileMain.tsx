@@ -281,13 +281,11 @@ export default function MobileMain() {
     <div
       style={{
         height: "100%",
-        overflowY: "auto",
-        padding: "10px 10px 88px",
+        overflow: "hidden",
+        padding: "10px 10px 80px",
         display: "flex",
         flexDirection: "column",
         gap: "10px",
-        scrollbarWidth: "thin",
-        scrollbarColor: "rgba(255,157,0,0.3) transparent",
       }}
     >
       {/* 1. Welcome */}
