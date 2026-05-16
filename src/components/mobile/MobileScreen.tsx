@@ -32,8 +32,10 @@ export default function MobileScreen({ screen, onClose }: Props) {
         {screen === "account" && <AccountCenter />}
 
         {screen === "chat" && (
-          <div style={{ height: "100%", padding: "8px 8px 80px" }}>
-            <CitizenReports />
+          <div style={{ position: "absolute", inset: 0, paddingBottom: "72px", display: "flex", flexDirection: "column" }}>
+            <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+              <CitizenReports />
+            </div>
           </div>
         )}
 
