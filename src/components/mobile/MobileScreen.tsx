@@ -53,23 +53,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
           </div>
         )}
 
-        {screen === "radar" && (
-          <div style={{ position: "absolute", inset: 0 }}>
-            <RadarMiniMap
-              expanded
-              onCollapse={onClose}
-              selectedCity={selectedCity}
-              setSelectedCity={setSelectedCity}
-              selectedStation={selectedStation}
-              setSelectedStation={setSelectedStation}
-              onStationMarkerSelect={selectStationByMarker}
-              stationDistanceKm={stationDistanceKm}
-              selectedProduct={selectedProduct}
-              setSelectedProduct={setSelectedProduct}
-              tileUrl={tileUrl}
-            />
-          </div>
-        )}
+        {screen === "radar" && <MobileRadar />}
 
         {screen === "alerts" && (
           <div style={{ padding: "12px 12px 88px", display: "flex", flexDirection: "column", gap: "6px" }}>
