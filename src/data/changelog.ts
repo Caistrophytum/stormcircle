@@ -18,13 +18,19 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-05-07 06z",
+    date: "2026-05-16 10z",
+    tag: "NEW",
+    title: "Mobile support",
+    body: "StormCircle is now officially supporting mobile devices! Report on the go!",
+  },
+  {
+    date: "2026-05-14 14z",
     tag: "NEW",
     title: "FAQ page, background fixes and optimizations",
     body: "Added a new FAQ page, accesible from the FAQ button near the badge on the screen's top-left section, and improved load times and overall site response times.",
   },
   {
-    date: "2026-05-07 06z",
+    date: "2026-05-11 06z",
     tag: "IMPROVED",
     title: "A new chat system introduced",
     body: "An improved, flow-based chat system has been implemented to reduce risk of report mistakes. More incoming.",
