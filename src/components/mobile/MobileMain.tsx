@@ -326,7 +326,7 @@ export default function MobileMain() {
     <div
       style={{
         height: "100%",
-        overflow: "hidden",
+        overflowY: "auto",
         padding: "10px 10px 80px",
         display: "flex",
         flexDirection: "column",
