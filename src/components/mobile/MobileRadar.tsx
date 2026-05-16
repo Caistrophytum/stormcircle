@@ -170,7 +170,9 @@ export default function MobileRadar() {
             <PopoverContent
               side="top"
               align="end"
-              className="w-[--radix-popover-trigger-width] p-1 z-[1200]"
+              sideOffset={8}
+              collisionPadding={0}
+              className="w-screen max-w-[100vw] rounded-none border-x-0 p-1 z-[1200]"
             >
               <div className="flex flex-col gap-1">
                 {PRODUCTS.map((p) => {
