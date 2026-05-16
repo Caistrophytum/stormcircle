@@ -1,7 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import AccountCenter from "@/pages/AccountCenter";
-import RadarMiniMap from "@/components/RadarMiniMap";
-import { useRadar } from "@/hooks/useRadar";
+import MobileRadar from "./MobileRadar";
 import { useAlerts } from "@/hooks/useAlerts";
 import { getWarningColor } from "@/hooks/useWarningPolygons";
 import type { MobileScreenId } from "./MobileLayout";
@@ -12,18 +11,6 @@ interface Props {
 }
 
 export default function MobileScreen({ screen, onClose }: Props) {
-  const {
-    selectedCity,
-    setSelectedCity,
-    selectedStation,
-    setSelectedStation,
-    selectStationByMarker,
-    stationDistanceKm,
-    selectedProduct,
-    setSelectedProduct,
-    tileUrl,
-  } = useRadar();
-
   const { mostDangerous, recentAlerts } = useAlerts();
   const allAlerts = [...mostDangerous, ...recentAlerts];
 
@@ -66,23 +53,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
           </div>
         )}
 
-        {screen === "radar" && (
-          <div style={{ position: "absolute", inset: 0 }}>
-            <RadarMiniMap
-              expanded
-              onCollapse={onClose}
-              selectedCity={selectedCity}
-              setSelectedCity={setSelectedCity}
-              selectedStation={selectedStation}
-              setSelectedStation={setSelectedStation}
-              onStationMarkerSelect={selectStationByMarker}
-              stationDistanceKm={stationDistanceKm}
-              selectedProduct={selectedProduct}
-              setSelectedProduct={setSelectedProduct}
-              tileUrl={tileUrl}
-            />
-          </div>
-        )}
+        {screen === "radar" && <MobileRadar />}
 
         {screen === "alerts" && (
           <div style={{ padding: "12px 12px 88px", display: "flex", flexDirection: "column", gap: "6px" }}>
