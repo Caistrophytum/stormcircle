@@ -83,7 +83,7 @@ export default function MobileRadar() {
             <PopoverContent
               side="top"
               align="start"
-              className="w-[--radix-popover-trigger-width] p-0"
+              className="w-[--radix-popover-trigger-width] p-0 z-[1200]"
             >
               <Command shouldFilter={false}>
                 <CommandInput
@@ -168,7 +168,7 @@ export default function MobileRadar() {
             <PopoverContent
               side="top"
               align="end"
-              className="w-[--radix-popover-trigger-width] p-1"
+              className="w-[--radix-popover-trigger-width] p-1 z-[1200]"
             >
               <div className="flex flex-col gap-1">
                 {PRODUCTS.map((p) => {
