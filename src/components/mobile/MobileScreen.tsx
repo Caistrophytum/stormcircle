@@ -1,5 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import AccountCenter from "@/pages/AccountCenter";
+import CitizenReports from "@/components/CitizenReports";
 import MobileRadar from "./MobileRadar";
 import { useAlerts } from "@/hooks/useAlerts";
 import { getWarningColor } from "@/hooks/useWarningPolygons";
