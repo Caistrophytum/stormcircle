@@ -195,7 +195,7 @@ const MapRefCapture = ({ onMap }: { onMap: (m: L.Map) => void }) => {
   return null;
 };
 
-const LeafletRadar = ({
+export const LeafletRadar = ({
   station,
   tileUrl,
   interactive,
