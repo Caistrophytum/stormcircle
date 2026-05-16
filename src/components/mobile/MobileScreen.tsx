@@ -2,8 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import AccountCenter from "@/pages/AccountCenter";
 import CitizenReports from "@/components/CitizenReports";
 import MobileRadar from "./MobileRadar";
-import { useAlerts } from "@/hooks/useAlerts";
-import { getWarningColor } from "@/hooks/useWarningPolygons";
+import { useLSR, getLSRColor, getSourceColor } from "@/hooks/useLSR";
 import type { MobileScreenId } from "./MobileLayout";
 
 interface Props {
@@ -11,9 +10,15 @@ interface Props {
   onClose: () => void;
 }
 
+function formatLSRTime(valid: string): string {
+  if (!valid) return "";
+  const d = new Date(valid);
+  if (Number.isNaN(d.getTime())) return valid;
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
 export default function MobileScreen({ screen, onClose }: Props) {
-  const { mostDangerous, recentAlerts } = useAlerts();
-  const allAlerts = [...mostDangerous, ...recentAlerts];
+  const { reports: lsrReports, loading: lsrLoading } = useLSR();
 
   return (
     <div
