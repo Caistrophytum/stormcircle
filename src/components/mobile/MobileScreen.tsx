@@ -1,6 +1,20 @@
+/**
+ * MobileScreen — full-screen overlay rendered above MobileLayout when one of
+ * the floating action buttons is activated. Hosts every "secondary" surface:
+ *
+ *   • faq      → embedded FAQ page (mirrors /faq from desktop StatusBar)
+ *   • account  → AccountCenter (auth, profile, hometown picker, settings)
+ *   • chat     → CitizenReports (public chat feed + post composer)
+ *   • alerts   → latest SKYWARN / LSR reports (color-coded, time-sorted)
+ *   • radar    → MobileRadar full-screen tactical radar with station picker
+ *
+ * A single floating "Return" button (bottom-right) closes the overlay and
+ * returns the user to MobileMain.
+ */
 import { ArrowLeft } from "lucide-react";
 import AccountCenter from "@/pages/AccountCenter";
 import CitizenReports from "@/components/CitizenReports";
+import FAQ from "@/pages/FAQ";
 import MobileRadar from "./MobileRadar";
 import { useLSR, getLSRColor, getSourceColor } from "@/hooks/useLSR";
 import type { MobileScreenId } from "./MobileLayout";
@@ -34,6 +48,14 @@ export default function MobileScreen({ screen, onClose }: Props) {
       }}
     >
       <div style={{ flex: 1, overflow: "auto", position: "relative" }}>
+        {/* FAQ — reuses the same page rendered at /faq on desktop. Extra bottom
+            padding so the floating "Return" button never overlaps the last item. */}
+        {screen === "faq" && (
+          <div style={{ paddingBottom: "72px" }}>
+            <FAQ />
+          </div>
+        )}
+
         {screen === "account" && <AccountCenter />}
 
         {screen === "chat" && (
