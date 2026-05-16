@@ -30,12 +30,8 @@ export default function MobileLayout() {
         <MobileHeader />
       </div>
 
-      <div style={{ height: "40dvh", flexShrink: 0, overflow: "hidden" }}>
-        <MobileAlerts />
-      </div>
-
-      <div style={{ height: "50dvh", flexShrink: 0, overflow: "hidden" }}>
-        <MobileHazards />
+      <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+        <MobileMain />
       </div>
 
       <MobileFloatingButtons
