@@ -488,8 +488,8 @@ export default function MobileMain() {
       {/* 6. Latest chat messages — fills remaining space up to floating buttons */}
       <div
         style={{
-          flex: 1,
-          minHeight: 0,
+          flex: "1 0 240px",
+          minHeight: "240px",
           display: "flex",
           flexDirection: "column",
           border: "1px solid rgba(255,157,0,0.2)",
