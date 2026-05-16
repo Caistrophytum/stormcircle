@@ -21,7 +21,6 @@ import type { RawMessage } from "@/lib/reportGrouping";
 
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
 
-
 const RISK_TEXT: Record<SPCRiskLevel, string> = {
   NONE: "No Severe Risk",
   TSTM: "General Thunderstorm",
@@ -64,20 +63,13 @@ function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: num
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
   const dLon = toRad(b.lon - a.lon);
-  const s =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
-function nearestVertexKm(
-  origin: { lat: number; lon: number },
-  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
-): number {
+function nearestVertexKm(origin: { lat: number; lon: number }, geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): number {
   const polys: number[][][][] =
-    geom.type === "Polygon"
-      ? [geom.coordinates as number[][][]]
-      : (geom.coordinates as number[][][][]);
+    geom.type === "Polygon" ? [geom.coordinates as number[][][]] : (geom.coordinates as number[][][][]);
   let best = Infinity;
   for (const poly of polys) {
     if (!poly.length) continue;
@@ -151,11 +143,7 @@ function useRecentChatMessages(limit = 30) {
     void load();
     const ch = supabase
       .channel("mobile-main-chat")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "messages" },
-        () => void load(),
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => void load())
       .subscribe();
     return () => {
       cancelled = true;
@@ -288,7 +276,8 @@ export default function MobileMain() {
         bestDist = d;
         const text = `${p.description} ${p.headline}`.toLowerCase();
         if (p.event === "Tornado Warning" && text.includes("tornado emergency")) bestEvent = "Tornado Emergency";
-        else if (p.event === "Flash Flood Warning" && text.includes("flash flood emergency")) bestEvent = "Flash Flood Emergency";
+        else if (p.event === "Flash Flood Warning" && text.includes("flash flood emergency"))
+          bestEvent = "Flash Flood Emergency";
         else if (/particularly dangerous situation|\bpds\b/.test(text)) bestEvent = `PDS ${p.event}`;
         else bestEvent = p.event;
       }
@@ -318,7 +307,6 @@ export default function MobileMain() {
 
   // SPC bot rendering is delegated to SystemMessageCard (handles markers, payload, dropdowns).
 
-
   const threatColor =
     threatLevel > 85 ? "#ff3b3b" : threatLevel >= 61 ? "#ff8c00" : threatLevel >= 31 ? "#ff9d00" : "#7CFC00";
 
@@ -342,12 +330,8 @@ export default function MobileMain() {
           borderRadius: "2px",
         }}
       >
-        <div style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700 }}>
-          WELCOME
-        </div>
-        <div style={{ fontSize: "14px", color: "#fff", fontWeight: 700, marginTop: "2px" }}>
-          {displayName}
-        </div>
+        <div style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700 }}>WELCOME</div>
+        <div style={{ fontSize: "14px", color: "#fff", fontWeight: 700, marginTop: "2px" }}>{displayName}</div>
       </div>
 
       {/* 2. Hometown news bar */}
@@ -408,7 +392,9 @@ export default function MobileMain() {
           borderRadius: "2px",
         }}
       >
-        <div style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px" }}>
+        <div
+          style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px" }}
+        >
           ENVIRONMENTAL METRICS
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
@@ -425,7 +411,9 @@ export default function MobileMain() {
               }}
             >
               <div style={{ fontSize: "7px", color: "#888", lineHeight: 1 }}>{n.label}</div>
-              <div style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}>
+              <div
+                style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
+              >
                 {n.value}
               </div>
               <div style={{ fontSize: "7px", color: "#666", marginTop: "1px" }}>{n.unit}</div>
@@ -480,7 +468,9 @@ export default function MobileMain() {
             }}
           />
         </div>
-        <span style={{ fontSize: "14px", color: threatColor, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>
+        <span
+          style={{ fontSize: "14px", color: threatColor, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}
+        >
           {threatLevel}
         </span>
       </div>
@@ -488,8 +478,8 @@ export default function MobileMain() {
       {/* 6. Latest chat messages — fills remaining space up to floating buttons */}
       <div
         style={{
-          flex: "1 0 200px",
-          minHeight: "200px",
+          flex: "1 0 180px",
+          minHeight: "180px",
           display: "flex",
           flexDirection: "column",
           border: "1px solid rgba(255,157,0,0.2)",
@@ -525,12 +515,9 @@ export default function MobileMain() {
             scrollbarColor: "rgba(255,157,0,0.3) transparent",
           }}
         >
-          {chatMsgs.length === 0 && (
-            <div style={{ color: "#666", fontSize: "10px" }}>No messages yet.</div>
-          )}
+          {chatMsgs.length === 0 && <div style={{ color: "#666", fontSize: "10px" }}>No messages yet.</div>}
           {chatMsgs.map((m) => {
-            const badgeColor =
-              m.badge === "Meteorologist" ? "#ff9d00" : m.badge === "System" ? "#ffa500" : "#7dd3fc";
+            const badgeColor = m.badge === "Meteorologist" ? "#ff9d00" : m.badge === "System" ? "#ffa500" : "#7dd3fc";
             const time = new Date(m.created_at).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -546,7 +533,15 @@ export default function MobileMain() {
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", gap: "6px", marginBottom: "2px" }}>
-                  <span style={{ color: badgeColor, fontSize: "9px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <span
+                    style={{
+                      color: badgeColor,
+                      fontSize: "9px",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
                     {m.username}
                   </span>
                   <span style={{ color: "#666", fontSize: "9px" }}>{time}</span>
