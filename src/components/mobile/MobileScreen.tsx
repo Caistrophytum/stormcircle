@@ -16,7 +16,7 @@ import AccountCenter from "@/pages/AccountCenter";
 import CitizenReports from "@/components/CitizenReports";
 import FAQ from "@/pages/FAQ";
 import MobileRadar from "./MobileRadar";
-import { useLSR, getLSRColor, getSourceColor } from "@/hooks/useLSR";
+import MobileAlertsPanel from "./MobileAlertsPanel";
 import type { MobileScreenId } from "./MobileLayout";
 
 interface Props {
@@ -24,15 +24,7 @@ interface Props {
   onClose: () => void;
 }
 
-function formatLSRTime(valid: string): string {
-  if (!valid) return "";
-  const d = new Date(valid);
-  if (Number.isNaN(d.getTime())) return valid;
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
 export default function MobileScreen({ screen, onClose }: Props) {
-  const { reports: lsrReports, loading: lsrLoading } = useLSR();
 
   return (
     <div
