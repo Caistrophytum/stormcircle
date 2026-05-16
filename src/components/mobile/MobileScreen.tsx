@@ -58,7 +58,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
                 marginBottom: "4px",
               }}
             >
-              LATEST SKYWARN REPORTS
+              Professional Weather Reports
             </div>
             {lsrLoading && lsrReports.length === 0 && (
               <div style={{ color: "#666", fontSize: "11px" }}>Loading reports…</div>
@@ -89,9 +89,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
                       {r.typetext}
                       {mag && <span style={{ color: typeColor, marginLeft: 6 }}>{mag}</span>}
                     </span>
-                    <span style={{ color: "#888", fontSize: "10px", flexShrink: 0 }}>
-                      {formatLSRTime(r.valid)}
-                    </span>
+                    <span style={{ color: "#888", fontSize: "10px", flexShrink: 0 }}>{formatLSRTime(r.valid)}</span>
                   </div>
                   <div style={{ color: "#aaa", fontSize: "10px", marginTop: "3px", lineHeight: 1.4 }}>
                     {location || r.county}
@@ -115,9 +113,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
                     </div>
                   )}
                   {r.remark && (
-                    <div style={{ color: "#888", fontSize: "10px", marginTop: "4px", lineHeight: 1.4 }}>
-                      {r.remark}
-                    </div>
+                    <div style={{ color: "#888", fontSize: "10px", marginTop: "4px", lineHeight: 1.4 }}>{r.remark}</div>
                   )}
                 </div>
               );
