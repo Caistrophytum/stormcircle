@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import AccountCenter from "@/pages/AccountCenter";
 import RadarMiniMap from "@/components/RadarMiniMap";
 import { useRadar } from "@/hooks/useRadar";
@@ -10,13 +10,6 @@ interface Props {
   screen: MobileScreenId;
   onClose: () => void;
 }
-
-const SCREEN_TITLES: Record<MobileScreenId, string> = {
-  account: "Account Center",
-  chat: "Live Chat",
-  alerts: "All Alerts",
-  radar: "Radar",
-};
 
 export default function MobileScreen({ screen, onClose }: Props) {
   const {
@@ -47,41 +40,6 @@ export default function MobileScreen({ screen, onClose }: Props) {
         color: "#e8e8e8",
       }}
     >
-      <div
-        style={{
-          height: "10dvh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 16px",
-          borderBottom: "1px solid rgba(255,157,0,0.25)",
-          flexShrink: 0,
-          background: "rgba(10,10,14,0.95)",
-        }}
-      >
-        <div style={{ color: "#ff9d00", fontWeight: 700, fontSize: "12px", letterSpacing: "0.1em" }}>
-          {SCREEN_TITLES[screen].toUpperCase()}
-        </div>
-        <button
-          aria-label="Close"
-          onClick={onClose}
-          style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,157,0,0.4)",
-            color: "#ff9d00",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <X size={18} />
-        </button>
-      </div>
-
       <div style={{ flex: 1, overflow: "auto", position: "relative" }}>
         {screen === "account" && <AccountCenter />}
 
@@ -127,7 +85,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
         )}
 
         {screen === "alerts" && (
-          <div style={{ padding: "12px", display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div style={{ padding: "12px 12px 88px", display: "flex", flexDirection: "column", gap: "6px" }}>
             {allAlerts.length === 0 && (
               <div style={{ color: "#666", fontSize: "11px" }}>No active alerts.</div>
             )}
@@ -164,6 +122,30 @@ export default function MobileScreen({ screen, onClose }: Props) {
           </div>
         )}
       </div>
+
+      <button
+        aria-label="Return"
+        onClick={onClose}
+        style={{
+          position: "fixed",
+          bottom: "20px",
+          right: "12px",
+          width: "44px",
+          height: "44px",
+          borderRadius: "50%",
+          background: "rgba(10,10,14,0.9)",
+          border: "1px solid rgba(255,157,0,0.4)",
+          color: "#ff9d00",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          boxShadow: "0 0 8px rgba(255,157,0,0.33)",
+          zIndex: 1100,
+        }}
+      >
+        <ArrowLeft size={18} />
+      </button>
     </div>
   );
 }
