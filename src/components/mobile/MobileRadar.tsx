@@ -56,7 +56,7 @@ export default function MobileRadar() {
           padding: "10px 12px",
           background: "rgba(10,10,14,0.95)",
           borderTop: "1px solid rgba(255,157,0,0.25)",
-          alignItems: "center",
+          alignItems: "flex-start",
         }}
       >
         {/* City search (opens upward) */}
