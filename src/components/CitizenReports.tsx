@@ -567,11 +567,21 @@ export default function CitizenReports() {
                     const alreadyJoined = stack.reports.some(
                       (r) => r.user_id === user.id && /has joined the report/i.test(r.content),
                     );
+                    const isOwnReport = stack.reports.some(
+                      (r) => r.user_id === user.id && !/has joined the report/i.test(r.content),
+                    );
                     return (
                       <div className="flex justify-center pt-1" onClick={(e) => e.stopPropagation()}>
                         {alreadyJoined ? (
                           <span className="text-[9px] font-mono uppercase tracking-wide px-2 py-0.5 border border-neon-green/30 text-neon-green/80 bg-neon-green/5 rounded">
                             ✓ Joined
+                          </span>
+                        ) : isOwnReport ? (
+                          <span
+                            title="You authored this report"
+                            className="text-[9px] font-mono uppercase tracking-wide px-2 py-0.5 border border-muted-foreground/30 text-muted-foreground/70 bg-muted/5 rounded cursor-not-allowed"
+                          >
+                            Your report
                           </span>
                         ) : (
                           <button
