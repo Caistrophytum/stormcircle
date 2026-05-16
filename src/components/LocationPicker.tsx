@@ -25,8 +25,8 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
   const touchStartY = useRef<number | null>(null);
   const { results, loading } = useCitySearch(query);
   const rowClass = pending
-    ? "grid grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)_auto] items-center gap-2"
-    : "grid grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)] items-center gap-2";
+    ? "grid grid-cols-1 sm:grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)_auto] items-stretch sm:items-center gap-2"
+    : "grid grid-cols-1 sm:grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)] items-stretch sm:items-center gap-2";
 
   const formatCity = (name: string, admin1?: string) =>
     admin1 ? `${name}, ${admin1}` : name;
