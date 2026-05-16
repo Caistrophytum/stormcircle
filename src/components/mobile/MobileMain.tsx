@@ -484,6 +484,81 @@ export default function MobileMain() {
           {threatLevel}
         </span>
       </div>
+
+      {/* 6. Latest chat messages — fills remaining space up to floating buttons */}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          border: "1px solid rgba(255,157,0,0.2)",
+          background: "rgba(10,10,14,0.6)",
+          borderRadius: "2px",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "9px",
+            color: "#ff9d00",
+            letterSpacing: "0.15em",
+            fontWeight: 700,
+            padding: "6px 10px",
+            borderBottom: "1px solid rgba(255,157,0,0.15)",
+            flexShrink: 0,
+          }}
+        >
+          LATEST CHAT
+        </div>
+        <div
+          ref={chatScrollRef}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            padding: "6px 10px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+            scrollbarWidth: "thin",
+            scrollbarColor: "rgba(255,157,0,0.3) transparent",
+          }}
+        >
+          {chatMsgs.length === 0 && (
+            <div style={{ color: "#666", fontSize: "10px" }}>No messages yet.</div>
+          )}
+          {chatMsgs.map((m) => {
+            const badgeColor =
+              m.badge === "Meteorologist" ? "#ff9d00" : m.badge === "System" ? "#ffa500" : "#7dd3fc";
+            const time = new Date(m.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            return (
+              <div
+                key={m.id}
+                style={{
+                  padding: "4px 6px",
+                  background: "rgba(255,255,255,0.03)",
+                  borderLeft: `2px solid ${badgeColor}`,
+                  borderRadius: "2px",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "6px", marginBottom: "2px" }}>
+                  <span style={{ color: badgeColor, fontSize: "9px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    {m.username}
+                  </span>
+                  <span style={{ color: "#666", fontSize: "9px" }}>{time}</span>
+                </div>
+                <div style={{ color: "#ddd", fontSize: "10px", lineHeight: 1.4, wordBreak: "break-word" }}>
+                  {m.content}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
