@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CityProvider } from "@/contexts/CityContext";
 import MobileHeader from "./MobileHeader";
 import MobileAlerts from "./MobileAlerts";
 import MobileHazards from "./MobileHazards";
@@ -12,6 +13,7 @@ export default function MobileLayout() {
   const [buttonsVisible, setButtonsVisible] = useState(true);
 
   return (
+    <CityProvider>
     <div
       style={{
         width: "100dvw",
@@ -47,5 +49,6 @@ export default function MobileLayout() {
         <MobileScreen screen={activeScreen} onClose={() => setActiveScreen(null)} />
       )}
     </div>
+    </CityProvider>
   );
 }
