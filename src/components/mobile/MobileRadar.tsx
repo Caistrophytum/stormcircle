@@ -47,10 +47,10 @@ export default function MobileRadar() {
         />
       </div>
 
-      {/* Bottom 20% — controls */}
+      {/* Bottom 15% — controls */}
       <div
         style={{
-          height: "20%",
+          height: "15%",
           display: "flex",
           gap: "8px",
           padding: "10px 12px",
