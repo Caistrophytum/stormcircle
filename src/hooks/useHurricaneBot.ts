@@ -108,6 +108,23 @@ async function postBotMessage(content: string): Promise<void> {
   if (error) console.warn("[useHurricaneBot] insert failed:", error);
 }
 
+/**
+ * Fetch the current ENSO phase (El Niño / La Niña / Neutral) from our
+ * `enso-status` edge function, which proxies NOAA CPC's ONI ASCII file.
+ * Returns a single human-readable line, or null on failure (the season
+ * status card is still posted without the ENSO line in that case).
+ */
+async function fetchEnsoLine(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("enso-status");
+    if (error || !data || typeof data.oni !== "number") return null;
+    const sign = data.oni > 0 ? "+" : "";
+    return `ENSO: ${data.phase} (${data.lean}, ONI ${sign}${data.oni.toFixed(2)} °C, ${data.season} ${data.year})`;
+  } catch {
+    return null;
+  }
+}
+
 async function maybePostSeasonStatus(
   season: { active: boolean; basin: string },
   storms: Storm[],
@@ -131,6 +148,8 @@ async function maybePostSeasonStatus(
     await supabase.from("messages").delete().eq("id", data.id);
   }
 
+  const ensoLine = await fetchEnsoLine();
+
   let body: string;
   if (!season.active && storms.length === 0) {
     body = [
@@ -138,8 +157,9 @@ async function maybePostSeasonStatus(
       ``,
       `No active hurricane seasons at this time.`,
       `No active tropical cyclones.`,
+      ensoLine ?? ``,
       STATUS_MARKER,
-    ].join("\n");
+    ].filter(Boolean).join("\n");
   } else {
     body = [
       `🌀 HURRICANE SEASON STATUS`,
@@ -147,8 +167,9 @@ async function maybePostSeasonStatus(
       `${season.basin} season is ${season.active ? "ACTIVE" : "INACTIVE"}.`,
       `Current active storms: ${storms.length}`,
       lastAdvisory ? `Last advisory: ${formatAdvisoryTime(lastAdvisory)}` : `Last advisory: —`,
+      ensoLine ?? ``,
       STATUS_MARKER,
-    ].join("\n");
+    ].filter(Boolean).join("\n");
   }
 
   await postBotMessage(body);
