@@ -97,10 +97,42 @@ function formatIssueTime(issue: string): string {
   return `${f}. ${h}z`;
 }
 
-async function fetchTiming(): Promise<{ timing: string | null; validWindow: { startZ: string; endZ: string } | null }> {
+function extractHazardDiscussion(text: string): string | null {
+  const paragraphs = text
+    .replace(/\r/g, "")
+    .split(/\n\s*\n/)
+    .map((p) => p.replace(/^\.{3}[^\n]+\.{3}\s*/g, "").replace(/\s+/g, " ").trim())
+    .filter((p) => p.length > 0)
+    .filter((p) => !/^(ZCZC|ACUS01|SPC AC|Day 1 Convective Outlook|NWS Storm Prediction Center|Valid\s+\d{6}Z|\.PREV DISCUSSION|\.\.Lyons|\$\$)/i.test(p));
+
+  const scored = paragraphs
+    .map((paragraph) => {
+      let score = 0;
+      if (/tornado|hail|damaging winds?|gusts?/i.test(paragraph)) score += 4;
+      if (/significant|strong tornado|higher-end|very large hail|widespread/i.test(paragraph)) score += 3;
+      if (/\b(?:NE|IA|MN|SD|KS|OK|TX|CO|MI|WI|MO)\b|Plains|Midwest|Valley|High Plains|Lower MI|Panhandle/i.test(paragraph)) score += 2;
+      if (/summary/i.test(paragraph)) score += 1;
+      return { paragraph, score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score);
+
+  const picked: string[] = [];
+  for (const { paragraph } of scored) {
+    if (picked.includes(paragraph)) continue;
+    picked.push(paragraph);
+    if (picked.length === 4) break;
+  }
+
+  if (picked.length === 0) return null;
+  const joined = picked.join(" ");
+  return joined.length > 1400 ? `${joined.slice(0, 1397)}...` : joined;
+}
+
+async function fetchProductContext(): Promise<{ timing: string | null; validWindow: { startZ: string; endZ: string } | null; discussion: string | null }> {
   try {
     const res = await fetch(SPC_TXT, { cache: "no-store" });
-    if (!res.ok) return { timing: null, validWindow: null };
+    if (!res.ok) return { timing: null, validWindow: null, discussion: null };
     const text = await res.text();
     let validWindow: { startZ: string; endZ: string } | null = null;
     const vm = text.match(/VALID\s+\d{2}(\d{4})Z\s*-\s*\d{2}(\d{4})Z/i);
@@ -114,9 +146,10 @@ async function fetchTiming(): Promise<{ timing: string | null; validWindow: { st
     const Z_RE = /\b\d{1,2}(?:-\d{1,2})?Z\b/;
     const FIRING_RE = /\b(develop|developing|initiation|initiate|initiating|fire|firing|form|forming|expected to develop|robust convection)\b/i;
     const t = sentences.find((s) => Z_RE.test(s) && FIRING_RE.test(s)) ?? sentences.find((s) => Z_RE.test(s));
-    if (!t) return { timing: null, validWindow };
-    return { timing: t.length > 220 ? t.slice(0, 217) + "..." : t, validWindow };
-  } catch { return { timing: null, validWindow: null }; }
+    const discussion = extractHazardDiscussion(text);
+    if (!t) return { timing: null, validWindow, discussion };
+    return { timing: t.length > 220 ? t.slice(0, 217) + "..." : t, validWindow, discussion };
+  } catch { return { timing: null, validWindow: null, discussion: null }; }
 }
 
 // Convert a Z-time token ("12Z" / "06" / "0600" / "00Z") into "HHZ" (24h
@@ -145,6 +178,7 @@ function synthesizeSentence(
   groups: any[],
   timing: string | null,
   validWindow: { startZ: string; endZ: string } | null,
+  discussion: string | null,
 ): string {
   const TIER_ORDER = ["MRGL", "SLGT", "ENH", "MDT", "HIGH"];
   const TIER_NAMES: Record<string, string> = {
@@ -187,39 +221,53 @@ function synthesizeSentence(
   }
   const time = expectedTime ? `from ${expectedTime}` : null;
 
-  // Per-hazard area + intensity extraction from the discussion sentence.
-  type ThreatLine = { hazard: string; qualifier: string | null; area: string | null };
+  // Per-hazard area + intensity extraction from the hazard-focused discussion
+  // text. We prefer the discussion paragraphs and fall back to the timing
+  // sentence when needed.
+  type ThreatLine = { hazard: string; qualifier: string | null; area: string | null; score: number };
   const threatLines: ThreatLine[] = (() => {
-    if (!timing) return [];
+    const source = discussion ?? timing;
+    if (!source) return [];
     const findQualifier = (c: string): string | null => {
-      if (/\bsignificant|strong\b|intense|violent/i.test(c)) return "significant";
+      if (/\bsignificant|strong\b|intense|violent|higher-end/i.test(c)) return "significant";
       if (/\bwidespread|numerous|outbreak\b/i.test(c)) return "widespread";
       if (/\bscattered\b/i.test(c)) return "scattered";
       if (/\bisolated|a few|few\b/i.test(c)) return "isolated";
       if (/\blarge\b/i.test(c) && /hail/i.test(c)) return "large";
       return null;
     };
-    const REGION_RE = /\b(?:[A-Z]{2}|Plains|Midwest|Mid-?South|Mid-?Atlantic|Ohio Valley|Tennessee Valley|Mississippi Valley|Southeast|Northeast|Southwest|Northwest|Gulf Coast|Carolinas|Deep South|Great Lakes|High Plains|Southern Plains|Central Plains|Northern Plains)\b/g;
-    const findArea = (c: string): string | null => {
-      const m = c.match(REGION_RE);
-      if (!m || m.length === 0) return null;
-      return [...new Set(m)].slice(0, 3).join(", ");
+    const STATE_AREA_RE = /\b(?:(?:far\s+)?(?:north(?:ern)?|south(?:ern)?|east(?:ern)?|west(?:ern)?|central|northeast(?:ern)?|northwest(?:ern)?|southeast(?:ern)?|southwest(?:ern)?|east-central|west-central|south-central|north-central|upper|lower|mid)\s+)*(?:[A-Z]{2})(?:\s*(?:\/|and|to|into)\s*(?:(?:far\s+)?(?:north(?:ern)?|south(?:ern)?|east(?:ern)?|west(?:ern)?|central|northeast(?:ern)?|northwest(?:ern)?|southeast(?:ern)?|southwest(?:ern)?|east-central|west-central|south-central|north-central|upper|lower|mid)\s+)*(?:[A-Z]{2}))*/g;
+    const REGION_AREA_RE = /\b(?:central High Plains|High Plains|Central Plains|southern\/central Plains|southern Plains|central Plains|Upper Midwest|Mid Missouri Valley|Missouri Valley|Red River Vicinity|Lower MI|southern WI|western OK|central TX|North TX|eastern TX Panhandle|warm frontal corridor)\b/gi;
+    const findAreas = (c: string): string[] => {
+      const states = c.match(STATE_AREA_RE) ?? [];
+      const regions = c.match(REGION_AREA_RE) ?? [];
+      return [...new Set([...states, ...regions].map((m) => m.replace(/\s+/g, " ").trim()).filter(Boolean))].slice(0, 2);
+    };
+    const scoreClause = (c: string): number => {
+      let score = 0;
+      if (/\bsignificant|strong\b|higher-end|violent/i.test(c)) score += 4;
+      if (/\bwidespread|numerous|greater threat/i.test(c)) score += 3;
+      if (/very large hail|damaging winds?|gusts?/i.test(c)) score += 2;
+      if (/isolated|conditional|very low/i.test(c)) score -= 2;
+      return score;
     };
     const hazards: { hazard: string; re: RegExp }[] = [
       { hazard: "tornadoes", re: /tornado(?:es)?/i },
       { hazard: "hail", re: /hail/i },
       { hazard: "damaging winds", re: /damaging winds?|severe winds?|wind damage|gusts?/i },
     ];
-    const clauses = timing.split(/[.;]|,\s+(?=[A-Z])/).map((c) => c.trim()).filter(Boolean);
+    const clauses = source.split(/[.;]|,\s+(?=[A-Z])/).map((c) => c.trim()).filter(Boolean);
     const out: ThreatLine[] = [];
     for (const { hazard, re } of hazards) {
-      const hits = clauses.filter((c) => re.test(c));
+      const hits = clauses.filter((c) => re.test(c)).map((c) => ({ c, score: scoreClause(c) }));
       if (hits.length === 0) continue;
-      const qualifier = hits.map((c) => findQualifier(c)).find(Boolean) ?? findQualifier(timing);
-      const area = hits.map((c) => findArea(c)).find(Boolean) ?? null;
-      out.push({ hazard, qualifier, area });
+      hits.sort((a, b) => b.score - a.score);
+      const qualifier = hits.map(({ c }) => findQualifier(c)).find(Boolean) ?? findQualifier(source);
+      const areaList = hits.flatMap(({ c }) => findAreas(c)).slice(0, 2);
+      const area = joinList([...new Set(areaList)]) ?? null;
+      out.push({ hazard, qualifier, area, score: hits[0]?.score ?? 0 });
     }
-    return out;
+    return out.sort((a, b) => b.score - a.score);
   })();
 
   const hazardPhrases = threatLines.map((t) => {
@@ -238,9 +286,9 @@ function synthesizeSentence(
   return `${headWithTime}${tail}`;
 }
 
-function buildMessage(issue: string, groups: any[], timing: string | null, validWindow: any): string {
-  const sentence = synthesizeSentence(groups, timing, validWindow);
-  const payload = JSON.stringify({ issue, groups, timing, validWindow });
+function buildMessage(issue: string, groups: any[], timing: string | null, validWindow: any, discussion: string | null): string {
+  const sentence = synthesizeSentence(groups, timing, validWindow, discussion);
+  const payload = JSON.stringify({ issue, groups, timing, validWindow, discussion, summary: sentence });
   return [
     `⚡ SPC Day 1 Outlook Update — ${formatIssueTime(issue)}`,
     ``,
@@ -323,8 +371,8 @@ Deno.serve(async (req) => {
     }
 
     groups.sort((a, b) => (RISK_RANK[b.label] ?? 0) - (RISK_RANK[a.label] ?? 0));
-    const { timing, validWindow } = await fetchTiming();
-    const content = buildMessage(latestIssue, groups, timing, validWindow);
+    const { timing, validWindow, discussion } = await fetchProductContext();
+    const content = buildMessage(latestIssue, groups, timing, validWindow, discussion);
 
     // Persist state
     await supabase.from("spc_outlook_state").update({

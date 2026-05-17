@@ -23,6 +23,8 @@ interface SPCPayload {
   // Optional — added in a later schema version. May be missing on older rows.
   timing?: string | null;
   validWindow?: { startZ: string; endZ: string } | null;
+  discussion?: string | null;
+  summary?: string | null;
 }
 
 const DATA_MARKER_RE = /<!--data:([\s\S]*?)-->/;
@@ -167,6 +169,7 @@ export function SystemMessageCard({
 
   const visibleTiming = payload?.timing ?? fallbackTiming;
   const visibleValidWindow = payload?.validWindow ?? fallbackValidWindow;
+  const visibleDiscussion = payload?.discussion ?? payload?.timing ?? fallbackTiming;
 
   // Compact summary chips for the "Expected" line. We prefer a Z-time range
   // parsed out of the discussion sentence, fall back to the official VALID
@@ -214,8 +217,8 @@ export function SystemMessageCard({
   // reader sees which areas get which hazard and how widespread it is.
   type ThreatLine = { hazard: string; qualifier: string | null; area: string | null };
   const threatLines: ThreatLine[] = (() => {
-    if (!visibleTiming) return [];
-    const text = visibleTiming;
+    if (!visibleDiscussion) return [];
+    const text = visibleDiscussion;
     const findQualifier = (clause: string): string | null => {
       if (/\bsignificant|strong\b|intense|violent/i.test(clause)) return "significant";
       if (/\bwidespread|numerous|outbreak\b/i.test(clause)) return "widespread";
@@ -253,6 +256,7 @@ export function SystemMessageCard({
   // intensity qualifier and the area it covers when discernible.
   const expectedSentence: string | null = (() => {
     if (!payload) return null;
+    if (payload.summary) return payload.summary;
 
     const TIER_ORDER = ["MRGL", "SLGT", "ENH", "MDT", "HIGH"] as const;
     const TIER_NAMES: Record<string, string> = {
