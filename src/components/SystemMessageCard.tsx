@@ -59,11 +59,46 @@ export function SystemMessageCard({
   expandedKey: Set<string>;
   toggle: (id: string) => void;
 }) {
-  const payload = parseSPCPayload(message.content);
+  const isHurricane = message.username === "Hurricane Bot";
+  const payload = isHurricane ? null : parseSPCPayload(message.content);
   const [fallbackTiming, setFallbackTiming] = useState<string | null>(null);
   const [fallbackValidWindow, setFallbackValidWindow] = useState<SPCPayload["validWindow"]>(null);
-  const stripped = message.content.replace(ALL_MARKERS_RE, "").trim();
-  const headerLine = stripped.split("\n")[0] ?? "SPC Day 1 Outlook";
+  // Strip SPC markers AND hurricane bot markers.
+  const HURRICANE_MARKERS_RE = /\s*<!--(?:htype|hadv):[\s\S]*?-->\s*/g;
+  const stripped = message.content
+    .replace(ALL_MARKERS_RE, "")
+    .replace(HURRICANE_MARKERS_RE, "")
+    .trim();
+  const headerLine = stripped.split("\n")[0] ?? (isHurricane ? "Hurricane Bot" : "SPC Day 1 Outlook");
+
+  if (isHurricane) {
+    return (
+      <div
+        className="rounded border px-3 py-2 font-mono text-[11px]"
+        style={{
+          background: "rgba(0, 150, 255, 0.08)",
+          borderColor: "rgba(0, 150, 255, 0.3)",
+          color: "#7dd3fc",
+        }}
+      >
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span
+            className="text-[9px] uppercase tracking-wide font-bold"
+            style={{ color: "#00aaff" }}
+          >
+            🌀 Hurricane Bot · System
+          </span>
+          <span className="text-[9px] opacity-70">
+            {new Date(message.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </span>
+        </div>
+        <p className="whitespace-pre-line opacity-95 leading-snug">{stripped}</p>
+      </div>
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
