@@ -1,40 +1,90 @@
-// Edge function: fetches NOAA CPC's ONI (Oceanic Niño Index) ASCII file and
-// returns the latest 3-month ONI value plus a phase classification. Proxied
-// server-side because cpc.ncep.noaa.gov does not send CORS headers.
+// Edge function: returns the latest ENSO state.
+// Primary signal: NOAA CPC weekly Niño 3.4 SST anomaly (updated every Monday),
+// which is far more current than the monthly ONI (~1-month lag).
+// Falls back to the monthly ONI ASCII file if the weekly file fails.
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 
+const WEEKLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for";
 const ONI_URL = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt";
 
-// Standard CPC thresholds: |ONI| >= 0.5 sustained = El Niño / La Niña.
-// We classify on the latest single 3-month value (good enough for a chat line).
-function classify(oni: number): { phase: string; lean: string } {
-  if (oni >= 0.5) return { phase: "El Niño", lean: "warm" };
-  if (oni <= -0.5) return { phase: "La Niña", lean: "cool" };
-  if (oni > 0) return { phase: "Neutral", lean: "warm-leaning" };
-  if (oni < 0) return { phase: "Neutral", lean: "cool-leaning" };
+// CPC thresholds: |anom| >= 0.5 sustained = El Niño / La Niña.
+function classify(v: number): { phase: string; lean: string } {
+  if (v >= 0.5) return { phase: "El Niño", lean: "warm" };
+  if (v <= -0.5) return { phase: "La Niña", lean: "cool" };
+  if (v > 0) return { phase: "Neutral", lean: "warm-leaning" };
+  if (v < 0) return { phase: "Neutral", lean: "cool-leaning" };
   return { phase: "Neutral", lean: "neutral" };
+}
+
+// Parse a row like " 06MAY2026     26.4 1.6     28.5 1.1     28.8 0.9     29.6 0.9"
+// Columns are pairs of (SST, anomaly) for Niño1+2, Niño3, Niño3.4, Niño4.
+// Returns Niño 3.4 anomaly (3rd pair) and the week label.
+function parseWeekly(text: string): { anom: number; week: string } | null {
+  const lines = text.trim().split("\n").filter((l) => /\d{2}[A-Z]{3}\d{4}/.test(l));
+  const last = lines[lines.length - 1];
+  if (!last) return null;
+  const m = last.match(/(\d{2}[A-Z]{3}\d{4})/);
+  const week = m ? m[1] : "";
+  // Strip date, split remaining numbers.
+  const nums = last.replace(/\d{2}[A-Z]{3}\d{4}/, "").trim().split(/\s+/).map(parseFloat);
+  // Expect 8 numbers (4 SST + 4 anom). Niño 3.4 anomaly = index 5.
+  if (nums.length < 6 || !isFinite(nums[5])) return null;
+  return { anom: nums[5], week };
+}
+
+// Pretty-print "06MAY2026" -> "May 6, 2026".
+function fmtWeek(w: string): string {
+  const m = w.match(/^(\d{2})([A-Z]{3})(\d{4})$/);
+  if (!m) return w;
+  const months: Record<string, string> = {
+    JAN: "Jan", FEB: "Feb", MAR: "Mar", APR: "Apr", MAY: "May", JUN: "Jun",
+    JUL: "Jul", AUG: "Aug", SEP: "Sep", OCT: "Oct", NOV: "Nov", DEC: "Dec",
+  };
+  return `${months[m[2]] ?? m[2]} ${parseInt(m[1], 10)}, ${m[3]}`;
+}
+
+async function fetchWeekly() {
+  const res = await fetch(WEEKLY_URL, { headers: { "User-Agent": "StratoOps/1.0" } });
+  if (!res.ok) throw new Error(`CPC weekly ${res.status}`);
+  const parsed = parseWeekly(await res.text());
+  if (!parsed) throw new Error("weekly parse failed");
+  const { phase, lean } = classify(parsed.anom);
+  return {
+    source: "weekly",
+    region: "Niño 3.4",
+    oni: parsed.anom,
+    phase,
+    lean,
+    season: `week of ${fmtWeek(parsed.week)}`,
+    year: parsed.week.slice(-4),
+  };
+}
+
+async function fetchMonthly() {
+  const res = await fetch(ONI_URL, { headers: { "User-Agent": "StratoOps/1.0" } });
+  if (!res.ok) throw new Error(`CPC ONI ${res.status}`);
+  const lines = (await res.text()).trim().split("\n").slice(1).filter(Boolean);
+  const last = lines[lines.length - 1].trim().split(/\s+/);
+  const anom = parseFloat(last[3]);
+  if (!isFinite(anom)) throw new Error("ONI parse failed");
+  const { phase, lean } = classify(anom);
+  return { source: "monthly", region: "ONI", oni: anom, phase, lean, season: last[0], year: last[1] };
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const res = await fetch(ONI_URL, { headers: { "User-Agent": "StratoOps/1.0" } });
-    if (!res.ok) throw new Error(`CPC ${res.status}`);
-    const text = await res.text();
-    // File format: header line + rows like "SEAS  YR  TOTAL  ANOM"
-    // e.g. "DJF  1950  24.72 -1.53"
-    const lines = text.trim().split("\n").slice(1).filter(Boolean);
-    const last = lines[lines.length - 1];
-    const parts = last.trim().split(/\s+/);
-    const seas = parts[0];
-    const year = parts[1];
-    const anom = parseFloat(parts[3]);
-    if (!isFinite(anom)) throw new Error("parse failed");
-    const { phase, lean } = classify(anom);
-    return new Response(
-      JSON.stringify({ season: seas, year, oni: anom, phase, lean }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=21600" } },
-    );
+    let payload;
+    try {
+      payload = await fetchWeekly();
+    } catch (e) {
+      console.warn("[enso-status] weekly failed, falling back to monthly:", e);
+      payload = await fetchMonthly();
+    }
+    return new Response(JSON.stringify(payload), {
+      // Cache 1 hour client-side; weekly file only changes Mondays anyway.
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "public, max-age=3600" },
+    });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
