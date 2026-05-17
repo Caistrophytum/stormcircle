@@ -2,7 +2,7 @@
 // Primary signal: NOAA CPC weekly Niño 3.4 SST anomaly (updated every Monday),
 // which is far more current than the monthly ONI (~1-month lag).
 // Falls back to the monthly ONI ASCII file if the weekly file fails.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 
 const WEEKLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for";
 const ONI_URL = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt";
