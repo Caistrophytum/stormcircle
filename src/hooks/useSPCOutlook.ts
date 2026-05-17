@@ -229,7 +229,10 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * Read the most-recent persisted bot message and return the ISSUE timestamp
  * embedded in it (or null if none exists / the marker is absent).
  */
-async function getStoredIssue(): Promise<string | null> {
+async function getStoredIssue(): Promise<{
+  issue: string | null;
+  hasTiming: boolean;
+}> {
   const { data, error } = await supabase
     .from("messages")
     .select("content")
@@ -237,9 +240,22 @@ async function getStoredIssue(): Promise<string | null> {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error || !data) return { issue: null, hasTiming: false };
   const m = data.content.match(ISSUE_MARKER_RE);
-  return m ? m[1] : null;
+  // Inspect the embedded payload to see whether the stored row already
+  // carries firing-time info. If not, we should re-post even when ISSUE
+  // hasn't changed so users get the backfilled timing line.
+  const dm = data.content.match(DATA_MARKER_RE);
+  let hasTiming = false;
+  if (dm) {
+    try {
+      const parsed = JSON.parse(dm[1]);
+      hasTiming = Boolean(parsed?.timing || parsed?.validWindow);
+    } catch {
+      hasTiming = false;
+    }
+  }
+  return { issue: m ? m[1] : null, hasTiming };
 }
 
 /**
