@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_alerts: {
+        Row: {
+          alert_id: string
+          area_desc: string | null
+          certainty: string | null
+          effective: string | null
+          ends: string | null
+          event: string | null
+          expires_at: string | null
+          geometry: Json | null
+          headline: string | null
+          message_type: string | null
+          onset: string | null
+          properties: Json | null
+          sent: string | null
+          severity: string | null
+          status: string | null
+          updated_at: string
+          urgency: string | null
+        }
+        Insert: {
+          alert_id: string
+          area_desc?: string | null
+          certainty?: string | null
+          effective?: string | null
+          ends?: string | null
+          event?: string | null
+          expires_at?: string | null
+          geometry?: Json | null
+          headline?: string | null
+          message_type?: string | null
+          onset?: string | null
+          properties?: Json | null
+          sent?: string | null
+          severity?: string | null
+          status?: string | null
+          updated_at?: string
+          urgency?: string | null
+        }
+        Update: {
+          alert_id?: string
+          area_desc?: string | null
+          certainty?: string | null
+          effective?: string | null
+          ends?: string | null
+          event?: string | null
+          expires_at?: string | null
+          geometry?: Json | null
+          headline?: string | null
+          message_type?: string | null
+          onset?: string | null
+          properties?: Json | null
+          sent?: string | null
+          severity?: string | null
+          status?: string | null
+          updated_at?: string
+          urgency?: string | null
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string
@@ -101,6 +161,48 @@ export type Database = {
         }
         Relationships: []
       }
+      enso_state: {
+        Row: {
+          id: number
+          last_error: string | null
+          last_run_at: string | null
+          lean: string | null
+          oni: number | null
+          phase: string | null
+          region: string | null
+          season: string | null
+          source: string | null
+          updated_at: string
+          year: string | null
+        }
+        Insert: {
+          id?: number
+          last_error?: string | null
+          last_run_at?: string | null
+          lean?: string | null
+          oni?: number | null
+          phase?: string | null
+          region?: string | null
+          season?: string | null
+          source?: string | null
+          updated_at?: string
+          year?: string | null
+        }
+        Update: {
+          id?: number
+          last_error?: string | null
+          last_run_at?: string | null
+          lean?: string | null
+          oni?: number | null
+          phase?: string | null
+          region?: string | null
+          season?: string | null
+          source?: string | null
+          updated_at?: string
+          year?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           badge: string
@@ -125,6 +227,81 @@ export type Database = {
           id?: string
           user_id?: string
           username?: string
+        }
+        Relationships: []
+      }
+      nhc_storms: {
+        Row: {
+          advisory_url: string | null
+          basin: string | null
+          classification: string | null
+          classification_label: string | null
+          danger_level: string | null
+          discussion_url: string | null
+          forecast_graphics_url: string | null
+          intensity_kt: number | null
+          intensity_mph: number | null
+          is_dangerous: boolean | null
+          last_update: string | null
+          lat: number | null
+          lat_str: string | null
+          lon: number | null
+          lon_str: string | null
+          movement_dir_compass: string | null
+          movement_speed: number | null
+          name: string
+          pressure: number | null
+          raw: Json | null
+          storm_id: string
+          updated_at: string
+        }
+        Insert: {
+          advisory_url?: string | null
+          basin?: string | null
+          classification?: string | null
+          classification_label?: string | null
+          danger_level?: string | null
+          discussion_url?: string | null
+          forecast_graphics_url?: string | null
+          intensity_kt?: number | null
+          intensity_mph?: number | null
+          is_dangerous?: boolean | null
+          last_update?: string | null
+          lat?: number | null
+          lat_str?: string | null
+          lon?: number | null
+          lon_str?: string | null
+          movement_dir_compass?: string | null
+          movement_speed?: number | null
+          name: string
+          pressure?: number | null
+          raw?: Json | null
+          storm_id: string
+          updated_at?: string
+        }
+        Update: {
+          advisory_url?: string | null
+          basin?: string | null
+          classification?: string | null
+          classification_label?: string | null
+          danger_level?: string | null
+          discussion_url?: string | null
+          forecast_graphics_url?: string | null
+          intensity_kt?: number | null
+          intensity_mph?: number | null
+          is_dangerous?: boolean | null
+          last_update?: string | null
+          lat?: number | null
+          lat_str?: string | null
+          lon?: number | null
+          lon_str?: string | null
+          movement_dir_compass?: string | null
+          movement_speed?: number | null
+          name?: string
+          pressure?: number | null
+          raw?: Json | null
+          storm_id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -173,6 +350,39 @@ export type Database = {
           approved_at?: string
           approved_by?: string
           signature?: string
+        }
+        Relationships: []
+      }
+      spc_outlook_state: {
+        Row: {
+          groups: Json | null
+          id: number
+          issue: string | null
+          last_error: string | null
+          last_run_at: string | null
+          timing: string | null
+          updated_at: string
+          valid_window: Json | null
+        }
+        Insert: {
+          groups?: Json | null
+          id?: number
+          issue?: string | null
+          last_error?: string | null
+          last_run_at?: string | null
+          timing?: string | null
+          updated_at?: string
+          valid_window?: Json | null
+        }
+        Update: {
+          groups?: Json | null
+          id?: number
+          issue?: string | null
+          last_error?: string | null
+          last_run_at?: string | null
+          timing?: string | null
+          updated_at?: string
+          valid_window?: Json | null
         }
         Relationships: []
       }

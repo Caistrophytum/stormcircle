@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useRefreshTick } from "./useRefreshTick";
+import { supabase } from "@/integrations/supabase/client";
 
 /** Color map for NWS event types. Unknown types fall back to #FFFFFF. */
 export const WARNING_COLORS: Record<string, string> = {
@@ -224,90 +224,82 @@ function toWarningPolygon(
   };
 }
 
+/**
+ * Subscribes to the server-maintained `active_alerts` table. The
+ * `alerts-poll` edge function refreshes this every minute via pg_cron.
+ * For alerts without inline geometry, we still resolve their
+ * `affectedZones` URLs client-side (cached per session) — same behaviour
+ * as before, just no longer every client hammering NWS.
+ */
 export function useWarningPolygons(): WarningPolygonsData {
   const [data, setData] = useState<WarningPolygonsData>({
-    polygons: [],
-    loading: true,
-    error: null,
-    lastUpdated: null,
+    polygons: [], loading: true, error: null, lastUpdated: null,
   });
-
-  // Subscribe to the shared 60s refresh clock so warning fetches fire in
-  // lockstep with radar tile refreshes and other 1-minute data sources.
-  const tick = useRefreshTick();
 
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchPolygons() {
+    async function load() {
       try {
-        const res = await fetch(
-          "https://api.weather.gov/alerts/active?status=actual&message_type=alert",
-          { headers: { "User-Agent": "MyWeatherApp/1.0" } },
-        );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const json = await res.json();
+        const { data: rows, error } = await supabase
+          .from("active_alerts")
+          .select("alert_id, event, severity, certainty, urgency, headline, area_desc, expires_at, geometry, properties");
+        if (error) throw error;
 
-        const features: any[] = Array.isArray(json?.features) ? json.features : [];
+        const inline: WarningPolygon[] = [];
+        const zoneJobs: Promise<WarningPolygon | null>[] = [];
 
-        // 1) Features that already carry a polygon — use directly.
-        const inlinePolygons: WarningPolygon[] = features
-          .filter(
-            (f) =>
-              f?.geometry != null &&
-              (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"),
-          )
-          .map((f) => toWarningPolygon(f, f.geometry));
-
-        // 2) Features without inline geometry — resolve their affectedZones
-        //    (e.g. land-zone advisories: Winter Weather, Wind, Red Flag, Flood,
-        //    Special Weather Statement, etc.) into MultiPolygon geometry.
-        //    These were previously dropped, which is why some polygons looked
-        //    "missing" on the map.
-        const zoneFeatures = features.filter(
-          (f) =>
-            (!f?.geometry ||
-              (f.geometry.type !== "Polygon" && f.geometry.type !== "MultiPolygon")) &&
-            Array.isArray(f?.properties?.affectedZones) &&
-            f.properties.affectedZones.length > 0,
-        );
-
-        const zonePolygons = await Promise.all(
-          zoneFeatures.map(async (f) => {
-            const urls: string[] = f.properties.affectedZones;
-            const geom = await resolveZonesGeometry(urls);
-            if (!geom) return null;
-            return toWarningPolygon(f, geom);
-          }),
-        ).then((arr) => arr.filter((p): p is WarningPolygon => p !== null));
-
-        const polygons: WarningPolygon[] = [...inlinePolygons, ...zonePolygons];
-
-        if (!cancelled) {
-          setData({
-            polygons,
-            loading: false,
-            error: null,
-            lastUpdated: new Date(),
-          });
+        for (const r of rows ?? []) {
+          const props = {
+            id: r.alert_id,
+            event: r.event,
+            areaDesc: r.area_desc,
+            expires: r.expires_at,
+            description: (r.properties as any)?.description ?? "",
+            headline: r.headline,
+            severity: r.severity,
+            certainty: r.certainty,
+            urgency: r.urgency,
+            parameters: (r.properties as any)?.parameters ?? {},
+          };
+          const feat = { properties: props } as any;
+          if (r.geometry) {
+            inline.push(toWarningPolygon(feat, r.geometry as any));
+          } else {
+            const zones: string[] = (r.properties as any)?.affectedZones ?? [];
+            if (zones.length > 0) {
+              zoneJobs.push(
+                resolveZonesGeometry(zones).then((g) => g ? toWarningPolygon(feat, g) : null),
+              );
+            }
+          }
         }
+
+        const zonePolys = (await Promise.all(zoneJobs)).filter((p): p is WarningPolygon => p !== null);
+        if (cancelled) return;
+        setData({
+          polygons: [...inline, ...zonePolys],
+          loading: false, error: null, lastUpdated: new Date(),
+        });
       } catch (err) {
         if (!cancelled) {
-          setData((prev) => ({
-            ...prev,
-            loading: false,
-            error: err instanceof Error ? err.message : "Failed to fetch warnings",
-          }));
+          setData((prev) => ({ ...prev, loading: false,
+            error: err instanceof Error ? err.message : "Failed to load warnings" }));
         }
       }
     }
 
-    fetchPolygons();
+    void load();
+    const channel = supabase
+      .channel("active_alerts_live")
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "active_alerts" },
+        () => { void load(); })
+      .subscribe();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [tick]);
+    return () => { cancelled = true; void supabase.removeChannel(channel); };
+  }, []);
 
   return data;
 }
+

@@ -1,42 +1,98 @@
-# Mobile layout — implementation plan
 
-Replace the MobileGuard "rotate your device" block with a real mobile UI for screens < 1024px. Desktop layout is unchanged.
+## Goal
 
-## 1. Mobile detection
-- Delete `src/components/MobileGuard.tsx` and remove its wrapper from `src/App.tsx`.
-- Create `src/hooks/useMobile.ts` — listens on resize, returns `window.innerWidth < 1024`.
-- `App.tsx` renders `<MobileLayout />` when mobile, otherwise the current desktop tree (Toaster/Sonner/TooltipProvider/BrowserRouter with all existing routes). Both branches keep `useViewportScaling()`.
+All weather data — SPC convective outlooks, NHC tropical cyclones + ENSO, NWS active warnings/polygons — is fetched on a server-side schedule (pg_cron + edge functions), persisted to Supabase, and pushed to clients via Postgres Realtime. Client hooks become thin subscribers. Bots post messages from the server, not the browser.
 
-## 2. Layout skeleton
-Create `src/components/mobile/MobileLayout.tsx` — full viewport (`100dvw` × `100dvh`), three stacked zones:
-- 10% `MobileHeader` (logo, UTC mission time, online count)
-- 40% `MobileAlerts` (top 10 most dangerous)
-- 50% `MobileHazards` (10 most common + 5 new alerts)
-- Floating `MobileFloatingButtons` (account / chat / alerts / radar) with a toggle arrow
-- `MobileScreen` overlay rendered when an action is active
+This eliminates the "no one had the tab open, so no one polled" problem for every current and future bot.
 
-## 3. Sub-components
-- `MobileHeader.tsx` — uses `useAlerts` and `useOnlineCount`.
-- `MobileAlerts.tsx` — renders `mostDangerous` with severity pill + area, colored left border via `getWarningColor`.
-- `MobileHazards.tsx` — top half = `topHazards` (count badge), bottom half = recent/new alerts list.
-- `MobileFloatingButtons.tsx` — four circular buttons + persistent toggle chevron, lucide icons.
-- `MobileScreen.tsx` — full-screen overlay with a 10dvh header (title + close button) and a content slot.
+## Architecture
 
-## 4. Adjustments to existing code
-- **`src/hooks/useAlerts.ts`**: today exposes `mostDangerous` (top 10 already), `topHazards`, and `newWarnings` (aggregated counts). The plan needs a per-alert recent list, so add `recentAlerts: Alert[]` — the alerts whose ids first appeared in the last `REFRESH_HISTORY_WINDOW` cycles, newest first, capped at e.g. 10. `mostDangerous` already returns 10 — no change needed there.
-- **`MobileScreen` content wiring**:
-  - `account` → render `<AccountCenter />` inside the overlay.
-  - `radar` → render `<RadarMiniMap expanded onCollapse={onClose} … />` with the full required prop set (selectedCity/setSelectedCity, selectedStation/setSelectedStation, onStationMarkerSelect, stationDistanceKm, selectedProduct/setSelectedProduct, tileUrl) sourced from `useRadar()`. Inside `RadarMiniMap`, hide the existing collapse button on mobile (use `useMobile`) since the screen header's close button replaces it.
-  - `alerts` → scrollable full list rendered from `useAlerts().mostDangerous` + topHazards/recentAlerts (reuse the card styling from `MobileAlerts`).
-  - `chat` → no `PublicChat` component exists in this codebase. Options: (a) ship a placeholder "Coming soon" panel, or (b) drop the chat button for now. Recommendation: ship placeholder so the four-button grid stays intact.
+```text
+                    pg_cron (every 1–5 min)
+                          │
+                          ▼
+        ┌─────────────────────────────────────────┐
+        │  Edge Functions (scheduled, no auth)    │
+        │  • spc-poll       (every 5 min)         │
+        │  • nhc-poll       (every 5 min)         │
+        │  • alerts-poll    (every 1 min)         │
+        │  • enso-poll      (every 6 h)           │
+        └─────────────────────────────────────────┘
+                          │ fetch NOAA, parse, upsert
+                          ▼
+        ┌─────────────────────────────────────────┐
+        │  New Supabase tables (source of truth)  │
+        │  • spc_outlook_state                    │
+        │  • nhc_storms                           │
+        │  • active_alerts                        │
+        │  • enso_state                           │
+        │  + messages (bot posts written here)    │
+        └─────────────────────────────────────────┘
+                          │ Postgres Realtime
+                          ▼
+                    Client hooks (read-only)
+```
 
-## 5. Routes
-`/auth`, `/account`, `/reset-password`, `/faq`, `*` still need to work on mobile. Simplest approach: keep `BrowserRouter` + `Routes` in both branches; on mobile, the `/` route renders `MobileLayout` and the other routes render their existing pages (already mobile-friendly enough to view; account overlay just deep-links into `/account` if preferred).
+## Bots in scope
+
+1. **SPC Bot** — Day 1 Convective Outlook + reverse-geocoded counties + timing line.
+2. **Hurricane Bot** — NHC CurrentStorms, advisory updates, season status, ENSO line.
+3. **NWS Warnings/Polygons** — active alerts feed for the live map (not a chat bot, but same data-collection pattern).
+4. **Pattern for future bots** — documented so adding a new server-polled feed is a copy/paste exercise.
+
+## Implementation steps
+
+### 1. Database
+
+- `spc_outlook_state` — single-row table (id=1) holding `issue`, `groups jsonb`, `timing`, `valid_window jsonb`, `updated_at`. Drives the SPC bot message.
+- `nhc_storms` — one row per active storm id with full last advisory snapshot; soft-deleted when NHC drops the storm.
+- `active_alerts` — one row per NWS alert id with `geometry jsonb`, `properties jsonb`, `expires_at`. Cron deletes expired rows.
+- `enso_state` — single-row, latest weekly Niño 3.4 anomaly + phase.
+- Realtime publication added for all four tables.
+- RLS: public read; only service role writes.
+
+### 2. Edge functions (all `verify_jwt = false`, called by pg_cron with the anon key)
+
+- `spc-poll` — fetches SPC GeoJSON + discussion text, reverse-geocodes new polygons, upserts `spc_outlook_state`, inserts/replaces the SPC bot message in `messages` when ISSUE changes.
+- `nhc-poll` — fetches `CurrentStorms.json`, diffs against `nhc_storms`, posts advisory + danger messages to `messages` for changed storms.
+- `alerts-poll` — fetches `api.weather.gov/alerts/active`, upserts `active_alerts`, removes expired rows. Map polygons are read from this table by clients.
+- `enso-poll` — fetches CPC weekly SST file, updates `enso_state`. Hurricane season-status message reads from this table.
+
+### 3. pg_cron schedules
+
+- `spc-poll`: every 5 minutes
+- `nhc-poll`: every 5 minutes
+- `alerts-poll`: every 1 minute
+- `enso-poll`: every 6 hours
+
+### 4. Client hook refactor
+
+- `useSPCOutlook` → subscribes to `spc_outlook_state` via Realtime. No more browser fetch, no reverse-geocoding loop.
+- `useHurricaneData` → subscribes to `nhc_storms`. Existing `Storm` type populated from the row.
+- `useHurricaneBot` → deleted (server handles all posting). Replaced by hurricane logic inside `nhc-poll` + `enso-poll`.
+- `useWarningPolygons` → subscribes to `active_alerts`. Same shape returned, no NWS API calls in browser.
+- Module-level `started` guards and visibility listeners removed — no longer needed.
+
+### 5. Pattern doc
+
+Short README at `supabase/functions/_bots/README.md` describing how to add a new server-polled bot: create table → create poll function → add pg_cron entry → expose realtime → write client subscriber.
+
+## Out of scope (this pass)
+
+- Reverse-geocoding cache table (nice-to-have; can be added if NWS rate-limits the cron).
+- Backfilling historical data — only current state is persisted.
+- Migrating user-generated messages or anything not bot-related.
 
 ## Technical notes
-- Inline styles in the snippets use hardcoded hex values (`#0a0a14`, `#7dd3fc`, …). These don't match the project's HSL token system but match the user's pasted code verbatim — kept as-is unless you want them refactored to design tokens later.
-- `dvh` is used intentionally for iOS Safari address-bar behavior.
-- No new dependencies; lucide-react and existing hooks cover everything.
 
-## Open question
-Chat overlay: placeholder panel, or remove the chat button until a chat component exists?
+- pg_cron entries are inserted via the **insert tool** (not migration), because they contain the project's anon key URL.
+- All four edge functions deploy with `verify_jwt = false`. The cron call passes the anon key in the `apikey` header; functions also accept service-role for manual triggering.
+- Each cron function uses a Postgres advisory lock (or a `last_run_at` column on the state table) to avoid overlapping runs if a fetch is slow.
+- Bot message inserts use the existing reserved UUIDs (`…0000` for SPC, `…0001` for Hurricane); the delete-then-insert pattern is preserved so Realtime subscribers see fresh INSERT events.
+- Failure handling: each poll function logs to its own table-level `*_state.last_error` column so the UI can show a "data feed degraded" indicator if needed.
+
+## Risks
+
+- NWS `/alerts/active` returns large payloads during major outbreaks (1 MB+). The cron function streams + upserts in batches; the table stores only the fields the map renders.
+- NWS rate limits the reverse-geocoding endpoint. SPC bot will rate-limit (500ms between calls, same as today) but inside the function, not the browser.
+- pg_net HTTP calls from cron must succeed within the function's 60s wall clock; SPC reverse-geocoding of a large multi-state outlook may exceed this. Mitigation: spc-poll splits work — first run records the new ISSUE and bare polygons; second run fills counties.

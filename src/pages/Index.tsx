@@ -27,17 +27,14 @@ import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
 import { useNewReportPing } from "@/hooks/useNewReportPing";
 import { useNewLSRPing } from "@/hooks/useNewLSRPing";
-import { useSPCOutlook } from "@/hooks/useSPCOutlook";
-import { useHurricaneBot } from "@/hooks/useHurricaneBot";
+
 
 
 const Index = () => {
-  // Kick off SPC Day 1 outlook polling — posts an automated bot message to
-  // the chat whenever a new outlook issuance is detected.
-  useSPCOutlook();
-  // Kick off NHC tropical-cyclone polling — posts Hurricane Bot messages
-  // for season status, advisory updates, and dangerous-storm alerts.
-  useHurricaneBot();
+  // SPC Day 1 outlook + Hurricane / NHC advisory posting now run server-side
+  // via the spc-poll, nhc-poll and enso-poll edge functions (pg_cron). Clients
+  // just receive the resulting bot messages via the existing Realtime feed.
+
 
   // Side-panel open/close state.
   const [rightOpen, setRightOpen] = useState(true);
