@@ -111,8 +111,19 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
         const [centerLat, centerLon] = polygonCenter(match.geometry);
         map.flyTo([centerLat, centerLon], 8, { duration: 1.2 });
         setTimeout(() => {
-          const layer = layersRef.current.get(match.id);
-          layer?.openPopup();
+          const [cLat, cLon] = [centerLat, centerLon];
+          // Combined popup using same overlap logic at the centroid
+          const hits = polygons.filter(
+            (q) => q.geometry && pointInPolygon(cLon, cLat, q.geometry),
+          );
+          const list = hits.length ? hits : [match];
+          const html = `<div class="warning-popup-stack">${list
+            .map((q) => buildTooltipHtml(q))
+            .join('<div class="warning-popup-sep"></div>')}</div>`;
+          L.popup({ maxWidth: 280, className: "warning-popup" })
+            .setLatLng([cLat, cLon])
+            .setContent(html)
+            .openOn(map);
         }, 1400);
       },
     }));
