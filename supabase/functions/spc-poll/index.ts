@@ -265,9 +265,12 @@ Deno.serve(async (req) => {
     if (!issues.length) throw new Error("no issue timestamps");
     const latestIssue = issues.sort().reverse()[0];
 
-    // Check stored state
+    // Check stored state — skip when issue hasn't changed unless caller
+    // explicitly asks for a re-post via ?force=1 (used when the visible
+    // message template changes and we need to refresh the existing row).
+    const force = new URL(req.url).searchParams.get("force") === "1";
     const { data: stored } = await supabase.from("spc_outlook_state").select("issue").eq("id", 1).maybeSingle();
-    if (stored?.issue === latestIssue) {
+    if (!force && stored?.issue === latestIssue) {
       await supabase.from("spc_outlook_state").update({ last_run_at: new Date().toISOString(), last_error: null }).eq("id", 1);
       return new Response(JSON.stringify({ ok: true, unchanged: true, issue: latestIssue }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
