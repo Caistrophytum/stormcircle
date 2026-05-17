@@ -172,12 +172,26 @@ export function SystemMessageCard({
   // parsed out of the discussion sentence, fall back to the official VALID
   // window. Places are derived from the union of risk-polygon counties (top
   // states by coverage), threats are keyword-matched from the discussion.
+  // Format a Z-time token like "12Z", "06", or "0600" into 24h "HH:00 UTC".
+  const toUtc24 = (raw: string): string => {
+    const cleaned = raw.replace(/Z$/i, "");
+    if (/^\d{4}$/.test(cleaned)) return `${cleaned.slice(0, 2)}:${cleaned.slice(2)} UTC`;
+    if (/^\d{1,2}$/.test(cleaned)) return `${cleaned.padStart(2, "0")}:00 UTC`;
+    if (/^\d{1,2}:\d{2}$/.test(cleaned)) {
+      const [h, m] = cleaned.split(":");
+      return `${h.padStart(2, "0")}:${m} UTC`;
+    }
+    return `${cleaned} UTC`;
+  };
+
   const expectedTime = (() => {
     if (visibleTiming) {
-      const m = visibleTiming.match(/\b\d{1,2}(?:-\d{1,2})?Z\b/);
-      if (m) return m[0].replace("-", "–");
+      const range = visibleTiming.match(/\b(\d{1,2})-(\d{1,2})Z\b/);
+      if (range) return `${toUtc24(range[1])}–${toUtc24(range[2])}`;
+      const single = visibleTiming.match(/\b(\d{1,2})Z\b/);
+      if (single) return toUtc24(single[1]);
     }
-    if (visibleValidWindow) return `${visibleValidWindow.startZ}–${visibleValidWindow.endZ}`;
+    if (visibleValidWindow) return `${toUtc24(visibleValidWindow.startZ)}–${toUtc24(visibleValidWindow.endZ)}`;
     return null;
   })();
 
@@ -228,10 +242,22 @@ export function SystemMessageCard({
       MDT: "Moderate risk",
       HIGH: "High risk",
     };
-    const topTier = [...payload.groups]
-      .map((g) => g.label)
-      .sort((a, b) => TIER_ORDER.indexOf(b as any) - TIER_ORDER.indexOf(a as any))[0];
-    const tierPhrase = topTier ? TIER_NAMES[topTier] ?? "Severe risk" : "Severe weather";
+    const TIER_SHORT: Record<string, string> = {
+      HIGH: "High",
+      MDT: "Moderate",
+      ENH: "Enhanced",
+      SLGT: "Slight",
+      MRGL: "Marginal",
+    };
+    const presentTiers = [...new Set(payload.groups.map((g) => g.label))]
+      .filter((t) => TIER_ORDER.includes(t as any))
+      .sort((a, b) => TIER_ORDER.indexOf(b as any) - TIER_ORDER.indexOf(a as any));
+    const tierPhrase =
+      presentTiers.length === 0
+        ? "Severe weather"
+        : presentTiers.length === 1
+          ? TIER_NAMES[presentTiers[0]] ?? "Severe risk"
+          : `${presentTiers.map((t) => TIER_SHORT[t]).join(" → ")} risks`;
 
     const region =
       topStates.length === 0
