@@ -172,16 +172,18 @@ export function SystemMessageCard({
   // parsed out of the discussion sentence, fall back to the official VALID
   // window. Places are derived from the union of risk-polygon counties (top
   // states by coverage), threats are keyword-matched from the discussion.
-  // Format a Z-time token like "12Z", "06", or "0600" into 24h "HH:00 UTC".
+  // Format a Z-time token like "12Z", "06", "0600", "00Z" into "HHZ" (24h
+  // zulu, midnight = 00, no colon, no minutes). Matches NWS shorthand the
+  // user prefers: "00Z", "13Z", "21Z".
   const toUtc24 = (raw: string): string => {
     const cleaned = raw.replace(/Z$/i, "");
-    if (/^\d{4}$/.test(cleaned)) return `${cleaned.slice(0, 2)}:${cleaned.slice(2)} UTC`;
-    if (/^\d{1,2}$/.test(cleaned)) return `${cleaned.padStart(2, "0")}:00 UTC`;
-    if (/^\d{1,2}:\d{2}$/.test(cleaned)) {
-      const [h, m] = cleaned.split(":");
-      return `${h.padStart(2, "0")}:${m} UTC`;
-    }
-    return `${cleaned} UTC`;
+    let hh: string | null = null;
+    if (/^\d{4}$/.test(cleaned)) hh = cleaned.slice(0, 2);
+    else if (/^\d{1,2}$/.test(cleaned)) hh = cleaned.padStart(2, "0");
+    else if (/^\d{1,2}:\d{2}$/.test(cleaned)) hh = cleaned.split(":")[0].padStart(2, "0");
+    if (hh === null) return `${cleaned}Z`;
+    const n = parseInt(hh, 10);
+    return `${(n % 24).toString().padStart(2, "0")}Z`;
   };
 
   const expectedTime = (() => {
@@ -199,92 +201,103 @@ export function SystemMessageCard({
     if (!payload) return [];
     const counts = new Map<string, number>();
     for (const g of payload.groups) {
-      for (const c of g.counties) {
-        counts.set(c.state, (counts.get(c.state) ?? 0) + 1);
-      }
+      for (const c of g.counties) counts.set(c.state, (counts.get(c.state) ?? 0) + 1);
     }
-    return [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
-      .map(([s]) => s);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([s]) => s);
   })();
 
-  const threats: string[] = (() => {
+  // Per-threat area + intensity extraction. For each of the three core
+  // severe-weather hazards we scan the discussion sentence for:
+  //   • qualifier words (significant, widespread, scattered, isolated, few)
+  //   • a nearby region phrase (state abbrev, "Plains", "Ohio Valley", etc.)
+  // and produce phrases like "tornadoes (significant) across TX, OK" — so the
+  // reader sees which areas get which hazard and how widespread it is.
+  type ThreatLine = { hazard: string; qualifier: string | null; area: string | null };
+  const threatLines: ThreatLine[] = (() => {
     if (!visibleTiming) return [];
-    const found = new Set<string>();
-    const patterns: [RegExp, string][] = [
-      [/tornado/i, "tornadoes"],
-      [/\bsupercell/i, "supercells"],
-      [/(significant|very large|large)\s+hail/i, "large hail"],
-      [/\bhail\b/i, "hail"],
-      [/damaging winds?|severe winds?|wind damage|gusts?/i, "damaging winds"],
-      [/flash flood/i, "flash flooding"],
-      [/\bderecho\b/i, "derecho"],
-      [/squall line|QLCS/i, "QLCS"],
+    const text = visibleTiming;
+    const findQualifier = (clause: string): string | null => {
+      if (/\bsignificant|strong\b|intense|violent/i.test(clause)) return "significant";
+      if (/\bwidespread|numerous|outbreak\b/i.test(clause)) return "widespread";
+      if (/\bscattered\b/i.test(clause)) return "scattered";
+      if (/\bisolated|a few|few\b/i.test(clause)) return "isolated";
+      if (/\blarge\b/i.test(clause) && /hail/i.test(clause)) return "large";
+      return null;
+    };
+    const REGION_RE = /\b(?:[A-Z]{2}|Plains|Midwest|Mid-?South|Mid-?Atlantic|Ohio Valley|Tennessee Valley|Mississippi Valley|Southeast|Northeast|Southwest|Northwest|Gulf Coast|Carolinas|Deep South|Great Lakes|High Plains|Southern Plains|Central Plains|Northern Plains)\b/g;
+    const findArea = (clause: string): string | null => {
+      const matches = clause.match(REGION_RE);
+      if (!matches || matches.length === 0) return null;
+      return [...new Set(matches)].slice(0, 3).join(", ");
+    };
+    const hazards: { hazard: string; re: RegExp }[] = [
+      { hazard: "tornadoes", re: /tornado(?:es)?/i },
+      { hazard: "hail", re: /hail/i },
+      { hazard: "damaging winds", re: /damaging winds?|severe winds?|wind damage|gusts?/i },
     ];
-    for (const [re, label] of patterns) if (re.test(visibleTiming)) found.add(label);
-    if (found.has("large hail")) found.delete("hail");
-    return [...found].slice(0, 3);
+    const clauses = text.split(/[.;]|,\s+(?=[A-Z])/).map((c) => c.trim()).filter(Boolean);
+    const out: ThreatLine[] = [];
+    for (const { hazard, re } of hazards) {
+      const hits = clauses.filter((c) => re.test(c));
+      if (hits.length === 0) continue;
+      const qualifier =
+        hits.map((c) => findQualifier(c)).find(Boolean) ?? findQualifier(text);
+      const area = hits.map((c) => findArea(c)).find(Boolean) ?? null;
+      out.push({ hazard, qualifier, area });
+    }
+    return out;
   })();
 
-  // Synthesize a short prose summary from the structured outlook + parsed
-  // discussion. Highlights the dominant risk tier, the regions in play, the
-  // active time window, and the headline threats — no county counts or
-  // other dry metrics.
+  // Synthesize a short prose summary. Opens with the dominant tier(s) and
+  // region, then enumerates each hazard (greatest → smallest) with its
+  // intensity qualifier and the area it covers when discernible.
   const expectedSentence: string | null = (() => {
     if (!payload) return null;
 
     const TIER_ORDER = ["MRGL", "SLGT", "ENH", "MDT", "HIGH"] as const;
     const TIER_NAMES: Record<string, string> = {
-      MRGL: "Marginal risk",
-      SLGT: "Slight risk",
-      ENH: "Enhanced risk",
-      MDT: "Moderate risk",
-      HIGH: "High risk",
+      MRGL: "Marginal risk", SLGT: "Slight risk", ENH: "Enhanced risk",
+      MDT: "Moderate risk", HIGH: "High risk",
     };
     const TIER_SHORT: Record<string, string> = {
-      HIGH: "High",
-      MDT: "Moderate",
-      ENH: "Enhanced",
-      SLGT: "Slight",
-      MRGL: "Marginal",
+      HIGH: "High", MDT: "Moderate", ENH: "Enhanced", SLGT: "Slight", MRGL: "Marginal",
     };
     const presentTiers = [...new Set(payload.groups.map((g) => g.label))]
       .filter((t) => TIER_ORDER.includes(t as any))
       .sort((a, b) => TIER_ORDER.indexOf(b as any) - TIER_ORDER.indexOf(a as any));
     const tierPhrase =
-      presentTiers.length === 0
-        ? "Severe weather"
-        : presentTiers.length === 1
-          ? TIER_NAMES[presentTiers[0]] ?? "Severe risk"
-          : `${presentTiers.map((t) => TIER_SHORT[t]).join(" → ")} risks`;
+      presentTiers.length === 0 ? "Severe weather"
+        : presentTiers.length === 1 ? TIER_NAMES[presentTiers[0]] ?? "Severe risk"
+        : `${presentTiers.map((t) => TIER_SHORT[t]).join(" → ")} risks`;
 
-    const region =
-      topStates.length === 0
-        ? null
-        : topStates.length === 1
-          ? topStates[0]
-          : topStates.length === 2
-            ? `${topStates[0]} and ${topStates[1]}`
-            : `${topStates.slice(0, -1).join(", ")}, and ${topStates[topStates.length - 1]}`;
+    const joinList = (arr: string[]) =>
+      arr.length === 0 ? null
+        : arr.length === 1 ? arr[0]
+        : arr.length === 2 ? `${arr[0]} and ${arr[1]}`
+        : `${arr.slice(0, -1).join(", ")}, and ${arr[arr.length - 1]}`;
 
+    const region = joinList(topStates);
     const time = expectedTime ? `from ${expectedTime}` : null;
 
-    const threatPhrase = (() => {
-      if (threats.length === 0) return null;
-      if (threats.length === 1) return threats[0];
-      if (threats.length === 2) return `${threats[0]} and ${threats[1]}`;
-      return `${threats.slice(0, -1).join(", ")}, and ${threats[threats.length - 1]}`;
-    })();
+    // Per-hazard phrases — e.g. "significant tornadoes across TX, OK",
+    // "scattered hail", "damaging winds across the Ohio Valley".
+    const HAZARD_ORDER = ["tornadoes", "hail", "damaging winds"];
+    const sortedThreats = [...threatLines].sort(
+      (a, b) => HAZARD_ORDER.indexOf(a.hazard) - HAZARD_ORDER.indexOf(b.hazard),
+    );
+    const hazardPhrases = sortedThreats.map((t) => {
+      const noun = t.qualifier && t.qualifier !== "large"
+        ? `${t.qualifier} ${t.hazard}`
+        : t.qualifier === "large" && t.hazard === "hail"
+          ? "large hail"
+          : t.hazard;
+      return t.area ? `${noun} across ${t.area}` : noun;
+    });
+    const hazardSentence = joinList(hazardPhrases);
 
-    // Glue parts together. Keep it one sentence, max two clauses.
-    const head = region
-      ? `${tierPhrase} across ${region}`
-      : tierPhrase;
+    const head = region ? `${tierPhrase} across ${region}` : tierPhrase;
     const headWithTime = time ? `${head} ${time}` : head;
-    const tail = threatPhrase
-      ? `, with ${threatPhrase} the headline hazards.`
-      : ".";
+    const tail = hazardSentence ? `, with ${hazardSentence}.` : ".";
     return `${headWithTime}${tail}`;
   })();
 
