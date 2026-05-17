@@ -201,6 +201,7 @@ export default function MobileMain() {
   const unitSystem = useUnitSystem();
   const warningPolygons = useWarningPolygons();
   const botMsg = useSPCBotMessage();
+  const hurricaneMsg = useHurricaneBotMessage();
   const chatMsgs = useRecentChatMessages(30);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
