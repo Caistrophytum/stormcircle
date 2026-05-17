@@ -1,6 +1,6 @@
 // enso-poll: scheduled refresh of the latest ENSO state.
 // Writes to enso_state. The Hurricane Bot reads this row for its season-status card.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const WEEKLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for";

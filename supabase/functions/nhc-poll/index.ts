@@ -1,6 +1,6 @@
 // nhc-poll: scheduled fetch of NHC CurrentStorms.json + hurricane season status.
 // Replaces client-side useHurricaneData / useHurricaneBot polling.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const NHC_URL = "https://www.nhc.noaa.gov/CurrentStorms.json";

@@ -1,7 +1,7 @@
 // spc-poll: scheduled fetch of SPC Day 1 Convective Outlook.
 // Runs server-side via pg_cron so the SPC bot stays current even when no
 // one has the app open. Replaces the client-side polling in useSPCOutlook.
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const SPC_GEOJSON =
