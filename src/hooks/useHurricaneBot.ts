@@ -119,7 +119,9 @@ async function fetchEnsoLine(): Promise<string | null> {
     const { data, error } = await supabase.functions.invoke("enso-status");
     if (error || !data || typeof data.oni !== "number") return null;
     const sign = data.oni > 0 ? "+" : "";
-    return `ENSO: ${data.phase} (${data.lean}, ONI ${sign}${data.oni.toFixed(2)} °C, ${data.season} ${data.year})`;
+    const region = data.region ?? "ONI";
+    const period = data.source === "weekly" ? data.season : `${data.season} ${data.year}`;
+    return `ENSO: ${data.phase} (${data.lean}, ${region} ${sign}${data.oni.toFixed(2)} °C, ${period})`;
   } catch {
     return null;
   }
@@ -144,8 +146,9 @@ async function maybePostSeasonStatus(
   if (data) {
     const ageMs = Date.now() - new Date(data.created_at).getTime();
     const hasEnso = data.content.includes("ENSO:");
-    // Repost if older than 6h OR if the existing card predates the ENSO line.
-    if (ageMs < 6 * 60 * 60 * 1000 && hasEnso) return;
+    // Repost if older than 6h, missing ENSO, or still on the stale monthly-ONI format.
+    const hasWeekly = data.content.includes("Niño 3.4") || data.content.includes("week of");
+    if (ageMs < 6 * 60 * 60 * 1000 && hasEnso && hasWeekly) return;
     await supabase.from("messages").delete().eq("id", data.id);
   }
 
