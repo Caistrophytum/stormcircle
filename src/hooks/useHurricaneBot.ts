@@ -27,6 +27,7 @@ const ADVISORY_MARKER_RE = (stormId: string, ts: string) =>
 // Module-level guard so HMR / multiple mounts don't double-post.
 let started = false;
 
+/** Format the "Last advisory" timestamp shown in the season-status card. */
 function formatAdvisoryTime(d: Date): string {
   const month = d.toLocaleString("en-US", { month: "long", timeZone: "UTC" });
   const day = d.getUTCDate();
@@ -35,6 +36,13 @@ function formatAdvisoryTime(d: Date): string {
   return `${month} ${day}, ${year}. ${hour}z`;
 }
 
+/**
+ * Build the body of an advisory-update card.
+ * `isNew = true` switches the header to "NEW STORM" the first time we see
+ * a given storm id; otherwise it's an "ADVISORY UPDATE" for an existing one.
+ * The trailing <!--hadv:--> marker lets us recover state on refresh so a
+ * page reload doesn't re-post identical advisories.
+ */
 function formatAdvisoryMessage(storm: Storm, isNew: boolean): string {
   const header = isNew
     ? `🌀 NEW STORM: ${storm.name} — ${storm.classificationLabel}`
@@ -46,8 +54,11 @@ function formatAdvisoryMessage(storm: Storm, isNew: boolean): string {
     `Location: ${storm.latStr}, ${storm.lonStr}`,
     `Max Winds: ${storm.intensityMph} mph (${storm.intensity} kt)`,
     `Pressure: ${storm.pressure} mb`,
+    // Movement speed comes from NHC in knots; convert to mph for the public.
     `Movement: ${storm.movementDirCompass} at ${Math.round(storm.movementSpeed * 1.151)} mph`,
     ``,
+    // Prefer the visual forecast graphic for dangerous storms (more useful
+    // at a glance); fall back to the text public advisory otherwise.
     storm.isDangerous && storm.forecastGraphicsUrl
       ? `⚠️ DANGEROUS STORM — See forecast: ${storm.forecastGraphicsUrl}`
       : storm.advisoryUrl
@@ -59,6 +70,13 @@ function formatAdvisoryMessage(storm: Storm, isNew: boolean): string {
     .join("\n");
 }
 
+/**
+ * Build the body of the additional danger-detail card posted alongside the
+ * advisory for hurricane-tier or strong-TS storms. Links the forecaster
+ * discussion + graphics so users can dig deeper without leaving the chat.
+ * The `:danger` suffix on the marker storm id distinguishes it from the
+ * matching advisory row during hydration.
+ */
 function formatDangerMessage(storm: Storm): string {
   return [
     `🔴 ${storm.dangerLevel}: ${storm.name.toUpperCase()}`,
@@ -75,6 +93,11 @@ function formatDangerMessage(storm: Storm): string {
     .join("\n");
 }
 
+/**
+ * Insert a Hurricane Bot row. RLS allows anon inserts under the reserved
+ * Hurricane Bot UUID; the System badge keeps the row out of the 2-hour
+ * cleanup cron.
+ */
 async function postBotMessage(content: string): Promise<void> {
   const { error } = await supabase.from("messages").insert({
     user_id: HURRICANE_BOT_ID,
