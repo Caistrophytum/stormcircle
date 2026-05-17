@@ -159,21 +159,37 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
           fillOpacity: 0,
         }).addTo(map);
 
-        layer.bindPopup(buildTooltipHtml(p), {
-          maxWidth: 240,
-          className: "warning-popup",
+        // Click: open a combined popup containing every polygon at that point
+        // so overlapping/intersecting warnings are all visible at once.
+        layer.on("click", (e: L.LeafletMouseEvent) => {
+          const { lat, lng } = e.latlng;
+          const hits = polygons.filter(
+            (q) => q.geometry && pointInPolygon(lng, lat, q.geometry),
+          );
+          const list = hits.length ? hits : [p];
+          const html = `<div class="warning-popup-stack">${list
+            .map((q) => buildTooltipHtml(q))
+            .join('<div class="warning-popup-sep"></div>')}</div>`;
+          L.popup({
+            maxWidth: 280,
+            className: "warning-popup",
+            autoClose: true,
+            closeOnClick: true,
+          })
+            .setLatLng(e.latlng)
+            .setContent(html)
+            .openOn(map);
+          L.DomEvent.stopPropagation(e);
         });
 
-        layer.on("popupopen", () => {
+        map.on("popupopen", () => {
           popupOpenRef.current = true;
-          activePopupIdRef.current = p.id;
-          // Close all hover tooltips
           tooltipsRef.current.forEach((t, id) => {
             if (map.hasLayer(t)) map.removeLayer(t);
             openTooltipsRef.current.delete(id);
           });
         });
-        layer.on("popupclose", () => {
+        map.on("popupclose", () => {
           popupOpenRef.current = false;
           activePopupIdRef.current = null;
         });
