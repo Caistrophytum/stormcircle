@@ -411,11 +411,11 @@ export default function MobileMain() {
           borderRadius: "2px",
         }}
       >
-        <div
-          style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px" }}
+        <h2
+          style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px", margin: "0 0 6px 0", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
         >
           ENVIRONMENTAL METRICS
-        </div>
+        </h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
           {nodes.map((n) => (
             <div
