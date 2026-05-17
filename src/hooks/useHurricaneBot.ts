@@ -108,6 +108,23 @@ async function postBotMessage(content: string): Promise<void> {
   if (error) console.warn("[useHurricaneBot] insert failed:", error);
 }
 
+/**
+ * Fetch the current ENSO phase (El Niño / La Niña / Neutral) from our
+ * `enso-status` edge function, which proxies NOAA CPC's ONI ASCII file.
+ * Returns a single human-readable line, or null on failure (the season
+ * status card is still posted without the ENSO line in that case).
+ */
+async function fetchEnsoLine(): Promise<string | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("enso-status");
+    if (error || !data || typeof data.oni !== "number") return null;
+    const sign = data.oni > 0 ? "+" : "";
+    return `ENSO: ${data.phase} (${data.lean}, ONI ${sign}${data.oni.toFixed(2)} °C, ${data.season} ${data.year})`;
+  } catch {
+    return null;
+  }
+}
+
 async function maybePostSeasonStatus(
   season: { active: boolean; basin: string },
   storms: Storm[],
