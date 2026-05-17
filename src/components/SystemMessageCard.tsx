@@ -168,6 +168,53 @@ export function SystemMessageCard({
   const visibleTiming = payload?.timing ?? fallbackTiming;
   const visibleValidWindow = payload?.validWindow ?? fallbackValidWindow;
 
+  // Compact summary chips for the "Expected" line. We prefer a Z-time range
+  // parsed out of the discussion sentence, fall back to the official VALID
+  // window. Places are derived from the union of risk-polygon counties (top
+  // states by coverage), threats are keyword-matched from the discussion.
+  const expectedTime = (() => {
+    if (visibleTiming) {
+      const m = visibleTiming.match(/\b\d{1,2}(?:-\d{1,2})?Z\b/);
+      if (m) return m[0].replace("-", "–");
+    }
+    if (visibleValidWindow) return `${visibleValidWindow.startZ}–${visibleValidWindow.endZ}`;
+    return null;
+  })();
+
+  const topStates: string[] = (() => {
+    if (!payload) return [];
+    const counts = new Map<string, number>();
+    for (const g of payload.groups) {
+      for (const c of g.counties) {
+        counts.set(c.state, (counts.get(c.state) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([s]) => s);
+  })();
+
+  const threats: string[] = (() => {
+    if (!visibleTiming) return [];
+    const found = new Set<string>();
+    const patterns: [RegExp, string][] = [
+      [/tornado/i, "tornadoes"],
+      [/\bsupercell/i, "supercells"],
+      [/(significant|very large|large)\s+hail/i, "large hail"],
+      [/\bhail\b/i, "hail"],
+      [/damaging winds?|severe winds?|wind damage|gusts?/i, "damaging winds"],
+      [/flash flood/i, "flash flooding"],
+      [/\bderecho\b/i, "derecho"],
+      [/squall line|QLCS/i, "QLCS"],
+    ];
+    for (const [re, label] of patterns) if (re.test(visibleTiming)) found.add(label);
+    if (found.has("large hail")) found.delete("hail");
+    return [...found].slice(0, 3);
+  })();
+
+  const hasExpected = payload && (expectedTime || topStates.length > 0 || threats.length > 0);
+
   return (
     <div
       className="rounded border px-3 py-2 font-mono text-[11px]"
