@@ -213,7 +213,54 @@ export function SystemMessageCard({
     return [...found].slice(0, 3);
   })();
 
-  const hasExpected = payload && (expectedTime || topStates.length > 0 || threats.length > 0);
+  // Synthesize a short prose summary from the structured outlook + parsed
+  // discussion. Highlights the dominant risk tier, the regions in play, the
+  // active time window, and the headline threats — no county counts or
+  // other dry metrics.
+  const expectedSentence: string | null = (() => {
+    if (!payload) return null;
+
+    const TIER_ORDER = ["MRGL", "SLGT", "ENH", "MDT", "HIGH"] as const;
+    const TIER_NAMES: Record<string, string> = {
+      MRGL: "Marginal risk",
+      SLGT: "Slight risk",
+      ENH: "Enhanced risk",
+      MDT: "Moderate risk",
+      HIGH: "High risk",
+    };
+    const topTier = [...payload.groups]
+      .map((g) => g.label)
+      .sort((a, b) => TIER_ORDER.indexOf(b as any) - TIER_ORDER.indexOf(a as any))[0];
+    const tierPhrase = topTier ? TIER_NAMES[topTier] ?? "Severe risk" : "Severe weather";
+
+    const region =
+      topStates.length === 0
+        ? null
+        : topStates.length === 1
+          ? topStates[0]
+          : topStates.length === 2
+            ? `${topStates[0]} and ${topStates[1]}`
+            : `${topStates.slice(0, -1).join(", ")}, and ${topStates[topStates.length - 1]}`;
+
+    const time = expectedTime ? `from ${expectedTime}` : null;
+
+    const threatPhrase = (() => {
+      if (threats.length === 0) return null;
+      if (threats.length === 1) return threats[0];
+      if (threats.length === 2) return `${threats[0]} and ${threats[1]}`;
+      return `${threats.slice(0, -1).join(", ")}, and ${threats[threats.length - 1]}`;
+    })();
+
+    // Glue parts together. Keep it one sentence, max two clauses.
+    const head = region
+      ? `${tierPhrase} across ${region}`
+      : tierPhrase;
+    const headWithTime = time ? `${head} ${time}` : head;
+    const tail = threatPhrase
+      ? `, with ${threatPhrase} the headline hazards.`
+      : ".";
+    return `${headWithTime}${tail}`;
+  })();
 
   return (
     <div
@@ -237,50 +284,20 @@ export function SystemMessageCard({
       </div>
       <p className="mb-1.5">{headerLine}</p>
 
-      {/* Compact "Expected" chips — time window, top affected states, and
-          keyword-matched threats. Far easier to scan than the prior
-          full-sentence excerpt from the SPC forecast discussion. */}
-      {hasExpected && (
-        <div className="mb-1.5 flex flex-wrap items-center gap-1 text-[10px] leading-snug">
-          <span className="opacity-70 uppercase tracking-wide mr-0.5">Expected:</span>
-          {expectedTime && (
-            <span
-              className="rounded px-1.5 py-0.5 border font-semibold"
-              style={{
-                borderColor: "rgba(255,165,0,0.45)",
-                background: "rgba(255,165,0,0.12)",
-                color: "rgba(255,210,140,1)",
-              }}
-            >
-              {expectedTime}
-            </span>
-          )}
-          {topStates.length > 0 && (
-            <span
-              className="rounded px-1.5 py-0.5 border"
-              style={{
-                borderColor: "rgba(255,165,0,0.35)",
-                background: "rgba(255,165,0,0.06)",
-                color: "rgba(255,200,120,0.95)",
-              }}
-            >
-              {topStates.join(" · ")}
-            </span>
-          )}
-          {threats.map((t) => (
-            <span
-              key={t}
-              className="rounded px-1.5 py-0.5 border"
-              style={{
-                borderColor: "rgba(255,69,0,0.45)",
-                background: "rgba(255,69,0,0.10)",
-                color: "rgba(255,150,100,1)",
-              }}
-            >
-              {t}
-            </span>
-          ))}
-        </div>
+      {/* Short prose summary — dominant risk tier, regions, time window,
+          and headline threats. Synthesized from structured data; no raw
+          county counts or other dry metrics leak through. */}
+      {expectedSentence && (
+        <p
+          className="mb-1.5 text-[10px] leading-snug pl-2 border-l"
+          style={{
+            borderColor: "rgba(255,165,0,0.4)",
+            color: "rgba(255,200,120,0.95)",
+          }}
+        >
+          <span className="opacity-70 uppercase tracking-wide mr-1">Expected:</span>
+          {expectedSentence}
+        </p>
       )}
 
       {payload ? (
