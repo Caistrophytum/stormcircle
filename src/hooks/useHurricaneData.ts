@@ -54,6 +54,12 @@ export interface HurricaneSeason {
   basin: string;
 }
 
+/**
+ * Lightweight date-only check for whether the Atlantic and/or Eastern Pacific
+ * hurricane seasons are currently active. Atlantic runs June 1 – Nov 30 (with
+ * an "early season" tail starting May 15); Eastern Pacific runs May 15 – Nov 30.
+ * Returns both the boolean and a human label describing which basins apply.
+ */
 export function isHurricaneSeason(): HurricaneSeason {
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -73,6 +79,14 @@ export function isHurricaneSeason(): HurricaneSeason {
   };
 }
 
+/**
+ * Operational danger label used in bot messages. Thresholds:
+ *   - HU ≥ 96 kt → Major Hurricane (Cat 3+)
+ *   - HU         → Hurricane (Cat 1–2)
+ *   - TS ≥ 55 kt → Strong Tropical Storm (approaching hurricane strength)
+ *   - TS         → Tropical Storm
+ *   - other      → Watch (depressions, sub-tropical, post-tropical, etc.)
+ */
 function getDangerLevel(classification: string, intensity: number): string {
   if (classification === "HU" && intensity >= 96) return "MAJOR HURRICANE";
   if (classification === "HU") return "HURRICANE";
@@ -81,11 +95,17 @@ function getDangerLevel(classification: string, intensity: number): string {
   return "WATCH";
 }
 
+/** Convert a meteorological bearing (0–360°, 0 = N) into a 16-point compass label. */
 function degToCompass(deg: number): string {
   const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
+/**
+ * Tolerant numeric parser — NHC sometimes returns numeric fields as strings
+ * (e.g. "1003" mb, "17.1" lat) and sometimes as JSON numbers. Returns the
+ * `fallback` for null/undefined/NaN inputs so downstream math stays safe.
+ */
 function parseNum(v: unknown, fallback = 0): number {
   if (typeof v === "number") return Number.isFinite(v) ? v : fallback;
   if (typeof v === "string") {
@@ -95,6 +115,11 @@ function parseNum(v: unknown, fallback = 0): number {
   return fallback;
 }
 
+/**
+ * Subset of the CurrentStorms.json `activeStorms[]` shape we actually read.
+ * Fields are all optional because NHC occasionally omits or renames them
+ * (e.g. early-season disturbances may not have a `forecastDiscussion`).
+ */
 interface RawStorm {
   id?: string;
   binNumber?: string;
@@ -115,14 +140,22 @@ interface RawStorm {
   trackCone?: { url?: string };
 }
 
+/**
+ * Normalize an NHC raw storm entry into our `Storm` shape. Returns null for
+ * malformed entries (missing id/name/classification) so the caller can drop
+ * them silently rather than rendering a broken bot message.
+ */
 function normalizeStorm(raw: RawStorm): Storm | null {
   const id = raw.id ?? raw.binNumber;
   const name = raw.name;
   const classification = (raw.classification ?? "").toUpperCase();
   if (!id || !name || !classification) return null;
 
+  // Round wind/pressure to whole units — they're operationally reported as
+  // integers; the API sometimes returns fractional analysis values.
   const intensity = Math.round(parseNum(raw.intensity));
   const pressure = Math.round(parseNum(raw.pressure));
+  // Prefer the explicit numeric fields when present (avoid string parsing).
   const lat = parseNum(raw.latitudeNumeric ?? raw.latitude);
   const lon = parseNum(raw.longitudeNumeric ?? raw.longitude);
   const latStr = `${Math.abs(lat).toFixed(1)}${lat >= 0 ? "N" : "S"}`;
@@ -130,6 +163,8 @@ function normalizeStorm(raw: RawStorm): Storm | null {
   const movementDir = parseNum(raw.movementDir);
   const movementSpeed = parseNum(raw.movementSpeed);
   const lastUpdate = raw.lastUpdate ? new Date(raw.lastUpdate) : new Date();
+  // "Dangerous" = hurricane-tier classification OR a strong TS approaching
+  // hurricane strength. Drives whether we post the extra danger detail card.
   const isDangerous = classification === "HU" || classification === "TY" || classification === "STY" || intensity >= 50;
 
   return {
@@ -167,11 +202,15 @@ export interface HurricaneData {
 export function useHurricaneData(): HurricaneData {
   const [storms, setStorms] = useState<Storm[]>([]);
   const [loading, setLoading] = useState(true);
+  // Season calc is date-only — capture once on mount so re-renders don't churn.
   const seasonRef = useRef<HurricaneSeason>(isHurricaneSeason());
 
   useEffect(() => {
     let cancelled = false;
 
+    // Single fetch closure reused by both the initial load and the 30-min
+    // interval. `cache: "no-store"` defeats the browser cache so we always
+    // see the latest advisory; the NHC CDN is fine with the call cadence.
     const fetchData = async () => {
       try {
         const res = await fetch(NHC_JSON, { cache: "no-store" });
@@ -183,6 +222,8 @@ export function useHurricaneData(): HurricaneData {
           .filter((s): s is Storm => s !== null);
         if (!cancelled) setStorms(next);
       } catch (e) {
+        // Soft-fail: network blips shouldn't break the chat. The next tick
+        // will retry on its own.
         console.warn("[useHurricaneData] fetch failed:", e);
       } finally {
         if (!cancelled) setLoading(false);
@@ -197,6 +238,7 @@ export function useHurricaneData(): HurricaneData {
     };
   }, []);
 
+  // Derived views — cheap enough to recompute every render.
   const dangerousStorms = storms.filter((s) => s.isDangerous);
   const lastAdvisory =
     storms.length > 0
