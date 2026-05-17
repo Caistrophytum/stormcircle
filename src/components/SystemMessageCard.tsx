@@ -59,11 +59,16 @@ export function SystemMessageCard({
   expandedKey: Set<string>;
   toggle: (id: string) => void;
 }) {
+  // Hurricane Bot rows use a separate marker family (<!--htype:--> and
+  // <!--hadv:-->) and don't carry the SPC payload. We render them in a
+  // distinct teal/blue card so users can tell tropical and severe-weather
+  // advisories apart at a glance.
   const isHurricane = message.username === "Hurricane Bot";
   const payload = isHurricane ? null : parseSPCPayload(message.content);
   const [fallbackTiming, setFallbackTiming] = useState<string | null>(null);
   const [fallbackValidWindow, setFallbackValidWindow] = useState<SPCPayload["validWindow"]>(null);
-  // Strip SPC markers AND hurricane bot markers.
+  // Strip both SPC outlook markers AND Hurricane Bot markers so the visible
+  // body never leaks the embedded HTML-comment metadata.
   const HURRICANE_MARKERS_RE = /\s*<!--(?:htype|hadv):[\s\S]*?-->\s*/g;
   const stripped = message.content
     .replace(ALL_MARKERS_RE, "")
