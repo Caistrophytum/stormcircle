@@ -166,29 +166,38 @@ export function useWarningPolygons(): WarningPolygonsData {
 
         const features: any[] = Array.isArray(json?.features) ? json.features : [];
 
-        const polygons: WarningPolygon[] = features
+        // 1) Features that already carry a polygon — use directly.
+        const inlinePolygons: WarningPolygon[] = features
           .filter(
             (f) =>
               f?.geometry != null &&
               (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"),
           )
-          .map((f) => {
-            const props = f.properties ?? {};
-            return {
-              id: String(props.id ?? f.id),
-              event: String(props.event),
-              areaDesc: String(props.areaDesc ?? ""),
-              expires: String(props.expires ?? ""),
-              description: String(props.description ?? ""),
-              headline: String(props.headline ?? ""),
-              severity: String(props.severity ?? ""),
-              certainty: String(props.certainty ?? ""),
-              urgency: String(props.urgency ?? ""),
-              parameters: props.parameters ?? {},
-              color: getWarningColor(props),
-              geometry: f.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon,
-            };
-          });
+          .map((f) => toWarningPolygon(f, f.geometry));
+
+        // 2) Features without inline geometry — resolve their affectedZones
+        //    (e.g. land-zone advisories: Winter Weather, Wind, Red Flag, Flood,
+        //    Special Weather Statement, etc.) into MultiPolygon geometry.
+        //    These were previously dropped, which is why some polygons looked
+        //    "missing" on the map.
+        const zoneFeatures = features.filter(
+          (f) =>
+            (!f?.geometry ||
+              (f.geometry.type !== "Polygon" && f.geometry.type !== "MultiPolygon")) &&
+            Array.isArray(f?.properties?.affectedZones) &&
+            f.properties.affectedZones.length > 0,
+        );
+
+        const zonePolygons = await Promise.all(
+          zoneFeatures.map(async (f) => {
+            const urls: string[] = f.properties.affectedZones;
+            const geom = await resolveZonesGeometry(urls);
+            if (!geom) return null;
+            return toWarningPolygon(f, geom);
+          }),
+        ).then((arr) => arr.filter((p): p is WarningPolygon => p !== null));
+
+        const polygons: WarningPolygon[] = [...inlinePolygons, ...zonePolygons];
 
         if (!cancelled) {
           setData({
