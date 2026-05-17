@@ -115,6 +115,11 @@ function parseNum(v: unknown, fallback = 0): number {
   return fallback;
 }
 
+/**
+ * Subset of the CurrentStorms.json `activeStorms[]` shape we actually read.
+ * Fields are all optional because NHC occasionally omits or renames them
+ * (e.g. early-season disturbances may not have a `forecastDiscussion`).
+ */
 interface RawStorm {
   id?: string;
   binNumber?: string;
@@ -135,14 +140,22 @@ interface RawStorm {
   trackCone?: { url?: string };
 }
 
+/**
+ * Normalize an NHC raw storm entry into our `Storm` shape. Returns null for
+ * malformed entries (missing id/name/classification) so the caller can drop
+ * them silently rather than rendering a broken bot message.
+ */
 function normalizeStorm(raw: RawStorm): Storm | null {
   const id = raw.id ?? raw.binNumber;
   const name = raw.name;
   const classification = (raw.classification ?? "").toUpperCase();
   if (!id || !name || !classification) return null;
 
+  // Round wind/pressure to whole units — they're operationally reported as
+  // integers; the API sometimes returns fractional analysis values.
   const intensity = Math.round(parseNum(raw.intensity));
   const pressure = Math.round(parseNum(raw.pressure));
+  // Prefer the explicit numeric fields when present (avoid string parsing).
   const lat = parseNum(raw.latitudeNumeric ?? raw.latitude);
   const lon = parseNum(raw.longitudeNumeric ?? raw.longitude);
   const latStr = `${Math.abs(lat).toFixed(1)}${lat >= 0 ? "N" : "S"}`;
@@ -150,6 +163,8 @@ function normalizeStorm(raw: RawStorm): Storm | null {
   const movementDir = parseNum(raw.movementDir);
   const movementSpeed = parseNum(raw.movementSpeed);
   const lastUpdate = raw.lastUpdate ? new Date(raw.lastUpdate) : new Date();
+  // "Dangerous" = hurricane-tier classification OR a strong TS approaching
+  // hurricane strength. Drives whether we post the extra danger detail card.
   const isDangerous = classification === "HU" || classification === "TY" || classification === "STY" || intensity >= 50;
 
   return {
