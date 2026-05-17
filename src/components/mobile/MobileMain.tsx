@@ -119,6 +119,43 @@ function useSPCBotMessage() {
   return msg;
 }
 
+interface HurricaneBotMessage {
+  id: string;
+  content: string;
+  created_at: string;
+}
+
+function useHurricaneBotMessage() {
+  const [msg, setMsg] = useState<HurricaneBotMessage | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("id,content,created_at")
+        .eq("user_id", HURRICANE_BOT_ID)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) setMsg((data as HurricaneBotMessage | null) ?? null);
+    };
+    void load();
+    const ch = supabase
+      .channel("mobile-hurricane-bot")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages", filter: `user_id=eq.${HURRICANE_BOT_ID}` },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(ch);
+    };
+  }, []);
+  return msg;
+}
+
 interface ChatMessage {
   id: string;
   username: string;
