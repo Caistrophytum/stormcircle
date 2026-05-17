@@ -119,7 +119,9 @@ async function fetchEnsoLine(): Promise<string | null> {
     const { data, error } = await supabase.functions.invoke("enso-status");
     if (error || !data || typeof data.oni !== "number") return null;
     const sign = data.oni > 0 ? "+" : "";
-    return `ENSO: ${data.phase} (${data.lean}, ONI ${sign}${data.oni.toFixed(2)} °C, ${data.season} ${data.year})`;
+    const region = data.region ?? "ONI";
+    const period = data.source === "weekly" ? data.season : `${data.season} ${data.year}`;
+    return `ENSO: ${data.phase} (${data.lean}, ${region} ${sign}${data.oni.toFixed(2)} °C, ${period})`;
   } catch {
     return null;
   }
