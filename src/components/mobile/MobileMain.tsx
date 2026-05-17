@@ -20,6 +20,7 @@ import { SystemMessageCard } from "@/components/SystemMessageCard";
 import type { RawMessage } from "@/lib/reportGrouping";
 
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
+const HURRICANE_BOT_ID = "00000000-0000-0000-0000-000000000001";
 
 const RISK_TEXT: Record<SPCRiskLevel, string> = {
   NONE: "No Severe Risk",
@@ -118,6 +119,43 @@ function useSPCBotMessage() {
   return msg;
 }
 
+interface HurricaneBotMessage {
+  id: string;
+  content: string;
+  created_at: string;
+}
+
+function useHurricaneBotMessage() {
+  const [msg, setMsg] = useState<HurricaneBotMessage | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("id,content,created_at")
+        .eq("user_id", HURRICANE_BOT_ID)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) setMsg((data as HurricaneBotMessage | null) ?? null);
+    };
+    void load();
+    const ch = supabase
+      .channel("mobile-hurricane-bot")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages", filter: `user_id=eq.${HURRICANE_BOT_ID}` },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(ch);
+    };
+  }, []);
+  return msg;
+}
+
 interface ChatMessage {
   id: string;
   username: string;
@@ -163,6 +201,7 @@ export default function MobileMain() {
   const unitSystem = useUnitSystem();
   const warningPolygons = useWarningPolygons();
   const botMsg = useSPCBotMessage();
+  const hurricaneMsg = useHurricaneBotMessage();
   const chatMsgs = useRecentChatMessages(30);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -401,6 +440,24 @@ export default function MobileMain() {
         >
           No SPC outlook yet.
         </div>
+      )}
+
+      {/* 3b. Hurricane bot message (when present) */}
+      {hurricaneMsg && (
+        <SystemMessageCard
+          message={
+            {
+              id: hurricaneMsg.id,
+              user_id: HURRICANE_BOT_ID,
+              username: "Hurricane Bot",
+              badge: "System",
+              content: hurricaneMsg.content,
+              created_at: hurricaneMsg.created_at,
+            } satisfies RawMessage
+          }
+          expandedKey={expandedKey}
+          toggle={toggleKey}
+        />
       )}
       {/* 4. Environmental metrics */}
       <div
