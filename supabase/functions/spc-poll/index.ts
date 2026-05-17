@@ -8,8 +8,8 @@ const SPC_GEOJSON =
   "https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/SPC_wx_outlks/MapServer/1/query?where=1%3D1&outFields=LABEL,LABEL2,ISSUE,EXPIRE&returnGeometry=true&f=geojson";
 const SPC_TXT = "https://www.spc.noaa.gov/products/outlook/day1otlk.txt";
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
-const MAX_SAMPLES_PER_POLYGON = 8;
-const REVERSE_GEOCODE_DELAY_MS = 300;
+const MAX_SAMPLES_PER_POLYGON = 4;
+const REVERSE_GEOCODE_DELAY_MS = 150;
 const UA = "StormCircle/1.0 (bot@stormcircle.net)";
 
 const RISK_LABELS: Record<string, string> = {
