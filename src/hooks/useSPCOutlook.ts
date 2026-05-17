@@ -370,15 +370,38 @@ async function fetchAndProcessOutlook(
     // First poll after mount: reconcile against whatever's already in the DB
     // so a user who just opened the page still sees the current outlook.
     if (lastIssueRef.current === null) {
-      const stored = await getStoredIssue();
-      // Only short-circuit if the DB already has the latest ISSUE *and* the
-      // stored payload includes timing/validWindow info. Otherwise fall
-      // through so we re-post with backfilled timing.
+      const stored = await getStoredOutlook();
+
+      // Fast path: stored payload is already at the latest ISSUE but is
+      // missing timing info. Skip the slow reverse-geocoding loop and just
+      // fetch the timing line, then rewrite the existing message in place
+      // with the same county groups.
+      if (
+        stored.id &&
+        stored.issue &&
+        stored.issue === latestIssue &&
+        !stored.hasTiming &&
+        stored.groups &&
+        stored.groups.length > 0
+      ) {
+        const { timing, validWindow } = await fetchOutlookTiming();
+        if (timing || validWindow) {
+          const content = buildMessage(latestIssue, stored.groups, timing, validWindow);
+          const { error: upErr } = await supabase
+            .from("messages")
+            .update({ content })
+            .eq("id", stored.id);
+          if (upErr) console.warn("[useSPCOutlook] failed to backfill timing:", upErr);
+        }
+        lastIssueRef.current = latestIssue;
+        return;
+      }
+
       if (stored.issue && stored.issue >= latestIssue && stored.hasTiming) {
         lastIssueRef.current = stored.issue;
         return;
       }
-      // Stored is older, missing, or lacks timing — fall through and (re)post.
+      // Stored is older or missing — fall through and (re)post.
     } else if (latestIssue === lastIssueRef.current) {
       return; // no new issuance since we last posted
     }
