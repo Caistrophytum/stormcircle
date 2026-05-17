@@ -119,11 +119,135 @@ async function fetchTiming(): Promise<{ timing: string | null; validWindow: { st
   } catch { return { timing: null, validWindow: null }; }
 }
 
+// Convert a Z-time token ("12Z" / "06" / "0600" / "00Z") into "HHZ" (24h
+// zulu, midnight = 00, no colon). Matches the in-app card formatting.
+function toUtc24(raw: string): string {
+  const cleaned = raw.replace(/Z$/i, "");
+  let hh: string | null = null;
+  if (/^\d{4}$/.test(cleaned)) hh = cleaned.slice(0, 2);
+  else if (/^\d{1,2}$/.test(cleaned)) hh = cleaned.padStart(2, "0");
+  else if (/^\d{1,2}:\d{2}$/.test(cleaned)) hh = cleaned.split(":")[0].padStart(2, "0");
+  if (hh === null) return `${cleaned}Z`;
+  return `${(parseInt(hh, 10) % 24).toString().padStart(2, "0")}Z`;
+}
+
+function joinList(arr: string[]): string | null {
+  if (arr.length === 0) return null;
+  if (arr.length === 1) return arr[0];
+  if (arr.length === 2) return `${arr[0]} and ${arr[1]}`;
+  return `${arr.slice(0, -1).join(", ")}, and ${arr[arr.length - 1]}`;
+}
+
+// Synthesize the short prose summary that the bot posts as its visible
+// message body. Mirrors SystemMessageCard's expectedSentence logic so the
+// chat row and the rendered card tell the same story.
+function synthesizeSentence(
+  groups: any[],
+  timing: string | null,
+  validWindow: { startZ: string; endZ: string } | null,
+): string {
+  const TIER_ORDER = ["MRGL", "SLGT", "ENH", "MDT", "HIGH"];
+  const TIER_NAMES: Record<string, string> = {
+    MRGL: "Marginal risk", SLGT: "Slight risk", ENH: "Enhanced risk",
+    MDT: "Moderate risk", HIGH: "High risk",
+  };
+  const TIER_SHORT: Record<string, string> = {
+    HIGH: "High", MDT: "Moderate", ENH: "Enhanced", SLGT: "Slight", MRGL: "Marginal",
+  };
+  const presentTiers = [...new Set(groups.map((g) => g.label))]
+    .filter((t) => TIER_ORDER.includes(t))
+    .sort((a, b) => TIER_ORDER.indexOf(b) - TIER_ORDER.indexOf(a));
+  const tierPhrase = presentTiers.length === 0
+    ? "Severe weather"
+    : presentTiers.length === 1
+      ? TIER_NAMES[presentTiers[0]] ?? "Severe risk"
+      : `${presentTiers.map((t) => TIER_SHORT[t]).join(" → ")} risks`;
+
+  // Top states by county coverage across all risk groups.
+  const counts = new Map<string, number>();
+  for (const g of groups) for (const c of g.counties ?? []) {
+    counts.set(c.state, (counts.get(c.state) ?? 0) + 1);
+  }
+  const topStates = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([s]) => s);
+  const region = joinList(topStates);
+
+  // Time window: prefer a Z-range from the discussion sentence, fall back
+  // to the official VALID window.
+  let expectedTime: string | null = null;
+  if (timing) {
+    const range = timing.match(/\b(\d{1,2})-(\d{1,2})Z\b/);
+    if (range) expectedTime = `${toUtc24(range[1])}–${toUtc24(range[2])}`;
+    else {
+      const single = timing.match(/\b(\d{1,2})Z\b/);
+      if (single) expectedTime = toUtc24(single[1]);
+    }
+  }
+  if (!expectedTime && validWindow) {
+    expectedTime = `${toUtc24(validWindow.startZ)}–${toUtc24(validWindow.endZ)}`;
+  }
+  const time = expectedTime ? `from ${expectedTime}` : null;
+
+  // Per-hazard area + intensity extraction from the discussion sentence.
+  type ThreatLine = { hazard: string; qualifier: string | null; area: string | null };
+  const threatLines: ThreatLine[] = (() => {
+    if (!timing) return [];
+    const findQualifier = (c: string): string | null => {
+      if (/\bsignificant|strong\b|intense|violent/i.test(c)) return "significant";
+      if (/\bwidespread|numerous|outbreak\b/i.test(c)) return "widespread";
+      if (/\bscattered\b/i.test(c)) return "scattered";
+      if (/\bisolated|a few|few\b/i.test(c)) return "isolated";
+      if (/\blarge\b/i.test(c) && /hail/i.test(c)) return "large";
+      return null;
+    };
+    const REGION_RE = /\b(?:[A-Z]{2}|Plains|Midwest|Mid-?South|Mid-?Atlantic|Ohio Valley|Tennessee Valley|Mississippi Valley|Southeast|Northeast|Southwest|Northwest|Gulf Coast|Carolinas|Deep South|Great Lakes|High Plains|Southern Plains|Central Plains|Northern Plains)\b/g;
+    const findArea = (c: string): string | null => {
+      const m = c.match(REGION_RE);
+      if (!m || m.length === 0) return null;
+      return [...new Set(m)].slice(0, 3).join(", ");
+    };
+    const hazards: { hazard: string; re: RegExp }[] = [
+      { hazard: "tornadoes", re: /tornado(?:es)?/i },
+      { hazard: "hail", re: /hail/i },
+      { hazard: "damaging winds", re: /damaging winds?|severe winds?|wind damage|gusts?/i },
+    ];
+    const clauses = timing.split(/[.;]|,\s+(?=[A-Z])/).map((c) => c.trim()).filter(Boolean);
+    const out: ThreatLine[] = [];
+    for (const { hazard, re } of hazards) {
+      const hits = clauses.filter((c) => re.test(c));
+      if (hits.length === 0) continue;
+      const qualifier = hits.map((c) => findQualifier(c)).find(Boolean) ?? findQualifier(timing);
+      const area = hits.map((c) => findArea(c)).find(Boolean) ?? null;
+      out.push({ hazard, qualifier, area });
+    }
+    return out;
+  })();
+
+  const hazardPhrases = threatLines.map((t) => {
+    const noun = t.qualifier && t.qualifier !== "large"
+      ? `${t.qualifier} ${t.hazard}`
+      : t.qualifier === "large" && t.hazard === "hail"
+        ? "large hail"
+        : t.hazard;
+    return t.area ? `${noun} across ${t.area}` : noun;
+  });
+  const hazardSentence = joinList(hazardPhrases);
+
+  const head = region ? `${tierPhrase} across ${region}` : tierPhrase;
+  const headWithTime = time ? `${head} ${time}` : head;
+  const tail = hazardSentence ? `, with ${hazardSentence}.` : ".";
+  return `${headWithTime}${tail}`;
+}
+
 function buildMessage(issue: string, groups: any[], timing: string | null, validWindow: any): string {
-  const summary = groups.map((g) => `${g.riskLabel}: ${g.counties.length} ${g.counties.length === 1 ? "county" : "counties"}`);
+  const sentence = synthesizeSentence(groups, timing, validWindow);
   const payload = JSON.stringify({ issue, groups, timing, validWindow });
-  return [`⚡ SPC Day 1 Outlook Update — ${formatIssueTime(issue)}`, ``, ...summary,
-    `<!--issue:${issue}-->`, `<!--data:${payload}-->`].join("\n");
+  return [
+    `⚡ SPC Day 1 Outlook Update — ${formatIssueTime(issue)}`,
+    ``,
+    sentence,
+    `<!--issue:${issue}-->`,
+    `<!--data:${payload}-->`,
+  ].join("\n");
 }
 
 Deno.serve(async (req) => {
