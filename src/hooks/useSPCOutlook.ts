@@ -229,33 +229,34 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * Read the most-recent persisted bot message and return the ISSUE timestamp
  * embedded in it (or null if none exists / the marker is absent).
  */
-async function getStoredIssue(): Promise<{
+async function getStoredOutlook(): Promise<{
+  id: string | null;
   issue: string | null;
   hasTiming: boolean;
+  groups: RiskGroup[] | null;
 }> {
   const { data, error } = await supabase
     .from("messages")
-    .select("content")
+    .select("id, content")
     .eq("user_id", BOT_USER_ID)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error || !data) return { issue: null, hasTiming: false };
+  if (error || !data) return { id: null, issue: null, hasTiming: false, groups: null };
   const m = data.content.match(ISSUE_MARKER_RE);
-  // Inspect the embedded payload to see whether the stored row already
-  // carries firing-time info. If not, we should re-post even when ISSUE
-  // hasn't changed so users get the backfilled timing line.
   const dm = data.content.match(DATA_MARKER_RE);
   let hasTiming = false;
+  let groups: RiskGroup[] | null = null;
   if (dm) {
     try {
       const parsed = JSON.parse(dm[1]);
       hasTiming = Boolean(parsed?.timing || parsed?.validWindow);
+      if (Array.isArray(parsed?.groups)) groups = parsed.groups as RiskGroup[];
     } catch {
-      hasTiming = false;
+      /* ignore */
     }
   }
-  return { issue: m ? m[1] : null, hasTiming };
+  return { id: data.id, issue: m ? m[1] : null, hasTiming, groups };
 }
 
 /**
@@ -369,15 +370,44 @@ async function fetchAndProcessOutlook(
     // First poll after mount: reconcile against whatever's already in the DB
     // so a user who just opened the page still sees the current outlook.
     if (lastIssueRef.current === null) {
-      const stored = await getStoredIssue();
-      // Only short-circuit if the DB already has the latest ISSUE *and* the
-      // stored payload includes timing/validWindow info. Otherwise fall
-      // through so we re-post with backfilled timing.
+      const stored = await getStoredOutlook();
+
+      // Fast path: stored payload is already at the latest ISSUE but is
+      // missing timing info. Skip the slow reverse-geocoding loop and just
+      // fetch the timing line, then rewrite the existing message in place
+      // with the same county groups.
+      if (
+        stored.id &&
+        stored.issue &&
+        stored.issue === latestIssue &&
+        !stored.hasTiming &&
+        stored.groups &&
+        stored.groups.length > 0
+      ) {
+        const { timing, validWindow } = await fetchOutlookTiming();
+        if (timing || validWindow) {
+          const content = buildMessage(latestIssue, stored.groups, timing, validWindow);
+          // Mirror the delete-then-insert pattern used elsewhere: the
+          // messages table is append-only by RLS policy, and Realtime
+          // subscribers expect INSERT events for fresh rows.
+          await supabase.from("messages").delete().eq("user_id", BOT_USER_ID);
+          const { error: insErr } = await supabase.from("messages").insert({
+            user_id: BOT_USER_ID,
+            username: "SPC Bot",
+            badge: "System",
+            content,
+          });
+          if (insErr) console.warn("[useSPCOutlook] failed to backfill timing:", insErr);
+        }
+        lastIssueRef.current = latestIssue;
+        return;
+      }
+
       if (stored.issue && stored.issue >= latestIssue && stored.hasTiming) {
         lastIssueRef.current = stored.issue;
         return;
       }
-      // Stored is older, missing, or lacks timing — fall through and (re)post.
+      // Stored is older or missing — fall through and (re)post.
     } else if (latestIssue === lastIssueRef.current) {
       return; // no new issuance since we last posted
     }
