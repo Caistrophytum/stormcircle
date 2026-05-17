@@ -143,8 +143,9 @@ async function maybePostSeasonStatus(
 
   if (data) {
     const ageMs = Date.now() - new Date(data.created_at).getTime();
-    if (ageMs < 6 * 60 * 60 * 1000) return;
-    // Delete the stale one before posting a fresh status row.
+    const hasEnso = data.content.includes("ENSO:");
+    // Repost if older than 6h OR if the existing card predates the ENSO line.
+    if (ageMs < 6 * 60 * 60 * 1000 && hasEnso) return;
     await supabase.from("messages").delete().eq("id", data.id);
   }
 
