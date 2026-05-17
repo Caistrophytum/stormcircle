@@ -148,6 +148,8 @@ async function maybePostSeasonStatus(
     await supabase.from("messages").delete().eq("id", data.id);
   }
 
+  const ensoLine = await fetchEnsoLine();
+
   let body: string;
   if (!season.active && storms.length === 0) {
     body = [
@@ -155,8 +157,9 @@ async function maybePostSeasonStatus(
       ``,
       `No active hurricane seasons at this time.`,
       `No active tropical cyclones.`,
+      ensoLine ?? ``,
       STATUS_MARKER,
-    ].join("\n");
+    ].filter(Boolean).join("\n");
   } else {
     body = [
       `🌀 HURRICANE SEASON STATUS`,
@@ -164,8 +167,9 @@ async function maybePostSeasonStatus(
       `${season.basin} season is ${season.active ? "ACTIVE" : "INACTIVE"}.`,
       `Current active storms: ${storms.length}`,
       lastAdvisory ? `Last advisory: ${formatAdvisoryTime(lastAdvisory)}` : `Last advisory: —`,
+      ensoLine ?? ``,
       STATUS_MARKER,
-    ].join("\n");
+    ].filter(Boolean).join("\n");
   }
 
   await postBotMessage(body);
