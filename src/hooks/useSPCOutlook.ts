@@ -351,6 +351,7 @@ async function fetchAndProcessOutlook(
 ): Promise<void> {
   setLoading(true);
   try {
+    let prefetchedTiming: { timing: string | null; validWindow: { startZ: string; endZ: string } | null } | null = null;
     let geo: { features: SPCFeature[] };
     try {
       const res = await fetch(SPC_URL);
@@ -372,6 +373,30 @@ async function fetchAndProcessOutlook(
     if (lastIssueRef.current === null) {
       const stored = await getStoredOutlook();
 
+      // If the currently visible bot row is missing its timing line, backfill
+      // it right away so users see the spoken firing/validity line immediately
+      // on refresh, even while the slower latest-outlook reconciliation is
+      // still reverse-geocoding counties in the background.
+      if (stored.id && stored.issue && !stored.hasTiming && stored.groups && stored.groups.length > 0) {
+        prefetchedTiming = await fetchOutlookTiming();
+        if (prefetchedTiming.timing || prefetchedTiming.validWindow) {
+          const content = buildMessage(
+            stored.issue,
+            stored.groups,
+            prefetchedTiming.timing,
+            prefetchedTiming.validWindow,
+          );
+          await supabase.from("messages").delete().eq("user_id", BOT_USER_ID);
+          const { error: insErr } = await supabase.from("messages").insert({
+            user_id: BOT_USER_ID,
+            username: "SPC Bot",
+            badge: "System",
+            content,
+          });
+          if (insErr) console.warn("[useSPCOutlook] failed to backfill visible timing:", insErr);
+        }
+      }
+
       // Fast path: stored payload is already at the latest ISSUE but is
       // missing timing info. Skip the slow reverse-geocoding loop and just
       // fetch the timing line, then rewrite the existing message in place
@@ -384,7 +409,7 @@ async function fetchAndProcessOutlook(
         stored.groups &&
         stored.groups.length > 0
       ) {
-        const { timing, validWindow } = await fetchOutlookTiming();
+        const { timing, validWindow } = prefetchedTiming ?? await fetchOutlookTiming();
         if (timing || validWindow) {
           const content = buildMessage(latestIssue, stored.groups, timing, validWindow);
           // Mirror the delete-then-insert pattern used elsewhere: the
@@ -460,7 +485,7 @@ async function fetchAndProcessOutlook(
     // Best-effort fetch of timing info from the SPC discussion text.
     // Returns nulls on CORS/network failure — the UI gracefully omits the
     // timing line in that case.
-    const { timing, validWindow } = await fetchOutlookTiming();
+    const { timing, validWindow } = prefetchedTiming ?? await fetchOutlookTiming();
     const content = buildMessage(latestIssue, groups, timing, validWindow);
 
     // Replace any existing bot messages with the new one. Delete-then-insert
