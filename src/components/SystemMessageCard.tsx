@@ -9,6 +9,7 @@
  * fall back to displaying the raw text content (with markers stripped).
  */
 import type { RawMessage } from "@/lib/reportGrouping";
+import { useEffect, useState } from "react";
 
 interface SPCRiskGroup {
   label: string;
@@ -59,8 +60,68 @@ export function SystemMessageCard({
   toggle: (id: string) => void;
 }) {
   const payload = parseSPCPayload(message.content);
+  const [fallbackTiming, setFallbackTiming] = useState<string | null>(null);
+  const [fallbackValidWindow, setFallbackValidWindow] = useState<SPCPayload["validWindow"]>(null);
   const stripped = message.content.replace(ALL_MARKERS_RE, "").trim();
   const headerLine = stripped.split("\n")[0] ?? "SPC Day 1 Outlook";
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!payload || payload.timing || payload.validWindow) {
+      setFallbackTiming(null);
+      setFallbackValidWindow(null);
+      return;
+    }
+
+    const fetchFallbackTiming = async () => {
+      try {
+        const res = await fetch("https://www.spc.noaa.gov/products/outlook/day1otlk.txt", {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+
+        const text = await res.text();
+        const validMatch = text.match(/VALID\s+\d{2}(\d{4})Z\s*-\s*\d{2}(\d{4})Z/i);
+        const nextValidWindow = validMatch
+          ? {
+              startZ: `${validMatch[1].slice(0, 2)}:${validMatch[1].slice(2)}Z`,
+              endZ: `${validMatch[2].slice(0, 2)}:${validMatch[2].slice(2)}Z`,
+            }
+          : null;
+
+        const body = text.replace(/VALID\s+\d{6}Z\s*-\s*\d{6}Z/gi, "");
+        const sentences = body
+          .split(/(?<=\.)\s+/)
+          .map((s) => s.replace(/\s+/g, " ").trim())
+          .filter((s) => s.length > 20 && s.length < 400);
+        const zRe = /\b\d{1,2}(?:-\d{1,2})?Z\b/;
+        const firingRe = /\b(develop|developing|initiation|initiate|initiating|fire|firing|form|forming|expected to develop|robust convection)\b/i;
+        const nextTiming =
+          sentences.find((s) => zRe.test(s) && firingRe.test(s)) ??
+          sentences.find((s) => zRe.test(s)) ??
+          null;
+
+        if (!cancelled) {
+          setFallbackTiming(nextTiming);
+          setFallbackValidWindow(nextValidWindow);
+        }
+      } catch {
+        if (!cancelled) {
+          setFallbackTiming(null);
+          setFallbackValidWindow(null);
+        }
+      }
+    };
+
+    void fetchFallbackTiming();
+    return () => {
+      cancelled = true;
+    };
+  }, [payload, message.id]);
+
+  const visibleTiming = payload?.timing ?? fallbackTiming;
+  const visibleValidWindow = payload?.validWindow ?? fallbackValidWindow;
 
   return (
     <div
@@ -88,7 +149,7 @@ export function SystemMessageCard({
           discussion when available, otherwise falls back to the official
           outlook VALID window. Hidden entirely when neither is present
           (e.g. older bot rows posted before this field existed). */}
-      {payload && (payload.timing || payload.validWindow) && (
+      {payload && (visibleTiming || visibleValidWindow) && (
         <p
           className="mb-1.5 text-[10px] leading-snug pl-2 border-l"
           style={{
@@ -97,9 +158,9 @@ export function SystemMessageCard({
           }}
         >
           <span className="opacity-70 uppercase tracking-wide mr-1">Expected:</span>
-          {payload.timing
-            ? payload.timing
-            : `Outlook valid ${payload.validWindow!.startZ} – ${payload.validWindow!.endZ}`}
+          {visibleTiming
+            ? visibleTiming
+            : `Outlook valid ${visibleValidWindow!.startZ} – ${visibleValidWindow!.endZ}`}
         </p>
       )}
 
