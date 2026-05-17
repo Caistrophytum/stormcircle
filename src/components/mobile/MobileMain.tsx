@@ -441,6 +441,24 @@ export default function MobileMain() {
           No SPC outlook yet.
         </div>
       )}
+
+      {/* 3b. Hurricane bot message (when present) */}
+      {hurricaneMsg && (
+        <SystemMessageCard
+          message={
+            {
+              id: hurricaneMsg.id,
+              user_id: HURRICANE_BOT_ID,
+              username: "Hurricane Bot",
+              badge: "System",
+              content: hurricaneMsg.content,
+              created_at: hurricaneMsg.created_at,
+            } satisfies RawMessage
+          }
+          expandedKey={expandedKey}
+          toggle={toggleKey}
+        />
+      )}
       {/* 4. Environmental metrics */}
       <div
         style={{
