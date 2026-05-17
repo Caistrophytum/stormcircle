@@ -318,16 +318,21 @@ async function fetchOutlookTiming(): Promise<{
       validWindow = { startZ: fmt(vm[1]), endZ: fmt(vm[2]) };
     }
 
-    // Look for the first sentence in the discussion containing a Z-time
-    // reference (single hour like "21Z" or a range like "22-03Z").
-    // Skip the VALID header line itself.
+    // Look for a sentence in the discussion that describes when storms
+    // are expected to fire. Prefer sentences whose Z-time reference is
+    // paired with firing/initiation verbs ("develop", "initiation",
+    // "initiate", "fire", "form"); fall back to the first Z-time
+    // sentence if none match.
     const body = text.replace(/VALID\s+\d{6}Z\s*-\s*\d{6}Z/g, "");
-    // Split into rough sentences; SPC text is uppercase and uses periods.
     const sentences = body
       .split(/(?<=\.)\s+/)
       .map((s) => s.replace(/\s+/g, " ").trim())
       .filter((s) => s.length > 20 && s.length < 400);
-    const timingSentence = sentences.find((s) => /\b\d{1,2}(?:-\d{1,2})?Z\b/.test(s));
+    const Z_RE = /\b\d{1,2}(?:-\d{1,2})?Z\b/;
+    const FIRING_RE = /\b(develop|developing|initiation|initiate|initiating|fire|firing|form|forming|expected to develop|robust convection)\b/i;
+    const timingSentence =
+      sentences.find((s) => Z_RE.test(s) && FIRING_RE.test(s)) ??
+      sentences.find((s) => Z_RE.test(s));
     if (!timingSentence) return { timing: null, validWindow };
 
     // Normalize: keep original case (SPC is all-caps); cap length.
