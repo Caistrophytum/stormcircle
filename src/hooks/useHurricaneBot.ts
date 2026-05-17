@@ -156,15 +156,19 @@ async function maybePostSeasonStatus(
 
 export function useHurricaneBot(): void {
   const data = useHurricaneData();
-  // Per-storm last advisory timestamp (ISO) seen so we don't double-post.
+  // Per-storm last advisory timestamp (ISO) seen so we don't double-post when
+  // React re-runs effects with the same `storms` array.
   const lastAdvisoryByStorm = useRef<Map<string, string>>(new Map());
-  // First-render flag for "NEW STORM" classification.
+  // Storm ids we've already announced — drives the "NEW STORM" vs
+  // "ADVISORY UPDATE" header on subsequent posts.
   const seenStormIds = useRef<Set<string>>(new Set());
+  // One-shot guard: post the season-status card at most once per app session.
   const seasonStatusPosted = useRef(false);
+  // One-shot guard: the hydration query below should only run once per mount.
   const hydrated = useRef(false);
 
   // Hydrate per-storm state from existing bot rows so a refresh doesn't
-  // re-spam the chat.
+  // re-announce storms whose advisory marker is already persisted in chat.
   useEffect(() => {
     if (hydrated.current) return;
     hydrated.current = true;
@@ -176,10 +180,14 @@ export function useHurricaneBot(): void {
         .order("created_at", { ascending: false })
         .limit(200);
       if (!rows) return;
+      // Marker format: <!--hadv:STORMID[:danger]:ISO_TIMESTAMP-->
+      // ISO timestamps contain dashes, so we accept any non-greedy tail.
       const advRe = /<!--hadv:([^:]+):([^-]+(?:-[^-]+)*)-->/g;
       for (const r of rows) {
         let m: RegExpExecArray | null;
         while ((m = advRe.exec(r.content)) !== null) {
+          // Strip the optional ":danger" suffix so the advisory + danger
+          // rows for the same storm collapse to a single key.
           const sid = m[1].replace(/:danger$/, "");
           const ts = m[2];
           const prev = lastAdvisoryByStorm.current.get(sid);
@@ -190,12 +198,16 @@ export function useHurricaneBot(): void {
     })();
   }, []);
 
+  // Module-level singleton guard so HMR / multiple mounts of <Index/> don't
+  // run two parallel polling loops in the same browser tab.
   useEffect(() => {
     if (started) return;
     started = true;
   }, []);
 
-  // Post season status once after data hydrates.
+  // Post the season-status card exactly once after the first NHC fetch
+  // resolves. `maybePostSeasonStatus` enforces the 6-hour repost throttle
+  // against the database so multiple tabs don't all post duplicates.
   useEffect(() => {
     if (seasonStatusPosted.current) return;
     if (data.loading) return;
@@ -203,10 +215,12 @@ export function useHurricaneBot(): void {
     void maybePostSeasonStatus(data.season, data.storms, data.lastAdvisory);
   }, [data.loading, data.season, data.storms, data.lastAdvisory]);
 
-  // Post advisory / danger messages whenever a storm's lastUpdate changes.
+  // Post advisory / danger messages whenever a storm's `lastUpdate` changes.
+  // The 500ms delay gives the hydration query above a chance to populate
+  // `seenStormIds` so an existing storm doesn't get re-announced as NEW on
+  // the very first render.
   useEffect(() => {
     if (data.loading) return;
-    // Allow a brief moment for hydration to fill the seen-set on first load.
     const t = setTimeout(() => {
       for (const storm of data.storms) {
         const iso = storm.lastUpdate.toISOString();
@@ -217,6 +231,8 @@ export function useHurricaneBot(): void {
         seenStormIds.current.add(storm.id);
         lastAdvisoryByStorm.current.set(storm.id, iso);
 
+        // Always post the advisory; only post the extra danger card for
+        // hurricane-tier / strong-TS storms (see Storm.isDangerous).
         void postBotMessage(formatAdvisoryMessage(storm, isNew));
         if (storm.isDangerous) {
           void postBotMessage(formatDangerMessage(storm));
