@@ -125,6 +125,12 @@ interface HurricaneBotMessage {
   created_at: string;
 }
 
+/**
+ * Subscribe to the most recent Hurricane Bot message (any of: season
+ * status, advisory update, danger card). Mirrors `useSPCBotMessage` but
+ * filters on the Hurricane Bot UUID and uses a distinct realtime channel
+ * so the two bot streams don't collide.
+ */
 function useHurricaneBotMessage() {
   const [msg, setMsg] = useState<HurricaneBotMessage | null>(null);
   useEffect(() => {
