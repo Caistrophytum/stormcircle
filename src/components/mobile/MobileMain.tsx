@@ -507,7 +507,7 @@ export default function MobileMain() {
           overflow: "hidden",
         }}
       >
-        <div
+        <h2
           style={{
             fontSize: "9px",
             color: "#ff9d00",
@@ -516,10 +516,13 @@ export default function MobileMain() {
             padding: "6px 10px",
             borderBottom: "1px solid rgba(255,157,0,0.15)",
             flexShrink: 0,
+            margin: 0,
+            fontFamily: "'JetBrains Mono', monospace",
+            textTransform: "uppercase",
           }}
         >
           LATEST CHAT
-        </div>
+        </h2>
         <div
           ref={chatScrollRef}
           style={{
