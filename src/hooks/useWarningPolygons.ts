@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useRefreshTick } from "./useRefreshTick";
+import { supabase } from "@/integrations/supabase/client";
 
 /** Color map for NWS event types. Unknown types fall back to #FFFFFF. */
 export const WARNING_COLORS: Record<string, string> = {
