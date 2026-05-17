@@ -321,6 +321,25 @@ export default function MobileMain() {
         gap: "10px",
       }}
     >
+      {/* Visually-hidden H1 — gives the mobile homepage a proper document
+          outline for search engines and screen readers without altering the
+          existing visual design. */}
+      <h1
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: "hidden",
+          clip: "rect(0,0,0,0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
+        StormCircle — Real-time Meteorological Network
+      </h1>
+
       {/* 1. Welcome */}
       <div
         style={{
@@ -330,7 +349,7 @@ export default function MobileMain() {
           borderRadius: "2px",
         }}
       >
-        <div style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700 }}>WELCOME</div>
+        <h2 style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>WELCOME</h2>
         <div style={{ fontSize: "14px", color: "#fff", fontWeight: 700, marginTop: "2px" }}>{displayName}</div>
       </div>
 
