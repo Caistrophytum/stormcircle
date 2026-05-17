@@ -131,6 +131,11 @@ export function SystemMessageCard({
     };
   }, [payload, message.id]);
 
+  // ── Hurricane Bot variant ─────────────────────────────────────────
+  // Renders the cleaned plain-text body (markers stripped above) inside a
+  // teal/blue glass card. We intentionally early-return AFTER the SPC
+  // fallback-timing useEffect above so hook order stays stable across
+  // re-renders (the effect short-circuits when `payload` is null).
   if (isHurricane) {
     return (
       <div
