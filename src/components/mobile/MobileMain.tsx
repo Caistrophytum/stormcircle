@@ -468,7 +468,7 @@ export default function MobileMain() {
           gap: "10px",
         }}
       >
-        <span style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", fontWeight: 700 }}>WRS</span>
+        <h2 style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>WRS</h2>
         <div
           style={{
             flex: 1,
