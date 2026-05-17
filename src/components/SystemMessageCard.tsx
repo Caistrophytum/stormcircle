@@ -237,23 +237,50 @@ export function SystemMessageCard({
       </div>
       <p className="mb-1.5">{headerLine}</p>
 
-      {/* Expected firing time(s) — pulled from the SPC Day 1 forecast
-          discussion when available, otherwise falls back to the official
-          outlook VALID window. Hidden entirely when neither is present
-          (e.g. older bot rows posted before this field existed). */}
-      {payload && (visibleTiming || visibleValidWindow) && (
-        <p
-          className="mb-1.5 text-[10px] leading-snug pl-2 border-l"
-          style={{
-            borderColor: "rgba(255,165,0,0.4)",
-            color: "rgba(255,200,120,0.95)",
-          }}
-        >
-          <span className="opacity-70 uppercase tracking-wide mr-1">Expected:</span>
-          {visibleTiming
-            ? visibleTiming
-            : `Outlook valid ${visibleValidWindow!.startZ} – ${visibleValidWindow!.endZ}`}
-        </p>
+      {/* Compact "Expected" chips — time window, top affected states, and
+          keyword-matched threats. Far easier to scan than the prior
+          full-sentence excerpt from the SPC forecast discussion. */}
+      {hasExpected && (
+        <div className="mb-1.5 flex flex-wrap items-center gap-1 text-[10px] leading-snug">
+          <span className="opacity-70 uppercase tracking-wide mr-0.5">Expected:</span>
+          {expectedTime && (
+            <span
+              className="rounded px-1.5 py-0.5 border font-semibold"
+              style={{
+                borderColor: "rgba(255,165,0,0.45)",
+                background: "rgba(255,165,0,0.12)",
+                color: "rgba(255,210,140,1)",
+              }}
+            >
+              {expectedTime}
+            </span>
+          )}
+          {topStates.length > 0 && (
+            <span
+              className="rounded px-1.5 py-0.5 border"
+              style={{
+                borderColor: "rgba(255,165,0,0.35)",
+                background: "rgba(255,165,0,0.06)",
+                color: "rgba(255,200,120,0.95)",
+              }}
+            >
+              {topStates.join(" · ")}
+            </span>
+          )}
+          {threats.map((t) => (
+            <span
+              key={t}
+              className="rounded px-1.5 py-0.5 border"
+              style={{
+                borderColor: "rgba(255,69,0,0.45)",
+                background: "rgba(255,69,0,0.10)",
+                color: "rgba(255,150,100,1)",
+              }}
+            >
+              {t}
+            </span>
+          ))}
+        </div>
       )}
 
       {payload ? (
