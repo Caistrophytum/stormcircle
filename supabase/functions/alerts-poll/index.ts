@@ -2,8 +2,8 @@
 // Upserts into active_alerts table. Inline polygon geometry is stored;
 // zone-based alerts store affectedZones URLs in `properties` for the
 // client to resolve (cached per-session) — same as before, just shared.
-import { corsHeaders } from "https://deno.land/x/supabase_functions_cors@v1.0.0/mod.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const NWS_URL = "https://api.weather.gov/alerts/active?status=actual&message_type=alert";
 const UA = "StormCircle/1.0 (bot@stormcircle.net)";
