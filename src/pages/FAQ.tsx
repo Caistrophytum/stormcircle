@@ -63,7 +63,7 @@ const faqs = [
   },
 ];
 
-export default function FAQ() {
+export default function FAQ({ hideBackButton = false }: { hideBackButton?: boolean } = {}) {
   const navigate = useNavigate();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const toggle = (i: number) => setOpenIndex(openIndex === i ? null : i);
@@ -100,14 +100,16 @@ export default function FAQ() {
 
       <main className="min-h-[100dvh] bg-background text-foreground overflow-y-auto">
         <div className="max-w-3xl mx-auto px-6 py-12">
-          {/* Back button */}
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors mb-8"
-          >
-            <ArrowLeft className="size-3.5" />
-            Back to Command Deck
-          </button>
+          {/* Back button — hidden on mobile overlay where a close button already exists */}
+          {!hideBackButton && (
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-primary transition-colors mb-8"
+            >
+              <ArrowLeft className="size-3.5" />
+              Back to Command Deck
+            </button>
+          )}
 
           {/* Header */}
           <div className="mb-10">
