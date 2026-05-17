@@ -51,10 +51,11 @@ export default function MobileLayout() {
           <MobileHeader />
         </div>
 
-        {/* Main scrollable area — overflow handled inside MobileMain. */}
-        <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+        {/* Main scrollable area — wrapped in a <main> landmark so screen
+            readers can jump to primary content (a11y). */}
+        <main style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
           <MobileMain />
-        </div>
+        </main>
 
         {/* Persistent floating action buttons (bottom-right). */}
         <MobileFloatingButtons

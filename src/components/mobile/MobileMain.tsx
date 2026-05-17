@@ -321,6 +321,25 @@ export default function MobileMain() {
         gap: "10px",
       }}
     >
+      {/* Visually-hidden H1 — gives the mobile homepage a proper document
+          outline for search engines and screen readers without altering the
+          existing visual design. */}
+      <h1
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          padding: 0,
+          margin: -1,
+          overflow: "hidden",
+          clip: "rect(0,0,0,0)",
+          whiteSpace: "nowrap",
+          border: 0,
+        }}
+      >
+        StormCircle — Real-time Meteorological Network
+      </h1>
+
       {/* 1. Welcome */}
       <div
         style={{
@@ -330,7 +349,7 @@ export default function MobileMain() {
           borderRadius: "2px",
         }}
       >
-        <div style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700 }}>WELCOME</div>
+        <h2 style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>WELCOME</h2>
         <div style={{ fontSize: "14px", color: "#fff", fontWeight: 700, marginTop: "2px" }}>{displayName}</div>
       </div>
 
@@ -392,11 +411,11 @@ export default function MobileMain() {
           borderRadius: "2px",
         }}
       >
-        <div
-          style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px" }}
+        <h2
+          style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px", margin: "0 0 6px 0", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
         >
           ENVIRONMENTAL METRICS
-        </div>
+        </h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
           {nodes.map((n) => (
             <div
@@ -449,7 +468,7 @@ export default function MobileMain() {
           gap: "10px",
         }}
       >
-        <span style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", fontWeight: 700 }}>WRS</span>
+        <h2 style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>WRS</h2>
         <div
           style={{
             flex: 1,
@@ -488,7 +507,7 @@ export default function MobileMain() {
           overflow: "hidden",
         }}
       >
-        <div
+        <h2
           style={{
             fontSize: "9px",
             color: "#ff9d00",
@@ -497,10 +516,13 @@ export default function MobileMain() {
             padding: "6px 10px",
             borderBottom: "1px solid rgba(255,157,0,0.15)",
             flexShrink: 0,
+            margin: 0,
+            fontFamily: "'JetBrains Mono', monospace",
+            textTransform: "uppercase",
           }}
         >
           LATEST CHAT
-        </div>
+        </h2>
         <div
           ref={chatScrollRef}
           style={{

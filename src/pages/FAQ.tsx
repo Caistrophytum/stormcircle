@@ -76,6 +76,7 @@ export default function FAQ() {
           name="description"
           content="Answers to common questions about StormCircle: what it is, who it's for, how to report storms, and how meteorologists use the platform."
         />
+        <link rel="canonical" href="https://stormcircle.net/faq" />
         <meta property="og:title" content="StormCircle FAQ — Your Questions Answered" />
         <meta
           property="og:description"
@@ -83,6 +84,18 @@ export default function FAQ() {
         />
         <meta property="og:url" content="https://stormcircle.net/faq" />
         <meta property="og:type" content="website" />
+        {/* FAQPage structured data — enables rich results in Google search. */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqs.map((f) => ({
+              "@type": "Question",
+              name: f.question,
+              acceptedAnswer: { "@type": "Answer", text: f.answer },
+            })),
+          })}
+        </script>
       </Helmet>
 
       <main className="min-h-[100dvh] bg-background text-foreground overflow-y-auto">

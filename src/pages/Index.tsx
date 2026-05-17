@@ -91,11 +91,12 @@ const Index = () => {
       <Helmet>
         <title>StormCircle — Weather Social Network for Meteorologists</title>
         <meta name="description" content="StormCircle connects meteorologists and the public for real-time storm reporting, weather communication, and meteorological information sharing." />
+        <link rel="canonical" href="https://stormcircle.net/" />
 
         {/* Open Graph for social sharing */}
         <meta property="og:title" content="StormCircle — Weather Social Network" />
         <meta property="og:description" content="Real-time storm reports, meteorologist verified alerts, and community weather communication." />
-        <meta property="og:url" content="https://stormcircle.net" />
+        <meta property="og:url" content="https://stormcircle.net/" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://stormcircle.net/og-image.png" />
       </Helmet>
