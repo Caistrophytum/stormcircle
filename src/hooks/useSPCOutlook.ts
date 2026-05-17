@@ -404,7 +404,11 @@ async function fetchAndProcessOutlook(
     }
 
     groups.sort((a, b) => (RISK_RANK[b.label] ?? 0) - (RISK_RANK[a.label] ?? 0));
-    const content = buildMessage(latestIssue, groups);
+    // Best-effort fetch of timing info from the SPC discussion text.
+    // Returns nulls on CORS/network failure — the UI gracefully omits the
+    // timing line in that case.
+    const { timing, validWindow } = await fetchOutlookTiming();
+    const content = buildMessage(latestIssue, groups, timing, validWindow);
 
     // Replace any existing bot messages with the new one. Delete-then-insert
     // (rather than UPDATE) because the messages table is append-only by
