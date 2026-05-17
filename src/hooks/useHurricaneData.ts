@@ -202,11 +202,15 @@ export interface HurricaneData {
 export function useHurricaneData(): HurricaneData {
   const [storms, setStorms] = useState<Storm[]>([]);
   const [loading, setLoading] = useState(true);
+  // Season calc is date-only — capture once on mount so re-renders don't churn.
   const seasonRef = useRef<HurricaneSeason>(isHurricaneSeason());
 
   useEffect(() => {
     let cancelled = false;
 
+    // Single fetch closure reused by both the initial load and the 30-min
+    // interval. `cache: "no-store"` defeats the browser cache so we always
+    // see the latest advisory; the NHC CDN is fine with the call cadence.
     const fetchData = async () => {
       try {
         const res = await fetch(NHC_JSON, { cache: "no-store" });
@@ -218,6 +222,8 @@ export function useHurricaneData(): HurricaneData {
           .filter((s): s is Storm => s !== null);
         if (!cancelled) setStorms(next);
       } catch (e) {
+        // Soft-fail: network blips shouldn't break the chat. The next tick
+        // will retry on its own.
         console.warn("[useHurricaneData] fetch failed:", e);
       } finally {
         if (!cancelled) setLoading(false);
@@ -232,6 +238,7 @@ export function useHurricaneData(): HurricaneData {
     };
   }, []);
 
+  // Derived views — cheap enough to recompute every render.
   const dangerousStorms = storms.filter((s) => s.isDangerous);
   const lastAdvisory =
     storms.length > 0
