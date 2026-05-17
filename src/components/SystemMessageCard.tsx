@@ -84,6 +84,25 @@ export function SystemMessageCard({
       </div>
       <p className="mb-1.5">{headerLine}</p>
 
+      {/* Expected firing time(s) — pulled from the SPC Day 1 forecast
+          discussion when available, otherwise falls back to the official
+          outlook VALID window. Hidden entirely when neither is present
+          (e.g. older bot rows posted before this field existed). */}
+      {payload && (payload.timing || payload.validWindow) && (
+        <p
+          className="mb-1.5 text-[10px] leading-snug pl-2 border-l"
+          style={{
+            borderColor: "rgba(255,165,0,0.4)",
+            color: "rgba(255,200,120,0.95)",
+          }}
+        >
+          <span className="opacity-70 uppercase tracking-wide mr-1">Expected:</span>
+          {payload.timing
+            ? payload.timing
+            : `Outlook valid ${payload.validWindow!.startZ} – ${payload.validWindow!.endZ}`}
+        </p>
+      )}
+
       {payload ? (
         <div className="space-y-1">
           {payload.groups.map((g) => {
