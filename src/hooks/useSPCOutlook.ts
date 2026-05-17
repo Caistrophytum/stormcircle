@@ -313,7 +313,7 @@ async function fetchOutlookTiming(): Promise<{
 
     // VALID line, e.g. "VALID 161630Z - 171200Z"
     let validWindow: { startZ: string; endZ: string } | null = null;
-    const vm = text.match(/VALID\s+\d{2}(\d{4})Z\s*-\s*\d{2}(\d{4})Z/);
+    const vm = text.match(/VALID\s+\d{2}(\d{4})Z\s*-\s*\d{2}(\d{4})Z/i);
     if (vm) {
       const fmt = (hhmm: string) => `${hhmm.slice(0, 2)}:${hhmm.slice(2)}Z`;
       validWindow = { startZ: fmt(vm[1]), endZ: fmt(vm[2]) };
@@ -324,7 +324,7 @@ async function fetchOutlookTiming(): Promise<{
     // paired with firing/initiation verbs ("develop", "initiation",
     // "initiate", "fire", "form"); fall back to the first Z-time
     // sentence if none match.
-    const body = text.replace(/VALID\s+\d{6}Z\s*-\s*\d{6}Z/g, "");
+    const body = text.replace(/VALID\s+\d{6}Z\s*-\s*\d{6}Z/gi, "");
     const sentences = body
       .split(/(?<=\.)\s+/)
       .map((s) => s.replace(/\s+/g, " ").trim())
