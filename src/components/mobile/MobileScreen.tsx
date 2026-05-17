@@ -44,7 +44,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
             padding so the floating "Return" button never overlaps the last item. */}
         {screen === "faq" && (
           <div style={{ paddingBottom: "72px" }}>
-            <FAQ />
+            <FAQ hideBackButton />
           </div>
         )}
 
