@@ -229,7 +229,10 @@ const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * Read the most-recent persisted bot message and return the ISSUE timestamp
  * embedded in it (or null if none exists / the marker is absent).
  */
-async function getStoredIssue(): Promise<string | null> {
+async function getStoredIssue(): Promise<{
+  issue: string | null;
+  hasTiming: boolean;
+}> {
   const { data, error } = await supabase
     .from("messages")
     .select("content")
@@ -237,9 +240,22 @@ async function getStoredIssue(): Promise<string | null> {
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error || !data) return { issue: null, hasTiming: false };
   const m = data.content.match(ISSUE_MARKER_RE);
-  return m ? m[1] : null;
+  // Inspect the embedded payload to see whether the stored row already
+  // carries firing-time info. If not, we should re-post even when ISSUE
+  // hasn't changed so users get the backfilled timing line.
+  const dm = data.content.match(DATA_MARKER_RE);
+  let hasTiming = false;
+  if (dm) {
+    try {
+      const parsed = JSON.parse(dm[1]);
+      hasTiming = Boolean(parsed?.timing || parsed?.validWindow);
+    } catch {
+      hasTiming = false;
+    }
+  }
+  return { issue: m ? m[1] : null, hasTiming };
 }
 
 /**
@@ -302,16 +318,21 @@ async function fetchOutlookTiming(): Promise<{
       validWindow = { startZ: fmt(vm[1]), endZ: fmt(vm[2]) };
     }
 
-    // Look for the first sentence in the discussion containing a Z-time
-    // reference (single hour like "21Z" or a range like "22-03Z").
-    // Skip the VALID header line itself.
+    // Look for a sentence in the discussion that describes when storms
+    // are expected to fire. Prefer sentences whose Z-time reference is
+    // paired with firing/initiation verbs ("develop", "initiation",
+    // "initiate", "fire", "form"); fall back to the first Z-time
+    // sentence if none match.
     const body = text.replace(/VALID\s+\d{6}Z\s*-\s*\d{6}Z/g, "");
-    // Split into rough sentences; SPC text is uppercase and uses periods.
     const sentences = body
       .split(/(?<=\.)\s+/)
       .map((s) => s.replace(/\s+/g, " ").trim())
       .filter((s) => s.length > 20 && s.length < 400);
-    const timingSentence = sentences.find((s) => /\b\d{1,2}(?:-\d{1,2})?Z\b/.test(s));
+    const Z_RE = /\b\d{1,2}(?:-\d{1,2})?Z\b/;
+    const FIRING_RE = /\b(develop|developing|initiation|initiate|initiating|fire|firing|form|forming|expected to develop|robust convection)\b/i;
+    const timingSentence =
+      sentences.find((s) => Z_RE.test(s) && FIRING_RE.test(s)) ??
+      sentences.find((s) => Z_RE.test(s));
     if (!timingSentence) return { timing: null, validWindow };
 
     // Normalize: keep original case (SPC is all-caps); cap length.
@@ -349,12 +370,14 @@ async function fetchAndProcessOutlook(
     // so a user who just opened the page still sees the current outlook.
     if (lastIssueRef.current === null) {
       const stored = await getStoredIssue();
-      if (stored && stored >= latestIssue) {
-        // DB already has the latest (or newer) — nothing to do.
-        lastIssueRef.current = stored;
+      // Only short-circuit if the DB already has the latest ISSUE *and* the
+      // stored payload includes timing/validWindow info. Otherwise fall
+      // through so we re-post with backfilled timing.
+      if (stored.issue && stored.issue >= latestIssue && stored.hasTiming) {
+        lastIssueRef.current = stored.issue;
         return;
       }
-      // Stored is older or missing — fall through and (re)post.
+      // Stored is older, missing, or lacks timing — fall through and (re)post.
     } else if (latestIssue === lastIssueRef.current) {
       return; // no new issuance since we last posted
     }
