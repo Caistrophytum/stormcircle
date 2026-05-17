@@ -365,12 +365,14 @@ async function fetchAndProcessOutlook(
     // so a user who just opened the page still sees the current outlook.
     if (lastIssueRef.current === null) {
       const stored = await getStoredIssue();
-      if (stored && stored >= latestIssue) {
-        // DB already has the latest (or newer) — nothing to do.
-        lastIssueRef.current = stored;
+      // Only short-circuit if the DB already has the latest ISSUE *and* the
+      // stored payload includes timing/validWindow info. Otherwise fall
+      // through so we re-post with backfilled timing.
+      if (stored.issue && stored.issue >= latestIssue && stored.hasTiming) {
+        lastIssueRef.current = stored.issue;
         return;
       }
-      // Stored is older or missing — fall through and (re)post.
+      // Stored is older, missing, or lacks timing — fall through and (re)post.
     } else if (latestIssue === lastIssueRef.current) {
       return; // no new issuance since we last posted
     }
