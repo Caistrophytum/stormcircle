@@ -180,10 +180,12 @@ function useRecentChatMessages(limit = 30) {
       const { data } = await supabase
         .from("messages")
         .select("id,username,badge,content,created_at,user_id")
-        .neq("user_id", BOT_USER_ID)
         .order("created_at", { ascending: false })
-        .limit(limit);
-      if (!cancelled && data) setMsgs(data as ChatMessage[]);
+        .limit(limit * 2);
+      if (!cancelled && data) {
+        const filtered = (data as ChatMessage[]).filter((m) => !BOT_USER_IDS.includes(m.user_id)).slice(0, limit);
+        setMsgs(filtered);
+      }
     };
     void load();
     const ch = supabase
