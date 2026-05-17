@@ -252,11 +252,16 @@ async function getStoredIssue(): Promise<string | null> {
  * The plain-text fallback (visible if a client doesn't parse the data
  * marker) summarizes the same info as a one-line-per-risk list.
  */
-function buildMessage(issue: string, groups: RiskGroup[]): string {
+function buildMessage(
+  issue: string,
+  groups: RiskGroup[],
+  timing: string | null,
+  validWindow: { startZ: string; endZ: string } | null,
+): string {
   const summary = groups.map(
     (g) => `${g.riskLabel}: ${g.counties.length} ${g.counties.length === 1 ? "county" : "counties"}`,
   );
-  const payload = JSON.stringify({ issue, groups });
+  const payload = JSON.stringify({ issue, groups, timing, validWindow });
   const lines = [
     `⚡ SPC Day 1 Outlook Update — ${formatIssueTime(issue)}`,
     ``,
@@ -265,6 +270,57 @@ function buildMessage(issue: string, groups: RiskGroup[]): string {
     `<!--data:${payload}-->`,
   ];
   return lines.join("\n");
+}
+
+/**
+ * Fetch the SPC Day 1 forecast discussion text and try to pull out the
+ * first sentence containing a UTC ("Z") time reference — that's where SPC
+ * forecasters typically state when convection is expected to initiate
+ * (e.g. "Storms should develop by 21-22Z..."). Returns null if the fetch
+ * fails (e.g. CORS, network) or no timing phrase is found.
+ *
+ * Also pulls the outlook VALID window (HHMMZ - HHMMZ) so we can fall back
+ * to displaying the official validity period when no specific firing
+ * timing is mentioned in the discussion.
+ */
+async function fetchOutlookTiming(): Promise<{
+  timing: string | null;
+  validWindow: { startZ: string; endZ: string } | null;
+}> {
+  try {
+    const res = await fetch("https://www.spc.noaa.gov/products/outlook/day1otlk.txt", {
+      cache: "no-store",
+    });
+    if (!res.ok) return { timing: null, validWindow: null };
+    const text = await res.text();
+
+    // VALID line, e.g. "VALID 161630Z - 171200Z"
+    let validWindow: { startZ: string; endZ: string } | null = null;
+    const vm = text.match(/VALID\s+\d{2}(\d{4})Z\s*-\s*\d{2}(\d{4})Z/);
+    if (vm) {
+      const fmt = (hhmm: string) => `${hhmm.slice(0, 2)}:${hhmm.slice(2)}Z`;
+      validWindow = { startZ: fmt(vm[1]), endZ: fmt(vm[2]) };
+    }
+
+    // Look for the first sentence in the discussion containing a Z-time
+    // reference (single hour like "21Z" or a range like "22-03Z").
+    // Skip the VALID header line itself.
+    const body = text.replace(/VALID\s+\d{6}Z\s*-\s*\d{6}Z/g, "");
+    // Split into rough sentences; SPC text is uppercase and uses periods.
+    const sentences = body
+      .split(/(?<=\.)\s+/)
+      .map((s) => s.replace(/\s+/g, " ").trim())
+      .filter((s) => s.length > 20 && s.length < 400);
+    const timingSentence = sentences.find((s) => /\b\d{1,2}(?:-\d{1,2})?Z\b/.test(s));
+    if (!timingSentence) return { timing: null, validWindow };
+
+    // Normalize: keep original case (SPC is all-caps); cap length.
+    const trimmed =
+      timingSentence.length > 220 ? timingSentence.slice(0, 217) + "..." : timingSentence;
+    return { timing: trimmed, validWindow };
+  } catch {
+    return { timing: null, validWindow: null };
+  }
 }
 
 async function fetchAndProcessOutlook(
