@@ -19,6 +19,9 @@ interface SPCRiskGroup {
 interface SPCPayload {
   issue: string;
   groups: SPCRiskGroup[];
+  // Optional — added in a later schema version. May be missing on older rows.
+  timing?: string | null;
+  validWindow?: { startZ: string; endZ: string } | null;
 }
 
 const DATA_MARKER_RE = /<!--data:([\s\S]*?)-->/;
