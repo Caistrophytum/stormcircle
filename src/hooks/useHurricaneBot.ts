@@ -146,8 +146,9 @@ async function maybePostSeasonStatus(
   if (data) {
     const ageMs = Date.now() - new Date(data.created_at).getTime();
     const hasEnso = data.content.includes("ENSO:");
-    // Repost if older than 6h OR if the existing card predates the ENSO line.
-    if (ageMs < 6 * 60 * 60 * 1000 && hasEnso) return;
+    // Repost if older than 6h, missing ENSO, or still on the stale monthly-ONI format.
+    const hasWeekly = data.content.includes("Niño 3.4") || data.content.includes("week of");
+    if (ageMs < 6 * 60 * 60 * 1000 && hasEnso && hasWeekly) return;
     await supabase.from("messages").delete().eq("id", data.id);
   }
 
