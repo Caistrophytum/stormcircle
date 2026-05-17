@@ -54,6 +54,12 @@ export interface HurricaneSeason {
   basin: string;
 }
 
+/**
+ * Lightweight date-only check for whether the Atlantic and/or Eastern Pacific
+ * hurricane seasons are currently active. Atlantic runs June 1 – Nov 30 (with
+ * an "early season" tail starting May 15); Eastern Pacific runs May 15 – Nov 30.
+ * Returns both the boolean and a human label describing which basins apply.
+ */
 export function isHurricaneSeason(): HurricaneSeason {
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -73,6 +79,14 @@ export function isHurricaneSeason(): HurricaneSeason {
   };
 }
 
+/**
+ * Operational danger label used in bot messages. Thresholds:
+ *   - HU ≥ 96 kt → Major Hurricane (Cat 3+)
+ *   - HU         → Hurricane (Cat 1–2)
+ *   - TS ≥ 55 kt → Strong Tropical Storm (approaching hurricane strength)
+ *   - TS         → Tropical Storm
+ *   - other      → Watch (depressions, sub-tropical, post-tropical, etc.)
+ */
 function getDangerLevel(classification: string, intensity: number): string {
   if (classification === "HU" && intensity >= 96) return "MAJOR HURRICANE";
   if (classification === "HU") return "HURRICANE";
@@ -81,11 +95,17 @@ function getDangerLevel(classification: string, intensity: number): string {
   return "WATCH";
 }
 
+/** Convert a meteorological bearing (0–360°, 0 = N) into a 16-point compass label. */
 function degToCompass(deg: number): string {
   const dirs = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
   return dirs[Math.round(deg / 22.5) % 16];
 }
 
+/**
+ * Tolerant numeric parser — NHC sometimes returns numeric fields as strings
+ * (e.g. "1003" mb, "17.1" lat) and sometimes as JSON numbers. Returns the
+ * `fallback` for null/undefined/NaN inputs so downstream math stays safe.
+ */
 function parseNum(v: unknown, fallback = 0): number {
   if (typeof v === "number") return Number.isFinite(v) ? v : fallback;
   if (typeof v === "string") {
