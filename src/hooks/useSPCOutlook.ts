@@ -387,11 +387,17 @@ async function fetchAndProcessOutlook(
         const { timing, validWindow } = await fetchOutlookTiming();
         if (timing || validWindow) {
           const content = buildMessage(latestIssue, stored.groups, timing, validWindow);
-          const { error: upErr } = await supabase
-            .from("messages")
-            .update({ content })
-            .eq("id", stored.id);
-          if (upErr) console.warn("[useSPCOutlook] failed to backfill timing:", upErr);
+          // Mirror the delete-then-insert pattern used elsewhere: the
+          // messages table is append-only by RLS policy, and Realtime
+          // subscribers expect INSERT events for fresh rows.
+          await supabase.from("messages").delete().eq("user_id", BOT_USER_ID);
+          const { error: insErr } = await supabase.from("messages").insert({
+            user_id: BOT_USER_ID,
+            username: "SPC Bot",
+            badge: "System",
+            content,
+          });
+          if (insErr) console.warn("[useSPCOutlook] failed to backfill timing:", insErr);
         }
         lastIssueRef.current = latestIssue;
         return;
