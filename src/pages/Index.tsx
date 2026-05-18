@@ -16,17 +16,23 @@
  * review panel uses to gate moderation buttons (only "meteorologist"
  * users can verify or remove reports).
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import StatusBar from "@/components/StatusBar";
-import TacticalMap from "@/components/TacticalMap";
 import CitizenReports from "@/components/CitizenReports";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { CityProvider } from "@/contexts/CityContext";
 import { useNewReportPing } from "@/hooks/useNewReportPing";
 import { useNewLSRPing } from "@/hooks/useNewLSRPing";
+
+// TacticalMap pulls in Leaflet + plugins (~hundreds of KB). Lazy-load it so
+// the StatusBar / side panels can paint while the map bundle downloads.
+const TacticalMap = lazy(() => import("@/components/TacticalMap"));
+const MapFallback = () => (
+  <div className="w-full h-full bg-background" aria-hidden />
+);
 
 
 
