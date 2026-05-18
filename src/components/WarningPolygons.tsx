@@ -316,11 +316,9 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
           if (!map.hasLayer(t)) {
             t.addTo(map);
           }
+          openTooltipsRef.current.add(id);
           const el = t.getElement() as HTMLElement | null;
           const h = el?.offsetHeight ?? 40;
-          // re-apply offset now that we know real height (tooltip anchors at bottom)
-          (t.options as any).offset = [0, offsetY];
-          t.setLatLng(e.latlng);
           offsetY -= h + GAP;
         });
       };
