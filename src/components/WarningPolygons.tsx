@@ -307,18 +307,19 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
           }
         });
         let offsetY = -8;
+        const GAP = 6;
         hits.forEach((id) => {
           const t = tooltipsRef.current.get(id);
           if (!t) return;
-          t.setLatLng(e.latlng);
           (t.options as any).offset = [0, offsetY];
+          t.setLatLng(e.latlng);
           if (!map.hasLayer(t)) {
             t.addTo(map);
-          } else {
-            t.setLatLng(e.latlng);
           }
           openTooltipsRef.current.add(id);
-          offsetY -= 8;
+          const el = t.getElement() as HTMLElement | null;
+          const h = el?.offsetHeight ?? 40;
+          offsetY -= h + GAP;
         });
       };
 
