@@ -310,7 +310,19 @@ export function useWarningPolygons(): WarningPolygonsData {
       }
     }
 
-    void load();
+    // Defer the initial alerts query so the radar tiles and basemap get
+    // the first network/CPU slot. Falls back to a 500ms timeout in
+    // browsers without requestIdleCallback (Safari).
+    const ric: (cb: () => void) => number =
+      (window as any).requestIdleCallback
+        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 1500 })
+        : (cb) => window.setTimeout(cb, 500);
+    const cic: (id: number) => void =
+      (window as any).cancelIdleCallback
+        ? (id) => (window as any).cancelIdleCallback(id)
+        : (id) => window.clearTimeout(id);
+    const idleId = ric(() => { void load(); });
+
     // Unique channel name per mount — see useAlerts.ts for the full rationale.
     const channelName = `active_alerts_live_${Math.random().toString(36).slice(2)}_${Date.now()}`;
     const channel = supabase
@@ -320,7 +332,11 @@ export function useWarningPolygons(): WarningPolygonsData {
         () => { void load(); })
       .subscribe();
 
-    return () => { cancelled = true; void supabase.removeChannel(channel); };
+    return () => {
+      cancelled = true;
+      cic(idleId);
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   return data;
