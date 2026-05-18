@@ -3,26 +3,42 @@ import { useEffect, useState } from "react";
 export type UnitSystem = "metric" | "imperial";
 
 const SUBS = new Set<(s: UnitSystem) => void>();
-let current: UnitSystem = "metric";
-let intervalId: ReturnType<typeof setInterval> | null = null;
+const LS_KEY = "stormcircle-unit-system";
 
-function ensureTicker() {
-  if (intervalId !== null) return;
-  intervalId = setInterval(() => {
-    current = current === "metric" ? "imperial" : "metric";
-    SUBS.forEach((fn) => fn(current));
-  }, 3000);
+function isUnitSystem(value: string | null): value is UnitSystem {
+  return value === "metric" || value === "imperial";
 }
 
+function detectInitialUnitSystem(): UnitSystem {
+  if (typeof window === "undefined") return "imperial";
+
+  try {
+    const saved = window.localStorage.getItem(LS_KEY);
+    if (isUnitSystem(saved)) return saved;
+  } catch {
+    // Ignore storage failures (private mode, blocked storage, etc.)
+  }
+
+  const locale =
+    Intl.DateTimeFormat().resolvedOptions().locale ||
+    window.navigator.language ||
+    "en-US";
+  const region = locale.split("-")[1]?.toUpperCase();
+  return region && ["US", "LR", "MM"].includes(region) ? "imperial" : "metric";
+}
+
+let current: UnitSystem = detectInitialUnitSystem();
+
 /**
- * Global unit system that auto-toggles every 3 seconds between metric and imperial.
- * All consumers share the same value so the whole UI flips in lockstep.
+ * Stable global unit system.
+ *
+ * The old implementation flipped units every 3 seconds, which forced large
+ * parts of the UI to re-render continuously and made the app look broken.
  */
 export function useUnitSystem(): UnitSystem {
   const [system, setSystem] = useState<UnitSystem>(current);
 
   useEffect(() => {
-    ensureTicker();
     SUBS.add(setSystem);
     return () => {
       SUBS.delete(setSystem);
