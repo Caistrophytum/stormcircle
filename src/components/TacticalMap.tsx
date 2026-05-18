@@ -221,27 +221,22 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     const lclContrib = stationActive ? Math.round(lclScore * 15) : 0;
     const blhContrib = stationActive ? Math.round(blhScore * 10) : 0;
 
-    const capeColor = (() => {
-      if (!stationActive || sounding.cape === null) return "text-neon-green";
-      if (sounding.cape > 2500) return "text-neon-red";
-      if (sounding.cape >= 1000) return "text-yellow-400";
+    // Unified color scale tied to each parameter's normalized severity score.
+    // The redder the value, the more it pushes the WRS score upward.
+    const colorFromScore = (score: number, hasValue: boolean): string => {
+      if (!stationActive || !hasValue) return "text-neon-green";
+      if (score >= 0.75) return "text-neon-red";
+      if (score >= 0.5) return "text-orange-500";
+      if (score >= 0.25) return "text-yellow-400";
       return "text-neon-green";
-    })();
-
-    const liColor = (() => {
-      if (!stationActive || sounding.li === null) return "text-neon-green";
-      if (sounding.li < -6) return "text-neon-red";
-      if (sounding.li < -3) return "text-orange-500";
-      if (sounding.li <= 0) return "text-yellow-400";
-      return "text-neon-green";
-    })();
+    };
 
     const nodes = [
-      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: capeColor, wrsContribution: capeContrib },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: "text-neon-green", wrsContribution: cinContrib },
-      { label: "LIFTED INDEX", value: fmtTemp(sounding.li, 1), unit: tempUnit, color: liColor, wrsContribution: liContrib },
-      { label: "BL HEIGHT", value: fmtLenM(sounding.blh), unit: lenUnit, color: "text-neon-green", wrsContribution: blhContrib },
-      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: "text-neon-green", wrsContribution: lclContrib },
+      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape !== null), wrsContribution: capeContrib },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin !== null), wrsContribution: cinContrib },
+      { label: "LIFTED INDEX", value: fmtTemp(sounding.li, 1), unit: tempUnit, color: colorFromScore(liScore, sounding.li !== null), wrsContribution: liContrib },
+      { label: "BL HEIGHT", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh !== null), wrsContribution: blhContrib },
+      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl !== null), wrsContribution: lclContrib },
     ];
 
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
