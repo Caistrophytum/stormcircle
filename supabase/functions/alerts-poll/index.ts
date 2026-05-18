@@ -5,7 +5,10 @@
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const NWS_URL = "https://api.weather.gov/alerts/active?status=actual&message_type=alert";
+// Note: we intentionally do NOT filter by message_type. NWS issues
+// continuation/extension SVRs as `Update` messages — filtering to `alert`
+// only drops still-active warnings from the feed.
+const NWS_URL = "https://api.weather.gov/alerts/active?status=actual";
 const UA = "StormCircle/1.0 (bot@stormcircle.net)";
 
 Deno.serve(async (req) => {
