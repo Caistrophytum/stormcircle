@@ -237,7 +237,8 @@ export function SystemMessageCard({
       if (/\blarge\b/i.test(clause) && /hail/i.test(clause)) return "large";
       return null;
     };
-    const REGION_RE = /\b(?:[A-Z]{2}|Plains|Midwest|Mid-?South|Mid-?Atlantic|Ohio Valley|Tennessee Valley|Mississippi Valley|Southeast|Northeast|Southwest|Northwest|Gulf Coast|Carolinas|Deep South|Great Lakes|High Plains|Southern Plains|Central Plains|Northern Plains)\b/g;
+    const US_STATES = "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC";
+    const REGION_RE = new RegExp(`\\b(?:${US_STATES}|Plains|Midwest|Mid-?South|Mid-?Atlantic|Ohio Valley|Tennessee Valley|Mississippi Valley|Missouri Valley|Southeast|Northeast|Southwest|Northwest|Gulf Coast|Carolinas|Deep South|Great Lakes|High Plains|Southern Plains|Central Plains|Northern Plains)\\b`, "g");
     const findArea = (clause: string): string | null => {
       const matches = clause.match(REGION_RE);
       if (!matches || matches.length === 0) return null;
