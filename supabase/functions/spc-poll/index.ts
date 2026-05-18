@@ -180,23 +180,6 @@ function synthesizeSentence(
   validWindow: { startZ: string; endZ: string } | null,
   discussion: string | null,
 ): string {
-  const TIER_ORDER = ["MRGL", "SLGT", "ENH", "MDT", "HIGH"];
-  const TIER_NAMES: Record<string, string> = {
-    MRGL: "Marginal risk", SLGT: "Slight risk", ENH: "Enhanced risk",
-    MDT: "Moderate risk", HIGH: "High risk",
-  };
-  const TIER_SHORT: Record<string, string> = {
-    HIGH: "High", MDT: "Moderate", ENH: "Enhanced", SLGT: "Slight", MRGL: "Marginal",
-  };
-  const presentTiers = [...new Set(groups.map((g) => g.label))]
-    .filter((t) => TIER_ORDER.includes(t))
-    .sort((a, b) => TIER_ORDER.indexOf(b) - TIER_ORDER.indexOf(a));
-  const tierPhrase = presentTiers.length === 0
-    ? "Severe weather"
-    : presentTiers.length === 1
-      ? TIER_NAMES[presentTiers[0]] ?? "Severe risk"
-      : `${presentTiers.map((t) => TIER_SHORT[t]).join(" → ")} risks`;
-
   // Top states by county coverage across all risk groups.
   const counts = new Map<string, number>();
   for (const g of groups) for (const c of g.counties ?? []) {
@@ -280,7 +263,7 @@ function synthesizeSentence(
   });
   const hazardSentence = joinList(hazardPhrases);
 
-  const head = region ? `${tierPhrase} across ${region}` : tierPhrase;
+  const head = region ? `Severe weather across ${region}` : "Severe weather expected";
   const headWithTime = time ? `${head} ${time}` : head;
   const tail = hazardSentence ? `, with ${hazardSentence}.` : ".";
   return `${headWithTime}${tail}`;
