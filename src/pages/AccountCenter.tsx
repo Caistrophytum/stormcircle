@@ -77,7 +77,7 @@ const BadgeChip = ({ badge }: { badge: string }) => {
 
 const subjectSchema = z.enum(["General Feedback", "Bug Report", "Feature Request", "Other"]);
 
-const AccountCenter = () => {
+const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}) => {
   const navigate = useNavigate();
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
 
@@ -298,13 +298,15 @@ const AccountCenter = () => {
       </Helmet>
       <main className="min-h-screen w-full bg-background py-8 px-4 md:px-6">
       <div className="max-w-3xl mx-auto space-y-6">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-card-foreground transition-colors"
-        >
-          <ArrowLeft className="size-3" />
-          Back to Deck
-        </Link>
+        {!hideBackLink && (
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-card-foreground transition-colors"
+          >
+            <ArrowLeft className="size-3" />
+            Back to Deck
+          </Link>
+        )}
 
         <header>
           <h1 className="text-xl font-mono font-bold uppercase tracking-[0.2em] text-card-foreground">
