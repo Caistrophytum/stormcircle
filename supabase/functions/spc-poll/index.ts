@@ -251,7 +251,9 @@ function synthesizeSentence(
       if (/\blarge\b/i.test(c) && /hail/i.test(c)) return "large";
       return null;
     };
-    const STATE_AREA_RE = /\b(?:(?:far\s+)?(?:north(?:ern)?|south(?:ern)?|east(?:ern)?|west(?:ern)?|central|northeast(?:ern)?|northwest(?:ern)?|southeast(?:ern)?|southwest(?:ern)?|east-central|west-central|south-central|north-central|upper|lower|mid)\s+)*(?:[A-Z]{2})(?:\s*(?:\/|and|to|into)\s*(?:(?:far\s+)?(?:north(?:ern)?|south(?:ern)?|east(?:ern)?|west(?:ern)?|central|northeast(?:ern)?|northwest(?:ern)?|southeast(?:ern)?|southwest(?:ern)?|east-central|west-central|south-central|north-central|upper|lower|mid)\s+)*(?:[A-Z]{2}))*/g;
+    const US_STATES = "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC";
+    const MOD = "(?:(?:far\\s+)?(?:north(?:ern)?|south(?:ern)?|east(?:ern)?|west(?:ern)?|central|northeast(?:ern)?|northwest(?:ern)?|southeast(?:ern)?|southwest(?:ern)?|east-central|west-central|south-central|north-central|upper|lower|mid)\\s+)*";
+    const STATE_AREA_RE = new RegExp(`\\b${MOD}(?:${US_STATES})(?:\\s*(?:\\/|and|to|into)\\s*${MOD}(?:${US_STATES}))*`, "g");
     const REGION_AREA_RE = /\b(?:central High Plains|High Plains|Central Plains|southern\/central Plains|southern Plains|central Plains|Upper Midwest|Mid Missouri Valley|Missouri Valley|Red River Vicinity|Lower MI|southern WI|western OK|central TX|North TX|eastern TX Panhandle|warm frontal corridor)\b/gi;
     const findAreas = (c: string): string[] => {
       const states = c.match(STATE_AREA_RE) ?? [];
