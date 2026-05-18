@@ -1,7 +1,15 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+/**
+ * useWarningPolygons — thin selector over the shared DataProvider plus the
+ * pure styling/tag helpers used by map and list components.
+ *
+ * Polygons are derived from the same single `active_alerts` subscription as
+ * useAlerts (one query, one realtime channel per page). The alerts-poll edge
+ * function resolves NWS zone shapes server-side and stores them in
+ * active_alerts.geometry, so the client almost never has to hit
+ * api.weather.gov directly anymore.
+ */
+import { useDataContext } from "@/providers/DataProvider";
 
-/** Color map for NWS event types. Unknown types fall back to #FFFFFF. */
 export const WARNING_COLORS: Record<string, string> = {
   // Tornado
   "Tornado Warning": "#FF0000",
@@ -42,10 +50,6 @@ export const WARNING_COLORS: Record<string, string> = {
   "Special Weather Statement": "#800080",
 };
 
-/**
- * Pull a flat lowercase haystack of every place NWS hides damage tags / PDS
- * markers: description, headline, NWSheadline, and the parameters object.
- */
 function buildHaystack(properties: any): string {
   const params = properties?.parameters ?? {};
   const parts: string[] = [
@@ -67,13 +71,6 @@ function hasPDS(haystack: string): boolean {
   return /particularly dangerous situation|\bpds\b/.test(haystack);
 }
 
-/**
- * Color a warning polygon based on event type AND special damage-tag keywords
- * (Tornado Emergency, PDS, Flash Flood Emergency).
- *
- * PDS overrides apply to ALL Tornado / Severe Thunderstorm / Flash Flood
- * Warnings regardless of whether they are radar-indicated or observed.
- */
 export function getWarningColor(properties: any): string {
   const event = properties?.event as string;
   const haystack = buildHaystack(properties);
@@ -81,14 +78,12 @@ export function getWarningColor(properties: any): string {
 
   if (event === "Tornado Warning") {
     if (haystack.includes("tornado emergency")) return "#7B0000";
-    if (pds) return "#800080"; // purple
+    if (pds) return "#800080";
   }
-  if (event === "Severe Thunderstorm Warning" && pds) {
-    return "#8B4513"; // brown
-  }
+  if (event === "Severe Thunderstorm Warning" && pds) return "#8B4513";
   if (event === "Flash Flood Warning") {
     if (haystack.includes("flash flood emergency")) return "#7B3F00";
-    if (pds) return "#ADFF2F"; // yellow-green
+    if (pds) return "#ADFF2F";
   }
 
   return WARNING_COLORS[event] ?? "#FFFFFF";
@@ -96,11 +91,7 @@ export function getWarningColor(properties: any): string {
 
 export function getWarningTags(properties: any): string[] {
   const tags: string[] = [];
-  // Use the full haystack (description + headline + NWSheadline + params)
-  // so SPC tags on Watches — e.g. "PDS Tornado Watch" which lives in the
-  // headline/parameters rather than the description — are picked up too.
   const haystack = buildHaystack(properties);
-
   if (hasPDS(haystack)) tags.push("PDS");
   if (haystack.includes("tornado emergency")) tags.push("TORNADO EMERGENCY");
   if (haystack.includes("flash flood emergency")) tags.push("FLASH FLOOD EMERGENCY");
@@ -108,7 +99,6 @@ export function getWarningTags(properties: any): string[] {
   if (haystack.includes("considerable")) tags.push("CONSIDERABLE");
   if (haystack.includes("catastrophic")) tags.push("CATASTROPHIC");
   if (haystack.includes("destructive")) tags.push("DESTRUCTIVE");
-
   return tags;
 }
 
@@ -134,7 +124,6 @@ export interface WarningPolygon {
   certainty: string;
   urgency: string;
   parameters: Record<string, any>;
-  
   color: string;
   geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon;
 }
@@ -146,291 +135,6 @@ export interface WarningPolygonsData {
   lastUpdated: Date | null;
 }
 
-/**
- * Module-scoped cache of NWS zone geometries (county/forecast/fire/marine).
- * Zones rarely change shape, so we cache forever for the page session AND
- * persist to localStorage so subsequent page loads skip the network round
- * trip entirely (the slowest part of polygon rendering). Values may be a
- * Promise to deduplicate concurrent in-flight fetches.
- */
-type ZoneGeom = GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
-const zoneGeomCache = new Map<string, ZoneGeom | Promise<ZoneGeom>>();
-
-const LS_KEY = "nws-zone-geom-v1";
-// Rehydrate from localStorage on module load. Cheap: a few hundred KB max,
-// JSON.parse runs once. Wrapped in try/catch for Safari private mode etc.
-try {
-  if (typeof window !== "undefined" && window.localStorage) {
-    const raw = window.localStorage.getItem(LS_KEY);
-    if (raw) {
-      const entries: [string, ZoneGeom][] = JSON.parse(raw);
-      for (const [k, v] of entries) zoneGeomCache.set(k, v);
-    }
-  }
-} catch { /* ignore */ }
-
-let lsFlushScheduled = false;
-function scheduleLsFlush() {
-  if (lsFlushScheduled || typeof window === "undefined") return;
-  lsFlushScheduled = true;
-  const flush = () => {
-    lsFlushScheduled = false;
-    try {
-      const out: [string, ZoneGeom][] = [];
-      for (const [k, v] of zoneGeomCache) {
-        if (v && !(v instanceof Promise)) out.push([k, v]);
-      }
-      window.localStorage.setItem(LS_KEY, JSON.stringify(out));
-    } catch { /* quota / private mode — ignore */ }
-  };
-  // Coalesce many writes into one idle pass.
-  if ((window as any).requestIdleCallback) {
-    (window as any).requestIdleCallback(flush, { timeout: 2000 });
-  } else {
-    setTimeout(flush, 1000);
-  }
-}
-
-async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
-  const cached = zoneGeomCache.get(zoneUrl);
-  if (cached !== undefined) return cached as ZoneGeom | Promise<ZoneGeom>;
-
-  const promise = (async (): Promise<ZoneGeom> => {
-    try {
-      const res = await fetch(zoneUrl, {
-        headers: { "User-Agent": "MyWeatherApp/1.0", Accept: "application/geo+json" },
-      });
-      if (!res.ok) return null;
-      const json = await res.json();
-      const geom = json?.geometry;
-      if (!geom) return null;
-      if (geom.type === "Polygon" || geom.type === "MultiPolygon") {
-        zoneGeomCache.set(zoneUrl, geom);
-        scheduleLsFlush();
-        return geom as ZoneGeom;
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  })();
-
-  zoneGeomCache.set(zoneUrl, promise);
-  const resolved = await promise;
-  zoneGeomCache.set(zoneUrl, resolved);
-  if (resolved) scheduleLsFlush();
-  return resolved;
-}
-
-/** Run async jobs with a bounded concurrency. Preserves output order. */
-async function runWithConcurrency<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-  const workers = new Array(Math.min(limit, items.length)).fill(0).map(async () => {
-    while (true) {
-      const i = next++;
-      if (i >= items.length) return;
-      results[i] = await fn(items[i], i);
-    }
-  });
-  await Promise.all(workers);
-  return results;
-}
-
-/**
- * Resolve an alert's `affectedZones` URLs into a single MultiPolygon by
- * fetching each zone (with caching) and concatenating their polygon rings.
- * Fetches are concurrency-limited so a national alerts day doesn't open
- * dozens of parallel api.weather.gov requests that compete with map tiles.
- */
-async function resolveZonesGeometry(
-  zoneUrls: string[],
-): Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> {
-  const geoms = await runWithConcurrency(zoneUrls, 8, (u) => fetchZoneGeometry(u));
-  const polys: number[][][][] = [];
-  for (const g of geoms) {
-    if (!g) continue;
-    if (g.type === "Polygon") {
-      polys.push(g.coordinates as number[][][]);
-    } else {
-      polys.push(...(g.coordinates as number[][][][]));
-    }
-  }
-  if (polys.length === 0) return null;
-  if (polys.length === 1) {
-    return { type: "Polygon", coordinates: polys[0] };
-  }
-  return { type: "MultiPolygon", coordinates: polys };
-}
-
-/** Build a WarningPolygon record from an alert feature + resolved geometry. */
-function toWarningPolygon(
-  f: any,
-  geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon,
-): WarningPolygon {
-  const props = f.properties ?? {};
-  return {
-    id: String(props.id ?? f.id),
-    event: String(props.event),
-    areaDesc: String(props.areaDesc ?? ""),
-    expires: String(props.expires ?? ""),
-    description: String(props.description ?? ""),
-    headline: String(props.headline ?? ""),
-    severity: String(props.severity ?? ""),
-    certainty: String(props.certainty ?? ""),
-    urgency: String(props.urgency ?? ""),
-    parameters: props.parameters ?? {},
-    color: getWarningColor(props),
-    geometry,
-  };
-}
-
-/**
- * Subscribes to the server-maintained `active_alerts` table. The
- * `alerts-poll` edge function refreshes this every minute via pg_cron.
- * For alerts without inline geometry, we still resolve their
- * `affectedZones` URLs client-side (cached per session) — same behaviour
- * as before, just no longer every client hammering NWS.
- */
 export function useWarningPolygons(): WarningPolygonsData {
-  const [data, setData] = useState<WarningPolygonsData>({
-    polygons: [], loading: true, error: null, lastUpdated: null,
-  });
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const { data: rows, error } = await supabase
-          .from("active_alerts")
-          .select("alert_id, event, severity, certainty, urgency, headline, area_desc, expires_at, geometry, properties");
-        if (error) throw error;
-
-        const inline: WarningPolygon[] = [];
-        const zoneJobs: Promise<WarningPolygon | null>[] = [];
-
-        const makeFeat = (r: any) => {
-          const props = {
-            id: r.alert_id,
-            event: r.event,
-            areaDesc: r.area_desc,
-            expires: r.expires_at,
-            description: (r.properties as any)?.description ?? "",
-            headline: r.headline,
-            severity: r.severity,
-            certainty: r.certainty,
-            urgency: r.urgency,
-            parameters: (r.properties as any)?.parameters ?? {},
-          };
-          return { properties: props } as any;
-        };
-
-        for (const r of rows ?? []) {
-          const feat = makeFeat(r);
-          if (r.geometry) {
-            inline.push(toWarningPolygon(feat, r.geometry as any));
-            continue;
-          }
-          // No inline geom: try affectedZones, then fall back to the
-          // alert's own @id URL so we never silently drop a polygon.
-          const zones: string[] = (r.properties as any)?.affectedZones ?? [];
-          if (zones.length > 0) {
-            zoneJobs.push(
-              resolveZonesGeometry(zones).then((g) => g ? toWarningPolygon(feat, g) : null),
-            );
-          } else {
-            const alertUrl: string | undefined = (r.properties as any)?.["@id"] ?? (r.properties as any)?.id;
-            if (alertUrl && typeof alertUrl === "string" && alertUrl.startsWith("http")) {
-              zoneJobs.push(
-                fetchZoneGeometry(alertUrl).then((g) => g ? toWarningPolygon(feat, g) : null),
-              );
-            }
-          }
-        }
-
-        if (cancelled) return;
-        // Paint inline polygons immediately so the map is responsive even
-        // while api.weather.gov zone fetches are still in flight.
-        setData({
-          polygons: inline,
-          loading: zoneJobs.length > 0,
-          error: null,
-          lastUpdated: new Date(),
-        });
-        if (zoneJobs.length === 0) return;
-
-        // Stream zone-based polys in as each one resolves rather than
-        // waiting for the whole batch — feels much faster and guarantees
-        // partial failure doesn't hide already-resolved polygons.
-        const streamed: WarningPolygon[] = [];
-        let pending = zoneJobs.length;
-        let rafQueued = false;
-        const flush = () => {
-          rafQueued = false;
-          if (cancelled) return;
-          setData({
-            polygons: [...inline, ...streamed],
-            loading: pending > 0,
-            error: null,
-            lastUpdated: new Date(),
-          });
-        };
-        for (const job of zoneJobs) {
-          job.then((p) => {
-            pending -= 1;
-            if (p) streamed.push(p);
-            if (!rafQueued) {
-              rafQueued = true;
-              // Coalesce many resolutions in the same frame into one render.
-              (typeof requestAnimationFrame !== "undefined"
-                ? requestAnimationFrame
-                : (cb: any) => setTimeout(cb, 16))(flush);
-            }
-          });
-        }
-      } catch (err) {
-        if (!cancelled) {
-          setData((prev) => ({ ...prev, loading: false,
-            error: err instanceof Error ? err.message : "Failed to load warnings" }));
-        }
-      }
-    }
-
-
-    // Defer the initial alerts query so the radar tiles and basemap get
-    // the first network/CPU slot. Falls back to a 500ms timeout in
-    // browsers without requestIdleCallback (Safari).
-    const ric: (cb: () => void) => number =
-      (window as any).requestIdleCallback
-        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 1500 })
-        : (cb) => window.setTimeout(cb, 500);
-    const cic: (id: number) => void =
-      (window as any).cancelIdleCallback
-        ? (id) => (window as any).cancelIdleCallback(id)
-        : (id) => window.clearTimeout(id);
-    const idleId = ric(() => { void load(); });
-
-    // Unique channel name per mount — see useAlerts.ts for the full rationale.
-    const channelName = `active_alerts_live_${Math.random().toString(36).slice(2)}_${Date.now()}`;
-    const channel = supabase
-      .channel(channelName)
-      .on("postgres_changes",
-        { event: "*", schema: "public", table: "active_alerts" },
-        () => { void load(); })
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      cic(idleId);
-      void supabase.removeChannel(channel);
-    };
-  }, []);
-
-  return data;
+  return useDataContext().polygons;
 }
-
