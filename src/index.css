@@ -106,7 +106,12 @@
   }
 
   .glass-panel {
-    @apply bg-card/80 backdrop-blur-md border border-border;
+    /* Was bg-card/80 + backdrop-blur-md. backdrop-blur re-samples and
+       re-blurs every pixel under the panel on every frame, which is the
+       single biggest source of stutter on a page where Leaflet tiles and
+       polygons are panning underneath. A near-opaque solid composites
+       once and lets the GPU promote the panel to its own layer. */
+    @apply bg-card/95 border border-border;
   }
 }
 
