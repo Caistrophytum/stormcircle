@@ -142,12 +142,48 @@ export interface WarningPolygonsData {
 
 /**
  * Module-scoped cache of NWS zone geometries (county/forecast/fire/marine).
- * Zones rarely change shape, so we cache forever for the page session. Keyed
- * by the full zone URL (e.g. https://api.weather.gov/zones/county/ILC177).
- * Values may be a Promise to deduplicate concurrent in-flight fetches.
+ * Zones rarely change shape, so we cache forever for the page session AND
+ * persist to localStorage so subsequent page loads skip the network round
+ * trip entirely (the slowest part of polygon rendering). Values may be a
+ * Promise to deduplicate concurrent in-flight fetches.
  */
 type ZoneGeom = GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
 const zoneGeomCache = new Map<string, ZoneGeom | Promise<ZoneGeom>>();
+
+const LS_KEY = "nws-zone-geom-v1";
+// Rehydrate from localStorage on module load. Cheap: a few hundred KB max,
+// JSON.parse runs once. Wrapped in try/catch for Safari private mode etc.
+try {
+  if (typeof window !== "undefined" && window.localStorage) {
+    const raw = window.localStorage.getItem(LS_KEY);
+    if (raw) {
+      const entries: [string, ZoneGeom][] = JSON.parse(raw);
+      for (const [k, v] of entries) zoneGeomCache.set(k, v);
+    }
+  }
+} catch { /* ignore */ }
+
+let lsFlushScheduled = false;
+function scheduleLsFlush() {
+  if (lsFlushScheduled || typeof window === "undefined") return;
+  lsFlushScheduled = true;
+  const flush = () => {
+    lsFlushScheduled = false;
+    try {
+      const out: [string, ZoneGeom][] = [];
+      for (const [k, v] of zoneGeomCache) {
+        if (v && !(v instanceof Promise)) out.push([k, v]);
+      }
+      window.localStorage.setItem(LS_KEY, JSON.stringify(out));
+    } catch { /* quota / private mode — ignore */ }
+  };
+  // Coalesce many writes into one idle pass.
+  if ((window as any).requestIdleCallback) {
+    (window as any).requestIdleCallback(flush, { timeout: 2000 });
+  } else {
+    setTimeout(flush, 1000);
+  }
+}
 
 async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
   const cached = zoneGeomCache.get(zoneUrl);
@@ -164,6 +200,7 @@ async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
       if (!geom) return null;
       if (geom.type === "Polygon" || geom.type === "MultiPolygon") {
         zoneGeomCache.set(zoneUrl, geom);
+        scheduleLsFlush();
         return geom as ZoneGeom;
       }
       return null;
@@ -175,6 +212,7 @@ async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
   zoneGeomCache.set(zoneUrl, promise);
   const resolved = await promise;
   zoneGeomCache.set(zoneUrl, resolved);
+  if (resolved) scheduleLsFlush();
   return resolved;
 }
 
