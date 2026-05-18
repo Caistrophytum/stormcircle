@@ -70,16 +70,17 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   const onTileRequestRef = useRef(onTileRequest);
   useEffect(() => { onTileRequestRef.current = onTileRequest; }, [onTileRequest]);
 
-  // Create the radar layer ONCE per mount. Subsequent tileUrl / cacheBust
-  // changes (e.g. switching product N0B -> N0U, or the 60s refresh tick)
-  // are pushed via setUrl so Leaflet doesn't tear down and re-add the layer,
-  // which previously caused a visible flash + full tile re-fetch storm on
-  // every product change.
+  // Create the radar layer once tileUrl becomes available, then keep it
+  // alive across URL/cacheBust changes (those flow through the setUrl
+  // effect below). We depend on `hasTileUrl` (boolean) — not `tileUrl`
+  // itself — so swapping product/station doesn't tear the layer down.
+  const hasTileUrl = !!tileUrl;
   useEffect(() => {
-    if (!tileUrl) return;
-    const bustedUrl = tileUrl + (tileUrl.includes("?") ? "&" : "?") + "_t=" + cacheBust;
+    if (!hasTileUrl) return;
+    // tileUrl is guaranteed non-null here.
+    const initialUrl = tileUrl! + (tileUrl!.includes("?") ? "&" : "?") + "_t=" + Date.now();
 
-    const radarLayer = L.tileLayer(bustedUrl, {
+    const radarLayer = L.tileLayer(initialUrl, {
       opacity: 0.7,
       tms: false,
       detectRetina: false,
@@ -108,10 +109,8 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
       map.removeLayer(radarLayer);
       layerRef.current = null;
     };
-    // Intentionally only depend on `map`. tileUrl/cacheBust updates flow
-    // through the setUrl effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map]);
+  }, [map, hasTileUrl]);
 
   // Push tileUrl + cacheBust changes via setUrl without recreating the layer.
   useEffect(() => {
