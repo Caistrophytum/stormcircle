@@ -386,11 +386,15 @@ export default function MobileMain() {
     hometownText = `Now in your home city of ${profile!.location}: ${RISK_TEXT[homeRisk.risk]}.`;
     if (nearestDanger) {
       const km = nearestDanger.distanceKm;
-      const useMiles = unitSystem === "imperial";
-      const val = useMiles ? km * 0.621371 : km;
-      const unit = useMiles ? "mi" : "km";
-      const formatted = val < 10 ? val.toFixed(1) : Math.round(val).toLocaleString();
-      hometownText += `\n\nNearest ${nearestDanger.event}: ${formatted} ${unit} away.`;
+      if (km <= 0.05) {
+        hometownText += `\n\nYou are inside an active ${nearestDanger.event} polygon.`;
+      } else {
+        const useMiles = unitSystem === "imperial";
+        const val = useMiles ? km * 0.621371 : km;
+        const unit = useMiles ? "mi" : "km";
+        const formatted = val < 10 ? val.toFixed(1) : Math.round(val).toLocaleString();
+        hometownText += `\n\nNearest ${nearestDanger.event}: ${formatted} ${unit} away (edge-to-home).`;
+      }
     }
   }
 
