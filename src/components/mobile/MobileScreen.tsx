@@ -48,7 +48,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
           </div>
         )}
 
-        {screen === "account" && <AccountCenter />}
+        {screen === "account" && <AccountCenter hideBackLink />}
 
         {screen === "chat" && (
           <div
