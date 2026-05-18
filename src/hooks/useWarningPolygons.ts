@@ -290,8 +290,10 @@ export function useWarningPolygons(): WarningPolygonsData {
     }
 
     void load();
+    // Unique channel name per mount — see useAlerts.ts for the full rationale.
+    const channelName = `active_alerts_live_${Math.random().toString(36).slice(2)}_${Date.now()}`;
     const channel = supabase
-      .channel("active_alerts_live")
+      .channel(channelName)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "active_alerts" },
         () => { void load(); })
