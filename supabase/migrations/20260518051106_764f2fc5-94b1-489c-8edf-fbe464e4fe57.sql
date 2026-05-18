@@ -1,0 +1,2 @@
+ALTER TABLE public.active_alerts ADD COLUMN IF NOT EXISTS first_seen_at timestamptz NOT NULL DEFAULT now();
+CREATE INDEX IF NOT EXISTS active_alerts_first_seen_at_idx ON public.active_alerts (first_seen_at);
