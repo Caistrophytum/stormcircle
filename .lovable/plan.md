@@ -1,69 +1,105 @@
-# Speed up the mobile radar
+## Goal
 
-Goal: same features, same look, much less work for the phone's GPU/CPU and network. Everything below is a perf-only change — nothing is removed, hidden, or behaviourally altered.
+Eliminate the three recurring symptoms (slow login, slow/missing polygons, lists stuck "loading" + WRS ERR) by removing the **shared root cause**: duplicate hook instances each opening their own realtime channel, re-running the same `select * from active_alerts`, and clearing state on every transient error.
 
-## Where the time is going today
+The auth logs confirm this — the last failed login was a **504 `context deadline exceeded` from GoTrue** because the Auth DB pool (fixed 10 connections) was saturated by the app's own redundant queries and realtime subscriptions.
 
-Quick audit of the radar path (`MobileRadar` → `LeafletRadar` → `WarningPolygons` + `RadarStationMarkers` + tile layers):
+---
 
-1. **144 NEXRAD station markers** render as individual SVG `<circle>` elements. On a 3× DPR phone this is one of the slowest things Leaflet can do.
-2. **Warning polygons** render as SVG too, and for every polygon we:
-   - build a permanent `L.tooltip` object upfront (even though it only shows on hover, which doesn't exist on touch),
-   - attach a `mousemove` listener to the map that does a ray-cast point-in-polygon against **every** warning on every pointer move,
-   - tear down and rebuild every layer/tooltip whenever the polygons array identity changes (every minute on refresh).
-3. **Four stacked tile layers** (dark base + US-states overlay + radar + dark labels) — each fetches its own grid of tiles. The states overlay and labels layer aren't strictly needed for the radar to be readable on a small screen.
-4. **Radar tile layer** is recreated from scratch (`L.tileLayer(...)` → `addTo`) on every `tileUrl` change, even when only the product code changes for the same station.
-5. **Cache-busted tile URL** triggers a `setUrl` every 60 s — fine, but combined with `updateWhenIdle: false` (Leaflet default) the phone keeps fetching during pan/zoom inertia.
-6. **Zone-geometry fetches** in `useWarningPolygons` fire `Promise.all` over every zone URL with no concurrency cap, which on a national alerts day can be dozens of parallel `api.weather.gov` requests competing with tile loads.
+## Confirmed duplication map
 
-## What to change
+| Hook | Independent call sites |
+|---|---|
+| `useAlerts` | TacticalMap, EventInfoPanel, MobileMain (indirect), MobileHazards, MobileAlerts, MobileAlertsPanel |
+| `useWarningPolygons` | TacticalMap, MobileMain, RadarMiniMap |
+| `useAuth` | TacticalMap, StatusBar, CitizenReports, AccountCenter, MobileMain |
+| `useLSR` | IntegrationPanel, MobileAlertsPanel |
+| `useOnlineCount` | OnlineCounter, MobileHeader |
 
-### 1. Switch Leaflet to canvas rendering on mobile
-Add `preferCanvas: true` to the `<MapContainer>` (or pass an explicit `renderer={L.canvas({ padding: 0.5 })}` to the markers/polygons). One canvas draw replaces ~144 SVG nodes + N polygon nodes. This alone is the single biggest win.
+Each instance:
+- Issues its own `.select` on mount.
+- Opens its own `supabase.channel(...).on("postgres_changes", ...)`.
+- Resubscribes on every fast-nav remount (StrictMode doubles it again).
+- On any fetch hiccup, flips `loading: true` and blanks its UI.
 
-### 2. Stop building permanent tooltip objects on touch devices
-In `WarningPolygons`, detect `('ontouchstart' in window) && !matchMedia('(hover: hover)').matches` once, and when true:
-- skip the `L.tooltip(...)` construction loop entirely,
-- skip the `map.on('mousemove', ...)` / `mouseout` registration.
+This is what produces all three symptoms.
 
-Touch users already get the click-popup path, which is the only interaction they can actually trigger — so behaviour is identical.
+---
 
-### 3. Diff polygons instead of full teardown/rebuild
-Rework the polygons effect to key layers by `p.id`:
-- add layers for new ids,
-- remove layers for ids no longer present,
-- leave untouched layers alone.
+## Plan
 
-Today the minute-by-minute refresh destroys and recreates every layer + tooltip, which is what makes the map feel like it "blinks" on slow devices.
+### 1. One `DataProvider` for shared server state
 
-### 4. Tile-layer hygiene
-On the shared `LeafletRadar` tile layers (basemap, states overlay, radar, labels), set:
-- `updateWhenIdle: true` (already implicitly true on touch, but be explicit),
-- `keepBuffer: 1` (default 2) to halve off-screen tile retention,
-- `updateWhenZooming: false`.
+Create `src/providers/DataProvider.tsx` wrapping `<App />` in `main.tsx`. It owns **exactly one** of each:
 
-On the mobile-only path (`MobileRadar`), skip the `usstates` overlay tile layer and the `dark_only_labels` overlay tile layer — the labels are unreadable at phone zoom anyway and the radar overlay already implies state context. This removes two full tile grids from the network without changing what the user can do.
+- `active_alerts` select + realtime channel → exposes both `useAlerts()` and `useWarningPolygons()` derived shapes (single pass over rows).
+- `useAuth` session + profile state.
+- `useLSR` reports state.
+- `useOnlineCount` presence.
 
-### 5. Don't recreate the radar `TileLayer` when only the product changes
-In `RadarOverlayLayer`, split the effect: create the layer once per mount, then use `layerRef.current.setUrl(newBustedUrl, false)` whenever either `tileUrl` or `cacheBust` changes. Today a product switch (N0B → N0U) tears the layer down and re-adds it, which causes a visible flash and a full tile re-request storm.
+Each existing hook becomes a tiny `useContext` selector with the **same return shape and import path**, so call sites don't change.
 
-### 6. Throttle the zone-geometry fan-out
-In `useWarningPolygons`, replace the bare `Promise.all(zoneJobs)` with a small concurrency limiter (e.g. 4 in-flight at a time). Final result identical; network pressure during the first 2 s of the map mount drops sharply, leaving bandwidth for the radar tiles.
+Realtime bursts are debounced (300 ms) so a national outbreak doesn't trigger N re-renders per second.
 
-### 7. Use the shared 60 s refresh tick for warnings too
-`useWarningPolygons` only refreshes on the realtime `postgres_changes` event, which is fine — no change needed there. But the per-mount `load()` call currently blocks first paint on the alerts query. Move the initial `load()` behind a `requestIdleCallback` (with a 500 ms `setTimeout` fallback) so the radar tiles get the first network slot.
+### 2. Keep-last-good state on errors
 
-## Files touched
+In the provider (and in `useSoundingData` / `useCurrentWeather` / `useSPCOutlook` / `useHurricaneData`):
 
-- `src/components/RadarMiniMap.tsx` — add `preferCanvas`, tile-layer options, split radar-layer effect, mobile-aware overlay skipping.
-- `src/components/WarningPolygons.tsx` — touch-mode guard, id-diff layer management.
-- `src/hooks/useWarningPolygons.ts` — concurrency-limited zone fetch, idle-deferred initial load.
-- `src/components/mobile/MobileRadar.tsx` — pass a `mobile` hint (or rely on the touch detection inside `LeafletRadar`) so the states/labels overlays are skipped.
+- On fetch error: set `error` only. **Never clear** previously loaded `data`/`polygons`/lists.
+- Background refreshes use a separate `refreshing` flag; never flip `loading` back to `true` after first success.
+- This eliminates the "lists disappear for minutes" and "WRS = ERR" flashes.
 
-No edge-function, schema, or product-behaviour changes.
+### 3. Server-resolve zone geometries (real fix for slow polygons)
 
-## Expected outcome
+In `supabase/functions/alerts-poll/index.ts`:
 
-- First meaningful radar paint on a mid-range Android phone goes from "several seconds of black map" to roughly the time of one basemap + one radar tile round-trip.
-- Pan/zoom stays at 60 fps even with a national severe-weather day's worth of warning polygons on screen.
-- Battery and data use drop because two redundant tile grids and a per-product layer rebuild stop happening.
+- After upsert, for each row where `geometry IS NULL` and `properties.affectedZones` is non-empty, fetch each zone URL server-side, combine into a MultiPolygon, store in `geometry`.
+- Add table `zone_geom_cache (zone_url text PK, geometry jsonb, fetched_at timestamptz)` with service-role-only RLS so we don't refetch the same zones every minute.
+- Client falls back to its existing on-demand fetcher only if the server hasn't filled `geometry` yet (graceful degradation, not the hot path).
+
+Result: hundreds of cross-origin `api.weather.gov` calls per client per minute → **zero**. Polygons paint as fast as the DB select.
+
+### 4. Fix login latency (`/auth` cold open + 504s)
+
+- **Lazy-load routes** in `src/App.tsx`: `Auth`, `AccountCenter`, `ResetPassword`, `FAQ`, `Index`, `MobileLayout` via `React.lazy` + `Suspense`. Keeps Leaflet/Radar/Maps **out of the `/auth` bundle**.
+- **Harden `useAuth`**: wrap `getSession()` in try/catch; treat `refresh_token_not_found` / network error as "signed out" immediately so `loading` resolves fast (fixes the console error currently seen on cold load).
+- Add `<link rel="preconnect">` for the Supabase host in `index.html` so the first auth POST doesn't pay TLS setup.
+- Reducing realtime channel count (step 1) directly relieves the auth DB pool pressure that produced the 504.
+
+### 5. Cleanup
+
+- Strip per-hook realtime / `setInterval(60_000)` from `useAlerts` and `useWarningPolygons`; the provider runs both once.
+- Delete the `setTimeout(0)` deadlock dance in `useAuth` (provider context naturally avoids it).
+- Add a tiny `useDebouncedRealtime(table, cb, ms)` helper to keep the provider readable.
+
+---
+
+## Technical notes
+
+- API-compatible: `useAlerts()`, `useWarningPolygons()`, `useAuth()`, `useLSR()`, `useOnlineCount()` keep exact return types. Call sites do not change.
+- New table `zone_geom_cache`: small (~5000 distinct zones nationwide); RLS = service role only.
+- Lazy routes: pure `React.lazy` + Vite — no plugin, expected `/auth` bundle drop ≈ 250–400 KB gzipped (Leaflet + map components).
+- Debounce window for realtime is conservative (300 ms) to keep "live" feel.
+- No visual/UX changes — purely plumbing.
+
+```text
+Before                              After
+N components                         N components
+  ├─ N selects on active_alerts        └─ one useContext selector
+  ├─ N realtime channels                     │
+  ├─ N×N zone fetches → NWS                  ▼
+  ├─ loading=true on any error         1 DataProvider
+  └─ /auth pulls full map bundle         ├─ 1 select, 1 channel (debounced)
+                                         ├─ geometry pre-resolved in DB
+                                         ├─ keep-last-good on error
+                                         └─ /auth chunk-split, no map deps
+```
+
+---
+
+## Out of scope
+
+- Visual redesign of any panel.
+- Changes to severity / PDS logic (recently shipped).
+- Replacing Leaflet / mapping library.
+- Removing Lovable Cloud or switching auth provider.
