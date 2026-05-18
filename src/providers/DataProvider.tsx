@@ -489,16 +489,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       debounceTimer = setTimeout(() => { void load(); }, REALTIME_DEBOUNCE_MS);
     };
 
-    // Initial load, deferred slightly so radar/basemap tiles get first slot.
-    const ric: (cb: () => void) => number =
-      (window as any).requestIdleCallback
-        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 1500 })
-        : (cb) => window.setTimeout(cb, 200);
-    const cic: (id: number) => void =
-      (window as any).cancelIdleCallback
-        ? (id) => (window as any).cancelIdleCallback(id)
-        : (id) => window.clearTimeout(id);
-    const idleId = ric(() => { void load(); });
+    // Staged startup: alerts are the core product, fire ASAP.
+    const idleId = window.setTimeout(() => { void load(); }, 0);
+    const cic = (id: number) => window.clearTimeout(id);
 
     const channelName = `data_provider_alerts_${Math.random().toString(36).slice(2)}_${Date.now()}`;
     const channel = supabase
