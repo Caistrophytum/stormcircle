@@ -48,6 +48,21 @@ export function useUnitSystem(): UnitSystem {
   return system;
 }
 
+export function setUnitSystem(next: UnitSystem) {
+  if (next === current) return;
+  current = next;
+  try {
+    window.localStorage.setItem(LS_KEY, next);
+  } catch {
+    // Ignore storage failures
+  }
+  SUBS.forEach((fn) => fn(next));
+}
+
+export function toggleUnitSystem() {
+  setUnitSystem(current === "metric" ? "imperial" : "metric");
+}
+
 // ---------- Conversion helpers ----------
 
 export const cToF = (c: number) => c * 9 / 5 + 32;
