@@ -413,6 +413,24 @@ export type Database = {
         }
         Relationships: []
       }
+      zone_geom_cache: {
+        Row: {
+          fetched_at: string
+          geometry: Json
+          zone_url: string
+        }
+        Insert: {
+          fetched_at?: string
+          geometry: Json
+          zone_url: string
+        }
+        Update: {
+          fetched_at?: string
+          geometry?: Json
+          zone_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
