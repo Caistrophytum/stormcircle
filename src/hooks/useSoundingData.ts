@@ -54,7 +54,10 @@ export function useSoundingData(location: LatLon | null): SoundingData {
 
     const fetchSounding = async (showLoading: boolean) => {
       if (showLoading) {
-        setData({ cape: null, cin: null, li: null, blh: null, lcl: null, loading: true, error: false });
+        // Only blank on the very first fetch. Background refreshes preserve
+        // the last good sounding so the WRS panel never flashes "ERR" on
+        // transient Open-Meteo hiccups.
+        setData((prev) => ({ ...prev, loading: true, error: false }));
       }
       try {
         const res = await fetch(url);
@@ -78,9 +81,10 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         });
       } catch (err) {
         console.error("[useSoundingData] fetch failed", err);
-        if (!cancelled) {
-          setData({ cape: null, cin: null, li: null, blh: null, lcl: null, loading: false, error: true });
-        }
+        if (cancelled) return;
+        // KEEP-LAST-GOOD: hold on to whatever we last had so the UI doesn't
+        // collapse to ERR on a single fetch failure.
+        setData((prev) => ({ ...prev, loading: false, error: true }));
       }
     };
 
