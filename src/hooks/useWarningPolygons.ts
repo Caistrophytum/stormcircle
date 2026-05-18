@@ -178,14 +178,35 @@ async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
   return resolved;
 }
 
+/** Run async jobs with a bounded concurrency. Preserves output order. */
+async function runWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  const workers = new Array(Math.min(limit, items.length)).fill(0).map(async () => {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 /**
  * Resolve an alert's `affectedZones` URLs into a single MultiPolygon by
  * fetching each zone (with caching) and concatenating their polygon rings.
+ * Fetches are concurrency-limited so a national alerts day doesn't open
+ * dozens of parallel api.weather.gov requests that compete with map tiles.
  */
 async function resolveZonesGeometry(
   zoneUrls: string[],
 ): Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> {
-  const geoms = await Promise.all(zoneUrls.map((u) => fetchZoneGeometry(u)));
+  const geoms = await runWithConcurrency(zoneUrls, 4, (u) => fetchZoneGeometry(u));
   const polys: number[][][][] = [];
   for (const g of geoms) {
     if (!g) continue;
