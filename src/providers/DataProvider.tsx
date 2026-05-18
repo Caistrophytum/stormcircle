@@ -443,30 +443,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         const version = ++polyVersionRef.current;
+        // NON-BLOCKING: mark loading=false immediately so the map renders
+        // with whatever geometry we have. Fallback jobs append silently.
         setPolygons({
           polygons: inline,
-          loading: fallbackJobs.length > 0,
+          loading: false,
           error: null,
           lastUpdated: new Date(),
         });
         if (fallbackJobs.length === 0) return;
 
         const streamed: WarningPolygon[] = [];
-        let pending = fallbackJobs.length;
         let rafQueued = false;
         const flush = () => {
           rafQueued = false;
           if (cancelled || polyVersionRef.current !== version) return;
-          setPolygons({
+          setPolygons((prev) => ({
+            ...prev,
             polygons: [...inline, ...streamed],
-            loading: pending > 0,
-            error: null,
             lastUpdated: new Date(),
-          });
+          }));
         };
         for (const { r, promise } of fallbackJobs) {
           promise.then((g) => {
-            pending -= 1;
             if (g) streamed.push(makePolygon(r, g));
             if (!rafQueued) {
               rafQueued = true;
@@ -490,16 +489,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       debounceTimer = setTimeout(() => { void load(); }, REALTIME_DEBOUNCE_MS);
     };
 
-    // Initial load, deferred slightly so radar/basemap tiles get first slot.
-    const ric: (cb: () => void) => number =
-      (window as any).requestIdleCallback
-        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 1500 })
-        : (cb) => window.setTimeout(cb, 200);
-    const cic: (id: number) => void =
-      (window as any).cancelIdleCallback
-        ? (id) => (window as any).cancelIdleCallback(id)
-        : (id) => window.clearTimeout(id);
-    const idleId = ric(() => { void load(); });
+    // Staged startup: alerts are the core product, fire ASAP.
+    const idleId = window.setTimeout(() => { void load(); }, 0);
+    const cic = (id: number) => window.clearTimeout(id);
 
     const channelName = `data_provider_alerts_${Math.random().toString(36).slice(2)}_${Date.now()}`;
     const channel = supabase
@@ -642,19 +634,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Defer the first LSR fetch until the browser is idle — keeps it out
-    // of the critical path so basemap / alerts get the first network slots.
-    const ric: (cb: () => void) => number =
-      (window as any).requestIdleCallback
-        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 2000 })
-        : (cb) => window.setTimeout(cb, 500);
-    const idleId = ric(() => { void fetchReports(); });
+    // Stagger LSR ~800ms after mount: non-critical, can lag a beat.
+    const startId = window.setTimeout(() => { void fetchReports(); }, 800);
     const id = setInterval(fetchReports, LSR_REFRESH_MS);
     return () => {
       cancelled = true;
       clearInterval(id);
-      if ((window as any).cancelIdleCallback) (window as any).cancelIdleCallback(idleId);
-      else clearTimeout(idleId);
+      clearTimeout(startId);
     };
   }, []);
 
@@ -680,14 +666,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           }
         });
     };
-    const ric: (cb: () => void) => number =
-      (window as any).requestIdleCallback
-        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 3000 })
-        : (cb) => window.setTimeout(cb, 1000);
-    const idleId = ric(start);
+    // Stagger presence ~1200ms after mount so it lands after alerts + LSR.
+    const startId = window.setTimeout(start, 1200);
     return () => {
-      if ((window as any).cancelIdleCallback) (window as any).cancelIdleCallback(idleId);
-      else clearTimeout(idleId);
+      clearTimeout(startId);
       if (channel) void supabase.removeChannel(channel);
     };
   }, []);
