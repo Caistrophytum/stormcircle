@@ -47,7 +47,9 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
 
     const fetchNow = async (showLoading: boolean) => {
       if (showLoading) {
-        setData({ ...EMPTY, loading: true });
+        // First load only: show a real "loading" so the UI can render a
+        // skeleton. Background refreshes silently keep the last good values.
+        setData((prev) => ({ ...prev, loading: true, error: false }));
       }
       try {
         const res = await fetch(url);
@@ -65,7 +67,10 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
         });
       } catch (err) {
         console.error("[useCurrentWeather] fetch failed", err);
-        if (!cancelled) setData({ ...EMPTY, error: true });
+        if (cancelled) return;
+        // KEEP-LAST-GOOD: keep prior values; just flag the error so callers
+        // can show a small badge if they want. Don't blank the UI.
+        setData((prev) => ({ ...prev, loading: false, error: true }));
       }
     };
 
