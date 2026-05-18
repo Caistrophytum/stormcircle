@@ -443,30 +443,29 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         const version = ++polyVersionRef.current;
+        // NON-BLOCKING: mark loading=false immediately so the map renders
+        // with whatever geometry we have. Fallback jobs append silently.
         setPolygons({
           polygons: inline,
-          loading: fallbackJobs.length > 0,
+          loading: false,
           error: null,
           lastUpdated: new Date(),
         });
         if (fallbackJobs.length === 0) return;
 
         const streamed: WarningPolygon[] = [];
-        let pending = fallbackJobs.length;
         let rafQueued = false;
         const flush = () => {
           rafQueued = false;
           if (cancelled || polyVersionRef.current !== version) return;
-          setPolygons({
+          setPolygons((prev) => ({
+            ...prev,
             polygons: [...inline, ...streamed],
-            loading: pending > 0,
-            error: null,
             lastUpdated: new Date(),
-          });
+          }));
         };
         for (const { r, promise } of fallbackJobs) {
           promise.then((g) => {
-            pending -= 1;
             if (g) streamed.push(makePolygon(r, g));
             if (!rafQueued) {
               rafQueued = true;
