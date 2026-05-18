@@ -642,9 +642,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    void fetchReports();
+    // Defer the first LSR fetch until the browser is idle — keeps it out
+    // of the critical path so basemap / alerts get the first network slots.
+    const ric: (cb: () => void) => number =
+      (window as any).requestIdleCallback
+        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 2000 })
+        : (cb) => window.setTimeout(cb, 500);
+    const idleId = ric(() => { void fetchReports(); });
     const id = setInterval(fetchReports, LSR_REFRESH_MS);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      if ((window as any).cancelIdleCallback) (window as any).cancelIdleCallback(idleId);
+      else clearTimeout(idleId);
+    };
   }, []);
 
   // -------- online count --------
