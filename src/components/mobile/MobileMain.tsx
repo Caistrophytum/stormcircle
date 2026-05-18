@@ -278,31 +278,22 @@ export default function MobileMain() {
     const lclContrib = stationActive ? Math.round(lclScore * 15) : 0;
     const blhContrib = stationActive ? Math.round(blhScore * 10) : 0;
 
-    const capeColor =
-      !stationActive || sounding.cape === null
-        ? "#7CFC00"
-        : sounding.cape > 2500
-          ? "#ff3b3b"
-          : sounding.cape >= 1000
-            ? "#ffd700"
-            : "#7CFC00";
-    const liColor =
-      !stationActive || sounding.li === null
-        ? "#7CFC00"
-        : sounding.li < -6
-          ? "#ff3b3b"
-          : sounding.li < -3
-            ? "#ff8c00"
-            : sounding.li <= 0
-              ? "#ffd700"
-              : "#7CFC00";
+    // Unified color scale tied to each parameter's normalized severity score.
+    // The redder the value, the more it pushes the WRS score upward.
+    const colorFromScore = (score: number, hasValue: boolean): string => {
+      if (!stationActive || !hasValue) return "#7CFC00";
+      if (score >= 0.75) return "#ff3b3b";
+      if (score >= 0.5) return "#ff8c00";
+      if (score >= 0.25) return "#ffd700";
+      return "#7CFC00";
+    };
 
     const nodes = [
-      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: capeColor, w: capeContrib },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: "#7CFC00", w: cinContrib },
-      { label: "LI", value: fmtTemp(sounding.li, 1), unit: tempUnit, color: liColor, w: liContrib },
-      { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: "#7CFC00", w: blhContrib },
-      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: "#7CFC00", w: lclContrib },
+      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinContrib },
+      { label: "LI", value: fmtTemp(sounding.li, 1), unit: tempUnit, color: colorFromScore(liScore, sounding.li != null), w: liContrib },
+      { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh != null), w: blhContrib },
+      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib },
     ];
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
     return { nodes, threatLevel: threat };
