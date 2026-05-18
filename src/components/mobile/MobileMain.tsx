@@ -44,7 +44,7 @@ const RISK_BG: Record<SPCRiskLevel, string> = {
 
 function rankWarning(p: WarningPolygon): number | null {
   const ev = p.event;
-  const text = `${p.description} ${p.headline}`.toLowerCase();
+  const text = `${p.description} ${p.headline} ${p.parameters?.spcWatchTitle ?? ""} ${p.parameters?.spcPds ?? ""}`.toLowerCase();
   const pds = /particularly dangerous situation|\bpds\b/.test(text);
 
   // Warnings (active hazard)
@@ -373,7 +373,7 @@ export default function MobileMain() {
       if (r > bestRank || d < bestDist) {
         bestRank = r;
         bestDist = d;
-        const text = `${p.description} ${p.headline}`.toLowerCase();
+        const text = `${p.description} ${p.headline} ${p.parameters?.spcWatchTitle ?? ""} ${p.parameters?.spcPds ?? ""}`.toLowerCase();
         if (p.event === "Tornado Warning" && text.includes("tornado emergency")) bestEvent = "Tornado Emergency";
         else if (p.event === "Flash Flood Warning" && text.includes("flash flood emergency"))
           bestEvent = "Flash Flood Emergency";

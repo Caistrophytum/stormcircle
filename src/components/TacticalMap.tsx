@@ -34,7 +34,7 @@ const weatherBackgrounds: Record<WeatherCondition, string> = {
 // Tier ranking for "most dangerous" warning polygon. Higher wins.
 function rankWarning(p: WarningPolygon): number | null {
   const ev = p.event;
-  const text = `${p.description} ${p.headline}`.toLowerCase();
+  const text = `${p.description} ${p.headline} ${p.parameters?.spcWatchTitle ?? ""} ${p.parameters?.spcPds ?? ""}`.toLowerCase();
   const pds = /particularly dangerous situation|\bpds\b/.test(text);
   if (ev === "Tornado Warning") {
     if (text.includes("tornado emergency")) return 8;
@@ -288,7 +288,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         bestRank = r;
         bestDist = d;
         // Use a more descriptive label for emergencies / PDS.
-        const text = `${p.description} ${p.headline}`.toLowerCase();
+        const text = `${p.description} ${p.headline} ${p.parameters?.spcWatchTitle ?? ""} ${p.parameters?.spcPds ?? ""}`.toLowerCase();
         if (p.event === "Tornado Warning" && text.includes("tornado emergency")) {
           bestEvent = "Tornado Emergency";
         } else if (p.event === "Flash Flood Warning" && text.includes("flash flood emergency")) {

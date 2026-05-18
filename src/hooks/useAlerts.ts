@@ -82,6 +82,8 @@ function extractTags(props: Record<string, any>): string[] {
     props.parameters?.tornadoDamageThreatTag,
     props.parameters?.thunderstormDamageThreatTag,
     props.parameters?.flashFloodDamageThreatTag,
+    props.parameters?.spcWatchTitle,
+    props.parameters?.spcPds,
     Array.isArray(props.parameters?.NWSheadline)
       ? props.parameters.NWSheadline.join(" ")
       : props.parameters?.NWSheadline,
