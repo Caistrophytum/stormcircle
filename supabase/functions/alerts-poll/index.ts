@@ -58,7 +58,8 @@ Deno.serve(async (req) => {
           parameters: p.parameters ?? {},
           affectedZones: Array.isArray(p.affectedZones) ? p.affectedZones : [],
         },
-        updated_at: new Date().toISOString(),
+        updated_at: nowIso,
+        first_seen_at: firstSeenById.get(id) ?? nowIso,
       };
     });
 
@@ -72,7 +73,6 @@ Deno.serve(async (req) => {
 
     // Delete rows no longer in feed OR already expired
     const currentIds = new Set(rows.map((r) => r.alert_id));
-    const { data: existing } = await supabase.from("active_alerts").select("alert_id, expires_at");
     const toDelete = (existing ?? []).filter((r: any) => {
       if (!currentIds.has(r.alert_id)) return true;
       if (r.expires_at && new Date(r.expires_at).getTime() < Date.now()) return true;
