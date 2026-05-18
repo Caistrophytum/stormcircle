@@ -553,20 +553,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Robust session bootstrap. We swallow "refresh_token_not_found" /
-    // network errors and treat them as "signed out" so `loading` resolves
-    // immediately instead of hanging the UI.
+    // Robust session bootstrap. Resolve `authLoading` AS SOON AS we know
+    // whether a user exists — the profile row arrives in the background so
+    // the StatusBar / role-gated UI stops blocking on a separate round-trip.
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         if (!mounted) return;
         const existing = session?.user ?? null;
         setUser(existing);
+        setAuthLoading(false);
         if (existing) {
-          void fetchProfile(existing.id).finally(() => {
-            if (mounted) setAuthLoading(false);
-          });
-        } else {
-          setAuthLoading(false);
+          void fetchProfile(existing.id);
         }
       })
       .catch((err) => {
