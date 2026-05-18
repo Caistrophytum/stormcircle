@@ -250,7 +250,7 @@ async function runWithConcurrency<T, R>(
 async function resolveZonesGeometry(
   zoneUrls: string[],
 ): Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> {
-  const geoms = await runWithConcurrency(zoneUrls, 4, (u) => fetchZoneGeometry(u));
+  const geoms = await runWithConcurrency(zoneUrls, 8, (u) => fetchZoneGeometry(u));
   const polys: number[][][][] = [];
   for (const g of geoms) {
     if (!g) continue;
@@ -314,7 +314,7 @@ export function useWarningPolygons(): WarningPolygonsData {
         const inline: WarningPolygon[] = [];
         const zoneJobs: Promise<WarningPolygon | null>[] = [];
 
-        for (const r of rows ?? []) {
+        const makeFeat = (r: any) => {
           const props = {
             id: r.alert_id,
             event: r.event,
@@ -327,23 +327,35 @@ export function useWarningPolygons(): WarningPolygonsData {
             urgency: r.urgency,
             parameters: (r.properties as any)?.parameters ?? {},
           };
-          const feat = { properties: props } as any;
+          return { properties: props } as any;
+        };
+
+        for (const r of rows ?? []) {
+          const feat = makeFeat(r);
           if (r.geometry) {
             inline.push(toWarningPolygon(feat, r.geometry as any));
+            continue;
+          }
+          // No inline geom: try affectedZones, then fall back to the
+          // alert's own @id URL so we never silently drop a polygon.
+          const zones: string[] = (r.properties as any)?.affectedZones ?? [];
+          if (zones.length > 0) {
+            zoneJobs.push(
+              resolveZonesGeometry(zones).then((g) => g ? toWarningPolygon(feat, g) : null),
+            );
           } else {
-            const zones: string[] = (r.properties as any)?.affectedZones ?? [];
-            if (zones.length > 0) {
+            const alertUrl: string | undefined = (r.properties as any)?.["@id"] ?? (r.properties as any)?.id;
+            if (alertUrl && typeof alertUrl === "string" && alertUrl.startsWith("http")) {
               zoneJobs.push(
-                resolveZonesGeometry(zones).then((g) => g ? toWarningPolygon(feat, g) : null),
+                fetchZoneGeometry(alertUrl).then((g) => g ? toWarningPolygon(feat, g) : null),
               );
             }
           }
         }
 
         if (cancelled) return;
-        // Paint inline polygons immediately — most warnings have inline
-        // geometry, and we shouldn't make them wait on slow api.weather.gov
-        // zone fetches. Zone-based polys stream in next.
+        // Paint inline polygons immediately so the map is responsive even
+        // while api.weather.gov zone fetches are still in flight.
         setData({
           polygons: inline,
           loading: zoneJobs.length > 0,
@@ -352,12 +364,35 @@ export function useWarningPolygons(): WarningPolygonsData {
         });
         if (zoneJobs.length === 0) return;
 
-        const zonePolys = (await Promise.all(zoneJobs)).filter((p): p is WarningPolygon => p !== null);
-        if (cancelled) return;
-        setData({
-          polygons: [...inline, ...zonePolys],
-          loading: false, error: null, lastUpdated: new Date(),
-        });
+        // Stream zone-based polys in as each one resolves rather than
+        // waiting for the whole batch — feels much faster and guarantees
+        // partial failure doesn't hide already-resolved polygons.
+        const streamed: WarningPolygon[] = [];
+        let pending = zoneJobs.length;
+        let rafQueued = false;
+        const flush = () => {
+          rafQueued = false;
+          if (cancelled) return;
+          setData({
+            polygons: [...inline, ...streamed],
+            loading: pending > 0,
+            error: null,
+            lastUpdated: new Date(),
+          });
+        };
+        for (const job of zoneJobs) {
+          job.then((p) => {
+            pending -= 1;
+            if (p) streamed.push(p);
+            if (!rafQueued) {
+              rafQueued = true;
+              // Coalesce many resolutions in the same frame into one render.
+              (typeof requestAnimationFrame !== "undefined"
+                ? requestAnimationFrame
+                : (cb: any) => setTimeout(cb, 16))(flush);
+            }
+          });
+        }
       } catch (err) {
         if (!cancelled) {
           setData((prev) => ({ ...prev, loading: false,
@@ -365,6 +400,7 @@ export function useWarningPolygons(): WarningPolygonsData {
         }
       }
     }
+
 
     // Defer the initial alerts query so the radar tiles and basemap get
     // the first network/CPU slot. Falls back to a 500ms timeout in
