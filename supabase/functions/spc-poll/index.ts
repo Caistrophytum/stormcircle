@@ -263,7 +263,7 @@ function synthesizeSentence(
   });
   const hazardSentence = joinList(hazardPhrases);
 
-  const head = region ? `${tierPhrase} across ${region}` : tierPhrase;
+  const head = region ? `Severe weather across ${region}` : "Severe weather expected";
   const headWithTime = time ? `${head} ${time}` : head;
   const tail = hazardSentence ? `, with ${hazardSentence}.` : ".";
   return `${headWithTime}${tail}`;
