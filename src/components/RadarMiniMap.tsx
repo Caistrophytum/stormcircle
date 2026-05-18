@@ -196,6 +196,10 @@ interface LeafletMapProps {
   onStationMarkerSelect: (s: RadarStation) => void;
   setSelectedProduct: (p: ProductCode) => void;
   onMap?: (m: L.Map) => void;
+  /** When true, skip the US-states + dark-labels overlay tile grids to
+   *  reduce network/render load on phones. Visual context is preserved by
+   *  the basemap + radar layers. */
+  mobile?: boolean;
 }
 
 const MapRefCapture = ({ onMap }: { onMap: (m: L.Map) => void }) => {
@@ -216,10 +220,18 @@ export const LeafletRadar = ({
   onStationMarkerSelect,
   setSelectedProduct,
   onMap,
+  mobile,
 }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
   const { polygons } = useWarningPolygons();
+
+  // Common tile options that meaningfully help slower devices.
+  const tileOpts = {
+    updateWhenIdle: true,
+    updateWhenZooming: false,
+    keepBuffer: 1,
+  } as const;
 
   return (
     <MapContainer
@@ -234,6 +246,7 @@ export const LeafletRadar = ({
       boxZoom={interactive}
       keyboard={interactive}
       attributionControl={interactive}
+      preferCanvas
       style={{ background: "#1a1a2e" }}
     >
       <TileLayer
@@ -241,12 +254,14 @@ export const LeafletRadar = ({
         url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
         subdomains="abcd"
         maxZoom={20}
+        {...tileOpts}
       />
-      {interactive && (
+      {interactive && !mobile && (
         <TileLayer
           url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
           opacity={0.6}
           attribution=""
+          {...tileOpts}
         />
       )}
       {interactive && (
@@ -258,13 +273,14 @@ export const LeafletRadar = ({
       )}
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
       {interactive && <WarningPolygons ref={warningsRef} polygons={polygons} />}
-      {interactive && (
+      {interactive && !mobile && (
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
           subdomains="abcd"
           opacity={0.9}
           attribution=""
           zIndex={1000}
+          {...tileOpts}
         />
       )}
       <Recenter station={station} />
