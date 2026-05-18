@@ -60,24 +60,74 @@ function rankWarning(p: WarningPolygon): number | null {
   return null;
 }
 
-function haversineKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
-  const R = 6371;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLon = toRad(b.lon - a.lon);
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(s));
+
+// Point-in-ring (ray casting) in lon/lat space — fine for short-range warnings.
+function pointInRing(lon: number, lat: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    const intersect =
+      yi > lat !== yj > lat &&
+      lon < ((xj - xi) * (lat - yi)) / (yj - yi + 1e-12) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
 }
 
-function nearestVertexKm(origin: { lat: number; lon: number }, geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): number {
+// Approximate great-circle distance from a point to a segment by projecting
+// into a local equirectangular plane (km). Accurate to <1% for segments
+// shorter than a few hundred km — well within warning polygon scale.
+function pointToSegmentKm(
+  origin: { lat: number; lon: number },
+  a: { lat: number; lon: number },
+  b: { lat: number; lon: number },
+): number {
+  const kmPerDegLat = 111.32;
+  const kmPerDegLon = 111.32 * Math.cos((origin.lat * Math.PI) / 180);
+  const ox = 0;
+  const oy = 0;
+  const ax = (a.lon - origin.lon) * kmPerDegLon;
+  const ay = (a.lat - origin.lat) * kmPerDegLat;
+  const bx = (b.lon - origin.lon) * kmPerDegLon;
+  const by = (b.lat - origin.lat) * kmPerDegLat;
+  const dx = bx - ax;
+  const dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 > 0 ? ((ox - ax) * dx + (oy - ay) * dy) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  const px = ax + t * dx;
+  const py = ay + t * dy;
+  return Math.hypot(px, py);
+}
+
+function nearestPolygonKm(
+  origin: { lat: number; lon: number },
+  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+): number {
   const polys: number[][][][] =
     geom.type === "Polygon" ? [geom.coordinates as number[][][]] : (geom.coordinates as number[][][][]);
   let best = Infinity;
   for (const poly of polys) {
     if (!poly.length) continue;
-    for (const [lon, lat] of poly[0]) {
-      const d = haversineKm(origin, { lat, lon });
-      if (d < best) best = d;
+    const outer = poly[0];
+    // Inside the outer ring (and not in any hole) → 0 km away.
+    if (pointInRing(origin.lon, origin.lat, outer)) {
+      let inHole = false;
+      for (let h = 1; h < poly.length; h++) {
+        if (pointInRing(origin.lon, origin.lat, poly[h])) { inHole = true; break; }
+      }
+      if (!inHole) return 0;
+    }
+    // Otherwise: min distance to any edge of any ring.
+    for (let r = 0; r < poly.length; r++) {
+      const ring = poly[r];
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [alon, alat] = ring[j];
+        const [blon, blat] = ring[i];
+        const d = pointToSegmentKm(origin, { lat: alat, lon: alon }, { lat: blat, lon: blon });
+        if (d < best) best = d;
+      }
     }
   }
   return best;
@@ -309,7 +359,7 @@ export default function MobileMain() {
     for (const p of warningPolygons.polygons) {
       const r = rankWarning(p);
       if (r === null || r < bestRank) continue;
-      const d = nearestVertexKm(coords, p.geometry);
+      const d = nearestPolygonKm(coords, p.geometry);
       if (r > bestRank || d < bestDist) {
         bestRank = r;
         bestDist = d;
