@@ -41,6 +41,7 @@ export default function MobileRadar() {
           station={selectedStation}
           tileUrl={tileUrl}
           interactive
+          mobile
           selectedStation={selectedStation}
           onStationMarkerSelect={selectStationByMarker}
           setSelectedProduct={setSelectedProduct}

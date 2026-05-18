@@ -95,6 +95,15 @@ function polygonCenter(geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): [number, n
   ];
 }
 
+/** Once-per-load detection of touch-only (no hover) devices. On these we
+ *  skip the permanent-tooltip construction and the mousemove hit-tester
+ *  entirely — they're hover-only behaviour that touch users can't trigger,
+ *  and they're the main reason WarningPolygons is slow on phones. */
+const IS_TOUCH_ONLY =
+  typeof window !== "undefined" &&
+  "ontouchstart" in window &&
+  !(window.matchMedia?.("(hover: hover)").matches ?? false);
+
 const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
   ({ polygons }, ref) => {
     const map = useMap();
@@ -103,17 +112,19 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
     const openTooltipsRef = useRef<Set<string>>(new Set());
     const popupOpenRef = useRef(false);
     const activePopupIdRef = useRef<string | null>(null);
+    // Keep latest polygons accessible to event handlers without re-binding.
+    const polygonsRef = useRef<WarningPolygon[]>(polygons);
+    useEffect(() => { polygonsRef.current = polygons; }, [polygons]);
 
     useImperativeHandle(ref, () => ({
       flyToWarning(eventType: string) {
-        const match = polygons.find((p) => p.event === eventType);
+        const match = polygonsRef.current.find((p) => p.event === eventType);
         if (!match || !match.geometry) return;
         const [centerLat, centerLon] = polygonCenter(match.geometry);
         map.flyTo([centerLat, centerLon], 8, { duration: 1.2 });
         setTimeout(() => {
           const [cLat, cLon] = [centerLat, centerLon];
-          // Combined popup using same overlap logic at the centroid
-          const hits = polygons.filter(
+          const hits = polygonsRef.current.filter(
             (q) => q.geometry && pointInPolygon(cLon, cLat, q.geometry),
           );
           const list = hits.length ? hits : [match];
@@ -128,29 +139,60 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
       },
     }));
 
-    // Ensure tooltip pane sits above other overlays
+    // Ensure tooltip pane sits above other overlays, and wire up the
+    // popup-open/close bookkeeping once per map.
     useEffect(() => {
       const pane = map.getPane("tooltipPane");
       const popupPane = map.getPane("popupPane");
       if (pane) pane.style.zIndex = "1000";
       if (popupPane) popupPane.style.zIndex = "1001";
+
+      const onOpen = () => {
+        popupOpenRef.current = true;
+        tooltipsRef.current.forEach((t, id) => {
+          if (map.hasLayer(t)) map.removeLayer(t);
+          openTooltipsRef.current.delete(id);
+        });
+      };
+      const onClose = () => {
+        popupOpenRef.current = false;
+        activePopupIdRef.current = null;
+      };
+      map.on("popupopen", onOpen);
+      map.on("popupclose", onClose);
+      return () => {
+        map.off("popupopen", onOpen);
+        map.off("popupclose", onClose);
+      };
     }, [map]);
 
-    // (Re)build polygon layers when data changes
+    // Diff polygons by id: add new layers, drop stale ones, leave matching
+    // ids untouched. Previously this effect tore down and rebuilt every
+    // layer + tooltip on each refresh, which made the map visibly "blink"
+    // and stressed mobile GPUs.
     useEffect(() => {
-      // Clear old
-      layersRef.current.forEach((l) => map.removeLayer(l));
-      tooltipsRef.current.forEach((t) => {
-        if (map.hasLayer(t)) map.removeLayer(t);
-      });
-      layersRef.current.clear();
-      tooltipsRef.current.clear();
-      openTooltipsRef.current.clear();
-      popupOpenRef.current = false;
-      activePopupIdRef.current = null;
+      const nextIds = new Set(polygons.map((p) => p.id));
 
+      // Remove layers/tooltips that are no longer present.
+      layersRef.current.forEach((layer, id) => {
+        if (!nextIds.has(id)) {
+          map.removeLayer(layer);
+          layersRef.current.delete(id);
+        }
+      });
+      tooltipsRef.current.forEach((tip, id) => {
+        if (!nextIds.has(id)) {
+          if (map.hasLayer(tip)) map.removeLayer(tip);
+          tooltipsRef.current.delete(id);
+          openTooltipsRef.current.delete(id);
+        }
+      });
+
+      // Add layers for ids we don't yet have.
       polygons.forEach((p) => {
         if (!p.geometry) return;
+        if (layersRef.current.has(p.id)) return;
+
         const color = p.color ?? getWarningColor(p);
         const latlngs: L.LatLngExpression[] | L.LatLngExpression[][] =
           p.geometry.type === "Polygon"
@@ -174,7 +216,7 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
         // so overlapping/intersecting warnings are all visible at once.
         layer.on("click", (e: L.LeafletMouseEvent) => {
           const { lat, lng } = e.latlng;
-          const hits = polygons.filter(
+          const hits = polygonsRef.current.filter(
             (q) => q.geometry && pointInPolygon(lng, lat, q.geometry),
           );
           const list = hits.length ? hits : [p];
@@ -193,31 +235,26 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
           L.DomEvent.stopPropagation(e);
         });
 
-        map.on("popupopen", () => {
-          popupOpenRef.current = true;
-          tooltipsRef.current.forEach((t, id) => {
-            if (map.hasLayer(t)) map.removeLayer(t);
-            openTooltipsRef.current.delete(id);
-          });
-        });
-        map.on("popupclose", () => {
-          popupOpenRef.current = false;
-          activePopupIdRef.current = null;
-        });
-
         layersRef.current.set(p.id, layer);
 
-        const tip = L.tooltip({
-          permanent: true,
-          direction: "top",
-          offset: [0, -8],
-          className: "warning-tooltip",
-          opacity: 0.95,
-          interactive: false,
-        }).setContent(buildTooltipHtml(p));
-        tooltipsRef.current.set(p.id, tip);
+        // Permanent tooltips drive the hover stack. Touch-only devices
+        // can't hover, so don't build them there.
+        if (!IS_TOUCH_ONLY) {
+          const tip = L.tooltip({
+            permanent: true,
+            direction: "top",
+            offset: [0, -8],
+            className: "warning-tooltip",
+            opacity: 0.95,
+            interactive: false,
+          }).setContent(buildTooltipHtml(p));
+          tooltipsRef.current.set(p.id, tip);
+        }
       });
+    }, [polygons, map]);
 
+    // Cleanup-on-unmount: drop every layer + tooltip we own.
+    useEffect(() => {
       return () => {
         layersRef.current.forEach((l) => map.removeLayer(l));
         tooltipsRef.current.forEach((t) => {
@@ -227,21 +264,23 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
         tooltipsRef.current.clear();
         openTooltipsRef.current.clear();
       };
-    }, [polygons, map]);
+    }, [map]);
 
-    // Hover handling: show tooltips for every polygon under the cursor
+    // Hover handling: show tooltips for every polygon under the cursor.
+    // Skipped entirely on touch-only devices.
     useEffect(() => {
+      if (IS_TOUCH_ONLY) return;
+
       const onMove = (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
         const hits = new Set<string>();
         if (!popupOpenRef.current) {
-          polygons.forEach((p) => {
+          polygonsRef.current.forEach((p) => {
             if (p.geometry && pointInPolygon(lng, lat, p.geometry)) {
               hits.add(p.id);
             }
           });
         }
-        // Close tooltips no longer hovered
         openTooltipsRef.current.forEach((id) => {
           if (!hits.has(id)) {
             const t = tooltipsRef.current.get(id);
@@ -249,7 +288,6 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
             openTooltipsRef.current.delete(id);
           }
         });
-        // Open/move tooltips for current hits, stacking them vertically
         let offsetY = -8;
         hits.forEach((id) => {
           const t = tooltipsRef.current.get(id);
@@ -259,7 +297,6 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
           if (!map.hasLayer(t)) {
             t.addTo(map);
           } else {
-            // Force reposition with new offset
             t.setLatLng(e.latlng);
           }
           openTooltipsRef.current.add(id);
@@ -281,7 +318,7 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
         map.off("mousemove", onMove);
         map.off("mouseout", onOut);
       };
-    }, [polygons, map]);
+    }, [map]);
 
     return null;
   },

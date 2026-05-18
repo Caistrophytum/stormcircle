@@ -178,14 +178,35 @@ async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
   return resolved;
 }
 
+/** Run async jobs with a bounded concurrency. Preserves output order. */
+async function runWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  const workers = new Array(Math.min(limit, items.length)).fill(0).map(async () => {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 /**
  * Resolve an alert's `affectedZones` URLs into a single MultiPolygon by
  * fetching each zone (with caching) and concatenating their polygon rings.
+ * Fetches are concurrency-limited so a national alerts day doesn't open
+ * dozens of parallel api.weather.gov requests that compete with map tiles.
  */
 async function resolveZonesGeometry(
   zoneUrls: string[],
 ): Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> {
-  const geoms = await Promise.all(zoneUrls.map((u) => fetchZoneGeometry(u)));
+  const geoms = await runWithConcurrency(zoneUrls, 4, (u) => fetchZoneGeometry(u));
   const polys: number[][][][] = [];
   for (const g of geoms) {
     if (!g) continue;
@@ -289,7 +310,19 @@ export function useWarningPolygons(): WarningPolygonsData {
       }
     }
 
-    void load();
+    // Defer the initial alerts query so the radar tiles and basemap get
+    // the first network/CPU slot. Falls back to a 500ms timeout in
+    // browsers without requestIdleCallback (Safari).
+    const ric: (cb: () => void) => number =
+      (window as any).requestIdleCallback
+        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 1500 })
+        : (cb) => window.setTimeout(cb, 500);
+    const cic: (id: number) => void =
+      (window as any).cancelIdleCallback
+        ? (id) => (window as any).cancelIdleCallback(id)
+        : (id) => window.clearTimeout(id);
+    const idleId = ric(() => { void load(); });
+
     // Unique channel name per mount — see useAlerts.ts for the full rationale.
     const channelName = `active_alerts_live_${Math.random().toString(36).slice(2)}_${Date.now()}`;
     const channel = supabase
@@ -299,7 +332,11 @@ export function useWarningPolygons(): WarningPolygonsData {
         () => { void load(); })
       .subscribe();
 
-    return () => { cancelled = true; void supabase.removeChannel(channel); };
+    return () => {
+      cancelled = true;
+      cic(idleId);
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   return data;

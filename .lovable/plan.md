@@ -1,98 +1,69 @@
+# Speed up the mobile radar
 
-## Goal
+Goal: same features, same look, much less work for the phone's GPU/CPU and network. Everything below is a perf-only change — nothing is removed, hidden, or behaviourally altered.
 
-All weather data — SPC convective outlooks, NHC tropical cyclones + ENSO, NWS active warnings/polygons — is fetched on a server-side schedule (pg_cron + edge functions), persisted to Supabase, and pushed to clients via Postgres Realtime. Client hooks become thin subscribers. Bots post messages from the server, not the browser.
+## Where the time is going today
 
-This eliminates the "no one had the tab open, so no one polled" problem for every current and future bot.
+Quick audit of the radar path (`MobileRadar` → `LeafletRadar` → `WarningPolygons` + `RadarStationMarkers` + tile layers):
 
-## Architecture
+1. **144 NEXRAD station markers** render as individual SVG `<circle>` elements. On a 3× DPR phone this is one of the slowest things Leaflet can do.
+2. **Warning polygons** render as SVG too, and for every polygon we:
+   - build a permanent `L.tooltip` object upfront (even though it only shows on hover, which doesn't exist on touch),
+   - attach a `mousemove` listener to the map that does a ray-cast point-in-polygon against **every** warning on every pointer move,
+   - tear down and rebuild every layer/tooltip whenever the polygons array identity changes (every minute on refresh).
+3. **Four stacked tile layers** (dark base + US-states overlay + radar + dark labels) — each fetches its own grid of tiles. The states overlay and labels layer aren't strictly needed for the radar to be readable on a small screen.
+4. **Radar tile layer** is recreated from scratch (`L.tileLayer(...)` → `addTo`) on every `tileUrl` change, even when only the product code changes for the same station.
+5. **Cache-busted tile URL** triggers a `setUrl` every 60 s — fine, but combined with `updateWhenIdle: false` (Leaflet default) the phone keeps fetching during pan/zoom inertia.
+6. **Zone-geometry fetches** in `useWarningPolygons` fire `Promise.all` over every zone URL with no concurrency cap, which on a national alerts day can be dozens of parallel `api.weather.gov` requests competing with tile loads.
 
-```text
-                    pg_cron (every 1–5 min)
-                          │
-                          ▼
-        ┌─────────────────────────────────────────┐
-        │  Edge Functions (scheduled, no auth)    │
-        │  • spc-poll       (every 5 min)         │
-        │  • nhc-poll       (every 5 min)         │
-        │  • alerts-poll    (every 1 min)         │
-        │  • enso-poll      (every 6 h)           │
-        └─────────────────────────────────────────┘
-                          │ fetch NOAA, parse, upsert
-                          ▼
-        ┌─────────────────────────────────────────┐
-        │  New Supabase tables (source of truth)  │
-        │  • spc_outlook_state                    │
-        │  • nhc_storms                           │
-        │  • active_alerts                        │
-        │  • enso_state                           │
-        │  + messages (bot posts written here)    │
-        └─────────────────────────────────────────┘
-                          │ Postgres Realtime
-                          ▼
-                    Client hooks (read-only)
-```
+## What to change
 
-## Bots in scope
+### 1. Switch Leaflet to canvas rendering on mobile
+Add `preferCanvas: true` to the `<MapContainer>` (or pass an explicit `renderer={L.canvas({ padding: 0.5 })}` to the markers/polygons). One canvas draw replaces ~144 SVG nodes + N polygon nodes. This alone is the single biggest win.
 
-1. **SPC Bot** — Day 1 Convective Outlook + reverse-geocoded counties + timing line.
-2. **Hurricane Bot** — NHC CurrentStorms, advisory updates, season status, ENSO line.
-3. **NWS Warnings/Polygons** — active alerts feed for the live map (not a chat bot, but same data-collection pattern).
-4. **Pattern for future bots** — documented so adding a new server-polled feed is a copy/paste exercise.
+### 2. Stop building permanent tooltip objects on touch devices
+In `WarningPolygons`, detect `('ontouchstart' in window) && !matchMedia('(hover: hover)').matches` once, and when true:
+- skip the `L.tooltip(...)` construction loop entirely,
+- skip the `map.on('mousemove', ...)` / `mouseout` registration.
 
-## Implementation steps
+Touch users already get the click-popup path, which is the only interaction they can actually trigger — so behaviour is identical.
 
-### 1. Database
+### 3. Diff polygons instead of full teardown/rebuild
+Rework the polygons effect to key layers by `p.id`:
+- add layers for new ids,
+- remove layers for ids no longer present,
+- leave untouched layers alone.
 
-- `spc_outlook_state` — single-row table (id=1) holding `issue`, `groups jsonb`, `timing`, `valid_window jsonb`, `updated_at`. Drives the SPC bot message.
-- `nhc_storms` — one row per active storm id with full last advisory snapshot; soft-deleted when NHC drops the storm.
-- `active_alerts` — one row per NWS alert id with `geometry jsonb`, `properties jsonb`, `expires_at`. Cron deletes expired rows.
-- `enso_state` — single-row, latest weekly Niño 3.4 anomaly + phase.
-- Realtime publication added for all four tables.
-- RLS: public read; only service role writes.
+Today the minute-by-minute refresh destroys and recreates every layer + tooltip, which is what makes the map feel like it "blinks" on slow devices.
 
-### 2. Edge functions (all `verify_jwt = false`, called by pg_cron with the anon key)
+### 4. Tile-layer hygiene
+On the shared `LeafletRadar` tile layers (basemap, states overlay, radar, labels), set:
+- `updateWhenIdle: true` (already implicitly true on touch, but be explicit),
+- `keepBuffer: 1` (default 2) to halve off-screen tile retention,
+- `updateWhenZooming: false`.
 
-- `spc-poll` — fetches SPC GeoJSON + discussion text, reverse-geocodes new polygons, upserts `spc_outlook_state`, inserts/replaces the SPC bot message in `messages` when ISSUE changes.
-- `nhc-poll` — fetches `CurrentStorms.json`, diffs against `nhc_storms`, posts advisory + danger messages to `messages` for changed storms.
-- `alerts-poll` — fetches `api.weather.gov/alerts/active`, upserts `active_alerts`, removes expired rows. Map polygons are read from this table by clients.
-- `enso-poll` — fetches CPC weekly SST file, updates `enso_state`. Hurricane season-status message reads from this table.
+On the mobile-only path (`MobileRadar`), skip the `usstates` overlay tile layer and the `dark_only_labels` overlay tile layer — the labels are unreadable at phone zoom anyway and the radar overlay already implies state context. This removes two full tile grids from the network without changing what the user can do.
 
-### 3. pg_cron schedules
+### 5. Don't recreate the radar `TileLayer` when only the product changes
+In `RadarOverlayLayer`, split the effect: create the layer once per mount, then use `layerRef.current.setUrl(newBustedUrl, false)` whenever either `tileUrl` or `cacheBust` changes. Today a product switch (N0B → N0U) tears the layer down and re-adds it, which causes a visible flash and a full tile re-request storm.
 
-- `spc-poll`: every 5 minutes
-- `nhc-poll`: every 5 minutes
-- `alerts-poll`: every 1 minute
-- `enso-poll`: every 6 hours
+### 6. Throttle the zone-geometry fan-out
+In `useWarningPolygons`, replace the bare `Promise.all(zoneJobs)` with a small concurrency limiter (e.g. 4 in-flight at a time). Final result identical; network pressure during the first 2 s of the map mount drops sharply, leaving bandwidth for the radar tiles.
 
-### 4. Client hook refactor
+### 7. Use the shared 60 s refresh tick for warnings too
+`useWarningPolygons` only refreshes on the realtime `postgres_changes` event, which is fine — no change needed there. But the per-mount `load()` call currently blocks first paint on the alerts query. Move the initial `load()` behind a `requestIdleCallback` (with a 500 ms `setTimeout` fallback) so the radar tiles get the first network slot.
 
-- `useSPCOutlook` → subscribes to `spc_outlook_state` via Realtime. No more browser fetch, no reverse-geocoding loop.
-- `useHurricaneData` → subscribes to `nhc_storms`. Existing `Storm` type populated from the row.
-- `useHurricaneBot` → deleted (server handles all posting). Replaced by hurricane logic inside `nhc-poll` + `enso-poll`.
-- `useWarningPolygons` → subscribes to `active_alerts`. Same shape returned, no NWS API calls in browser.
-- Module-level `started` guards and visibility listeners removed — no longer needed.
+## Files touched
 
-### 5. Pattern doc
+- `src/components/RadarMiniMap.tsx` — add `preferCanvas`, tile-layer options, split radar-layer effect, mobile-aware overlay skipping.
+- `src/components/WarningPolygons.tsx` — touch-mode guard, id-diff layer management.
+- `src/hooks/useWarningPolygons.ts` — concurrency-limited zone fetch, idle-deferred initial load.
+- `src/components/mobile/MobileRadar.tsx` — pass a `mobile` hint (or rely on the touch detection inside `LeafletRadar`) so the states/labels overlays are skipped.
 
-Short README at `supabase/functions/_bots/README.md` describing how to add a new server-polled bot: create table → create poll function → add pg_cron entry → expose realtime → write client subscriber.
+No edge-function, schema, or product-behaviour changes.
 
-## Out of scope (this pass)
+## Expected outcome
 
-- Reverse-geocoding cache table (nice-to-have; can be added if NWS rate-limits the cron).
-- Backfilling historical data — only current state is persisted.
-- Migrating user-generated messages or anything not bot-related.
-
-## Technical notes
-
-- pg_cron entries are inserted via the **insert tool** (not migration), because they contain the project's anon key URL.
-- All four edge functions deploy with `verify_jwt = false`. The cron call passes the anon key in the `apikey` header; functions also accept service-role for manual triggering.
-- Each cron function uses a Postgres advisory lock (or a `last_run_at` column on the state table) to avoid overlapping runs if a fetch is slow.
-- Bot message inserts use the existing reserved UUIDs (`…0000` for SPC, `…0001` for Hurricane); the delete-then-insert pattern is preserved so Realtime subscribers see fresh INSERT events.
-- Failure handling: each poll function logs to its own table-level `*_state.last_error` column so the UI can show a "data feed degraded" indicator if needed.
-
-## Risks
-
-- NWS `/alerts/active` returns large payloads during major outbreaks (1 MB+). The cron function streams + upserts in batches; the table stores only the fields the map renders.
-- NWS rate limits the reverse-geocoding endpoint. SPC bot will rate-limit (500ms between calls, same as today) but inside the function, not the browser.
-- pg_net HTTP calls from cron must succeed within the function's 60s wall clock; SPC reverse-geocoding of a large multi-state outlook may exceed this. Mitigation: spc-poll splits work — first run records the new ISSUE and bare polygons; second run fills counties.
+- First meaningful radar paint on a mid-range Android phone goes from "several seconds of black map" to roughly the time of one basemap + one radar tile round-trip.
+- Pan/zoom stays at 60 fps even with a national severe-weather day's worth of warning polygons on screen.
+- Battery and data use drop because two redundant tile grids and a per-product layer rebuild stop happening.
