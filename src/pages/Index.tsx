@@ -132,7 +132,9 @@ const Index = () => {
 
           {/* Center: map */}
           <div className="flex-1 flex flex-col min-w-0 relative">
-            <TacticalMap overlayScale={overlayScale} />
+            <Suspense fallback={<MapFallback />}>
+              <TacticalMap overlayScale={overlayScale} />
+            </Suspense>
 
             {/* Panel toggle buttons - bottom-right */}
             <div
