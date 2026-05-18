@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle } from "lucide-react";
+import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler } from "lucide-react";
 import { useSelectedCity } from "@/contexts/CityContext";
 import { useCurrentWeather } from "@/hooks/useCurrentWeather";
 import {
   useUnitSystem,
+  toggleUnitSystem,
   displayTemp,
   displayPressure,
 } from "@/hooks/useUnitSystem";
@@ -103,6 +104,17 @@ const StatusBar = () => {
         >
           <HelpCircle className="size-3" />
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider">FAQ</span>
+        </button>
+        <button
+          onClick={toggleUnitSystem}
+          aria-label="Toggle metric / imperial units"
+          title={`Switch to ${unitSystem === "metric" ? "imperial" : "metric"}`}
+          className="flex items-center gap-1.5 px-2 py-1 border border-neon-blue/25 bg-neon-blue/5 text-neon-blue rounded-sm hover:bg-neon-blue/10 hover:border-neon-blue/50 transition-colors"
+        >
+          <Ruler className="size-3" />
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
+            {unitSystem === "metric" ? "SI" : "US"}
+          </span>
         </button>
         <div className="flex flex-col">
           <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">
