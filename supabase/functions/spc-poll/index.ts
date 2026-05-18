@@ -209,21 +209,32 @@ function synthesizeSentence(
   const topStates = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([s]) => s);
   const region = joinList(topStates);
 
-  // Time window: prefer a Z-range from the discussion sentence, fall back
-  // to the official VALID window.
+  // Time window: prefer a natural-language phrase pulled from the SPC
+  // discussion ("this afternoon and evening", "overnight", etc.), since that
+  // matches how SPC actually communicates timing and is much friendlier than
+  // a raw Z-range. Fall back to a Z→period mapping derived from the official
+  // VALID window only when no natural phrase is found.
   let expectedTime: string | null = null;
-  if (timing) {
-    const range = timing.match(/\b(\d{1,2})-(\d{1,2})Z\b/);
-    if (range) expectedTime = `${toUtc24(range[1])}–${toUtc24(range[2])}`;
-    else {
-      const single = timing.match(/\b(\d{1,2})Z\b/);
-      if (single) expectedTime = toUtc24(single[1]);
-    }
+  const naturalSource = `${discussion ?? ""} ${timing ?? ""}`.toLowerCase();
+  const NATURAL_PHRASES = [
+    "this morning and afternoon", "this afternoon and evening",
+    "this evening and overnight", "late tonight and tomorrow morning",
+    "tonight and tomorrow morning", "this afternoon", "this evening",
+    "tonight", "overnight", "tomorrow morning", "tomorrow afternoon",
+    "late afternoon and evening", "late afternoon", "early morning hours",
+    "morning hours", "afternoon hours", "evening hours",
+  ];
+  for (const p of NATURAL_PHRASES) {
+    if (naturalSource.includes(p)) { expectedTime = p; break; }
   }
   if (!expectedTime && validWindow) {
-    expectedTime = `${toUtc24(validWindow.startZ)}–${toUtc24(validWindow.endZ)}`;
+    // Map the VALID Z-range to a coarse natural phrase. SPC Day 1 is always
+    // 12Z–12Z (≈ 6am–6am CT), so the meaningful signal is which portion of
+    // that period the discussion focuses on. Without that signal we say
+    // "today and tonight" rather than emit unfamiliar Z times to users.
+    expectedTime = "today and tonight";
   }
-  const time = expectedTime ? `from ${expectedTime}` : null;
+  const time = expectedTime ? expectedTime : null;
 
   // Per-hazard area + intensity extraction from the hazard-focused discussion
   // text. We prefer the discussion paragraphs and fall back to the timing
