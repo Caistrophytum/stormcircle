@@ -77,7 +77,7 @@ const BadgeChip = ({ badge }: { badge: string }) => {
 
 const subjectSchema = z.enum(["General Feedback", "Bug Report", "Feature Request", "Other"]);
 
-const AccountCenter = () => {
+const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}) => {
   const navigate = useNavigate();
   const { user, profile, loading, signOut, refreshProfile } = useAuth();
 
