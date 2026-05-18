@@ -553,20 +553,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Robust session bootstrap. We swallow "refresh_token_not_found" /
-    // network errors and treat them as "signed out" so `loading` resolves
-    // immediately instead of hanging the UI.
+    // Robust session bootstrap. Resolve `authLoading` AS SOON AS we know
+    // whether a user exists — the profile row arrives in the background so
+    // the StatusBar / role-gated UI stops blocking on a separate round-trip.
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         if (!mounted) return;
         const existing = session?.user ?? null;
         setUser(existing);
+        setAuthLoading(false);
         if (existing) {
-          void fetchProfile(existing.id).finally(() => {
-            if (mounted) setAuthLoading(false);
-          });
-        } else {
-          setAuthLoading(false);
+          void fetchProfile(existing.id);
         }
       })
       .catch((err) => {
@@ -645,30 +642,54 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    void fetchReports();
+    // Defer the first LSR fetch until the browser is idle — keeps it out
+    // of the critical path so basemap / alerts get the first network slots.
+    const ric: (cb: () => void) => number =
+      (window as any).requestIdleCallback
+        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 2000 })
+        : (cb) => window.setTimeout(cb, 500);
+    const idleId = ric(() => { void fetchReports(); });
     const id = setInterval(fetchReports, LSR_REFRESH_MS);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      if ((window as any).cancelIdleCallback) (window as any).cancelIdleCallback(idleId);
+      else clearTimeout(idleId);
+    };
   }, []);
 
-  // -------- online count --------
+  // -------- online count (deferred until idle) --------
   useEffect(() => {
-    const channel = supabase.channel("online-users", {
-      config: { presence: { key: crypto.randomUUID() } },
-    });
-    const update = () => {
-      const state = channel.presenceState();
-      setOnlineCount(Object.keys(state).length);
-    };
-    channel
-      .on("presence", { event: "sync" }, update)
-      .on("presence", { event: "join" }, update)
-      .on("presence", { event: "leave" }, update)
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await channel.track({ online_at: new Date().toISOString() });
-        }
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    const start = () => {
+      channel = supabase.channel("online-users", {
+        config: { presence: { key: crypto.randomUUID() } },
       });
-    return () => { void supabase.removeChannel(channel); };
+      const update = () => {
+        if (!channel) return;
+        const state = channel.presenceState();
+        setOnlineCount(Object.keys(state).length);
+      };
+      channel
+        .on("presence", { event: "sync" }, update)
+        .on("presence", { event: "join" }, update)
+        .on("presence", { event: "leave" }, update)
+        .subscribe(async (status) => {
+          if (status === "SUBSCRIBED" && channel) {
+            await channel.track({ online_at: new Date().toISOString() });
+          }
+        });
+    };
+    const ric: (cb: () => void) => number =
+      (window as any).requestIdleCallback
+        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 3000 })
+        : (cb) => window.setTimeout(cb, 1000);
+    const idleId = ric(start);
+    return () => {
+      if ((window as any).cancelIdleCallback) (window as any).cancelIdleCallback(idleId);
+      else clearTimeout(idleId);
+      if (channel) void supabase.removeChannel(channel);
+    };
   }, []);
 
   const value = useMemo<DataContextValue>(() => ({
