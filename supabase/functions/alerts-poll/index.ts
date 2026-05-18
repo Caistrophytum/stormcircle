@@ -11,6 +11,38 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const NWS_URL = "https://api.weather.gov/alerts/active?status=actual";
 const UA = "StormCircle/1.0 (bot@stormcircle.net)";
 
+function extractWatchNumber(event: string | null | undefined, parameters: Record<string, any>, headline: string | null | undefined): string | null {
+  if (event !== "Tornado Watch" && event !== "Severe Thunderstorm Watch") return null;
+  const vtec = Array.isArray(parameters?.VTEC) ? parameters.VTEC.join(" ") : String(parameters?.VTEC ?? "");
+  const vtecMatch = vtec.match(/\.(?:TO|SV)\.A\.(\d{4})\./i);
+  if (vtecMatch) return vtecMatch[1];
+
+  const headlineMatch = String(headline ?? "").match(/\bwatch\s+(\d{1,4})\b/i);
+  if (!headlineMatch) return null;
+  return headlineMatch[1].padStart(4, "0");
+}
+
+async function fetchWatchEnrichment(watchNumber: string): Promise<{ spcWatchTitle?: string; spcPds?: string }> {
+  try {
+    const res = await fetch(`https://www.spc.noaa.gov/products/watch/ww${watchNumber}.html`, {
+      headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml" },
+    });
+    if (!res.ok) return {};
+
+    const html = await res.text();
+    const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+    const title = titleMatch?.[1]?.trim();
+    const pds = /\bparticularly dangerous situation\b|\bpds\b/i.test(title ?? html);
+
+    return {
+      ...(title ? { spcWatchTitle: title } : {}),
+      ...(pds ? { spcPds: "PDS" } : {}),
+    };
+  } catch {
+    return {};
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
@@ -33,11 +65,24 @@ Deno.serve(async (req) => {
     }
     const nowIso = new Date().toISOString();
 
+    const uniqueWatchNumbers = Array.from(new Set(features
+      .map((f) => {
+        const p = f?.properties ?? {};
+        return extractWatchNumber(p.event ?? null, p.parameters ?? {}, p.headline ?? null);
+      })
+      .filter((n): n is string => Boolean(n))));
+    const watchEnrichment = new Map<string, { spcWatchTitle?: string; spcPds?: string }>();
+    await Promise.all(uniqueWatchNumbers.map(async (watchNumber) => {
+      watchEnrichment.set(watchNumber, await fetchWatchEnrichment(watchNumber));
+    }));
+
     const rows = features.map((f) => {
       const p = f.properties ?? {};
       const id = String(p.id ?? f.id);
       const geom = f.geometry && (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon")
         ? f.geometry : null;
+      const watchNumber = extractWatchNumber(p.event ?? null, p.parameters ?? {}, p.headline ?? null);
+      const enrich = watchNumber ? watchEnrichment.get(watchNumber) : undefined;
       return {
         alert_id: id,
         event: p.event ?? null,
@@ -58,7 +103,11 @@ Deno.serve(async (req) => {
         properties: {
           description: p.description ?? "",
           headline: p.headline ?? "",
-          parameters: p.parameters ?? {},
+          parameters: {
+            ...(p.parameters ?? {}),
+            ...(watchNumber ? { spcWatchNumber: watchNumber } : {}),
+            ...(enrich ?? {}),
+          },
           affectedZones: Array.isArray(p.affectedZones) ? p.affectedZones : [],
         },
         updated_at: nowIso,
