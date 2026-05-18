@@ -250,7 +250,7 @@ async function runWithConcurrency<T, R>(
 async function resolveZonesGeometry(
   zoneUrls: string[],
 ): Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> {
-  const geoms = await runWithConcurrency(zoneUrls, 4, (u) => fetchZoneGeometry(u));
+  const geoms = await runWithConcurrency(zoneUrls, 8, (u) => fetchZoneGeometry(u));
   const polys: number[][][][] = [];
   for (const g of geoms) {
     if (!g) continue;
