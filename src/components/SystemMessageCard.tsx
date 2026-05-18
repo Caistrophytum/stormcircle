@@ -258,22 +258,6 @@ export function SystemMessageCard({
     if (!payload) return null;
     if (payload.summary) return payload.summary;
 
-    const TIER_ORDER = ["MRGL", "SLGT", "ENH", "MDT", "HIGH"] as const;
-    const TIER_NAMES: Record<string, string> = {
-      MRGL: "Marginal risk", SLGT: "Slight risk", ENH: "Enhanced risk",
-      MDT: "Moderate risk", HIGH: "High risk",
-    };
-    const TIER_SHORT: Record<string, string> = {
-      HIGH: "High", MDT: "Moderate", ENH: "Enhanced", SLGT: "Slight", MRGL: "Marginal",
-    };
-    const presentTiers = [...new Set(payload.groups.map((g) => g.label))]
-      .filter((t) => TIER_ORDER.includes(t as any))
-      .sort((a, b) => TIER_ORDER.indexOf(b as any) - TIER_ORDER.indexOf(a as any));
-    const tierPhrase =
-      presentTiers.length === 0 ? "Severe weather"
-        : presentTiers.length === 1 ? TIER_NAMES[presentTiers[0]] ?? "Severe risk"
-        : `${presentTiers.map((t) => TIER_SHORT[t]).join(" → ")} risks`;
-
     const joinList = (arr: string[]) =>
       arr.length === 0 ? null
         : arr.length === 1 ? arr[0]
@@ -299,11 +283,14 @@ export function SystemMessageCard({
     });
     const hazardSentence = joinList(hazardPhrases);
 
-    const head = region ? `${tierPhrase} across ${region}` : tierPhrase;
+    // Lead with region + time, then enumerate hazards. Risk tier names are
+    // already shown in the dropdowns below, so we don't repeat them here.
+    const head = region ? `Severe weather across ${region}` : "Severe weather expected";
     const headWithTime = time ? `${head} ${time}` : head;
     const tail = hazardSentence ? `, with ${hazardSentence}.` : ".";
     return `${headWithTime}${tail}`;
   })();
+
 
   return (
     <div
