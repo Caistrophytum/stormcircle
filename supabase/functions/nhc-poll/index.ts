@@ -193,6 +193,15 @@ Deno.serve(async (req) => {
       await postBot(supabase, body);
     }
 
+    // Housekeeping: prevent bot messages from stacking up indefinitely.
+    // Delete hurricane bot messages older than 14 days (keeps recent history,
+    // current status repost is always fresh).
+    const cutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("messages")
+      .delete()
+      .eq("user_id", HURRICANE_BOT_ID)
+      .lt("created_at", cutoff);
+
     return new Response(JSON.stringify({ ok: true, storms: storms.length }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
