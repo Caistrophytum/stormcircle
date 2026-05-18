@@ -104,6 +104,12 @@ const IS_TOUCH_ONLY =
   "ontouchstart" in window &&
   !(window.matchMedia?.("(hover: hover)").matches ?? false);
 
+/** Dedicated Leaflet pane for warning polygons. Sits above the radar tile
+ *  pane (zIndex 650) so polygons are never occluded by radar imagery, and
+ *  hosts a canvas renderer so all polygons paint as one canvas op. */
+const WARNINGS_PANE = "warnings-pane";
+const WARNINGS_PANE_Z = 655;
+
 const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
   ({ polygons }, ref) => {
     const map = useMap();
@@ -112,6 +118,7 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
     const openTooltipsRef = useRef<Set<string>>(new Set());
     const popupOpenRef = useRef(false);
     const activePopupIdRef = useRef<string | null>(null);
+    const rendererRef = useRef<L.Canvas | null>(null);
     // Keep latest polygons accessible to event handlers without re-binding.
     const polygonsRef = useRef<WarningPolygon[]>(polygons);
     useEffect(() => { polygonsRef.current = polygons; }, [polygons]);
@@ -139,12 +146,21 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
       },
     }));
 
-    // Ensure tooltip pane sits above other overlays, and wire up the
-    // popup-open/close bookkeeping once per map.
+    // Set up the dedicated warnings pane + canvas renderer once per map,
+    // plus tooltip/popup pane stacking and popupopen/close bookkeeping.
     useEffect(() => {
-      const pane = map.getPane("tooltipPane");
+      if (!map.getPane(WARNINGS_PANE)) {
+        const pane = map.createPane(WARNINGS_PANE);
+        pane.style.zIndex = String(WARNINGS_PANE_Z);
+        pane.style.pointerEvents = "auto";
+      }
+      if (!rendererRef.current) {
+        rendererRef.current = L.canvas({ pane: WARNINGS_PANE, padding: 0.5 });
+      }
+
+      const tooltipPane = map.getPane("tooltipPane");
       const popupPane = map.getPane("popupPane");
-      if (pane) pane.style.zIndex = "1000";
+      if (tooltipPane) tooltipPane.style.zIndex = "1000";
       if (popupPane) popupPane.style.zIndex = "1001";
 
       const onOpen = () => {
