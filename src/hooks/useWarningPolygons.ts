@@ -56,6 +56,8 @@ function buildHaystack(properties: any): string {
     params.tornadoDamageThreatTag ?? "",
     params.thunderstormDamageThreatTag ?? "",
     params.flashFloodDamageThreatTag ?? "",
+    params.spcWatchTitle ?? "",
+    params.spcPds ?? "",
     Array.isArray(params.tornadoDetection) ? params.tornadoDetection.join(" ") : (params.tornadoDetection ?? ""),
   ];
   return parts.join(" ").toLowerCase();
