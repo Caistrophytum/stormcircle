@@ -46,17 +46,27 @@ function rankWarning(p: WarningPolygon): number | null {
   const ev = p.event;
   const text = `${p.description} ${p.headline}`.toLowerCase();
   const pds = /particularly dangerous situation|\bpds\b/.test(text);
+
+  // Warnings (active hazard)
   if (ev === "Tornado Warning") {
-    if (text.includes("tornado emergency")) return 8;
-    if (pds) return 7;
-    return 6;
+    if (text.includes("tornado emergency")) return 10;
+    if (pds) return 9;
+    return 8;
   }
   if (ev === "Flash Flood Warning") {
-    if (text.includes("flash flood emergency")) return 5;
-    return 2;
+    if (text.includes("flash flood emergency")) return 7;
+    return 3;
   }
-  if (ev === "Severe Thunderstorm Warning") return pds ? 4 : 3;
-  if (ev.endsWith("Warning")) return 1;
+  if (ev === "Severe Thunderstorm Warning") return pds ? 6 : 4;
+  if (ev.endsWith("Warning")) return 2;
+
+  // Watches (conditions favorable) — always rank below the matching Warning,
+  // but PDS Watches outrank generic Warnings since SPC reserves them for
+  // exceptionally dangerous setups.
+  if (ev === "Tornado Watch") return pds ? 5 : 1;
+  if (ev === "Severe Thunderstorm Watch") return pds ? 5 : 1;
+  if (ev === "Flash Flood Watch") return 1;
+
   return null;
 }
 

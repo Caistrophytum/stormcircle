@@ -94,14 +94,18 @@ export function getWarningColor(properties: any): string {
 
 export function getWarningTags(properties: any): string[] {
   const tags: string[] = [];
-  const desc = (properties.description ?? "").toLowerCase();
+  // Use the full haystack (description + headline + NWSheadline + params)
+  // so SPC tags on Watches — e.g. "PDS Tornado Watch" which lives in the
+  // headline/parameters rather than the description — are picked up too.
+  const haystack = buildHaystack(properties);
 
-  if (desc.includes("particularly dangerous situation")) tags.push("PDS");
-  if (desc.includes("tornado emergency")) tags.push("TORNADO EMERGENCY");
-  if (desc.includes("flash flood emergency")) tags.push("FLASH FLOOD EMERGENCY");
+  if (hasPDS(haystack)) tags.push("PDS");
+  if (haystack.includes("tornado emergency")) tags.push("TORNADO EMERGENCY");
+  if (haystack.includes("flash flood emergency")) tags.push("FLASH FLOOD EMERGENCY");
   if (properties.certainty === "Observed") tags.push("OBSERVED");
-  if (desc.includes("considerable")) tags.push("CONSIDERABLE");
-  if (desc.includes("catastrophic")) tags.push("CATASTROPHIC");
+  if (haystack.includes("considerable")) tags.push("CONSIDERABLE");
+  if (haystack.includes("catastrophic")) tags.push("CATASTROPHIC");
+  if (haystack.includes("destructive")) tags.push("DESTRUCTIVE");
 
   return tags;
 }
