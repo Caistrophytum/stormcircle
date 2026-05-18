@@ -226,6 +226,8 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
           weight: 2,
           opacity: 1,
           fillOpacity: 0,
+          pane: WARNINGS_PANE,
+          renderer: rendererRef.current ?? undefined,
         }).addTo(map);
 
         // Click: open a combined popup containing every polygon at that point
