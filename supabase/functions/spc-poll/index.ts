@@ -8,8 +8,15 @@ const SPC_GEOJSON =
   "https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/SPC_wx_outlks/MapServer/1/query?where=1%3D1&outFields=LABEL,LABEL2,ISSUE,EXPIRE&returnGeometry=true&f=geojson";
 const SPC_TXT = "https://www.spc.noaa.gov/products/outlook/day1otlk.txt";
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
-const MAX_SAMPLES_PER_POLYGON = 4;
-const REVERSE_GEOCODE_DELAY_MS = 150;
+// Per-polygon reverse-geocode cap. SPC risk polygons routinely span dozens
+// of counties across multiple states, so a tiny cap (we used to use 4) is
+// misleading — the bot would claim "Enhanced risk across 4 counties" for an
+// area covering several states. We sample densely and let the dedupe step
+// trim duplicates. Large outbreaks may push us close to the 60s wall clock;
+// `samplesForPolygon` scales further down for tiny marginal polygons.
+const MAX_SAMPLES_PER_POLYGON = 40;
+const MIN_SAMPLES_PER_POLYGON = 8;
+const REVERSE_GEOCODE_DELAY_MS = 120;
 const UA = "StormCircle/1.0 (bot@stormcircle.net)";
 
 const RISK_LABELS: Record<string, string> = {
