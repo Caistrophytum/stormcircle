@@ -61,18 +61,32 @@ function bbox(g: Geom): [number, number, number, number] {
   else for (const p of g.coordinates as number[][][][]) visit(p);
   return [minX, minY, maxX, maxY];
 }
-function samplePoints(g: Geom): [number, number][] {
+// Scale samples to the polygon's bbox area (in square degrees). ~1 sample
+// per 4 deg² (~roughly per 250km × 250km region) keeps small marginal
+// polygons cheap while giving large multi-state Enhanced/Moderate risks the
+// resolution they deserve.
+function samplesForPolygon(g: Geom): number {
   const [minX, minY, maxX, maxY] = bbox(g);
-  const grid = Math.max(3, Math.ceil(Math.sqrt(MAX_SAMPLES_PER_POLYGON * 2)));
+  const areaSqDeg = Math.max(0, (maxX - minX) * (maxY - minY));
+  const target = Math.round(areaSqDeg / 4);
+  return Math.max(MIN_SAMPLES_PER_POLYGON, Math.min(MAX_SAMPLES_PER_POLYGON, target));
+}
+
+function samplePoints(g: Geom): [number, number][] {
+  const target = samplesForPolygon(g);
+  const [minX, minY, maxX, maxY] = bbox(g);
+  // Oversample candidates (4× target) so after the point-in-polygon test we
+  // still have enough valid interior points to hit the target.
+  const grid = Math.max(4, Math.ceil(Math.sqrt(target * 4)));
   const out: [number, number][] = [];
   for (let i = 0; i < grid; i++) for (let j = 0; j < grid; j++) {
     const x = minX + ((maxX - minX) * (i + 0.5)) / grid;
     const y = minY + ((maxY - minY) * (j + 0.5)) / grid;
     if (pointInGeom([x, y], g)) out.push([x, y]);
   }
-  if (out.length > MAX_SAMPLES_PER_POLYGON) {
-    const step = out.length / MAX_SAMPLES_PER_POLYGON;
-    return Array.from({ length: MAX_SAMPLES_PER_POLYGON }, (_, k) => out[Math.floor(k * step)]);
+  if (out.length > target) {
+    const step = out.length / target;
+    return Array.from({ length: target }, (_, k) => out[Math.floor(k * step)]);
   }
   return out;
 }
