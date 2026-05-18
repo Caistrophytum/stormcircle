@@ -190,13 +190,23 @@ export function SystemMessageCard({
   };
 
   const expectedTime = (() => {
-    if (visibleTiming) {
-      const range = visibleTiming.match(/\b(\d{1,2})-(\d{1,2})Z\b/);
-      if (range) return `${toUtc24(range[1])}–${toUtc24(range[2])}`;
-      const single = visibleTiming.match(/\b(\d{1,2})Z\b/);
-      if (single) return toUtc24(single[1]);
+    // Prefer a natural phrase ("this afternoon and evening", "overnight",
+    // etc.) pulled from the discussion / timing text. Z-times are unfamiliar
+    // to most readers, so we only fall back to a coarse "today and tonight"
+    // when no natural cue is present.
+    const naturalSource = `${visibleDiscussion ?? ""} ${visibleTiming ?? ""}`.toLowerCase();
+    const NATURAL_PHRASES = [
+      "this morning and afternoon", "this afternoon and evening",
+      "this evening and overnight", "late tonight and tomorrow morning",
+      "tonight and tomorrow morning", "this afternoon", "this evening",
+      "tonight", "overnight", "tomorrow morning", "tomorrow afternoon",
+      "late afternoon and evening", "late afternoon", "early morning hours",
+      "morning hours", "afternoon hours", "evening hours",
+    ];
+    for (const p of NATURAL_PHRASES) {
+      if (naturalSource.includes(p)) return p;
     }
-    if (visibleValidWindow) return `${toUtc24(visibleValidWindow.startZ)}–${toUtc24(visibleValidWindow.endZ)}`;
+    if (visibleValidWindow) return "today and tonight";
     return null;
   })();
 
@@ -265,7 +275,7 @@ export function SystemMessageCard({
         : `${arr.slice(0, -1).join(", ")}, and ${arr[arr.length - 1]}`;
 
     const region = joinList(topStates);
-    const time = expectedTime ? `from ${expectedTime}` : null;
+    const time = expectedTime ?? null;
 
     // Per-hazard phrases — e.g. "significant tornadoes across TX, OK",
     // "scattered hail", "damaging winds across the Ohio Valley".
