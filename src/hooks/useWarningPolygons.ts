@@ -334,6 +334,18 @@ export function useWarningPolygons(): WarningPolygonsData {
           }
         }
 
+        if (cancelled) return;
+        // Paint inline polygons immediately — most warnings have inline
+        // geometry, and we shouldn't make them wait on slow api.weather.gov
+        // zone fetches. Zone-based polys stream in next.
+        setData({
+          polygons: inline,
+          loading: zoneJobs.length > 0,
+          error: null,
+          lastUpdated: new Date(),
+        });
+        if (zoneJobs.length === 0) return;
+
         const zonePolys = (await Promise.all(zoneJobs)).filter((p): p is WarningPolygon => p !== null);
         if (cancelled) return;
         setData({
