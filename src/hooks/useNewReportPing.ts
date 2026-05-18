@@ -16,7 +16,7 @@ export function useNewReportPing(): number {
 
   useEffect(() => {
     const channel = supabase
-      .channel("new-report-ping")
+      .channel(`new-report-ping_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages" },

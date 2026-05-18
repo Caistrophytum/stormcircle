@@ -105,7 +105,7 @@ function useSPCBotMessage() {
     };
     void load();
     const ch = supabase
-      .channel("mobile-spc-bot")
+      .channel(`mobile-spc-bot_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "messages", filter: `user_id=eq.${BOT_USER_ID}` },
@@ -148,7 +148,7 @@ function useHurricaneBotMessage() {
     };
     void load();
     const ch = supabase
-      .channel("mobile-hurricane-bot")
+      .channel(`mobile-hurricane-bot_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "messages", filter: `user_id=eq.${HURRICANE_BOT_ID}` },
@@ -189,7 +189,7 @@ function useRecentChatMessages(limit = 30) {
     };
     void load();
     const ch = supabase
-      .channel("mobile-main-chat")
+      .channel(`mobile-main-chat_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => void load())
       .subscribe();
     return () => {

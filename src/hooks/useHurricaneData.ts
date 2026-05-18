@@ -129,7 +129,7 @@ export function useHurricaneData(): HurricaneData {
     void load();
 
     const channel = supabase
-      .channel("nhc_storms_live")
+      .channel(`nhc_storms_live_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "nhc_storms" },
         () => { void load(); })

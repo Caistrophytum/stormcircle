@@ -218,8 +218,12 @@ export default function CitizenReports() {
 
   // ── Realtime: messages + approvals ────────────────────────────────────
   useEffect(() => {
+    // Unique channel name per mount — reusing a static name can leave a
+    // previously-subscribed channel alive across remounts (StrictMode, fast
+    // nav), making the next .on() throw "cannot add postgres_changes callbacks
+    // after subscribe()" and blank the React tree.
     const channel = supabase
-      .channel("citizen-reports")
+      .channel(`citizen-reports_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         setMessages((prev) => {
           const next = payload.new as Message;
