@@ -229,8 +229,13 @@ export function useAlerts(): AlertsData {
     }
 
     void load();
+    // Unique channel name per mount — reusing a name across remounts (StrictMode,
+    // fast nav) can leave the prior channel already-subscribed, which makes the
+    // next `.on()` throw "cannot add postgres_changes callbacks ... after subscribe()"
+    // and blank the entire React tree.
+    const channelName = `active_alerts_alerts_hook_${Math.random().toString(36).slice(2)}_${Date.now()}`;
     const channel = supabase
-      .channel("active_alerts_alerts_hook")
+      .channel(channelName)
       .on("postgres_changes",
         { event: "*", schema: "public", table: "active_alerts" },
         () => { void load(); })
