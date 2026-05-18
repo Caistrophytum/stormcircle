@@ -65,11 +65,18 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
   // lockstep with warnings, current conditions, and other 1-min sources.
   const cacheBust = useRefreshTick();
   const layerRef = useRef<L.TileLayer | null>(null);
+  // Keep latest onTileRequest in a ref so we never re-create the tile layer
+  // just because the parent passes a new function identity.
+  const onTileRequestRef = useRef(onTileRequest);
+  useEffect(() => { onTileRequestRef.current = onTileRequest; }, [onTileRequest]);
 
-  // Create the layer once per tileUrl change.
+  // Create the radar layer ONCE per mount. Subsequent tileUrl / cacheBust
+  // changes (e.g. switching product N0B -> N0U, or the 60s refresh tick)
+  // are pushed via setUrl so Leaflet doesn't tear down and re-add the layer,
+  // which previously caused a visible flash + full tile re-fetch storm on
+  // every product change.
   useEffect(() => {
     if (!tileUrl) return;
-
     const bustedUrl = tileUrl + (tileUrl.includes("?") ? "&" : "?") + "_t=" + cacheBust;
 
     const radarLayer = L.tileLayer(bustedUrl, {
@@ -80,11 +87,14 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
       maxZoom: 20,
       zIndex: 650,
       attribution: "IEM NEXRAD / Iowa State",
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      keepBuffer: 1,
     });
 
     radarLayer.on("tileloadstart", (e: L.TileEvent) => {
       const src = (e.tile as HTMLImageElement).src;
-      onTileRequest?.(src);
+      onTileRequestRef.current?.(src);
     });
     radarLayer.on("tileerror", (e: L.TileErrorEvent) => {
       console.error("[Radar] tile error:", (e.tile as HTMLImageElement).src);
@@ -98,16 +108,17 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
       map.removeLayer(radarLayer);
       layerRef.current = null;
     };
-    // Intentionally exclude cacheBust — it's handled by the next effect via setUrl.
+    // Intentionally only depend on `map`. tileUrl/cacheBust updates flow
+    // through the setUrl effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, tileUrl, onTileRequest]);
+  }, [map]);
 
-  // Cache-bust without recreating the layer (avoids a full tile re-fetch storm).
+  // Push tileUrl + cacheBust changes via setUrl without recreating the layer.
   useEffect(() => {
     if (!layerRef.current || !tileUrl) return;
     const bustedUrl = tileUrl + (tileUrl.includes("?") ? "&" : "?") + "_t=" + cacheBust;
     layerRef.current.setUrl(bustedUrl, false);
-  }, [cacheBust, tileUrl, layerRef]);
+  }, [cacheBust, tileUrl]);
 
   return null;
 });
