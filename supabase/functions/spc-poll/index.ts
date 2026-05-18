@@ -8,8 +8,15 @@ const SPC_GEOJSON =
   "https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/SPC_wx_outlks/MapServer/1/query?where=1%3D1&outFields=LABEL,LABEL2,ISSUE,EXPIRE&returnGeometry=true&f=geojson";
 const SPC_TXT = "https://www.spc.noaa.gov/products/outlook/day1otlk.txt";
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
-const MAX_SAMPLES_PER_POLYGON = 4;
-const REVERSE_GEOCODE_DELAY_MS = 150;
+// Per-polygon reverse-geocode cap. SPC risk polygons routinely span dozens
+// of counties across multiple states, so a tiny cap (we used to use 4) is
+// misleading — the bot would claim "Enhanced risk across 4 counties" for an
+// area covering several states. We sample densely and let the dedupe step
+// trim duplicates. Large outbreaks may push us close to the 60s wall clock;
+// `samplesForPolygon` scales further down for tiny marginal polygons.
+const MAX_SAMPLES_PER_POLYGON = 40;
+const MIN_SAMPLES_PER_POLYGON = 8;
+const REVERSE_GEOCODE_DELAY_MS = 120;
 const UA = "StormCircle/1.0 (bot@stormcircle.net)";
 
 const RISK_LABELS: Record<string, string> = {
@@ -54,18 +61,32 @@ function bbox(g: Geom): [number, number, number, number] {
   else for (const p of g.coordinates as number[][][][]) visit(p);
   return [minX, minY, maxX, maxY];
 }
-function samplePoints(g: Geom): [number, number][] {
+// Scale samples to the polygon's bbox area (in square degrees). ~1 sample
+// per 4 deg² (~roughly per 250km × 250km region) keeps small marginal
+// polygons cheap while giving large multi-state Enhanced/Moderate risks the
+// resolution they deserve.
+function samplesForPolygon(g: Geom): number {
   const [minX, minY, maxX, maxY] = bbox(g);
-  const grid = Math.max(3, Math.ceil(Math.sqrt(MAX_SAMPLES_PER_POLYGON * 2)));
+  const areaSqDeg = Math.max(0, (maxX - minX) * (maxY - minY));
+  const target = Math.round(areaSqDeg / 4);
+  return Math.max(MIN_SAMPLES_PER_POLYGON, Math.min(MAX_SAMPLES_PER_POLYGON, target));
+}
+
+function samplePoints(g: Geom): [number, number][] {
+  const target = samplesForPolygon(g);
+  const [minX, minY, maxX, maxY] = bbox(g);
+  // Oversample candidates (4× target) so after the point-in-polygon test we
+  // still have enough valid interior points to hit the target.
+  const grid = Math.max(4, Math.ceil(Math.sqrt(target * 4)));
   const out: [number, number][] = [];
   for (let i = 0; i < grid; i++) for (let j = 0; j < grid; j++) {
     const x = minX + ((maxX - minX) * (i + 0.5)) / grid;
     const y = minY + ((maxY - minY) * (j + 0.5)) / grid;
     if (pointInGeom([x, y], g)) out.push([x, y]);
   }
-  if (out.length > MAX_SAMPLES_PER_POLYGON) {
-    const step = out.length / MAX_SAMPLES_PER_POLYGON;
-    return Array.from({ length: MAX_SAMPLES_PER_POLYGON }, (_, k) => out[Math.floor(k * step)]);
+  if (out.length > target) {
+    const step = out.length / target;
+    return Array.from({ length: target }, (_, k) => out[Math.floor(k * step)]);
   }
   return out;
 }
