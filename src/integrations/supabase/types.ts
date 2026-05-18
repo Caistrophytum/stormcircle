@@ -23,6 +23,7 @@ export type Database = {
           ends: string | null
           event: string | null
           expires_at: string | null
+          first_seen_at: string
           geometry: Json | null
           headline: string | null
           message_type: string | null
@@ -42,6 +43,7 @@ export type Database = {
           ends?: string | null
           event?: string | null
           expires_at?: string | null
+          first_seen_at?: string
           geometry?: Json | null
           headline?: string | null
           message_type?: string | null
@@ -61,6 +63,7 @@ export type Database = {
           ends?: string | null
           event?: string | null
           expires_at?: string | null
+          first_seen_at?: string
           geometry?: Json | null
           headline?: string | null
           message_type?: string | null
