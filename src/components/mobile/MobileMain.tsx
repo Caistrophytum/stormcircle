@@ -367,7 +367,7 @@ export default function MobileMain() {
     for (const p of warningPolygons.polygons) {
       const r = rankWarning(p);
       if (r === null || r < bestRank) continue;
-      const d = nearestVertexKm(coords, p.geometry);
+      const d = nearestPolygonKm(coords, p.geometry);
       if (r > bestRank || d < bestDist) {
         bestRank = r;
         bestDist = d;
