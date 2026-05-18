@@ -666,14 +666,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           }
         });
     };
-    const ric: (cb: () => void) => number =
-      (window as any).requestIdleCallback
-        ? (cb) => (window as any).requestIdleCallback(cb, { timeout: 3000 })
-        : (cb) => window.setTimeout(cb, 1000);
-    const idleId = ric(start);
+    // Stagger presence ~1200ms after mount so it lands after alerts + LSR.
+    const startId = window.setTimeout(start, 1200);
     return () => {
-      if ((window as any).cancelIdleCallback) (window as any).cancelIdleCallback(idleId);
-      else clearTimeout(idleId);
+      clearTimeout(startId);
       if (channel) void supabase.removeChannel(channel);
     };
   }, []);
