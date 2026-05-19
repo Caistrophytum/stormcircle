@@ -1,19 +1,9 @@
 /**
- * useSPCOutlook — formerly polled SPC client-side. Now a no-op: the
- * `spc-poll` edge function fetches the outlook on a 5-minute pg_cron schedule
- * and writes the SPC Bot message directly. Clients receive it via the
- * existing messages Realtime subscription.
- *
- * Kept as an export so the call site in pages/Index.tsx remains a thin
- * "mount data-bots" hook. Add additional client-side wiring here later if
- * we ever need it.
+ * SPC outlook polling lives server-side in the `spc-poll` edge function.
+ * Only the loading-flag hook remains for the small "fetching outlook" UI cue.
  */
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-
-export function useSPCOutlook(): void {
-  // intentional no-op
-}
 
 /**
  * Loading flag derived from the server-side `spc_outlook_state` row.
