@@ -324,7 +324,7 @@ const RadarMiniMap = ({
               station={selectedStation}
               tileUrl={tileUrl}
               interactive={false}
-              onTileRequest={setLastTileUrl}
+              onTileRequest={noopTileRequest}
               selectedStation={selectedStation}
               onStationMarkerSelect={onStationMarkerSelect}
               setSelectedProduct={setSelectedProduct}
@@ -395,7 +395,7 @@ const RadarMiniMap = ({
         </div>
 
         <div className="flex-1 relative bg-background/60 rounded-sm overflow-hidden">
-          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={setLastTileUrl} warningsRef={warningsRef} selectedStation={selectedStation} onStationMarkerSelect={onStationMarkerSelect} setSelectedProduct={setSelectedProduct} />
+          <LeafletRadar station={selectedStation} tileUrl={tileUrl} interactive onTileRequest={noopTileRequest} warningsRef={warningsRef} selectedStation={selectedStation} onStationMarkerSelect={onStationMarkerSelect} setSelectedProduct={setSelectedProduct} />
         </div>
       </div>
     </div>
