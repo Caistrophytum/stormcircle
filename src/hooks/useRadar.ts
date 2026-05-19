@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { RadarStation } from "@/config/radarStations";
 import { findNearestStation } from "@/lib/nearestStation";
 import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/CityContext";
-import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { searchGeocode } from "@/lib/openMeteo";
 
 export type ProductCode = "N0B" | "N0U" | "N0S" | "N0Z" | "NET";
 
@@ -64,13 +64,8 @@ export function useRadar() {
     // station.name is "City, ST" — strip the state suffix for geocoding.
     const cityName = station.name.split(",")[0].trim();
     try {
-      const url =
-        `https://geocoding-api.open-meteo.com/v1/search` +
-        `?name=${encodeURIComponent(cityName)}&count=1&language=en&format=json&countryCode=US`;
-      const res = await fetchWithTimeout(url);
-      if (!res.ok) throw new Error(`Geocoding ${res.status}`);
-      const json = await res.json();
-      const hit = json?.results?.[0];
+      const results = await searchGeocode(cityName, 1);
+      const hit = results[0];
       if (hit) {
         setCtxCity({ name: hit.name, lat: hit.latitude, lon: hit.longitude });
         return;
