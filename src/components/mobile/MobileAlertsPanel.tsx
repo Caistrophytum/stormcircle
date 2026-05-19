@@ -20,6 +20,7 @@ import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useAlerts, type Alert, type Severity, type AlertKind } from "@/hooks/useAlerts";
 import { useLSR, getLSRColor, getSourceColor } from "@/hooks/useLSR";
+import { formatRelativeTime } from "@/lib/timeFormat";
 
 // ── Badge palettes mirrored from desktop EventInfoPanel ────────────────────
 const severityBg: Record<Severity, string> = {
@@ -61,17 +62,6 @@ const tagBg: Record<string, string> = {
   Considerable: "#d97706",
 };
 
-// Same "Xs ago / X min ago / X hr ago" formatter the desktop panel uses.
-function formatRelativeTime(date: Date, now: Date): string {
-  const diffSec = Math.max(0, Math.floor((now.getTime() - date.getTime()) / 1000));
-  if (diffSec < 5) return "just now";
-  if (diffSec < 60) return `${diffSec}s ago`;
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin} min ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr} hr ago`;
-  return `${Math.floor(diffHr / 24)} d ago`;
-}
 
 function formatLSRTime(valid: string): string {
   if (!valid) return "";
