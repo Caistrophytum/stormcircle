@@ -302,7 +302,7 @@ const RadarMiniMap = ({
   tileUrl,
   warningsRef,
 }: Props) => {
-  const [lastTileUrl, setLastTileUrl] = useState<string | null>(null);
+  const noopTileRequest = () => {};
   const [miniMap, setMiniMap] = useState<L.Map | null>(null);
   if (!expanded) {
     const circleSize = "clamp(160px, 18vw, 240px)";
