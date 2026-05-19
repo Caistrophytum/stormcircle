@@ -766,6 +766,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Expose for the watchdog to re-fire during recovery.
+    lsrFetchRef.current = () => { void fetchReports(); };
+
     // Stagger LSR ~800ms after mount: non-critical, can lag a beat.
     const startId = window.setTimeout(() => { void fetchReports(); }, 800);
     const id = setInterval(fetchReports, LSR_REFRESH_MS);
@@ -775,6 +778,53 @@ export function DataProvider({ children }: { children: ReactNode }) {
       clearTimeout(startId);
     };
   }, []);
+
+  // -------- watchdog --------
+  //
+  // Flip appReady the moment the first alerts load resolves. KEEP-LAST-GOOD
+  // means an error still counts as "ready" — we just stop showing the boot
+  // skeleton and let the existing per-section error states handle it.
+  useEffect(() => {
+    if (!alerts.loading && !appReady) setAppReady(true);
+  }, [alerts.loading, appReady]);
+
+  // Arm a 15 s watchdog while not ready. Re-arms after each recovery attempt
+  // so a still-stuck app keeps trying instead of giving up.
+  useEffect(() => {
+    if (appReady) {
+      if (watchdogRef.current) {
+        clearTimeout(watchdogRef.current);
+        watchdogRef.current = null;
+      }
+      return;
+    }
+    if (watchdogRef.current) clearTimeout(watchdogRef.current);
+    watchdogRef.current = setTimeout(() => {
+      console.warn("[StormCircle] Watchdog triggered — app appears stuck, forcing recovery");
+      setRecoveryAttempt((n) => n + 1);
+    }, 15_000);
+    return () => {
+      if (watchdogRef.current) {
+        clearTimeout(watchdogRef.current);
+        watchdogRef.current = null;
+      }
+    };
+  }, [appReady, recoveryAttempt]);
+
+  // Execute recovery: release every in-flight guard so a wedged ref can't
+  // block the next fetch, refresh the Supabase session + realtime socket,
+  // then re-fire the loaders.
+  useEffect(() => {
+    if (recoveryAttempt === 0) return;
+    console.warn(`[StormCircle] Recovery attempt #${recoveryAttempt}`);
+    alertsFetchingRef.current = false;
+    lsrFetchingRef.current = false;
+    void supabase.auth.getSession().catch(() => {});
+    try { supabase.realtime.connect(); } catch { /* already connected */ }
+    loadAlertsRef.current?.();
+    const t = setTimeout(() => lsrFetchRef.current?.(), 800);
+    return () => clearTimeout(t);
+  }, [recoveryAttempt]);
 
   // -------- online count (deferred until idle) --------
   useEffect(() => {
