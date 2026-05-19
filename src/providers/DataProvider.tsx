@@ -721,7 +721,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
 
     const fetchReports = async () => {
-      lsrFetchRef.current = () => { void fetchReports(); };
       // In-flight guard: a slow IEM response must not let the next tick
       // start a second concurrent fetch. `finally` always releases.
       if (lsrFetchingRef.current) return;
