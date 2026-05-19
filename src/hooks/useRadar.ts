@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { RadarStation } from "@/config/radarStations";
 import { findNearestStation } from "@/lib/nearestStation";
 import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/CityContext";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 
 export type ProductCode = "N0B" | "N0U" | "N0S" | "N0Z" | "NET";
 
@@ -66,7 +67,7 @@ export function useRadar() {
       const url =
         `https://geocoding-api.open-meteo.com/v1/search` +
         `?name=${encodeURIComponent(cityName)}&count=1&language=en&format=json&countryCode=US`;
-      const res = await fetch(url);
+      const res = await fetchWithTimeout(url);
       if (!res.ok) throw new Error(`Geocoding ${res.status}`);
       const json = await res.json();
       const hit = json?.results?.[0];

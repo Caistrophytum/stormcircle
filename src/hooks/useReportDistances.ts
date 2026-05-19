@@ -9,6 +9,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { StackedReport } from "@/lib/reportGrouping";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 
 const RELATIONS = [" heading towards ", " near ", " in "];
 
@@ -38,7 +39,7 @@ async function geocodePlace(label: string): Promise<{ lat: number; lon: number }
       const url =
         `https://geocoding-api.open-meteo.com/v1/search` +
         `?name=${encodeURIComponent(name)}&count=5&language=en&format=json&countryCode=US`;
-      const res = await fetch(url);
+      const res = await fetchWithTimeout(url);
       if (!res.ok) return null;
       const json = await res.json();
       const results: any[] = json?.results ?? [];

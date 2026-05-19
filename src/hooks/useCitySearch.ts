@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 
 export interface GeocodedCity {
   id: number;
@@ -39,7 +40,7 @@ export function useCitySearch(query: string): State {
         const url =
           `https://geocoding-api.open-meteo.com/v1/search` +
           `?name=${encodeURIComponent(q)}&count=8&language=en&format=json&countryCode=US`;
-        const res = await fetch(url);
+        const res = await fetchWithTimeout(url);
         if (!res.ok) throw new Error(`Geocoding ${res.status}`);
         const json = await res.json();
         if (id !== reqId.current) return;
