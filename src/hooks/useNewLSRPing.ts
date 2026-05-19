@@ -10,6 +10,7 @@
  * effects (e.g. a glow on the left menu button).
  */
 import { useEffect, useRef, useState } from "react";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 
 const LSR_URL =
   "https://mesonet.agron.iastate.edu/geojson/lsr.py?hours=2&wfo=ALL";
@@ -19,13 +20,18 @@ export function useNewLSRPing(): number {
   const [pingId, setPingId] = useState(0);
   const latestSeenRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
     async function poll() {
+      // In-flight guard: skip if previous tick is still running so a slow
+      // IEM response can't cause overlapping fetches to queue up.
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
       try {
-        const res = await fetch(LSR_URL);
+        const res = await fetchWithTimeout(LSR_URL);
         if (!res.ok) return;
         const data = await res.json();
         const features: any[] = Array.isArray(data?.features) ? data.features : [];
@@ -47,6 +53,10 @@ export function useNewLSRPing(): number {
         }
       } catch {
         /* swallow — next tick will retry */
+      } finally {
+        // Always release: a thrown/aborted fetch must not permanently
+        // lock the refresh cycle.
+        isFetchingRef.current = false;
       }
     }
 

@@ -6,7 +6,8 @@
  * Returns one of: "NONE" | "TSTM" | "MRGL" | "SLGT" | "ENH" | "MDT" | "HIGH"
  * plus a `loading` flag. Polls SPC every 5 minutes (matches useSPCOutlook).
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 
 export type SPCRiskLevel = "NONE" | "TSTM" | "MRGL" | "SLGT" | "ENH" | "MDT" | "HIGH";
 
@@ -73,7 +74,7 @@ async function geocodeCity(label: string): Promise<{ lat: number; lon: number } 
     const url =
       `https://geocoding-api.open-meteo.com/v1/search` +
       `?name=${encodeURIComponent(name)}&count=5&language=en&format=json&countryCode=US`;
-    const res = await fetch(url);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) return null;
     const json = await res.json();
     const results: any[] = json?.results ?? [];
@@ -98,6 +99,7 @@ export function useHomeCityRisk(location: string | null): {
   const [risk, setRisk] = useState<SPCRiskLevel>("NONE");
   const [loading, setLoading] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     if (!location) {
@@ -111,6 +113,9 @@ export function useHomeCityRisk(location: string | null): {
 
     async function evaluate() {
       if (cancelled) return;
+      // In-flight guard: don't overlap a previous slow SPC fetch.
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
       setLoading(true);
       try {
         if (!resolved) {
@@ -121,7 +126,7 @@ export function useHomeCityRisk(location: string | null): {
           setRisk("NONE");
           return;
         }
-        const res = await fetch(SPC_URL);
+        const res = await fetchWithTimeout(SPC_URL);
         if (!res.ok || cancelled) return;
         const geo: { features: SPCFeature[] } = await res.json();
         if (cancelled) return;
@@ -143,6 +148,8 @@ export function useHomeCityRisk(location: string | null): {
         if (!cancelled) setRisk("NONE");
       } finally {
         if (!cancelled) setLoading(false);
+        // Always release the guard so the next tick can fire.
+        isFetchingRef.current = false;
       }
     }
 

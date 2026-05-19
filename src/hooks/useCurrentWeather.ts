@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 
 export interface CurrentWeather {
   temperatureC: number | null;
@@ -29,6 +30,7 @@ export interface LatLon {
  */
 export function useCurrentWeather(location: LatLon | null): CurrentWeather {
   const [data, setData] = useState<CurrentWeather>(EMPTY);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     if (!location) {
@@ -46,13 +48,16 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
       `&timezone=UTC`;
 
     const fetchNow = async (showLoading: boolean) => {
+      // In-flight guard so slow Open-Meteo responses don't pile up.
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
       if (showLoading) {
         // First load only: show a real "loading" so the UI can render a
         // skeleton. Background refreshes silently keep the last good values.
         setData((prev) => ({ ...prev, loading: true, error: false }));
       }
       try {
-        const res = await fetch(url);
+        const res = await fetchWithTimeout(url);
         if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
         const json = await res.json();
         const c = json?.current ?? {};
@@ -71,6 +76,9 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
         // KEEP-LAST-GOOD: keep prior values; just flag the error so callers
         // can show a small badge if they want. Don't blank the UI.
         setData((prev) => ({ ...prev, loading: false, error: true }));
+      } finally {
+        // Always release: timeouts/errors must not wedge the cycle.
+        isFetchingRef.current = false;
       }
     };
 

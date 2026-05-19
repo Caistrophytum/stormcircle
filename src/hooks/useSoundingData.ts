@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 
 export interface SoundingData {
   cape: number | null;
@@ -36,6 +37,7 @@ export interface LatLon {
 
 export function useSoundingData(location: LatLon | null): SoundingData {
   const [data, setData] = useState<SoundingData>(EMPTY);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     if (!location) {
@@ -53,6 +55,9 @@ export function useSoundingData(location: LatLon | null): SoundingData {
       `&timezone=UTC`;
 
     const fetchSounding = async (showLoading: boolean) => {
+      // In-flight guard prevents overlapping requests when Open-Meteo is slow.
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
       if (showLoading) {
         // Only blank on the very first fetch. Background refreshes preserve
         // the last good sounding so the WRS panel never flashes "ERR" on
@@ -60,7 +65,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         setData((prev) => ({ ...prev, loading: true, error: false }));
       }
       try {
-        const res = await fetch(url);
+        const res = await fetchWithTimeout(url);
         if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
         const json = await res.json();
         const c = json?.current ?? {};
@@ -85,6 +90,9 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         // KEEP-LAST-GOOD: hold on to whatever we last had so the UI doesn't
         // collapse to ERR on a single fetch failure.
         setData((prev) => ({ ...prev, loading: false, error: true }));
+      } finally {
+        // Always release so a timeout/abort doesn't wedge future ticks.
+        isFetchingRef.current = false;
       }
     };
 

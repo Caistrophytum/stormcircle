@@ -35,6 +35,7 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 import type {
   Alert,
   AlertsData,
@@ -192,7 +193,7 @@ async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
 
   const promise = (async (): Promise<ZoneGeom> => {
     try {
-      const res = await fetch(zoneUrl, {
+      const res = await fetchWithTimeout(zoneUrl, {
         headers: { "User-Agent": "StormCircle/1.0", Accept: "application/geo+json" },
       });
       if (!res.ok) return null;
@@ -388,6 +389,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const loadAlertsRef = useRef<() => void>(() => {});
   const polyVersionRef = useRef(0);
   const lastRowsRef = useRef<AlertRow[]>([]);
+  const alertsFetchingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -520,9 +522,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
     async function load() {
-      await loadSummary();
-      if (polyTimer) clearTimeout(polyTimer);
-      polyTimer = setTimeout(() => { void loadPolygons(); }, 250);
+      // In-flight guard: realtime bursts + interval ticks can race when
+      // Supabase is slow. Always release in `finally` so a failure can't
+      // permanently wedge the refresh cycle.
+      if (alertsFetchingRef.current) return;
+      alertsFetchingRef.current = true;
+      try {
+        await loadSummary();
+        if (polyTimer) clearTimeout(polyTimer);
+        polyTimer = setTimeout(() => { void loadPolygons(); }, 250);
+      } finally {
+        alertsFetchingRef.current = false;
+      }
     }
     loadAlertsRef.current = load;
 
@@ -682,12 +693,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   // -------- LSR --------
+  const lsrFetchingRef = useRef(false);
   useEffect(() => {
     let cancelled = false;
 
     const fetchReports = async () => {
+      // In-flight guard: a slow IEM response must not let the next tick
+      // start a second concurrent fetch. `finally` always releases.
+      if (lsrFetchingRef.current) return;
+      lsrFetchingRef.current = true;
       try {
-        const res = await fetch(LSR_URL);
+        const res = await fetchWithTimeout(LSR_URL);
         if (!res.ok) throw new Error(`LSR fetch failed: ${res.status}`);
         const data = await res.json();
         const features: any[] = Array.isArray(data?.features) ? data.features : [];
@@ -722,6 +738,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         // KEEP-LAST-GOOD
         setLsr((p) => ({ ...p, loading: false, error: err instanceof Error ? err.message : "Failed to fetch LSRs" }));
+      } finally {
+        lsrFetchingRef.current = false;
       }
     };
 
