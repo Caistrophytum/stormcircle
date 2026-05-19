@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-05-19 11z",
+    tag: "IMPROVED",
+    title: "Backend performance",
+    body: "I think I'm done batteling with the code. It's supposed to be going smoothly now. I hope.",
+  },
+  {
     date: "2026-05-16 10z",
     tag: "NEW",
     title: "Mobile support",
