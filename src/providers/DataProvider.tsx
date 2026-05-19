@@ -340,6 +340,17 @@ interface DataContextValue {
     lastUpdated: Date | null;
   };
   onlineCount: number;
+  /**
+   * True once the first alerts load has completed (success or error).
+   * Watched by the watchdog below — if this never flips within 15 s of
+   * mount or a recovery attempt, the provider force-re-initializes.
+   */
+  appReady: boolean;
+  /**
+   * Increments every time the watchdog triggers a recovery. UI can use
+   * this to surface a visible "recovering…" hint if it lingers.
+   */
+  recoveryAttempt: number;
 }
 
 const EMPTY_ALERTS: AlertsData = {
