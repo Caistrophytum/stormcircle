@@ -8,6 +8,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { geocodeLabel } from "@/lib/openMeteo";
 
 export type SPCRiskLevel = "NONE" | "TSTM" | "MRGL" | "SLGT" | "ENH" | "MDT" | "HIGH";
 
