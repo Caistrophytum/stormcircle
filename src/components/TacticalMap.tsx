@@ -153,6 +153,22 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
   const warningPolygons = useWarningPolygons();
 
+  // ─── Recovery indicator ───────────────────────────────────────────────
+  // If the boot sequence hasn't flipped `appReady` within 10 s, show a
+  // small "recovering…" hint. The DataProvider watchdog will auto-recover
+  // at 15 s; this gives the user a 5-second heads-up that something is off
+  // instead of leaving them staring at empty panels.
+  const { appReady } = useDataContext();
+  const [loadingTooLong, setLoadingTooLong] = useState(false);
+  useEffect(() => {
+    if (appReady) {
+      setLoadingTooLong(false);
+      return;
+    }
+    const t = setTimeout(() => setLoadingTooLong(true), 10_000);
+    return () => clearTimeout(t);
+  }, [appReady]);
+
   // On first load: auto-pan radar to the station nearest the user's home city,
   // unless they've already picked a different city this session.
   const homePannedRef = useRef(false);
