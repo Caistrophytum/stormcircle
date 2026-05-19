@@ -1,36 +1,81 @@
 ## Plan
 
-### What I’d change
+Add two protections to every periodic fetcher:
+1. **In-flight guard** — skip a tick if the previous fetch is still running, always released in `finally`.
+2. **10s abort timeout** — via a shared `fetchWithTimeout(url, 10_000)` helper.
 
-1. **Split the shared startup loader into separate staged jobs**
-   - Refactor `DataProvider` so alerts summary, polygons, LSR, auth/profile bootstrap, and presence each have their own startup path.
-   - Keep the fast warning summary first, then delay heavier work (`polygons`, `LSR`, `presence`) instead of bundling everything into the first mount burst.
-   - Preserve the current silent polygon fallback behavior where late geometry appends without holding the loading state open.
+### Note on the hook list
 
-2. **Deduplicate auth/profile loading**
-   - Stop the same profile from being fetched multiple times during `getSession()` + `onAuthStateChange()`.
-   - Add a single in-flight profile fetch guard and reuse the last known profile while a refresh is happening.
-   - Prevent Account Center from blocking behind redundant profile reads when the user is already known.
+`useAlerts`, `useWarningPolygons`, `useLSR`, `useHurricaneData`, and `useSPCOutlook` are now thin selectors — the actual periodic work was consolidated. I'll apply the pattern wherever the polling actually lives, which covers everything you intended:
 
-3. **Make heavy home-screen data route-aware**
-   - Don’t force national map payloads and other home-only background jobs to compete with Account Center when the user is on `/account`.
-   - Load the expensive polygon/map data only when the main deck or radar surfaces actually need it, then resume normally when returning to `/`.
-   - Keep the main menu from rendering in a half-broken state by showing the last good shared snapshot until refreshed data arrives.
+| Original target | Where the interval really runs now |
+|---|---|
+| `useAlerts` / `useWarningPolygons` | `DataProvider` alerts + polygons loaders |
+| `useLSR` | `DataProvider` LSR loader |
+| `useHurricaneData` | server-driven (no client interval) — nothing to patch |
+| `useSPCOutlook` | server-driven; only `useSPCOutlookLoading` still polls Supabase |
 
-4. **Validate the slow paths that matter**
-   - Re-test three flows: long-open tab, entering Account Center, and returning/reloading from Account Center.
-   - Confirm the profile bootstrap drops to a single fetch, the first screen paints sooner, and the main deck no longer sits in a partially loaded state for minutes.
+Plus the other interval pollers I'll harden the same way:
+- `useNewLSRPing` (raw IEM)
+- `useHomeCityRisk` (raw open-meteo + NWS SPC)
+- `useCurrentWeather` (raw open-meteo)
+- `useSoundingData` (raw open-meteo)
+- `useRadarStationStatus` (raw NWS)
+- `useSPCOutlookLoading` (Supabase poll — guard only, timeout not applicable to supabase-js)
 
-### Why this plan
+### Shared helper
 
-- The hosted backend looks healthy right now, so this does **not** look like a backend outage.
-- The current biggest client bottlenecks are:
-  - a slow shared `active_alerts` request
-  - repeated `profiles` requests during auth bootstrap
-- The `active_alerts` table is also carrying large geometry payloads, so separating “summary data” from “map geometry” is the highest-impact frontend change.
+Add `src/lib/fetchWithTimeout.ts`:
 
-### Technical details
+```ts
+export async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = 10_000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+```
 
-- **Likely files:** `src/providers/DataProvider.tsx`, `src/pages/AccountCenter.tsx`, and any map/radar consumers that truly need polygons.
-- **Database changes:** none required for the first pass.
-- **If the alert request is still too slow after this:** follow up with a backend optimization pass for the alert payload shape, but I’d do the client-side split first because it directly fixes the Account Center experience too.
+Used everywhere instead of raw `fetch` for external endpoints (NWS, IEM, open-meteo, mapservices.weather.noaa.gov).
+
+### In-flight guard
+
+For each interval-driven hook (and the two DataProvider loaders), wrap the periodic function:
+
+```ts
+const isFetchingRef = useRef(false);
+
+async function tick() {
+  if (isFetchingRef.current) return;
+  isFetchingRef.current = true;
+  try {
+    // existing fetch + state update
+  } catch (err) {
+    console.error("…", err);
+  } finally {
+    isFetchingRef.current = false;
+  }
+}
+```
+
+`finally` always releases the lock — failed or aborted fetches don't permanently wedge the refresh cycle.
+
+### Scope notes
+
+- On-demand fetchers triggered by user input (`useCitySearch`, `useRadar`, `useReportDistances`) get `fetchWithTimeout` for safety but no interval guard (they don't poll).
+- The DataProvider alerts loader already has a debounce + cancellation flag; I'll add the in-flight guard on top so realtime bursts during a slow Supabase response don't queue extra loads.
+- Zone-geometry fallback fetches in DataProvider also get `fetchWithTimeout` since NWS occasionally stalls.
+
+### Validation
+
+After the changes I'll spot-check that:
+- Build passes.
+- A simulated slow endpoint (just by reading the code paths) cannot pile up overlapping requests.
+- The `finally` release is unconditional in every patched hook.
