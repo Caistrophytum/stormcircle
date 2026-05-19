@@ -859,8 +859,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const value = useMemo<DataContextValue>(() => ({
     alerts, polygons,
     auth: { user, profile, loading: authLoading, signOut, refreshProfile },
-    lsr, onlineCount,
-  }), [alerts, polygons, user, profile, authLoading, signOut, refreshProfile, lsr, onlineCount]);
+    lsr, onlineCount, appReady, recoveryAttempt,
+  }), [alerts, polygons, user, profile, authLoading, signOut, refreshProfile, lsr, onlineCount, appReady, recoveryAttempt]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
