@@ -324,6 +324,15 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 
       <div className="absolute inset-0 bg-background/15" />
 
+      {loadingTooLong && !appReady && (
+        <div
+          className="absolute z-50 left-1/2 -translate-x-1/2 top-3 px-3 py-1.5 rounded glass-panel pointer-events-none"
+          style={{ color: "#ff6b6b", fontSize: "10px", fontFamily: "JetBrains Mono, monospace", letterSpacing: "0.05em" }}
+        >
+          TAKING LONGER THAN USUAL — RECOVERING…
+        </div>
+      )}
+
       <div
         className="absolute z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
         style={{
