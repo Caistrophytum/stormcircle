@@ -66,30 +66,7 @@ function pointInGeometry(pt: [number, number], geom: SPCFeature["geometry"]): bo
   return false;
 }
 
-async function geocodeCity(label: string): Promise<{ lat: number; lon: number } | null> {
-  // Use the first comma-separated token as the city name for the geocoding query.
-  const [name] = label.split(",").map((s) => s.trim());
-  if (!name) return null;
-  try {
-    const url =
-      `https://geocoding-api.open-meteo.com/v1/search` +
-      `?name=${encodeURIComponent(name)}&count=5&language=en&format=json&countryCode=US`;
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const results: any[] = json?.results ?? [];
-    if (!results.length) return null;
-    // Try matching the admin1 (state) part if provided.
-    const parts = label.split(",").map((s) => s.trim().toLowerCase());
-    const state = parts[1];
-    const match =
-      (state && results.find((r) => (r.admin1 ?? "").toLowerCase() === state)) ||
-      results[0];
-    return { lat: match.latitude, lon: match.longitude };
-  } catch {
-    return null;
-  }
-}
+// Geocoding now lives in src/lib/openMeteo.ts (geocodeLabel).
 
 export function useHomeCityRisk(location: string | null): {
   risk: SPCRiskLevel;
