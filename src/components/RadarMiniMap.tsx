@@ -1,7 +1,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { forwardRef, MutableRefObject, useEffect, useRef, useState } from "react";
-import { CircleMarker, MapContainer, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, TileLayer, useMap } from "react-leaflet";
 import { Maximize2, Minimize2, Plus, Minus } from "lucide-react";
 import { RadarStation, RADAR_STATIONS } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
