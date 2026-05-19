@@ -372,24 +372,41 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [onlineCount, setOnlineCount] = useState(1);
 
   // -------- alerts/polygons loader --------
+  //
+  // Split into TWO queries to avoid the single ~3s+ request that used to
+  // block the whole page. `active_alerts.geometry` alone averages ~24KB/row
+  // across ~400 rows; pulling it on every render of the StatusBar / alerts
+  // lists made even Account Center wait minutes after the tab had been
+  // open a while.
+  //
+  // Order on each load cycle:
+  //   1. lightweight summary (NO geometry) — drives alert lists everywhere
+  //   2. geometry-only fetch — drives the map polygons, slightly staggered
+  //
+  // Route-aware: when the user is on /account, the polygon fetch is
+  // skipped entirely (Account Center never renders the map).
   const loadAlertsRef = useRef<() => void>(() => {});
   const polyVersionRef = useRef(0);
+  const lastRowsRef = useRef<AlertRow[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let polyTimer: ReturnType<typeof setTimeout> | null = null;
 
-    async function load() {
+    async function loadSummary() {
       try {
         const { data: rows, error } = await supabase
           .from("active_alerts")
-          .select("alert_id, event, severity, certainty, urgency, headline, area_desc, expires_at, first_seen_at, geometry, properties");
+          .select("alert_id, event, severity, certainty, urgency, headline, area_desc, expires_at, first_seen_at, properties");
         if (error) throw error;
         if (cancelled) return;
 
-        const rowsArr = (rows ?? []) as AlertRow[];
+        const rowsArr = ((rows ?? []) as Omit<AlertRow, "geometry">[]).map(
+          (r) => ({ ...r, geometry: null }) as AlertRow,
+        );
+        lastRowsRef.current = rowsArr;
 
-        // --- alerts derivation ---
         const cutoff = Date.now() - NEW_WINDOW_MS;
         const list: Alert[] = [];
         const newCounts = new Map<string, number>();
@@ -420,17 +437,41 @@ export function DataProvider({ children }: { children: ReactNode }) {
           mostDangerous, topHazards, newWarnings, recentAlerts,
           loading: false, error: null, lastUpdated: new Date(),
         });
+      } catch (err) {
+        if (cancelled) return;
+        const msg = err instanceof Error ? err.message : "Failed to load alerts";
+        // KEEP-LAST-GOOD: only set error, never wipe data.
+        setAlerts((p) => ({ ...p, loading: false, error: msg }));
+      }
+    }
 
-        // --- polygons derivation ---
+    async function loadPolygons() {
+      // Route-aware: Account Center never needs polygons. Skip the heavy
+      // geometry query so opening /account is as light as possible.
+      if (typeof window !== "undefined" && window.location.pathname.startsWith("/account")) {
+        return;
+      }
+      try {
+        const { data: geoRows, error } = await supabase
+          .from("active_alerts")
+          .select("alert_id, geometry");
+        if (error) throw error;
+        if (cancelled) return;
+
+        const geomById = new Map<string, any>();
+        for (const g of (geoRows ?? []) as { alert_id: string; geometry: any }[]) {
+          if (g.geometry) geomById.set(g.alert_id, g.geometry);
+        }
+
+        const rowsArr = lastRowsRef.current;
         const inline: WarningPolygon[] = [];
         const fallbackJobs: { r: AlertRow; promise: Promise<GeoJSON.Polygon | GeoJSON.MultiPolygon | null> }[] = [];
         for (const r of rowsArr) {
-          if (r.geometry) {
-            inline.push(makePolygon(r, r.geometry as any));
+          const g = geomById.get(r.alert_id);
+          if (g) {
+            inline.push(makePolygon(r, g));
             continue;
           }
-          // Server hasn't filled geometry yet — fall back to client-side
-          // zone resolution (cached) so the user still sees the polygon.
           const zones: string[] = r.properties?.affectedZones ?? [];
           if (zones.length > 0) {
             fallbackJobs.push({ r, promise: resolveZonesGeometry(zones) });
@@ -443,8 +484,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
 
         const version = ++polyVersionRef.current;
-        // NON-BLOCKING: mark loading=false immediately so the map renders
-        // with whatever geometry we have. Fallback jobs append silently.
         setPolygons({
           polygons: inline,
           loading: false,
@@ -475,12 +514,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : "Failed to load alerts";
-        // KEEP-LAST-GOOD: only set error, never wipe data or flip loading
-        // back to true after first success.
-        setAlerts((p) => ({ ...p, loading: false, error: msg }));
+        const msg = err instanceof Error ? err.message : "Failed to load polygons";
         setPolygons((p) => ({ ...p, loading: false, error: msg }));
       }
+    }
+
+    async function load() {
+      await loadSummary();
+      if (polyTimer) clearTimeout(polyTimer);
+      polyTimer = setTimeout(() => { void loadPolygons(); }, 250);
     }
     loadAlertsRef.current = load;
 
@@ -488,6 +530,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => { void load(); }, REALTIME_DEBOUNCE_MS);
     };
+
+    // Re-fetch polygons when the user navigates back from /account to the
+    // map — summary is still fresh, but geometry was intentionally skipped.
+    const onRouteChange = () => {
+      if (typeof window === "undefined") return;
+      if (!window.location.pathname.startsWith("/account")) {
+        void loadPolygons();
+      }
+    };
+    window.addEventListener("popstate", onRouteChange);
 
     // Staged startup: alerts are the core product, fire ASAP.
     const idleId = window.setTimeout(() => { void load(); }, 0);
@@ -507,29 +559,53 @@ export function DataProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       cic(idleId);
       if (debounceTimer) clearTimeout(debounceTimer);
+      if (polyTimer) clearTimeout(polyTimer);
       clearInterval(interval);
+      window.removeEventListener("popstate", onRouteChange);
       void supabase.removeChannel(channel);
     };
   }, []);
 
   // -------- auth --------
+  //
+  // Dedup guard: getSession() and onAuthStateChange("INITIAL_SESSION") both
+  // fire on mount, and previously each triggered its own profile fetch.
+  // We coalesce concurrent fetches for the same user id into one promise,
+  // and skip refetches when the user hasn't changed.
+  const profileFetchRef = useRef<{ userId: string; promise: Promise<void> } | null>(null);
+  const profileUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     let mounted = true;
 
-    async function fetchProfile(userId: string) {
-      try {
-        const { data, error } = await supabase
-          .from("profiles").select("*").eq("id", userId).maybeSingle();
-        if (!mounted) return;
-        if (error) {
-          console.error("Failed to load profile:", error);
-          // Keep previous profile rather than wiping on transient failures.
-          return;
+    async function fetchProfile(userId: string, force = false): Promise<void> {
+      // Coalesce concurrent fetches for the same user.
+      const inflight = profileFetchRef.current;
+      if (inflight && inflight.userId === userId) return inflight.promise;
+      // Skip if we already have this user's profile and aren't forcing.
+      if (!force && profileUserIdRef.current === userId) return;
+
+      const promise = (async () => {
+        try {
+          const { data, error } = await supabase
+            .from("profiles").select("*").eq("id", userId).maybeSingle();
+          if (!mounted) return;
+          if (error) {
+            console.error("Failed to load profile:", error);
+            return;
+          }
+          profileUserIdRef.current = userId;
+          setProfile(data as Profile | null);
+        } catch (err) {
+          console.error("Failed to load profile:", err);
+        } finally {
+          if (profileFetchRef.current?.userId === userId) {
+            profileFetchRef.current = null;
+          }
         }
-        setProfile(data as Profile | null);
-      } catch (err) {
-        console.error("Failed to load profile:", err);
-      }
+      })();
+      profileFetchRef.current = { userId, promise };
+      return promise;
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -538,16 +614,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setUser(next);
       if (next) {
         // Deferred to avoid the Supabase deadlock when calling supabase from
-        // inside an auth event callback.
+        // inside an auth event callback. Dedup guard above prevents the
+        // duplicate fetch caused by getSession() racing INITIAL_SESSION.
         setTimeout(() => { if (mounted) void fetchProfile(next.id); }, 0);
       } else {
+        profileUserIdRef.current = null;
         setProfile(null);
       }
     });
 
-    // Robust session bootstrap. Resolve `authLoading` AS SOON AS we know
-    // whether a user exists — the profile row arrives in the background so
-    // the StatusBar / role-gated UI stops blocking on a separate round-trip.
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         if (!mounted) return;
@@ -575,19 +650,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const signOut = useMemo(() => async () => {
     await supabase.auth.signOut();
+    profileUserIdRef.current = null;
     setUser(null);
     setProfile(null);
   }, []);
 
   const refreshProfile = useMemo(() => async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from("profiles").select("*").eq("id", user.id).maybeSingle();
-    if (error) {
-      console.error("Failed to refresh profile:", error);
-      return;
+    // Force a refetch (e.g. after LocationPicker save) but still coalesce
+    // with any in-flight read for the same user.
+    const inflight = profileFetchRef.current;
+    if (inflight && inflight.userId === user.id) {
+      await inflight.promise;
+      // Then do one more fetch to pick up the just-saved row.
     }
-    setProfile(data as Profile | null);
+    const promise = (async () => {
+      const { data, error } = await supabase
+        .from("profiles").select("*").eq("id", user.id).maybeSingle();
+      if (error) {
+        console.error("Failed to refresh profile:", error);
+        return;
+      }
+      profileUserIdRef.current = user.id;
+      setProfile(data as Profile | null);
+      if (profileFetchRef.current?.userId === user.id) {
+        profileFetchRef.current = null;
+      }
+    })();
+    profileFetchRef.current = { userId: user.id, promise };
+    await promise;
   }, [user]);
 
   // -------- LSR --------
