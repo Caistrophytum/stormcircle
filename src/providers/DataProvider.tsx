@@ -60,8 +60,7 @@ const NEW_WINDOW_MS = 5 * 60_000;
 const REALTIME_DEBOUNCE_MS = 300;
 const ALERTS_REFRESH_MS = 60_000;
 const LSR_REFRESH_MS = 60_000;
-const LSR_URL =
-  "https://mesonet.agron.iastate.edu/geojson/lsr.py?hours=2&wfo=ALL";
+import { IEM_LSR_URL as LSR_URL } from "@/lib/endpoints";
 
 const VALID_SEVERITIES: Severity[] = ["Extreme", "Severe", "Moderate", "Minor", "Unknown"];
 const VALID_CERTAINTY: Certainty[] = ["Observed", "Likely", "Possible", "Unlikely", "Unknown"];
