@@ -340,6 +340,17 @@ interface DataContextValue {
     lastUpdated: Date | null;
   };
   onlineCount: number;
+  /**
+   * True once the first alerts load has completed (success or error).
+   * Watched by the watchdog below — if this never flips within 15 s of
+   * mount or a recovery attempt, the provider force-re-initializes.
+   */
+  appReady: boolean;
+  /**
+   * Increments every time the watchdog triggers a recovery. UI can use
+   * this to surface a visible "recovering…" hint if it lingers.
+   */
+  recoveryAttempt: number;
 }
 
 const EMPTY_ALERTS: AlertsData = {
@@ -370,6 +381,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   // ===== online presence =====
   const [onlineCount, setOnlineCount] = useState(1);
+
+  // ===== global watchdog =====
+  //
+  // The absolute worst-case stuck state should be 15 s, not "forever until
+  // the user reloads". `appReady` flips true when the very first alerts
+  // load resolves (success OR error — KEEP-LAST-GOOD still counts as ready
+  // for the boot purpose). If it never flips, the watchdog increments
+  // `recoveryAttempt`, which releases every in-flight guard, reconnects
+  // realtime, and re-fires the loaders.
+  const [appReady, setAppReady] = useState(false);
+  const [recoveryAttempt, setRecoveryAttempt] = useState(0);
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lsrFetchRef = useRef<() => void>(() => {});
 
   // -------- alerts/polygons loader --------
   //
@@ -742,6 +766,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Expose for the watchdog to re-fire during recovery.
+    lsrFetchRef.current = () => { void fetchReports(); };
+
     // Stagger LSR ~800ms after mount: non-critical, can lag a beat.
     const startId = window.setTimeout(() => { void fetchReports(); }, 800);
     const id = setInterval(fetchReports, LSR_REFRESH_MS);
@@ -751,6 +778,53 @@ export function DataProvider({ children }: { children: ReactNode }) {
       clearTimeout(startId);
     };
   }, []);
+
+  // -------- watchdog --------
+  //
+  // Flip appReady the moment the first alerts load resolves. KEEP-LAST-GOOD
+  // means an error still counts as "ready" — we just stop showing the boot
+  // skeleton and let the existing per-section error states handle it.
+  useEffect(() => {
+    if (!alerts.loading && !appReady) setAppReady(true);
+  }, [alerts.loading, appReady]);
+
+  // Arm a 15 s watchdog while not ready. Re-arms after each recovery attempt
+  // so a still-stuck app keeps trying instead of giving up.
+  useEffect(() => {
+    if (appReady) {
+      if (watchdogRef.current) {
+        clearTimeout(watchdogRef.current);
+        watchdogRef.current = null;
+      }
+      return;
+    }
+    if (watchdogRef.current) clearTimeout(watchdogRef.current);
+    watchdogRef.current = setTimeout(() => {
+      console.warn("[StormCircle] Watchdog triggered — app appears stuck, forcing recovery");
+      setRecoveryAttempt((n) => n + 1);
+    }, 15_000);
+    return () => {
+      if (watchdogRef.current) {
+        clearTimeout(watchdogRef.current);
+        watchdogRef.current = null;
+      }
+    };
+  }, [appReady, recoveryAttempt]);
+
+  // Execute recovery: release every in-flight guard so a wedged ref can't
+  // block the next fetch, refresh the Supabase session + realtime socket,
+  // then re-fire the loaders.
+  useEffect(() => {
+    if (recoveryAttempt === 0) return;
+    console.warn(`[StormCircle] Recovery attempt #${recoveryAttempt}`);
+    alertsFetchingRef.current = false;
+    lsrFetchingRef.current = false;
+    void supabase.auth.getSession().catch(() => {});
+    try { supabase.realtime.connect(); } catch { /* already connected */ }
+    loadAlertsRef.current?.();
+    const t = setTimeout(() => lsrFetchRef.current?.(), 800);
+    return () => clearTimeout(t);
+  }, [recoveryAttempt]);
 
   // -------- online count (deferred until idle) --------
   useEffect(() => {
@@ -785,8 +859,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const value = useMemo<DataContextValue>(() => ({
     alerts, polygons,
     auth: { user, profile, loading: authLoading, signOut, refreshProfile },
-    lsr, onlineCount,
-  }), [alerts, polygons, user, profile, authLoading, signOut, refreshProfile, lsr, onlineCount]);
+    lsr, onlineCount, appReady, recoveryAttempt,
+  }), [alerts, polygons, user, profile, authLoading, signOut, refreshProfile, lsr, onlineCount, appReady, recoveryAttempt]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

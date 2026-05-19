@@ -9,6 +9,7 @@ import { useAlerts } from "@/hooks/useAlerts";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
+import { useDataContext } from "@/providers/DataProvider";
 import {
   useUnitSystem,
   displayTemp,
@@ -151,6 +152,22 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const { user, profile } = useAuth();
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
   const warningPolygons = useWarningPolygons();
+
+  // ─── Recovery indicator ───────────────────────────────────────────────
+  // If the boot sequence hasn't flipped `appReady` within 10 s, show a
+  // small "recovering…" hint. The DataProvider watchdog will auto-recover
+  // at 15 s; this gives the user a 5-second heads-up that something is off
+  // instead of leaving them staring at empty panels.
+  const { appReady } = useDataContext();
+  const [loadingTooLong, setLoadingTooLong] = useState(false);
+  useEffect(() => {
+    if (appReady) {
+      setLoadingTooLong(false);
+      return;
+    }
+    const t = setTimeout(() => setLoadingTooLong(true), 10_000);
+    return () => clearTimeout(t);
+  }, [appReady]);
 
   // On first load: auto-pan radar to the station nearest the user's home city,
   // unless they've already picked a different city this session.
@@ -306,6 +323,15 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       </AnimatePresence>
 
       <div className="absolute inset-0 bg-background/15" />
+
+      {loadingTooLong && !appReady && (
+        <div
+          className="absolute z-50 left-1/2 -translate-x-1/2 top-3 px-3 py-1.5 rounded glass-panel pointer-events-none"
+          style={{ color: "#ff6b6b", fontSize: "10px", fontFamily: "JetBrains Mono, monospace", letterSpacing: "0.05em" }}
+        >
+          TAKING LONGER THAN USUAL — RECOVERING…
+        </div>
+      )}
 
       <div
         className="absolute z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
