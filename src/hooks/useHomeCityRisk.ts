@@ -97,7 +97,7 @@ export function useHomeCityRisk(location: string | null): {
       setLoading(true);
       try {
         if (!resolved) {
-          resolved = await geocodeCity(location!);
+          resolved = await geocodeLabel(location!);
           if (!cancelled) setCoords(resolved);
         }
         if (!resolved || cancelled) {
