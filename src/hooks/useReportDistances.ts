@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { StackedReport } from "@/lib/reportGrouping";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { geocodeLabel } from "@/lib/openMeteo";
 
 const RELATIONS = [" heading towards ", " near ", " in "];
 
@@ -32,27 +33,7 @@ async function geocodePlace(label: string): Promise<{ lat: number; lon: number }
   const key = label.toLowerCase().trim();
   if (geocodeCache.has(key)) return geocodeCache.get(key)!;
   if (inflight.has(key)) return inflight.get(key)!;
-  const p = (async () => {
-    try {
-      const [name] = label.split(",").map((s) => s.trim());
-      if (!name) return null;
-      const url =
-        `https://geocoding-api.open-meteo.com/v1/search` +
-        `?name=${encodeURIComponent(name)}&count=5&language=en&format=json&countryCode=US`;
-      const res = await fetchWithTimeout(url);
-      if (!res.ok) return null;
-      const json = await res.json();
-      const results: any[] = json?.results ?? [];
-      if (!results.length) return null;
-      const parts = label.split(",").map((s) => s.trim().toLowerCase());
-      const state = parts[1];
-      const match =
-        (state && results.find((r) => (r.admin1 ?? "").toLowerCase() === state)) || results[0];
-      return { lat: match.latitude, lon: match.longitude };
-    } catch {
-      return null;
-    }
-  })().then((coords) => {
+  const p = geocodeLabel(label).then((coords) => {
     geocodeCache.set(key, coords);
     inflight.delete(key);
     return coords;

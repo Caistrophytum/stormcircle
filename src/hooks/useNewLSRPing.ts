@@ -11,9 +11,8 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { IEM_LSR_URL as LSR_URL } from "@/lib/endpoints";
 
-const LSR_URL =
-  "https://mesonet.agron.iastate.edu/geojson/lsr.py?hours=2&wfo=ALL";
 const REFRESH_MS = 60_000;
 
 export function useNewLSRPing(): number {

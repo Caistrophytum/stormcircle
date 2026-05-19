@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { searchGeocode } from "@/lib/openMeteo";
 
 export interface GeocodedCity {
   id: number;
@@ -37,15 +37,10 @@ export function useCitySearch(query: string): State {
     const handle = setTimeout(async () => {
       setState((s) => ({ ...s, loading: true, error: false }));
       try {
-        const url =
-          `https://geocoding-api.open-meteo.com/v1/search` +
-          `?name=${encodeURIComponent(q)}&count=8&language=en&format=json&countryCode=US`;
-        const res = await fetchWithTimeout(url);
-        if (!res.ok) throw new Error(`Geocoding ${res.status}`);
-        const json = await res.json();
+        const raw = await searchGeocode(q, 8);
         if (id !== reqId.current) return;
-        const results: GeocodedCity[] = (json?.results ?? []).map((r: any) => ({
-          id: r.id,
+        const results: GeocodedCity[] = raw.map((r) => ({
+          id: r.id as number,
           name: r.name,
           admin1: r.admin1,
           country_code: r.country_code,

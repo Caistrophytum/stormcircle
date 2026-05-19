@@ -53,6 +53,7 @@ import type {
 import { getWarningColor } from "@/hooks/useWarningPolygons";
 import type { LSRReport } from "@/hooks/useLSR";
 import type { Profile } from "@/hooks/useAuth";
+import { IEM_LSR_URL as LSR_URL } from "@/lib/endpoints";
 
 // ---------------- shared constants ----------------
 
@@ -60,8 +61,6 @@ const NEW_WINDOW_MS = 5 * 60_000;
 const REALTIME_DEBOUNCE_MS = 300;
 const ALERTS_REFRESH_MS = 60_000;
 const LSR_REFRESH_MS = 60_000;
-const LSR_URL =
-  "https://mesonet.agron.iastate.edu/geojson/lsr.py?hours=2&wfo=ALL";
 
 const VALID_SEVERITIES: Severity[] = ["Extreme", "Severe", "Moderate", "Minor", "Unknown"];
 const VALID_CERTAINTY: Certainty[] = ["Observed", "Likely", "Possible", "Unlikely", "Unknown"];
