@@ -382,6 +382,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // ===== online presence =====
   const [onlineCount, setOnlineCount] = useState(1);
 
+  // ===== global watchdog =====
+  //
+  // The absolute worst-case stuck state should be 15 s, not "forever until
+  // the user reloads". `appReady` flips true when the very first alerts
+  // load resolves (success OR error — KEEP-LAST-GOOD still counts as ready
+  // for the boot purpose). If it never flips, the watchdog increments
+  // `recoveryAttempt`, which releases every in-flight guard, reconnects
+  // realtime, and re-fires the loaders.
+  const [appReady, setAppReady] = useState(false);
+  const [recoveryAttempt, setRecoveryAttempt] = useState(0);
+  const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lsrFetchRef = useRef<() => void>(() => {});
+
   // -------- alerts/polygons loader --------
   //
   // Split into TWO queries to avoid the single ~3s+ request that used to
