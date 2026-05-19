@@ -140,7 +140,7 @@ interface Props {
 }
 
 const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
-  const { data } = useWeatherData(15000);
+  useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
   const radar = useRadar();
   const sounding = useSoundingData(
@@ -251,26 +251,6 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     return "sunny";
   }, [threatLevel]);
 
-  // Risk label derived from current WRS threat level.
-  const riskLabel = useMemo(() => {
-    if (threatLevel > 85) return "EXTREME";
-    if (threatLevel >= 61) return "HIGH";
-    if (threatLevel >= 31) return "MODERATE";
-    return "LOW";
-  }, [threatLevel]);
-
-  // Most severe local Warning/Watch matching the user's saved home city.
-  const localAlert = useMemo(() => {
-    if (!profile?.location) return null;
-    const parts = profile.location.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-    if (parts.length === 0) return null;
-    const candidates = alerts.mostDangerous.filter((a) => {
-      if (a.kind !== "Warning" && a.kind !== "Watch" && a.kind !== "Emergency") return false;
-      const area = a.areaDesc.toLowerCase();
-      return parts.some((p) => area.includes(p));
-    });
-    return candidates[0] ?? null;
-  }, [alerts.mostDangerous, profile?.location]);
 
   // Nearest most-dangerous warning polygon to the user's home city.
   const nearestDanger = useMemo(() => {

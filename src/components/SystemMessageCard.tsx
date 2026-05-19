@@ -175,19 +175,6 @@ export function SystemMessageCard({
   // parsed out of the discussion sentence, fall back to the official VALID
   // window. Places are derived from the union of risk-polygon counties (top
   // states by coverage), threats are keyword-matched from the discussion.
-  // Format a Z-time token like "12Z", "06", "0600", "00Z" into "HHZ" (24h
-  // zulu, midnight = 00, no colon, no minutes). Matches NWS shorthand the
-  // user prefers: "00Z", "13Z", "21Z".
-  const toUtc24 = (raw: string): string => {
-    const cleaned = raw.replace(/Z$/i, "");
-    let hh: string | null = null;
-    if (/^\d{4}$/.test(cleaned)) hh = cleaned.slice(0, 2);
-    else if (/^\d{1,2}$/.test(cleaned)) hh = cleaned.padStart(2, "0");
-    else if (/^\d{1,2}:\d{2}$/.test(cleaned)) hh = cleaned.split(":")[0].padStart(2, "0");
-    if (hh === null) return `${cleaned}Z`;
-    const n = parseInt(hh, 10);
-    return `${(n % 24).toString().padStart(2, "0")}Z`;
-  };
 
   const expectedTime = (() => {
     // Prefer a natural phrase ("this afternoon and evening", "overnight",

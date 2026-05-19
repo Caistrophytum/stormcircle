@@ -34,7 +34,7 @@ import type { GeocodedCity } from "@/hooks/useCitySearch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useCitySearch } from "@/hooks/useCitySearch";
-import { groupMessages, messageSignature, type RawMessage, type StackedReport } from "@/lib/reportGrouping";
+import { groupMessages, type RawMessage, type StackedReport } from "@/lib/reportGrouping";
 import { useReportDistances } from "@/hooks/useReportDistances";
 
 type SortMode = "default" | "newest" | "nearest";
@@ -105,7 +105,7 @@ export default function CitizenReports() {
   const [relation, setRelation] = useState<Relation | null>(null);
   const [placeQuery, setPlaceQuery] = useState("");
   const [placeLabel, setPlaceLabel] = useState<string | null>(null);
-  const placeTouchStartY = useRef<number | null>(null);
+  
   const { results: placeResults, loading: placeLoading } = useCitySearch(placeQuery);
 
   const spcLoading = useSPCOutlookLoading();
