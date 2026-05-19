@@ -9,6 +9,7 @@ import { useAlerts } from "@/hooks/useAlerts";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
+import { useDataContext } from "@/providers/DataProvider";
 import {
   useUnitSystem,
   displayTemp,
