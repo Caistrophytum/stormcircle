@@ -140,7 +140,7 @@ interface Props {
 }
 
 const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
-  const { data } = useWeatherData(15000);
+  useWeatherData(15000);
   const [radarExpanded, setRadarExpanded] = useState(false);
   const radar = useRadar();
   const sounding = useSoundingData(
