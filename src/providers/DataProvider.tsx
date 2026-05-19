@@ -567,23 +567,45 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // -------- auth --------
+  //
+  // Dedup guard: getSession() and onAuthStateChange("INITIAL_SESSION") both
+  // fire on mount, and previously each triggered its own profile fetch.
+  // We coalesce concurrent fetches for the same user id into one promise,
+  // and skip refetches when the user hasn't changed.
+  const profileFetchRef = useRef<{ userId: string; promise: Promise<void> } | null>(null);
+  const profileUserIdRef = useRef<string | null>(null);
+
   useEffect(() => {
     let mounted = true;
 
-    async function fetchProfile(userId: string) {
-      try {
-        const { data, error } = await supabase
-          .from("profiles").select("*").eq("id", userId).maybeSingle();
-        if (!mounted) return;
-        if (error) {
-          console.error("Failed to load profile:", error);
-          // Keep previous profile rather than wiping on transient failures.
-          return;
+    async function fetchProfile(userId: string, force = false): Promise<void> {
+      // Coalesce concurrent fetches for the same user.
+      const inflight = profileFetchRef.current;
+      if (inflight && inflight.userId === userId) return inflight.promise;
+      // Skip if we already have this user's profile and aren't forcing.
+      if (!force && profileUserIdRef.current === userId) return;
+
+      const promise = (async () => {
+        try {
+          const { data, error } = await supabase
+            .from("profiles").select("*").eq("id", userId).maybeSingle();
+          if (!mounted) return;
+          if (error) {
+            console.error("Failed to load profile:", error);
+            return;
+          }
+          profileUserIdRef.current = userId;
+          setProfile(data as Profile | null);
+        } catch (err) {
+          console.error("Failed to load profile:", err);
+        } finally {
+          if (profileFetchRef.current?.userId === userId) {
+            profileFetchRef.current = null;
+          }
         }
-        setProfile(data as Profile | null);
-      } catch (err) {
-        console.error("Failed to load profile:", err);
-      }
+      })();
+      profileFetchRef.current = { userId, promise };
+      return promise;
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -592,16 +614,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
       setUser(next);
       if (next) {
         // Deferred to avoid the Supabase deadlock when calling supabase from
-        // inside an auth event callback.
+        // inside an auth event callback. Dedup guard above prevents the
+        // duplicate fetch caused by getSession() racing INITIAL_SESSION.
         setTimeout(() => { if (mounted) void fetchProfile(next.id); }, 0);
       } else {
+        profileUserIdRef.current = null;
         setProfile(null);
       }
     });
 
-    // Robust session bootstrap. Resolve `authLoading` AS SOON AS we know
-    // whether a user exists — the profile row arrives in the background so
-    // the StatusBar / role-gated UI stops blocking on a separate round-trip.
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         if (!mounted) return;
@@ -629,19 +650,35 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const signOut = useMemo(() => async () => {
     await supabase.auth.signOut();
+    profileUserIdRef.current = null;
     setUser(null);
     setProfile(null);
   }, []);
 
   const refreshProfile = useMemo(() => async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from("profiles").select("*").eq("id", user.id).maybeSingle();
-    if (error) {
-      console.error("Failed to refresh profile:", error);
-      return;
+    // Force a refetch (e.g. after LocationPicker save) but still coalesce
+    // with any in-flight read for the same user.
+    const inflight = profileFetchRef.current;
+    if (inflight && inflight.userId === user.id) {
+      await inflight.promise;
+      // Then do one more fetch to pick up the just-saved row.
     }
-    setProfile(data as Profile | null);
+    const promise = (async () => {
+      const { data, error } = await supabase
+        .from("profiles").select("*").eq("id", user.id).maybeSingle();
+      if (error) {
+        console.error("Failed to refresh profile:", error);
+        return;
+      }
+      profileUserIdRef.current = user.id;
+      setProfile(data as Profile | null);
+      if (profileFetchRef.current?.userId === user.id) {
+        profileFetchRef.current = null;
+      }
+    })();
+    profileFetchRef.current = { userId: user.id, promise };
+    await promise;
   }, [user]);
 
   // -------- LSR --------
