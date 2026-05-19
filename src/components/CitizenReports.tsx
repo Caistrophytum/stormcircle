@@ -105,7 +105,7 @@ export default function CitizenReports() {
   const [relation, setRelation] = useState<Relation | null>(null);
   const [placeQuery, setPlaceQuery] = useState("");
   const [placeLabel, setPlaceLabel] = useState<string | null>(null);
-  const placeTouchStartY = useRef<number | null>(null);
+  
   const { results: placeResults, loading: placeLoading } = useCitySearch(placeQuery);
 
   const spcLoading = useSPCOutlookLoading();
