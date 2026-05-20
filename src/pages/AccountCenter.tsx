@@ -190,6 +190,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
    */
   const handleApplication = async (e: FormEvent) => {
     e.preventDefault();
+    if (!profile) return;
     const first = appFirst.trim();
     const last = appLast.trim();
     const email = appEmail.trim();
