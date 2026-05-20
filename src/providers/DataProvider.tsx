@@ -330,6 +330,7 @@ interface DataContextValue {
     user: User | null;
     profile: Profile | null;
     loading: boolean;
+    profileLoading: boolean;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
   };
