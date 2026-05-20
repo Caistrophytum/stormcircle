@@ -376,6 +376,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
+
 
   // ===== LSR =====
   const [lsr, setLsr] = useState(EMPTY_LSR);
