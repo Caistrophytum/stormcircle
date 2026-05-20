@@ -662,6 +662,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const next = session?.user ?? null;
       setUser(next);
       if (next) {
+        if (profileUserIdRef.current !== next.id) setProfileLoading(true);
         // Deferred to avoid the Supabase deadlock when calling supabase from
         // inside an auth event callback. Dedup guard above prevents the
         // duplicate fetch caused by getSession() racing INITIAL_SESSION.
@@ -669,6 +670,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       } else {
         profileUserIdRef.current = null;
         setProfile(null);
+        setProfileLoading(false);
       }
     });
 
@@ -680,6 +682,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setAuthLoading(false);
         if (existing) {
           void fetchProfile(existing.id);
+        } else {
+          setProfileLoading(false);
         }
       })
       .catch((err) => {
@@ -688,8 +692,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setUser(null);
           setProfile(null);
           setAuthLoading(false);
+          setProfileLoading(false);
         }
       });
+
 
     return () => {
       mounted = false;
