@@ -623,19 +623,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!force && profileUserIdRef.current === userId) return;
 
       const promise = (async () => {
+        // 5 second hard timeout — profile fetch must never hang indefinitely
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
         try {
           const { data, error } = await supabase
-            .from("profiles").select("*").eq("id", userId).maybeSingle();
+            .from("profiles")
+            .select("*")
+            .eq("id", userId)
+            .maybeSingle()
+            .abortSignal(controller.signal);
           if (!mounted) return;
           if (error) {
             console.error("Failed to load profile:", error);
+            setProfile(null);
             return;
           }
           profileUserIdRef.current = userId;
           setProfile(data as Profile | null);
         } catch (err) {
-          console.error("Failed to load profile:", err);
+          console.error("Profile fetch failed or timed out:", err);
+          if (mounted) setProfile(null);
         } finally {
+          clearTimeout(timer);
+          if (mounted) setProfileLoading(false);
           if (profileFetchRef.current?.userId === userId) {
             profileFetchRef.current = null;
           }
@@ -644,6 +655,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       profileFetchRef.current = { userId, promise };
       return promise;
     }
+
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
