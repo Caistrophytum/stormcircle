@@ -228,6 +228,7 @@ async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
       const geom = json?.geometry;
       if (geom?.type === "Polygon" || geom?.type === "MultiPolygon") {
         zoneGeomCache.set(zoneUrl, geom);
+        zoneGeomTs.set(zoneUrl, Date.now());
         scheduleLsFlush();
         return geom as ZoneGeom;
       }
@@ -240,7 +241,10 @@ async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
   zoneGeomCache.set(zoneUrl, promise);
   const resolved = await promise;
   zoneGeomCache.set(zoneUrl, resolved);
-  if (resolved) scheduleLsFlush();
+  if (resolved) {
+    zoneGeomTs.set(zoneUrl, Date.now());
+    scheduleLsFlush();
+  }
   return resolved;
 }
 
