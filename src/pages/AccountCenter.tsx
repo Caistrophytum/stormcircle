@@ -597,7 +597,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
             value={deleteConfirmText}
             onChange={(e) => setDeleteConfirmText(e.target.value)}
             className={inputClass}
-            placeholder={profile.username}
+            placeholder={profile?.username ?? ""}
             autoFocus
           />
           <AlertDialogFooter>
