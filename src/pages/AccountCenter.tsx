@@ -255,6 +255,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
    */
   const handleContact = async (e: FormEvent) => {
     e.preventDefault();
+    if (!profile) return;
     const message = contactMessage.trim();
     if (message.length < 5) return toast.error("Message is too short");
     if (message.length > 500) return toast.error("Message is too long (max 500)");
