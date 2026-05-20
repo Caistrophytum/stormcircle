@@ -153,14 +153,29 @@ function dangerScore(a: Alert): number {
 
 type ZoneGeom = GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
 const zoneGeomCache = new Map<string, ZoneGeom | Promise<ZoneGeom>>();
+const zoneGeomTs = new Map<string, number>();
 const LS_KEY = "nws-zone-geom-v1";
+const LS_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const LS_MAX_BYTES = 200_000;
+const LS_MAX_ENTRIES = 100;
+
+// Stored format: [key, geom, timestamp]. Legacy [key, geom] entries are
+// treated as just-fetched on load so we don't drop the warm cache on upgrade.
+type LsEntry = [string, ZoneGeom, number] | [string, ZoneGeom];
 
 try {
   if (typeof window !== "undefined" && window.localStorage) {
     const raw = window.localStorage.getItem(LS_KEY);
     if (raw) {
-      const entries: [string, ZoneGeom][] = JSON.parse(raw);
-      for (const [k, v] of entries) zoneGeomCache.set(k, v);
+      const entries: LsEntry[] = JSON.parse(raw);
+      const cutoff = Date.now() - LS_TTL_MS;
+      for (const e of entries) {
+        const [k, v, ts] = e as [string, ZoneGeom, number?];
+        const stamp = typeof ts === "number" ? ts : Date.now();
+        if (stamp < cutoff) continue; // drop stale
+        zoneGeomCache.set(k, v);
+        zoneGeomTs.set(k, stamp);
+      }
     }
   }
 } catch { /* ignore */ }
@@ -172,12 +187,24 @@ function scheduleLsFlush() {
   const flush = () => {
     lsFlushScheduled = false;
     try {
-      const out: [string, ZoneGeom][] = [];
+      // Collect resolved entries with their timestamps, sort by ts ASC so
+      // we can keep the most-recently-cached at the tail.
+      const all: [string, ZoneGeom, number][] = [];
       for (const [k, v] of zoneGeomCache) {
-        if (v && !(v instanceof Promise)) out.push([k, v]);
+        if (v && !(v instanceof Promise)) {
+          all.push([k, v, zoneGeomTs.get(k) ?? 0]);
+        }
       }
-      window.localStorage.setItem(LS_KEY, JSON.stringify(out));
-    } catch { /* ignore */ }
+      all.sort((a, b) => a[2] - b[2]);
+      let out = all.length > LS_MAX_ENTRIES ? all.slice(-LS_MAX_ENTRIES) : all;
+      let serialized = JSON.stringify(out);
+      // Trim further if still over byte budget.
+      while (serialized.length > LS_MAX_BYTES && out.length > 1) {
+        out = out.slice(Math.ceil(out.length / 2));
+        serialized = JSON.stringify(out);
+      }
+      window.localStorage.setItem(LS_KEY, serialized);
+    } catch { /* ignore — quota or parse error */ }
   };
   if ((window as any).requestIdleCallback) {
     (window as any).requestIdleCallback(flush, { timeout: 2000 });
@@ -185,6 +212,7 @@ function scheduleLsFlush() {
     setTimeout(flush, 1000);
   }
 }
+
 
 async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
   const cached = zoneGeomCache.get(zoneUrl);
@@ -200,6 +228,7 @@ async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
       const geom = json?.geometry;
       if (geom?.type === "Polygon" || geom?.type === "MultiPolygon") {
         zoneGeomCache.set(zoneUrl, geom);
+        zoneGeomTs.set(zoneUrl, Date.now());
         scheduleLsFlush();
         return geom as ZoneGeom;
       }
@@ -212,7 +241,10 @@ async function fetchZoneGeometry(zoneUrl: string): Promise<ZoneGeom> {
   zoneGeomCache.set(zoneUrl, promise);
   const resolved = await promise;
   zoneGeomCache.set(zoneUrl, resolved);
-  if (resolved) scheduleLsFlush();
+  if (resolved) {
+    zoneGeomTs.set(zoneUrl, Date.now());
+    scheduleLsFlush();
+  }
   return resolved;
 }
 
@@ -622,6 +654,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Skip if we already have this user's profile and aren't forcing.
       if (!force && profileUserIdRef.current === userId) return;
 
+      if (import.meta.env.DEV) console.count("[StormCircle] profile fetch");
+
+
+
       const promise = (async () => {
         // 5 second hard timeout — profile fetch must never hang indefinitely
         const controller = new AbortController();
@@ -629,7 +665,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
           const { data, error } = await supabase
             .from("profiles")
-            .select("*")
+            .select("id,username,email,badge,meteorologist_applied,location,created_at")
             .eq("id", userId)
             .abortSignal(controller.signal)
             .maybeSingle();
@@ -721,7 +757,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     const promise = (async () => {
       const { data, error } = await supabase
-        .from("profiles").select("*").eq("id", user.id).maybeSingle();
+        .from("profiles")
+        .select("id,username,email,badge,meteorologist_applied,location,created_at")
+        .eq("id", user.id)
+        .maybeSingle();
       if (error) {
         console.error("Failed to refresh profile:", error);
         return;
