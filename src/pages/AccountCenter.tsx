@@ -590,7 +590,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
             <AlertDialogTitle className="font-mono uppercase tracking-wider">Delete account</AlertDialogTitle>
             <AlertDialogDescription className="font-mono text-xs">
               This permanently deletes your account, profile, and access. To confirm, type your username{" "}
-              <span className="text-card-foreground font-bold">{profile.username}</span> below.
+              <span className="text-card-foreground font-bold">{profile?.username ?? ""}</span> below.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <input
