@@ -331,31 +331,52 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
         <section className="glass-panel relative z-20 rounded-sm overflow-visible">
           <SectionHeader icon={UserIcon} label="Operator Profile" hint="STRATO.OPS" />
           <div className="p-5 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <div className={labelClass}>Username</div>
-                <div className="text-sm font-mono text-card-foreground mt-1">{profile.username}</div>
+            {profileLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i}>
+                    <div className={labelClass}>{["Username", "Email", "Badge"][i]}</div>
+                    <div className="mt-2 h-5 rounded-sm bg-card-foreground/5 animate-pulse" />
+                  </div>
+                ))}
               </div>
-              <div>
-                <div className={labelClass}>Email</div>
-                <div className="text-sm font-mono text-card-foreground mt-1 break-all">{profile.email}</div>
+            ) : !profile ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono text-destructive">Could not load profile.</span>
+                <button
+                  onClick={() => refreshProfile()}
+                  className="text-[10px] font-mono text-primary underline uppercase tracking-wider"
+                >
+                  Retry
+                </button>
               </div>
-              <div>
-                <div className={labelClass}>Badge</div>
-                <div className="mt-1">
-                  <BadgeChip badge={profile.badge} />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <div className={labelClass}>Username</div>
+                  <div className="text-sm font-mono text-card-foreground mt-1">{profile.username}</div>
+                </div>
+                <div>
+                  <div className={labelClass}>Email</div>
+                  <div className="text-sm font-mono text-card-foreground mt-1 break-all">{profile.email}</div>
+                </div>
+                <div>
+                  <div className={labelClass}>Badge</div>
+                  <div className="mt-1">
+                    <BadgeChip badge={profile.badge} />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-border space-y-2 md:col-span-3">
+                  <div className={labelClass}>Home City</div>
+                  <LocationPicker
+                    userId={user.id}
+                    currentLocation={profile.location}
+                    onSaved={refreshProfile}
+                  />
                 </div>
               </div>
-
-              <div className="pt-2 border-t border-border space-y-2 md:col-span-3">
-                <div className={labelClass}>Home City</div>
-                <LocationPicker
-                  userId={user.id}
-                  currentLocation={profile.location}
-                  onSaved={refreshProfile}
-                />
-              </div>
-            </div>
+            )}
 
             <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
               <button
@@ -370,7 +391,8 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
                   setDeleteConfirmText("");
                   setDeleteOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-all rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider"
+                disabled={!profile}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-all rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 className="size-3" />
                 Delete Account
@@ -378,6 +400,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
             </div>
           </div>
         </section>
+
 
         {/* SECTION 2 — Meteorologist application */}
         {(showApplication || showUnderReview) && (
