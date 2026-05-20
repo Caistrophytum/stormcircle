@@ -330,6 +330,7 @@ interface DataContextValue {
     user: User | null;
     profile: Profile | null;
     loading: boolean;
+    profileLoading: boolean;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
   };
@@ -375,6 +376,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(true);
+
 
   // ===== LSR =====
   const [lsr, setLsr] = useState(EMPTY_LSR);
@@ -620,19 +623,30 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (!force && profileUserIdRef.current === userId) return;
 
       const promise = (async () => {
+        // 5 second hard timeout — profile fetch must never hang indefinitely
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
         try {
           const { data, error } = await supabase
-            .from("profiles").select("*").eq("id", userId).maybeSingle();
+            .from("profiles")
+            .select("*")
+            .eq("id", userId)
+            .abortSignal(controller.signal)
+            .maybeSingle();
           if (!mounted) return;
           if (error) {
             console.error("Failed to load profile:", error);
+            setProfile(null);
             return;
           }
           profileUserIdRef.current = userId;
           setProfile(data as Profile | null);
         } catch (err) {
-          console.error("Failed to load profile:", err);
+          console.error("Profile fetch failed or timed out:", err);
+          if (mounted) setProfile(null);
         } finally {
+          clearTimeout(timer);
+          if (mounted) setProfileLoading(false);
           if (profileFetchRef.current?.userId === userId) {
             profileFetchRef.current = null;
           }
@@ -642,11 +656,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       return promise;
     }
 
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       const next = session?.user ?? null;
       setUser(next);
       if (next) {
+        if (profileUserIdRef.current !== next.id) setProfileLoading(true);
         // Deferred to avoid the Supabase deadlock when calling supabase from
         // inside an auth event callback. Dedup guard above prevents the
         // duplicate fetch caused by getSession() racing INITIAL_SESSION.
@@ -654,6 +670,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       } else {
         profileUserIdRef.current = null;
         setProfile(null);
+        setProfileLoading(false);
       }
     });
 
@@ -665,6 +682,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setAuthLoading(false);
         if (existing) {
           void fetchProfile(existing.id);
+        } else {
+          setProfileLoading(false);
         }
       })
       .catch((err) => {
@@ -673,8 +692,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           setUser(null);
           setProfile(null);
           setAuthLoading(false);
+          setProfileLoading(false);
         }
       });
+
 
     return () => {
       mounted = false;
@@ -858,9 +879,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<DataContextValue>(() => ({
     alerts, polygons,
-    auth: { user, profile, loading: authLoading, signOut, refreshProfile },
+    auth: { user, profile, loading: authLoading, profileLoading, signOut, refreshProfile },
     lsr, onlineCount, appReady, recoveryAttempt,
-  }), [alerts, polygons, user, profile, authLoading, signOut, refreshProfile, lsr, onlineCount, appReady, recoveryAttempt]);
+  }), [alerts, polygons, user, profile, authLoading, profileLoading, signOut, refreshProfile, lsr, onlineCount, appReady, recoveryAttempt]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

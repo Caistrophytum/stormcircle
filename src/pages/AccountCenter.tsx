@@ -79,7 +79,7 @@ const subjectSchema = z.enum(["General Feedback", "Bug Report", "Feature Request
 
 const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}) => {
   const navigate = useNavigate();
-  const { user, profile, loading, signOut, refreshProfile } = useAuth();
+  const { user, profile, loading, profileLoading, signOut, refreshProfile } = useAuth();
 
   // Redirect to /auth when not signed in
   useEffect(() => {
@@ -123,13 +123,19 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
     if (profile?.email && !appEmail) setAppEmail(profile.email);
   }, [profile, appEmail]);
 
-  if (loading || !user || !profile) {
+  // Gate only on auth loading — render page immediately once auth resolves.
+  // Profile-dependent sections handle their own loading/error state inline.
+  if (loading) {
     return (
       <main className="min-h-screen w-full bg-background flex items-center justify-center">
         <Loader2 className="size-5 animate-spin text-primary" />
       </main>
     );
   }
+
+  // Redirect fast if not logged in (the effect above also handles this).
+  if (!user) return null;
+
 
   /** Sign the user out and bounce them to the auth page. */
   const handleLogout = async () => {
@@ -148,6 +154,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
    *   4. Sign out and redirect to /auth
    */
   const handleDelete = async () => {
+    if (!profile) return;
     if (deleteConfirmText !== profile.username) {
       toast.error("Username does not match");
       return;
@@ -183,6 +190,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
    */
   const handleApplication = async (e: FormEvent) => {
     e.preventDefault();
+    if (!profile) return;
     const first = appFirst.trim();
     const last = appLast.trim();
     const email = appEmail.trim();
@@ -247,6 +255,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
    */
   const handleContact = async (e: FormEvent) => {
     e.preventDefault();
+    if (!profile) return;
     const message = contactMessage.trim();
     if (message.length < 5) return toast.error("Message is too short");
     if (message.length > 500) return toast.error("Message is too long (max 500)");
@@ -283,8 +292,9 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
     }
   };
 
-  const showApplication = profile.badge === "Citizen" && !profile.meteorologist_applied;
-  const showUnderReview = profile.badge === "Citizen" && profile.meteorologist_applied;
+  const showApplication = !!profile && profile.badge === "Citizen" && !profile.meteorologist_applied;
+  const showUnderReview = !!profile && profile.badge === "Citizen" && profile.meteorologist_applied;
+
 
   return (
     <>
@@ -321,31 +331,52 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
         <section className="glass-panel relative z-20 rounded-sm overflow-visible">
           <SectionHeader icon={UserIcon} label="Operator Profile" hint="STRATO.OPS" />
           <div className="p-5 space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <div className={labelClass}>Username</div>
-                <div className="text-sm font-mono text-card-foreground mt-1">{profile.username}</div>
+            {profileLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i}>
+                    <div className={labelClass}>{["Username", "Email", "Badge"][i]}</div>
+                    <div className="mt-2 h-5 rounded-sm bg-card-foreground/5 animate-pulse" />
+                  </div>
+                ))}
               </div>
-              <div>
-                <div className={labelClass}>Email</div>
-                <div className="text-sm font-mono text-card-foreground mt-1 break-all">{profile.email}</div>
+            ) : !profile ? (
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono text-destructive">Could not load profile.</span>
+                <button
+                  onClick={() => refreshProfile()}
+                  className="text-[10px] font-mono text-primary underline uppercase tracking-wider"
+                >
+                  Retry
+                </button>
               </div>
-              <div>
-                <div className={labelClass}>Badge</div>
-                <div className="mt-1">
-                  <BadgeChip badge={profile.badge} />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <div className={labelClass}>Username</div>
+                  <div className="text-sm font-mono text-card-foreground mt-1">{profile.username}</div>
+                </div>
+                <div>
+                  <div className={labelClass}>Email</div>
+                  <div className="text-sm font-mono text-card-foreground mt-1 break-all">{profile.email}</div>
+                </div>
+                <div>
+                  <div className={labelClass}>Badge</div>
+                  <div className="mt-1">
+                    <BadgeChip badge={profile.badge} />
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-border space-y-2 md:col-span-3">
+                  <div className={labelClass}>Home City</div>
+                  <LocationPicker
+                    userId={user.id}
+                    currentLocation={profile.location}
+                    onSaved={refreshProfile}
+                  />
                 </div>
               </div>
-
-              <div className="pt-2 border-t border-border space-y-2 md:col-span-3">
-                <div className={labelClass}>Home City</div>
-                <LocationPicker
-                  userId={user.id}
-                  currentLocation={profile.location}
-                  onSaved={refreshProfile}
-                />
-              </div>
-            </div>
+            )}
 
             <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
               <button
@@ -360,7 +391,8 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
                   setDeleteConfirmText("");
                   setDeleteOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-all rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider"
+                disabled={!profile}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-all rounded-sm text-[10px] font-mono font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 className="size-3" />
                 Delete Account
@@ -368,6 +400,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
             </div>
           </div>
         </section>
+
 
         {/* SECTION 2 — Meteorologist application */}
         {(showApplication || showUnderReview) && (
@@ -455,6 +488,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
         )}
 
         {/* SECTION 3 — Contact / Feedback */}
+        {profile && (
         <section className="glass-panel rounded-sm overflow-hidden">
           <SectionHeader icon={Mail} label="Contact / Feedback" />
           <div className="p-5">
@@ -510,6 +544,9 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
             </form>
           </div>
         </section>
+        )}
+
+
 
         {/* SECTION 4 — Recent Updates / Changelog */}
         <section className="glass-panel rounded-sm overflow-hidden">
@@ -553,14 +590,14 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
             <AlertDialogTitle className="font-mono uppercase tracking-wider">Delete account</AlertDialogTitle>
             <AlertDialogDescription className="font-mono text-xs">
               This permanently deletes your account, profile, and access. To confirm, type your username{" "}
-              <span className="text-card-foreground font-bold">{profile.username}</span> below.
+              <span className="text-card-foreground font-bold">{profile?.username ?? ""}</span> below.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <input
             value={deleteConfirmText}
             onChange={(e) => setDeleteConfirmText(e.target.value)}
             className={inputClass}
-            placeholder={profile.username}
+            placeholder={profile?.username ?? ""}
             autoFocus
           />
           <AlertDialogFooter>
@@ -570,7 +607,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
                 e.preventDefault();
                 handleDelete();
               }}
-              disabled={deleting || deleteConfirmText !== profile.username}
+              disabled={deleting || !profile || deleteConfirmText !== profile.username}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Trash2 className="size-3.5 mr-1.5" />}
