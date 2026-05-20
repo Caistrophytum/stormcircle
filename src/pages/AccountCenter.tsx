@@ -544,6 +544,9 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
             </form>
           </div>
         </section>
+        )}
+
+
 
         {/* SECTION 4 — Recent Updates / Changelog */}
         <section className="glass-panel rounded-sm overflow-hidden">
