@@ -289,8 +289,9 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
     }
   };
 
-  const showApplication = profile.badge === "Citizen" && !profile.meteorologist_applied;
-  const showUnderReview = profile.badge === "Citizen" && profile.meteorologist_applied;
+  const showApplication = !!profile && profile.badge === "Citizen" && !profile.meteorologist_applied;
+  const showUnderReview = !!profile && profile.badge === "Citizen" && profile.meteorologist_applied;
+
 
   return (
     <>
