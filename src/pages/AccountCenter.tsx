@@ -488,6 +488,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
         )}
 
         {/* SECTION 3 — Contact / Feedback */}
+        {profile && (
         <section className="glass-panel rounded-sm overflow-hidden">
           <SectionHeader icon={Mail} label="Contact / Feedback" />
           <div className="p-5">
