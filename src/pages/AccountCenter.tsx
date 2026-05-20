@@ -79,7 +79,7 @@ const subjectSchema = z.enum(["General Feedback", "Bug Report", "Feature Request
 
 const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}) => {
   const navigate = useNavigate();
-  const { user, profile, loading, signOut, refreshProfile } = useAuth();
+  const { user, profile, loading, profileLoading, signOut, refreshProfile } = useAuth();
 
   // Redirect to /auth when not signed in
   useEffect(() => {
@@ -123,13 +123,19 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
     if (profile?.email && !appEmail) setAppEmail(profile.email);
   }, [profile, appEmail]);
 
-  if (loading || !user || !profile) {
+  // Gate only on auth loading — render page immediately once auth resolves.
+  // Profile-dependent sections handle their own loading/error state inline.
+  if (loading) {
     return (
       <main className="min-h-screen w-full bg-background flex items-center justify-center">
         <Loader2 className="size-5 animate-spin text-primary" />
       </main>
     );
   }
+
+  // Redirect fast if not logged in (the effect above also handles this).
+  if (!user) return null;
+
 
   /** Sign the user out and bounce them to the auth page. */
   const handleLogout = async () => {
