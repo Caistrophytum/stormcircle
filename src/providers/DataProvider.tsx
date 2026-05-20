@@ -654,6 +654,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Skip if we already have this user's profile and aren't forcing.
       if (!force && profileUserIdRef.current === userId) return;
 
+      if (import.meta.env.DEV) console.count("[StormCircle] profile fetch");
+
+
+
       const promise = (async () => {
         // 5 second hard timeout — profile fetch must never hang indefinitely
         const controller = new AbortController();
