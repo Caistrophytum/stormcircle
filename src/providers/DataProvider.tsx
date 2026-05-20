@@ -631,8 +631,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             .from("profiles")
             .select("*")
             .eq("id", userId)
-            .maybeSingle()
-            .abortSignal(controller.signal);
+            .abortSignal(controller.signal)
+            .maybeSingle();
           if (!mounted) return;
           if (error) {
             console.error("Failed to load profile:", error);
