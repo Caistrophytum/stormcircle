@@ -183,14 +183,14 @@ export default function CitizenReports() {
     const [{ data: recent }, { data: system }] = await Promise.all([
       supabase
         .from("messages")
-        .select("*")
+        .select("id,user_id,username,badge,content,created_at")
         .neq("badge", "System")
         .gte("created_at", cutoff)
         .order("created_at", { ascending: false })
         .limit(MAX_INITIAL_MESSAGES),
       supabase
         .from("messages")
-        .select("*")
+        .select("id,user_id,username,badge,content,created_at")
         .eq("badge", "System")
         .order("created_at", { ascending: false })
         .limit(10),
