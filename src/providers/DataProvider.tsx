@@ -629,7 +629,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         try {
           const { data, error } = await supabase
             .from("profiles")
-            .select("*")
+            .select("id,username,email,badge,meteorologist_applied,location,created_at")
             .eq("id", userId)
             .abortSignal(controller.signal)
             .maybeSingle();
