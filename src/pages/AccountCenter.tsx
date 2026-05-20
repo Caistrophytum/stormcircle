@@ -154,6 +154,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
    *   4. Sign out and redirect to /auth
    */
   const handleDelete = async () => {
+    if (!profile) return;
     if (deleteConfirmText !== profile.username) {
       toast.error("Username does not match");
       return;
