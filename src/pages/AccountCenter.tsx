@@ -607,7 +607,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
                 e.preventDefault();
                 handleDelete();
               }}
-              disabled={deleting || deleteConfirmText !== profile.username}
+              disabled={deleting || !profile || deleteConfirmText !== profile.username}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <Trash2 className="size-3.5 mr-1.5" />}
