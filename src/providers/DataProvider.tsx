@@ -721,7 +721,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     const promise = (async () => {
       const { data, error } = await supabase
-        .from("profiles").select("*").eq("id", user.id).maybeSingle();
+        .from("profiles")
+        .select("id,username,email,badge,meteorologist_applied,location,created_at")
+        .eq("id", user.id)
+        .maybeSingle();
       if (error) {
         console.error("Failed to refresh profile:", error);
         return;
