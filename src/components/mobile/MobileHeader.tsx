@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
+import { useUnitSystem, toggleUnitSystem } from "@/hooks/useUnitSystem";
 
 export default function MobileHeader() {
   const onlineCount = useOnlineCount();
+  const unitSystem = useUnitSystem();
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -20,15 +22,48 @@ export default function MobileHeader() {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "0 12px",
+        gap: "8px",
         borderBottom: "1px solid rgba(255,157,0,0.25)",
         background: "rgba(10,10,14,0.95)",
       }}
     >
-      <div style={{ color: "#ff9d00", fontWeight: 700, fontSize: "11px", letterSpacing: "0.08em" }}>
+      <div
+        style={{
+          color: "#ff9d00",
+          fontWeight: 700,
+          fontSize: "11px",
+          letterSpacing: "0.08em",
+          whiteSpace: "nowrap",
+        }}
+      >
         ⛈ STORMCIRCLE
       </div>
 
-      <div style={{ color: "#888", fontSize: "10px", letterSpacing: "0.1em" }}>{timeLabel}</div>
+      <button
+        type="button"
+        onClick={toggleUnitSystem}
+        aria-label="Toggle metric / imperial units"
+        title={`Switch to ${unitSystem === "metric" ? "imperial" : "metric"}`}
+        style={{
+          background: "rgba(0,180,255,0.08)",
+          border: "1px solid rgba(0,180,255,0.35)",
+          color: "#00b4ff",
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: "10px",
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          padding: "3px 8px",
+          borderRadius: "2px",
+          cursor: "pointer",
+          textTransform: "uppercase",
+        }}
+      >
+        {unitSystem === "metric" ? "SI" : "US"}
+      </button>
+
+      <div style={{ color: "#888", fontSize: "10px", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>
+        {timeLabel}
+      </div>
 
       <div
         style={{
@@ -39,6 +74,7 @@ export default function MobileHeader() {
           fontSize: "10px",
           fontWeight: 700,
           letterSpacing: "0.08em",
+          whiteSpace: "nowrap",
         }}
       >
         <span
