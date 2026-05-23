@@ -206,52 +206,68 @@ export function SystemMessageCard({
     return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([s]) => s);
   })();
 
-  // Per-threat area + intensity extraction. For each of the three core
-  // severe-weather hazards we scan the discussion sentence for:
-  //   • qualifier words (significant, widespread, scattered, isolated, few)
-  //   • a nearby region phrase (state abbrev, "Plains", "Ohio Valley", etc.)
-  // and produce phrases like "tornadoes (significant) across TX, OK" — so the
-  // reader sees which areas get which hazard and how widespread it is.
-  type ThreatLine = { hazard: string; qualifier: string | null; area: string | null };
+  // Tier drives the coverage/intensity qualifier. The SPC convention:
+  //   MRGL = isolated, SLGT = scattered, ENH = numerous,
+  //   MDT  = widespread, HIGH = significant/outbreak.
+  // We previously scanned the free-form discussion for words like
+  // "significant" / "strong", which produced false positives (e.g. on a
+  // MRGL-only day the fallback fetch of the full SPC outlook text contains
+  // those words in unrelated paragraphs). Anchoring the qualifier to the
+  // highest active tier is both safer and more meteorologically correct.
+  const TIER_RANK: Record<string, number> = { MRGL: 1, SLGT: 2, ENH: 3, MDT: 4, HIGH: 5 };
+  const TIER_QUALIFIER: Record<string, string> = {
+    MRGL: "isolated",
+    SLGT: "scattered",
+    ENH: "numerous",
+    MDT: "widespread",
+    HIGH: "significant",
+  };
+  const highestTier: string | null = (() => {
+    if (!payload) return null;
+    let best: string | null = null;
+    let bestRank = 0;
+    for (const g of payload.groups) {
+      const r = TIER_RANK[g.label] ?? 0;
+      if (r > bestRank) { bestRank = r; best = g.label; }
+    }
+    return best;
+  })();
+  const tierQualifier = highestTier ? TIER_QUALIFIER[highestTier] : null;
+
+  // Per-threat detection: only enumerate a hazard when the SPC discussion
+  // sentence from the structured payload (NOT the fallback full-outlook
+  // text) explicitly calls it out. The fallback text mentions every hazard
+  // somewhere and produced spurious "hail, winds, tornadoes" claims on
+  // days SPC didn't single any of them out.
+  type ThreatLine = { hazard: string; area: string | null };
+  const US_STATES = "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC";
+  const REGION_RE = new RegExp(`\\b(?:${US_STATES}|Plains|Midwest|Mid-?South|Mid-?Atlantic|Ohio Valley|Tennessee Valley|Mississippi Valley|Missouri Valley|Southeast|Northeast|Southwest|Northwest|Gulf Coast|Carolinas|Deep South|Great Lakes|High Plains|Southern Plains|Central Plains|Northern Plains)\\b`, "g");
   const threatLines: ThreatLine[] = (() => {
-    if (!visibleDiscussion) return [];
-    const text = visibleDiscussion;
-    const findQualifier = (clause: string): string | null => {
-      if (/\bsignificant|strong\b|intense|violent/i.test(clause)) return "significant";
-      if (/\bwidespread|numerous|outbreak\b/i.test(clause)) return "widespread";
-      if (/\bscattered\b/i.test(clause)) return "scattered";
-      if (/\bisolated|a few|few\b/i.test(clause)) return "isolated";
-      if (/\blarge\b/i.test(clause) && /hail/i.test(clause)) return "large";
-      return null;
-    };
-    const US_STATES = "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC";
-    const REGION_RE = new RegExp(`\\b(?:${US_STATES}|Plains|Midwest|Mid-?South|Mid-?Atlantic|Ohio Valley|Tennessee Valley|Mississippi Valley|Missouri Valley|Southeast|Northeast|Southwest|Northwest|Gulf Coast|Carolinas|Deep South|Great Lakes|High Plains|Southern Plains|Central Plains|Northern Plains)\\b`, "g");
+    const trusted = payload?.discussion ?? payload?.timing ?? null;
+    if (!trusted) return [];
+    const hazards: { hazard: string; re: RegExp }[] = [
+      { hazard: "tornadoes", re: /\btornado(?:es|ic)?\b/i },
+      { hazard: "hail", re: /\bhail\b/i },
+      { hazard: "damaging winds", re: /\b(?:damaging winds?|severe winds?|wind damage|damaging gusts?)\b/i },
+    ];
+    const clauses = trusted.split(/[.;]|,\s+(?=[A-Z])/).map((c) => c.trim()).filter(Boolean);
     const findArea = (clause: string): string | null => {
       const matches = clause.match(REGION_RE);
-      if (!matches || matches.length === 0) return null;
+      if (!matches?.length) return null;
       return [...new Set(matches)].slice(0, 3).join(", ");
     };
-    const hazards: { hazard: string; re: RegExp }[] = [
-      { hazard: "tornadoes", re: /tornado(?:es)?/i },
-      { hazard: "hail", re: /hail/i },
-      { hazard: "damaging winds", re: /damaging winds?|severe winds?|wind damage|gusts?/i },
-    ];
-    const clauses = text.split(/[.;]|,\s+(?=[A-Z])/).map((c) => c.trim()).filter(Boolean);
     const out: ThreatLine[] = [];
     for (const { hazard, re } of hazards) {
       const hits = clauses.filter((c) => re.test(c));
       if (hits.length === 0) continue;
-      const qualifier =
-        hits.map((c) => findQualifier(c)).find(Boolean) ?? findQualifier(text);
-      const area = hits.map((c) => findArea(c)).find(Boolean) ?? null;
-      out.push({ hazard, qualifier, area });
+      const area = hits.map(findArea).find(Boolean) ?? null;
+      out.push({ hazard, area });
     }
     return out;
   })();
 
-  // Synthesize a short prose summary. Opens with the dominant tier(s) and
-  // region, then enumerates each hazard (greatest → smallest) with its
-  // intensity qualifier and the area it covers when discernible.
+  // Synthesize a short prose summary. Tier sets the coverage qualifier;
+  // hazards are only enumerated when SPC explicitly called them out.
   const expectedSentence: string | null = (() => {
     if (!payload) return null;
     if (payload.summary) return payload.summary;
@@ -265,27 +281,25 @@ export function SystemMessageCard({
     const region = joinList(topStates);
     const time = expectedTime ?? null;
 
-    // Per-hazard phrases — e.g. "significant tornadoes across TX, OK",
-    // "scattered hail", "damaging winds across the Ohio Valley".
     const HAZARD_ORDER = ["tornadoes", "hail", "damaging winds"];
     const sortedThreats = [...threatLines].sort(
       (a, b) => HAZARD_ORDER.indexOf(a.hazard) - HAZARD_ORDER.indexOf(b.hazard),
     );
-    const hazardPhrases = sortedThreats.map((t) => {
-      const noun = t.qualifier && t.qualifier !== "large"
-        ? `${t.qualifier} ${t.hazard}`
-        : t.qualifier === "large" && t.hazard === "hail"
-          ? "large hail"
-          : t.hazard;
-      return t.area ? `${noun} across ${t.area}` : noun;
-    });
+    const hazardPhrases = sortedThreats.map((t) =>
+      t.area ? `${t.hazard} across ${t.area}` : t.hazard,
+    );
     const hazardSentence = joinList(hazardPhrases);
 
-    // Lead with region + time, then enumerate hazards. Risk tier names are
-    // already shown in the dropdowns below, so we don't repeat them here.
-    const head = region ? `Severe weather across ${region}` : "Severe weather expected";
+    // Lead noun reflects tier so coverage stays meteorologically honest.
+    // On MRGL-only days we say "Isolated severe thunderstorms possible",
+    // never "significant" or "widespread".
+    const leadNoun = tierQualifier
+      ? `${tierQualifier.charAt(0).toUpperCase()}${tierQualifier.slice(1)} severe thunderstorms`
+      : "Severe weather";
+    const verb = highestTier && TIER_RANK[highestTier] >= 3 ? "expected" : "possible";
+    const head = region ? `${leadNoun} ${verb} across ${region}` : `${leadNoun} ${verb}`;
     const headWithTime = time ? `${head} ${time}` : head;
-    const tail = hazardSentence ? `, with ${hazardSentence}.` : ".";
+    const tail = hazardSentence ? `, with ${hazardSentence} the main threats.` : ".";
     return `${headWithTime}${tail}`;
   })();
 
