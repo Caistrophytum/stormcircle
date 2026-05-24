@@ -201,124 +201,47 @@ function joinList(arr: string[]): string | null {
   return `${arr.slice(0, -1).join(", ")}, and ${arr[arr.length - 1]}`;
 }
 
-// Synthesize the short prose summary that the bot posts as its visible
-// message body. Mirrors SystemMessageCard's expectedSentence logic so the
-// chat row and the rendered card tell the same story.
-function synthesizeSentence(
+async function fetchHazardLayers(): Promise<HazardSummary[]> {
+  const out: HazardSummary[] = [];
+  const layers: { idx: number; key: HazardSummary["hazard"] }[] = [
+    { idx: 2, key: "tornado" },
+    { idx: 3, key: "hail" },
+    { idx: 4, key: "wind" },
+  ];
+  for (const { idx, key } of layers) {
+    try {
+      const res = await fetch(SPC_LAYER_URL(idx));
+      if (!res.ok) continue;
+      const geo = await res.json();
+      const feats = Array.isArray(geo?.features) ? geo.features : [];
+      const summary = summarizeHazardLayer(key, feats);
+      if (summary) out.push(summary);
+    } catch (e) {
+      console.warn(`[spc-poll] hazard layer ${idx} fetch failed`, e);
+    }
+  }
+  return out;
+}
+
+function buildMessage(
+  issue: string,
   groups: any[],
   timing: string | null,
   validWindow: { startZ: string; endZ: string } | null,
   discussion: string | null,
+  hazards: HazardSummary[],
 ): string {
-  // Top states by county coverage across all risk groups.
-  const counts = new Map<string, number>();
-  for (const g of groups) for (const c of g.counties ?? []) {
-    counts.set(c.state, (counts.get(c.state) ?? 0) + 1);
-  }
-  const topStates = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([s]) => s);
-  const region = joinList(topStates);
-
-  // Time window: prefer a natural-language phrase pulled from the SPC
-  // discussion ("this afternoon and evening", "overnight", etc.), since that
-  // matches how SPC actually communicates timing and is much friendlier than
-  // a raw Z-range. Fall back to a Z→period mapping derived from the official
-  // VALID window only when no natural phrase is found.
-  let expectedTime: string | null = null;
-  const naturalSource = `${discussion ?? ""} ${timing ?? ""}`.toLowerCase();
-  const NATURAL_PHRASES = [
-    "this morning and afternoon", "this afternoon and evening",
-    "this evening and overnight", "late tonight and tomorrow morning",
-    "tonight and tomorrow morning", "this afternoon", "this evening",
-    "tonight", "overnight", "tomorrow morning", "tomorrow afternoon",
-    "late afternoon and evening", "late afternoon", "early morning hours",
-    "morning hours", "afternoon hours", "evening hours",
-  ];
-  for (const p of NATURAL_PHRASES) {
-    if (naturalSource.includes(p)) { expectedTime = p; break; }
-  }
-  if (!expectedTime && validWindow) {
-    // Map the VALID Z-range to a coarse natural phrase. SPC Day 1 is always
-    // 12Z–12Z (≈ 6am–6am CT), so the meaningful signal is which portion of
-    // that period the discussion focuses on. Without that signal we say
-    // "today and tonight" rather than emit unfamiliar Z times to users.
-    expectedTime = "today and tonight";
-  }
-  const time = expectedTime ? expectedTime : null;
-
-  // Per-hazard area + intensity extraction from the hazard-focused discussion
-  // text. We prefer the discussion paragraphs and fall back to the timing
-  // sentence when needed.
-  type ThreatLine = { hazard: string; qualifier: string | null; area: string | null; score: number };
-  const threatLines: ThreatLine[] = (() => {
-    const source = discussion ?? timing;
-    if (!source) return [];
-    const findQualifier = (c: string): string | null => {
-      if (/\bsignificant|strong\b|intense|violent|higher-end/i.test(c)) return "significant";
-      if (/\bwidespread|numerous|outbreak\b/i.test(c)) return "widespread";
-      if (/\bscattered\b/i.test(c)) return "scattered";
-      if (/\bisolated|a few|few\b/i.test(c)) return "isolated";
-      if (/\blarge\b/i.test(c) && /hail/i.test(c)) return "large";
-      return null;
-    };
-    const US_STATES = "AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC";
-    const MOD = "(?:(?:far\\s+)?(?:north(?:ern)?|south(?:ern)?|east(?:ern)?|west(?:ern)?|central|northeast(?:ern)?|northwest(?:ern)?|southeast(?:ern)?|southwest(?:ern)?|east-central|west-central|south-central|north-central|upper|lower|mid)\\s+)*";
-    const STATE_AREA_RE = new RegExp(`\\b${MOD}(?:${US_STATES})(?:\\s*(?:\\/|and|to|into)\\s*${MOD}(?:${US_STATES}))*`, "g");
-    const REGION_AREA_RE = /\b(?:central High Plains|High Plains|Central Plains|southern\/central Plains|southern Plains|central Plains|Upper Midwest|Mid Missouri Valley|Missouri Valley|Red River Vicinity|Lower MI|southern WI|western OK|central TX|North TX|eastern TX Panhandle|warm frontal corridor)\b/gi;
-    const findAreas = (c: string): string[] => {
-      const states = c.match(STATE_AREA_RE) ?? [];
-      const regions = c.match(REGION_AREA_RE) ?? [];
-      return [...new Set([...states, ...regions].map((m) => m.replace(/\s+/g, " ").trim()).filter(Boolean))].slice(0, 2);
-    };
-    const scoreClause = (c: string): number => {
-      let score = 0;
-      if (/\bsignificant|strong\b|higher-end|violent/i.test(c)) score += 4;
-      if (/\bwidespread|numerous|greater threat/i.test(c)) score += 3;
-      if (/very large hail|damaging winds?|gusts?/i.test(c)) score += 2;
-      if (/isolated|conditional|very low/i.test(c)) score -= 2;
-      return score;
-    };
-    const hazards: { hazard: string; re: RegExp }[] = [
-      { hazard: "tornadoes", re: /tornado(?:es)?/i },
-      { hazard: "hail", re: /hail/i },
-      { hazard: "damaging winds", re: /damaging winds?|severe winds?|wind damage|gusts?/i },
-    ];
-    const clauses = source.split(/[.;]|,\s+(?=[A-Z])/).map((c) => c.trim()).filter(Boolean);
-    const out: ThreatLine[] = [];
-    for (const { hazard, re } of hazards) {
-      const hits = clauses.filter((c) => re.test(c)).map((c) => ({ c, score: scoreClause(c) }));
-      if (hits.length === 0) continue;
-      hits.sort((a, b) => b.score - a.score);
-      const qualifier = hits.map(({ c }) => findQualifier(c)).find(Boolean) ?? findQualifier(source);
-      const areaList = hits.flatMap(({ c }) => findAreas(c)).slice(0, 2);
-      const area = joinList([...new Set(areaList)]) ?? null;
-      out.push({ hazard, qualifier, area, score: hits[0]?.score ?? 0 });
-    }
-    return out.sort((a, b) => b.score - a.score);
-  })();
-
-  const hazardPhrases = threatLines.map((t) => {
-    const noun = t.qualifier && t.qualifier !== "large"
-      ? `${t.qualifier} ${t.hazard}`
-      : t.qualifier === "large" && t.hazard === "hail"
-        ? "large hail"
-        : t.hazard;
-    return t.area ? `${noun} across ${t.area}` : noun;
+  const summary = buildSummary({
+    groups, hazards, timing, discussion, hasValidWindow: !!validWindow,
   });
-  const hazardSentence = joinList(hazardPhrases);
-
-  const head = region ? `Severe weather across ${region}` : "Severe weather expected";
-  const headWithTime = time ? `${head} ${time}` : head;
-  const tail = hazardSentence ? `, with ${hazardSentence}.` : ".";
-  return `${headWithTime}${tail}`;
-}
-
-function buildMessage(issue: string, groups: any[], timing: string | null, validWindow: any, discussion: string | null): string {
-  const sentence = synthesizeSentence(groups, timing, validWindow, discussion);
-  const payload = JSON.stringify({ issue, groups, timing, validWindow, discussion, summary: sentence });
+  const payload = JSON.stringify({
+    v: 2,
+    issue, groups, timing, validWindow, discussion, summary, hazards,
+  });
   return [
     `⚡ SPC Day 1 Outlook Update — ${formatIssueTime(issue)}`,
     ``,
-    sentence,
+    summary,
     `<!--issue:${issue}-->`,
     `<!--data:${payload}-->`,
   ].join("\n");
