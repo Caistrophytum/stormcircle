@@ -3,7 +3,16 @@
 // one has the app open. Replaces the client-side polling in useSPCOutlook.
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  buildSummary,
+  summarizeHazardLayer,
+  type HazardSummary,
+} from "./summary.ts";
 
+// MapServer layer indices for the SPC Day 1 outlooks.
+//   1 = Categorical, 2 = Tornado, 3 = Hail, 4 = Wind
+const SPC_LAYER_URL = (layer: number) =>
+  `https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/SPC_wx_outlks/MapServer/${layer}/query?where=1%3D1&outFields=*&returnGeometry=false&f=geojson`;
 const SPC_GEOJSON =
   "https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/SPC_wx_outlks/MapServer/1/query?where=1%3D1&outFields=LABEL,LABEL2,ISSUE,EXPIRE&returnGeometry=true&f=geojson";
 const SPC_TXT = "https://www.spc.noaa.gov/products/outlook/day1otlk.txt";
