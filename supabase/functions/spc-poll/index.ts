@@ -320,14 +320,25 @@ Deno.serve(async (req) => {
     }
 
     groups.sort((a, b) => (RISK_RANK[b.label] ?? 0) - (RISK_RANK[a.label] ?? 0));
-    const { timing, validWindow, discussion } = await fetchProductContext();
-    const content = buildMessage(latestIssue, groups, timing, validWindow, discussion);
+    const [{ timing, validWindow, discussion }, hazards] = await Promise.all([
+      fetchProductContext(),
+      fetchHazardLayers(),
+    ]);
+    const content = buildMessage(latestIssue, groups, timing, validWindow, discussion, hazards);
 
-    // Persist state
-    await supabase.from("spc_outlook_state").update({
+    // Persist state. `hazards` is a newly added column — wrap in a fallback
+    // so we don't break the run on environments where the migration hasn't
+    // landed yet.
+    const baseUpdate = {
       issue: latestIssue, groups, timing, valid_window: validWindow,
       last_run_at: new Date().toISOString(), last_error: null, updated_at: new Date().toISOString(),
-    }).eq("id", 1);
+    };
+    const withHazards = await supabase.from("spc_outlook_state")
+      .update({ ...baseUpdate, hazards }).eq("id", 1);
+    if (withHazards.error) {
+      console.warn("[spc-poll] hazards column write failed, retrying without it:", withHazards.error.message);
+      await supabase.from("spc_outlook_state").update(baseUpdate).eq("id", 1);
+    }
 
     // Replace bot message
     await supabase.from("messages").delete().eq("user_id", BOT_USER_ID);
