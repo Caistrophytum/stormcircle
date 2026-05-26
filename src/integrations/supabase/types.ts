@@ -359,6 +359,7 @@ export type Database = {
       spc_outlook_state: {
         Row: {
           groups: Json | null
+          hazards: Json | null
           id: number
           issue: string | null
           last_error: string | null
@@ -369,6 +370,7 @@ export type Database = {
         }
         Insert: {
           groups?: Json | null
+          hazards?: Json | null
           id?: number
           issue?: string | null
           last_error?: string | null
@@ -379,6 +381,7 @@ export type Database = {
         }
         Update: {
           groups?: Json | null
+          hazards?: Json | null
           id?: number
           issue?: string | null
           last_error?: string | null

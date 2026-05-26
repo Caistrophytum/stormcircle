@@ -1,0 +1,1 @@
+ALTER TABLE public.spc_outlook_state ADD COLUMN IF NOT EXISTS hazards jsonb;
