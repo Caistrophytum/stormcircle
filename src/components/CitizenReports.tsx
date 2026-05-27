@@ -409,38 +409,7 @@ export default function CitizenReports() {
 
       {/* Stacked reports */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-        {/* Pinned automated bot messages (e.g. SPC outlook updates). */}
-        {systemMessages.map((sys) => (
-          <SystemMessageCard key={sys.id} message={sys} expandedKey={expanded} toggle={toggleExpand} />
-        ))}
-
-        {/* Loading placeholder while the SPC bot reverse-geocodes a fresh
-            outlook. Keep it visible even if an older valid outlook card is
-            still pinned below so users can tell the bot is actively refreshing. */}
-        {spcLoading && (
-          <div
-            className="rounded border px-3 py-2 font-mono text-[11px]"
-            style={{
-              background: "rgba(255, 165, 0, 0.08)",
-              borderColor: "rgba(255, 165, 0, 0.3)",
-              color: "#ffa500",
-            }}
-          >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-[9px] uppercase tracking-wide opacity-80">
-                SPC Bot · System
-              </span>
-              <span className="size-1.5 bg-primary rounded-full animate-pulse" />
-            </div>
-            <p className="opacity-90">
-              {systemMessages.length > 0
-                ? "Refreshing SPC Day 1 Outlook and resolving updated counties…"
-                : "Fetching latest SPC Day 1 Outlook and resolving affected counties…"}
-            </p>
-          </div>
-        )}
-
-        {stacks.length === 0 && systemMessages.length === 0 && !spcLoading ? (
+        {stacks.length === 0 ? (
           <p className="text-[10px] font-mono text-muted-foreground italic text-center pt-4">
             No reports yet. Be the first to report an event.
           </p>
