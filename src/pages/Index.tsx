@@ -22,7 +22,7 @@ import { Helmet } from "react-helmet-async";
 import { PanelRightClose, PanelRightOpen, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import StatusBar from "@/components/StatusBar";
 import CitizenReports from "@/components/CitizenReports";
-import IntegrationPanel from "@/components/IntegrationPanel";
+import LeftSidePanel from "@/components/LeftSidePanel";
 import { CityProvider } from "@/contexts/CityContext";
 import { useNewReportPing } from "@/hooks/useNewReportPing";
 import { useNewLSRPing } from "@/hooks/useNewLSRPing";
@@ -125,7 +125,7 @@ const Index = () => {
                 transition={{ duration: 0.25, ease: "easeInOut" }}
                 className="shrink-0 overflow-hidden h-full border-r border-border bg-cockpit"
               >
-                <IntegrationPanel />
+                <LeftSidePanel />
               </motion.div>
             )}
           </AnimatePresence>
