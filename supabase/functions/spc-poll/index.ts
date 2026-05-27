@@ -249,7 +249,12 @@ function buildMessage(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const auth = req.headers.get("Authorization") ?? "";
+  if (auth !== `Bearer ${SERVICE_KEY}`) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
   try {
     const res = await fetch(SPC_GEOJSON);
