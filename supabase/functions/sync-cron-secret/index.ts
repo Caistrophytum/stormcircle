@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
-  const { error } = await supabase.schema("internal" as any).rpc("upsert_cron_secret", { _val: CRON_SECRET });
+  const { error } = await supabase.rpc("upsert_cron_secret", { _val: CRON_SECRET });
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
