@@ -467,8 +467,6 @@ export type Database = {
           read_ct: number
         }[]
       }
-      vault_create_cron_secret: { Args: { _val: string }; Returns: string }
-      vault_update_cron_secret: { Args: { _val: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
