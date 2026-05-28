@@ -129,8 +129,13 @@ async function postBot(supabase: any, content: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
   const auth = req.headers.get("Authorization") ?? "";
-  if (auth !== `Bearer ${SERVICE_KEY}`) {
+  const cronHeader = req.headers.get("x-cron-secret") ?? "";
+  const authorized =
+    auth === `Bearer ${SERVICE_KEY}` ||
+    (CRON_SECRET && (cronHeader === CRON_SECRET || auth === `Bearer ${CRON_SECRET}`));
+  if (!authorized) {
     return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
