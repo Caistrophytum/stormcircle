@@ -467,6 +467,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      upsert_cron_secret: { Args: { _val: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
