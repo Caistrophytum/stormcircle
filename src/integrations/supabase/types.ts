@@ -206,6 +206,48 @@ export type Database = {
         }
         Relationships: []
       }
+      fire_outlook_state: {
+        Row: {
+          discussion: string | null
+          dry_thunder: Json | null
+          groups: Json | null
+          hazards: Json | null
+          id: number
+          issue: string | null
+          last_error: string | null
+          last_run_at: string | null
+          summary: string | null
+          updated_at: string
+          valid_window: Json | null
+        }
+        Insert: {
+          discussion?: string | null
+          dry_thunder?: Json | null
+          groups?: Json | null
+          hazards?: Json | null
+          id?: number
+          issue?: string | null
+          last_error?: string | null
+          last_run_at?: string | null
+          summary?: string | null
+          updated_at?: string
+          valid_window?: Json | null
+        }
+        Update: {
+          discussion?: string | null
+          dry_thunder?: Json | null
+          groups?: Json | null
+          hazards?: Json | null
+          id?: number
+          issue?: string | null
+          last_error?: string | null
+          last_run_at?: string | null
+          summary?: string | null
+          updated_at?: string
+          valid_window?: Json | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           badge: string

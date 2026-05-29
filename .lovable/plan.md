@@ -1,47 +1,70 @@
+## Fire Weather Bot
 
-## Goal
+Add a new automated bot that posts SPC Fire Weather Outlook updates into the bot messages stream, structured like the existing SPC Bot card.
 
-Move bot/system messages (SPC Bot, Hurricane Bot) out of the chat feed and into the desktop **left** side menu, alongside the existing Professional Weather Reports — both as collapsible sections. Mobile keeps bot cards on the main screen and loses them from the chat overlay.
+### Data source
+SPC Fire Weather Outlooks are published on the same NWS MapServer as the convective outlooks:
+`https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/SPC_wx_fire_outlks/MapServer/`
 
-## Changes
+- Layer 0: Day 1 Fire Weather Categorical (risk areas)
+  - `ELEV` Elevated, `CRIT` Critical, `EXTM` Extreme
+- Layer 1: Day 1 Dry Thunderstorm areas
+  - `IDRT` Isolated Dry Thunderstorm, `SDRT` Scattered Dry Thunderstorm
+- Text product: `https://www.spc.noaa.gov/products/fire_wx/fwdy1.html` (.txt at `fwdy1.txt`) — used to extract the "what's causing it" parameters (RH, winds, fuels, etc.).
 
-### 1. New `src/components/LeftSidePanel.tsx`
+### Backend
 
-Replaces `IntegrationPanel` as the content of the desktop left drawer. Renders two foldable sections (chevron headers, click to expand/collapse, both open by default):
+**New table** `fire_outlook_state` (1-row, mirrors `spc_outlook_state`):
+- `issue` text, `groups` jsonb (categorical risk groups w/ counties), `dry_thunder` jsonb (IDRT/SDRT groups), `hazards` jsonb (parameter chips: RH, wind, fuels, dry-thunder), `summary` text, `valid_window` jsonb, `discussion` text, `last_run_at`, `last_error`, `updated_at`.
+- RLS: anyone can read, service_role writes (same pattern as `spc_outlook_state`). Plus GRANTs.
 
-- **Bot Messages** — fetches the latest System-badge messages (same query CitizenReports used: `badge = "System"`, latest 10, deduped by `user_id + issue marker`). Subscribes to realtime INSERT/DELETE on `messages` for system rows. Renders each with `SystemMessageCard` (reused as-is). Also shows the SPC "refreshing…" placeholder using `useSPCOutlookLoading()`.
-- **Professional Weather Reports** — the existing `IntegrationPanel` body (LSR list), moved into a section. The current `IntegrationPanel.tsx` becomes the inner content (can be left as-is and imported, or inlined — I'll keep `IntegrationPanel` as the inner LSR list to minimize churn).
+**New edge function** `supabase/functions/fire-poll/index.ts`:
+- Same auth pattern (`Authorization: Bearer SERVICE_KEY` or `x-cron-secret: CRON_SECRET`).
+- Fetch categorical + dry-thunder layers (geojson w/ geometry), pick latest `issue`.
+- Skip if `issue` unchanged unless `?force=1`.
+- Reuse the same `samplePoints` + `reverseGeocode` machinery (extract into `_shared/geocode.ts` so both SPC and Fire functions can share it, without changing SPC behavior).
+- Parse `fwdy1.txt` to extract:
+  - Valid window
+  - One-line synopsis
+  - Driving parameters as hazard chips: **Min RH** (e.g. "≤15%"), **Wind gusts** (e.g. "25–35 mph"), **Fuels** (e.g. "ERC 90th"), **Dry Thunder** (Isolated/Scattered). Regex-based, defensive — null if not found.
+- Build a `v:1` payload mirroring SPC's shape:
+  ```
+  { v:1, issue, groups:[{label, riskLabel, counties}],
+    dryThunder:[{label, riskLabel, counties}],
+    hazards:[{kind:"rh"|"wind"|"fuels"|"dry_thunder", value, severity}],
+    summary, validWindow, discussion }
+  ```
+- Post as bot user (reuse `BOT_USER_ID` or a dedicated fire bot uuid like `00000000-0000-0000-0000-000000000002`) with `username: "Fire Weather Bot"`, `badge: "System"`.
+- Replace prior fire bot message (delete by user_id) like SPC does.
 
-Each section header: small JetBrains Mono uppercase title with chevron, primary-tinted border, matches existing avionics styling. Sections scroll independently inside the 280px-wide drawer.
+**Cron job**: schedule `fire-poll-15min` every 15 minutes via `cron.schedule` using the vault-stored `cron_secret` (same pattern as the 4 existing pollers).
 
-### 2. `src/pages/Index.tsx`
+### Frontend
 
-Swap the import/usage `IntegrationPanel` → `LeftSidePanel` in the left `AnimatePresence` drawer. No other layout changes.
+**`SystemMessageCard.tsx`** — extend to render fire bot:
+- Detect `message.username === "Fire Weather Bot"`.
+- Parse the payload (same `<!--data:...-->` marker scheme).
+- Card colors: amber→orange→red ramp keyed to ELEV/CRIT/EXTM (matches "severity color-coded" core rule; Critical = orange, Extreme = red).
+- Header: `🔥 SPC Fire Weather Outlook — {issue}`.
+- Summary line (server-built).
+- Hazard chips: RH%, Wind, Fuels, Dry Thunder (color by severity).
+- Two collapsible groups: **Fire Weather Risk** (ELEV/CRIT/EXTM with counties) and **Dry Thunderstorm** (IDRT/SDRT with counties), same expand/collapse pattern as SPC categorical groups.
 
-### 3. `src/components/CitizenReports.tsx` — remove system messages
+**`LeftSidePanel.tsx`** — no changes needed: the existing bot messages query (`badge = 'System'`) already picks up the new fire bot. The dedupe key uses `user_id + issue`, so a separate bot user id keeps SPC and Fire cards from colliding.
 
-- Drop the `systemMessages` derivation, `SystemMessageCard` rendering, and the `spcLoading` placeholder block.
-- Drop the second supabase query for System messages in `reloadMessages` (keep only the recent non-System fetch; the existing `.neq("badge","System")` already filters them out, so just remove the parallel system query and the merge logic).
-- Remove imports for `SystemMessageCard` and `useSPCOutlookLoading`.
-- Simplify the empty state check to `stacks.length === 0`.
-- Keep everything else (composer, approvals, realtime for user messages, etc.) untouched.
+### Technical details
 
-This single change satisfies both the desktop right panel and the mobile chat overlay (which mounts `CitizenReports`).
+Files added:
+- `supabase/functions/fire-poll/index.ts`
+- `supabase/functions/fire-poll/summary.ts` (parameter parsing + summary builder, mirrors `spc-poll/summary.ts`)
+- `supabase/functions/_shared/geocode.ts` (extracted `samplePoints`, `reverseGeocode`, polygon helpers; SPC switches to importing from here)
+- Migration creating `fire_outlook_state` with GRANTs + RLS
 
-### 4. Mobile main screen — no change
+Files edited:
+- `supabase/functions/spc-poll/index.ts` — import shared geocode helpers (behavior unchanged)
+- `src/components/SystemMessageCard.tsx` — add fire-weather rendering branch
 
-`MobileMain` already renders SPC + Hurricane bot cards via its own `useSPCBotMessage` / `useHurricaneBotMessage` hooks. Untouched.
+Cron created via `supabase--insert` (not migration) since it contains the project-specific URL + secret, matching the existing pattern.
 
-## Technical notes
-
-- Bot data fetch in `LeftSidePanel` mirrors the existing CitizenReports logic verbatim (same dedupe by `user_id::issue`), so behavior is preserved — just relocated.
-- `SystemMessageCard` already accepts an `expandedKey: Set<string>` / `toggle` pair for per-group dropdowns; `LeftSidePanel` will own that local state.
-- Realtime channel name uses the same `Math.random + Date.now` pattern to avoid StrictMode collisions.
-- No DB / RLS / edge function changes required.
-
-## Files touched
-
-- **new** `src/components/LeftSidePanel.tsx`
-- **edit** `src/pages/Index.tsx` (one import + one JSX swap)
-- **edit** `src/components/CitizenReports.tsx` (remove system-message paths)
-- `src/components/IntegrationPanel.tsx` reused as-is (rendered inside the Reports section of `LeftSidePanel`)
+### Open question
+Do you want the fire bot to post **only when a CRIT/EXTM risk area exists**, or **every issue (including ELEV-only quiet days)**? SPC bot posts on any risk ≥ MRGL — I'll mirror that and post whenever any ELEV/CRIT/EXTM or dry-thunder area is issued, unless you'd rather suppress ELEV-only days.
