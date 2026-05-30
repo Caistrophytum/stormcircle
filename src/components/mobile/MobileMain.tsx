@@ -224,6 +224,37 @@ function useHurricaneBotMessage() {
   return msg;
 }
 
+function useFireBotMessage() {
+  const [msg, setMsg] = useState<{ id: string; content: string; created_at: string } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("id,content,created_at")
+        .eq("user_id", FIRE_BOT_ID)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) setMsg(data ?? null);
+    };
+    void load();
+    const ch = supabase
+      .channel(`mobile-fire-bot_${Math.random().toString(36).slice(2)}_${Date.now()}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages", filter: `user_id=eq.${FIRE_BOT_ID}` },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(ch);
+    };
+  }, []);
+  return msg;
+}
+
 interface ChatMessage {
   id: string;
   username: string;
