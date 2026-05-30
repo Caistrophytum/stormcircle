@@ -18,10 +18,10 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-05-27 08z",
-    tag: "IMPROVED",
-    title: "Bot messages location",
-    body: "Bot messages in desktop moved to the left menu, which is now foldable, and cleared from the chat application-wide to allow better communications in-chat, plus a future bot extension.",
+    date: "2026-05-27 06z",
+    tag: "NEW",
+    title: "Fire weather bot",
+    body: "A new automated weather system has been introduced - a fire weather 'bot'.",
   },
   {
     date: "2026-05-27 08z",
