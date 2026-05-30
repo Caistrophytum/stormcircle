@@ -539,7 +539,25 @@ export default function MobileMain() {
         </div>
       )}
 
-      {/* 3b. Hurricane bot message (when present) */}
+      {/* 3b. Fire Weather bot message (between SPC and Hurricane) */}
+      {fireMsg && (
+        <SystemMessageCard
+          message={
+            {
+              id: fireMsg.id,
+              user_id: FIRE_BOT_ID,
+              username: "Fire Weather Bot",
+              badge: "System",
+              content: fireMsg.content,
+              created_at: fireMsg.created_at,
+            } satisfies RawMessage
+          }
+          expandedKey={expandedKey}
+          toggle={toggleKey}
+        />
+      )}
+
+      {/* 3c. Hurricane bot message (when present) */}
       {hurricaneMsg && (
         <SystemMessageCard
           message={
