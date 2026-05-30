@@ -376,7 +376,7 @@ Deno.serve(async (req) => {
       sct: dryGroups.some((g) => g.label === "SDRT"),
     };
     const { hazards, discussion, validWindow } = extractHazards(raw, hasDry);
-    const summary = buildSummary(groups, dryGroups, hazards);
+    const summary = buildSummary(groups, dryGroups, hazards, discussion, validWindow);
     const content = buildMessage(latest, groups, dryGroups, hazards, summary, validWindow, discussion);
 
     await supabase.from("fire_outlook_state").update({
