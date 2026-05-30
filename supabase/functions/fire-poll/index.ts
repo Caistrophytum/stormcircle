@@ -310,7 +310,17 @@ function buildMessage(
   validWindow: { startZ: string; endZ: string } | null,
   discussion: string | null,
 ): string {
-  const payload = JSON.stringify({ v: 1, issue, groups, dryThunder, hazards, summary, validWindow, discussion });
+  // NOTE: `discussion` is intentionally NOT embedded in the message payload.
+  // It can contain free-form text scraped from SPC HTML that, even after tag
+  // stripping, sometimes includes the literal sequence `-->`, which would
+  // prematurely terminate the surrounding `<!--data:...-->` HTML comment and
+  // break client-side JSON parsing. The frontend doesn't render it anyway.
+  const safeStr = (s: string | null | undefined) => (s ?? "").replace(/--!?>/g, " ");
+  const payload = JSON.stringify({
+    v: 1, issue, groups, dryThunder, hazards,
+    summary: safeStr(summary),
+    validWindow,
+  });
   return [
     `🔥 SPC Fire Weather Outlook — ${formatIssueTime(issue)}`,
     ``,
