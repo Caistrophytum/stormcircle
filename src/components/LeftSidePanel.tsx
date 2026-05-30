@@ -67,9 +67,14 @@ function useBotMessages() {
     };
   }, []);
 
-  // Dedupe by (user_id + issue marker), keeping newest per bot/issue. Mirrors
-  // the behavior previously in CitizenReports so a racing SPC bot can't show
-  // two cards for the same outlook.
+  // Dedupe by (user_id + issue marker), keeping newest per bot/issue. Then
+  // enforce a fixed display order so the bots don't shuffle by recency:
+  // SPC → Fire → Hurricane → anything else.
+  const BOT_PRIORITY: Record<string, number> = {
+    "00000000-0000-0000-0000-000000000000": 0, // SPC
+    "00000000-0000-0000-0000-000000000002": 1, // Fire
+    "00000000-0000-0000-0000-000000000001": 2, // Hurricane
+  };
   return useMemo(() => {
     const seen = new Set<string>();
     const out: BotMessage[] = [];
@@ -80,6 +85,12 @@ function useBotMessages() {
       seen.add(key);
       out.push(m);
     }
+    out.sort((a, b) => {
+      const pa = BOT_PRIORITY[a.user_id] ?? 99;
+      const pb = BOT_PRIORITY[b.user_id] ?? 99;
+      if (pa !== pb) return pa - pb;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
     return out;
   }, [messages]);
 }

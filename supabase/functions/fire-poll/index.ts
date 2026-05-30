@@ -251,20 +251,44 @@ function joinList(arr: string[]): string | null {
   return `${arr.slice(0, -1).join(", ")}, and ${arr[arr.length - 1]}`;
 }
 
-function buildSummary(groups: RiskGroup[], dry: RiskGroup[], hazards: FireHazard[]): string {
+const NATURAL_PHRASES = [
+  "this morning and afternoon", "this afternoon and evening",
+  "this evening and overnight", "late tonight and tomorrow morning",
+  "tonight and tomorrow morning", "this afternoon", "this evening",
+  "tonight", "overnight", "tomorrow morning", "tomorrow afternoon",
+  "late afternoon and evening", "late afternoon", "early morning hours",
+  "morning hours", "afternoon hours", "evening hours",
+];
+function extractNaturalTime(discussion: string | null, hasValidWindow: boolean): string | null {
+  const src = (discussion ?? "").toLowerCase();
+  for (const p of NATURAL_PHRASES) if (src.includes(p)) return p;
+  return hasValidWindow ? "today and tonight" : null;
+}
+
+function buildSummary(
+  groups: RiskGroup[],
+  dry: RiskGroup[],
+  hazards: FireHazard[],
+  discussion: string | null,
+  validWindow: { startZ: string; endZ: string } | null,
+): string {
   const top = groups[0];
   const region = joinList(topStates([...groups, ...dry])) ?? "parts of the U.S.";
   const tier = top
     ? (top.label === "EXTM" ? "Extreme" : top.label === "CRIT" ? "Critical" : "Elevated")
     : null;
-  const lead = tier ? `${tier} fire weather conditions expected across ${region}` : `Dry thunderstorm activity possible across ${region}`;
+  const time = extractNaturalTime(discussion, !!validWindow);
+  const lead = tier
+    ? `${tier} fire weather conditions expected across ${region}`
+    : `Dry thunderstorm activity possible across ${region}`;
+  const leadWithTime = time ? `${lead} ${time}` : lead;
   const drivers: string[] = [];
   const rh = hazards.find((h) => h.kind === "rh"); if (rh) drivers.push(`RH ${rh.value}`);
   const w = hazards.find((h) => h.kind === "wind"); if (w) drivers.push(`${w.label.toLowerCase()} ${w.value}`);
   const f = hazards.find((h) => h.kind === "fuels"); if (f) drivers.push(`fuels ${f.value}`);
   const dt = hazards.find((h) => h.kind === "dry_thunder"); if (dt) drivers.push(`${dt.value.toLowerCase()} dry thunder`);
   const tail = drivers.length ? `, driven by ${joinList(drivers)}.` : ".";
-  return `${lead}${tail}`;
+  return `${leadWithTime}${tail}`;
 }
 
 function buildMessage(
@@ -352,7 +376,7 @@ Deno.serve(async (req) => {
       sct: dryGroups.some((g) => g.label === "SDRT"),
     };
     const { hazards, discussion, validWindow } = extractHazards(raw, hasDry);
-    const summary = buildSummary(groups, dryGroups, hazards);
+    const summary = buildSummary(groups, dryGroups, hazards, discussion, validWindow);
     const content = buildMessage(latest, groups, dryGroups, hazards, summary, validWindow, discussion);
 
     await supabase.from("fire_outlook_state").update({

@@ -21,7 +21,8 @@ import type { RawMessage } from "@/lib/reportGrouping";
 
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
 const HURRICANE_BOT_ID = "00000000-0000-0000-0000-000000000001";
-const BOT_USER_IDS = [BOT_USER_ID, HURRICANE_BOT_ID];
+const FIRE_BOT_ID = "00000000-0000-0000-0000-000000000002";
+const BOT_USER_IDS = [BOT_USER_ID, HURRICANE_BOT_ID, FIRE_BOT_ID];
 
 const RISK_TEXT: Record<SPCRiskLevel, string> = {
   NONE: "No Severe Risk",
@@ -223,6 +224,37 @@ function useHurricaneBotMessage() {
   return msg;
 }
 
+function useFireBotMessage() {
+  const [msg, setMsg] = useState<{ id: string; content: string; created_at: string } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("id,content,created_at")
+        .eq("user_id", FIRE_BOT_ID)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) setMsg(data ?? null);
+    };
+    void load();
+    const ch = supabase
+      .channel(`mobile-fire-bot_${Math.random().toString(36).slice(2)}_${Date.now()}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "messages", filter: `user_id=eq.${FIRE_BOT_ID}` },
+        () => void load(),
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(ch);
+    };
+  }, []);
+  return msg;
+}
+
 interface ChatMessage {
   id: string;
   username: string;
@@ -271,6 +303,7 @@ export default function MobileMain() {
   const warningPolygons = useWarningPolygons();
   const botMsg = useSPCBotMessage();
   const hurricaneMsg = useHurricaneBotMessage();
+  const fireMsg = useFireBotMessage();
   const chatMsgs = useRecentChatMessages(30);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -506,7 +539,25 @@ export default function MobileMain() {
         </div>
       )}
 
-      {/* 3b. Hurricane bot message (when present) */}
+      {/* 3b. Fire Weather bot message (between SPC and Hurricane) */}
+      {fireMsg && (
+        <SystemMessageCard
+          message={
+            {
+              id: fireMsg.id,
+              user_id: FIRE_BOT_ID,
+              username: "Fire Weather Bot",
+              badge: "System",
+              content: fireMsg.content,
+              created_at: fireMsg.created_at,
+            } satisfies RawMessage
+          }
+          expandedKey={expandedKey}
+          toggle={toggleKey}
+        />
+      )}
+
+      {/* 3c. Hurricane bot message (when present) */}
       {hurricaneMsg && (
         <SystemMessageCard
           message={
