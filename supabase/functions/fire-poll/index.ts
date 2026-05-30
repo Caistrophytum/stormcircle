@@ -124,7 +124,17 @@ interface FireHazard {
 }
 
 function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): { hazards: FireHazard[]; discussion: string | null; validWindow: { startZ: string; endZ: string } | null } {
-  const flat = text.replace(/\r/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const flat = text
+    .replace(/\r/g, "")
+    .replace(/<!--[\s\S]*?-->/g, " ")   // strip HTML comments first (can contain '>' that break tag regex)
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/--!?>/g, " ")            // belt-and-suspenders: kill any stray '-->'
+    .replace(/\s+/g, " ");
 
   let validWindow: { startZ: string; endZ: string } | null = null;
   const vm = flat.match(/VALID\s+\d{2}(\d{4})Z\s*-\s*\d{2}(\d{4})Z/i);
@@ -300,7 +310,17 @@ function buildMessage(
   validWindow: { startZ: string; endZ: string } | null,
   discussion: string | null,
 ): string {
-  const payload = JSON.stringify({ v: 1, issue, groups, dryThunder, hazards, summary, validWindow, discussion });
+  // NOTE: `discussion` is intentionally NOT embedded in the message payload.
+  // It can contain free-form text scraped from SPC HTML that, even after tag
+  // stripping, sometimes includes the literal sequence `-->`, which would
+  // prematurely terminate the surrounding `<!--data:...-->` HTML comment and
+  // break client-side JSON parsing. The frontend doesn't render it anyway.
+  const safeStr = (s: string | null | undefined) => (s ?? "").replace(/--!?>/g, " ");
+  const payload = JSON.stringify({
+    v: 2, issue, groups, dryThunder, hazards,
+    summary: safeStr(summary),
+    validWindow,
+  });
   return [
     `🔥 SPC Fire Weather Outlook — ${formatIssueTime(issue)}`,
     ``,
@@ -345,7 +365,18 @@ Deno.serve(async (req) => {
 
     const force = new URL(req.url).searchParams.get("force") === "1";
     const { data: stored } = await supabase.from("fire_outlook_state").select("issue").eq("id", 1).maybeSingle();
-    if (!force && stored?.issue === latest) {
+    // Also re-post if the currently stored bot message is on an older payload
+    // version (v<2) — earlier payloads embedded `discussion` which sometimes
+    // contained '-->' and broke client-side parsing.
+    const { data: existingBotMsg } = await supabase
+      .from("messages")
+      .select("content")
+      .eq("user_id", BOT_USER_ID)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const isStaleSchema = !existingBotMsg?.content?.includes('"v":2');
+    if (!force && stored?.issue === latest && !isStaleSchema) {
       await supabase.from("fire_outlook_state").update({ last_run_at: new Date().toISOString(), last_error: null }).eq("id", 1);
       return new Response(JSON.stringify({ ok: true, unchanged: true, issue: latest }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
