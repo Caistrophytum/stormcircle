@@ -303,6 +303,7 @@ export default function MobileMain() {
   const warningPolygons = useWarningPolygons();
   const botMsg = useSPCBotMessage();
   const hurricaneMsg = useHurricaneBotMessage();
+  const fireMsg = useFireBotMessage();
   const chatMsgs = useRecentChatMessages(30);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
