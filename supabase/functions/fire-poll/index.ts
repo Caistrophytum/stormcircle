@@ -124,7 +124,17 @@ interface FireHazard {
 }
 
 function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): { hazards: FireHazard[]; discussion: string | null; validWindow: { startZ: string; endZ: string } | null } {
-  const flat = text.replace(/\r/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const flat = text
+    .replace(/\r/g, "")
+    .replace(/<!--[\s\S]*?-->/g, " ")   // strip HTML comments first (can contain '>' that break tag regex)
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/--!?>/g, " ")            // belt-and-suspenders: kill any stray '-->'
+    .replace(/\s+/g, " ");
 
   let validWindow: { startZ: string; endZ: string } | null = null;
   const vm = flat.match(/VALID\s+\d{2}(\d{4})Z\s*-\s*\d{2}(\d{4})Z/i);
