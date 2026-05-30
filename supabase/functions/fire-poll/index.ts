@@ -317,7 +317,7 @@ function buildMessage(
   // break client-side JSON parsing. The frontend doesn't render it anyway.
   const safeStr = (s: string | null | undefined) => (s ?? "").replace(/--!?>/g, " ");
   const payload = JSON.stringify({
-    v: 1, issue, groups, dryThunder, hazards,
+    v: 2, issue, groups, dryThunder, hazards,
     summary: safeStr(summary),
     validWindow,
   });
