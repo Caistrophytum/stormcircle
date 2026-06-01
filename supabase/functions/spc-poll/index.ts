@@ -10,7 +10,10 @@ import {
 } from "./summary.ts";
 
 // MapServer layer indices for the SPC Day 1 outlooks.
-//   1 = Categorical, 2 = Tornado, 3 = Hail, 4 = Wind
+//   1 = Categorical, 3 = Probabilistic Tornado, 5 = Probabilistic Hail,
+//   7 = Probabilistic Wind. (Layers 2/4/6 are Conditional Intensity — they
+//   contain CIG categories, not probabilities, and using them produces
+//   nonsense like "2% hail" from a CIG1 polygon.)
 const SPC_LAYER_URL = (layer: number) =>
   `https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/SPC_wx_outlks/MapServer/${layer}/query?where=1%3D1&outFields=*&returnGeometry=false&f=geojson`;
 const SPC_GEOJSON =
