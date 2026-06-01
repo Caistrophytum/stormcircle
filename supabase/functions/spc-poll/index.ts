@@ -207,9 +207,9 @@ function joinList(arr: string[]): string | null {
 async function fetchHazardLayers(): Promise<HazardSummary[]> {
   const out: HazardSummary[] = [];
   const layers: { idx: number; key: HazardSummary["hazard"] }[] = [
-    { idx: 2, key: "tornado" },
-    { idx: 3, key: "hail" },
-    { idx: 4, key: "wind" },
+    { idx: 3, key: "tornado" },
+    { idx: 5, key: "hail" },
+    { idx: 7, key: "wind" },
   ];
   for (const { idx, key } of layers) {
     try {
