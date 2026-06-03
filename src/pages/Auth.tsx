@@ -345,6 +345,9 @@ const Auth = () => {
           </div>
 
           <div className="p-5">
+            <p className="text-[10px] font-mono text-muted-foreground text-center mb-4">
+              Authentication emails may take up to 5 minutes to arrive
+            </p>
             {view === "login" && (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-1.5">
