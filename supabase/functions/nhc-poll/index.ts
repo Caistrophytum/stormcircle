@@ -84,9 +84,31 @@ function fmtAdv(d: Date): string {
   return `${m} ${day}, ${y}. ${h}z`;
 }
 
-function advisoryMsg(s: NormStorm, isNew: boolean): string {
+// Fetch the NHC Public Advisory and pull out its one-line headline
+// (the "...HEADLINE GOES HERE..." line that sits right above the SUMMARY).
+// Kept defensive — returns null on any failure so the bot still posts.
+async function fetchAdvisoryHeadline(url: string): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) return null;
+    const html = await r.text();
+    const pre = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i)?.[1] ?? html;
+    const text = pre.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+    // Headlines look like: ...AMANDA SHOWING LITTLE CHANGE IN STRENGTH...
+    const m = text.match(/^\s*\.\.\.([^.\n][^\n]*?)\.\.\.\s*$/m);
+    if (!m) return null;
+    const headline = m[1].trim().replace(/\s+/g, " ");
+    // Title-case so it doesn't shout inside the card.
+    return headline.length > 120 ? headline.slice(0, 118) + "…" : headline;
+  } catch { return null; }
+}
+
+function advisoryMsg(s: NormStorm, isNew: boolean, headline: string | null): string {
   const header = isNew ? `🌀 NEW STORM: ${s.name} — ${s.classification_label}` : `🌀 ADVISORY UPDATE: ${s.name}`;
-  return [header, ``,
+  return [header,
+    headline ? `📢 ${headline}` : ``,
+    ``,
     `Classification: ${s.classification_label}`,
     `Location: ${s.lat_str}, ${s.lon_str}`,
     `Max Winds: ${s.intensity_mph} mph (${s.intensity_kt} kt)`,
@@ -99,8 +121,10 @@ function advisoryMsg(s: NormStorm, isNew: boolean): string {
     `<!--hadv:${s.storm_id}:${s.last_update}-->`,
   ].filter(Boolean).join("\n");
 }
-function dangerMsg(s: NormStorm): string {
-  return [`🔴 ${s.danger_level}: ${s.name.toUpperCase()}`, ``,
+function dangerMsg(s: NormStorm, headline: string | null): string {
+  return [`🔴 ${s.danger_level}: ${s.name.toUpperCase()}`,
+    headline ? `📢 ${headline}` : ``,
+    ``,
     `Winds: ${s.intensity_mph} mph — Pressure: ${s.pressure} mb`,
     `Current position: ${s.lat_str}, ${s.lon_str}`,
     `Moving: ${s.movement_dir_compass} at ${Math.round(s.movement_speed * 1.151)} mph`, ``,
