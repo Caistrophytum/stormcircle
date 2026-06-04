@@ -117,7 +117,7 @@ function advisoryMsg(s: NormStorm, isNew: boolean, headline: string | null): str
     ``,
     s.is_dangerous && s.forecast_graphics_url
       ? `⚠️ DANGEROUS STORM — See forecast: ${s.forecast_graphics_url}`
-      : s.advisory_url ? `Advisory: ${s.advisory_url}` : ``,
+      : ``,
     `<!--hadv:${s.storm_id}:${s.last_update}-->`,
   ].filter(Boolean).join("\n");
 }
