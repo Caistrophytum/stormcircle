@@ -182,8 +182,9 @@ Deno.serve(async (req) => {
       const changed = isNew || new Date(s.last_update).getTime() !== new Date(prev!).getTime();
       await supabase.from("nhc_storms").upsert({ ...s, updated_at: new Date().toISOString() });
       if (changed) {
-        await postBot(supabase, advisoryMsg(s, isNew));
-        if (s.is_dangerous) await postBot(supabase, dangerMsg(s));
+        const headline = await fetchAdvisoryHeadline(s.advisory_url);
+        await postBot(supabase, advisoryMsg(s, isNew, headline));
+        if (s.is_dangerous) await postBot(supabase, dangerMsg(s, headline));
       }
     }
 
