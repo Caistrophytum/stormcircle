@@ -177,7 +177,12 @@ function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): {
     const raw = fuels[0].replace(/\s+/g, " ").trim();
     const sev: FireHazard["severity"] = /critic|record|99th|95th/i.test(raw) ? "high"
                                      : /very dry|90th/i.test(raw) ? "med" : "low";
-    const value = raw.length > 40 ? raw.slice(0, 38) + "…" : raw;
+    // Strip a leading "fuels (are|remain|continue to be)" so the chip doesn't
+    // render as "Fuels Fuels remain dry" — the label already says "Fuels".
+    let trimmed = raw.replace(/^fuels?\s+(?:are|remain|continue to be)?\s*/i, "").trim();
+    if (!trimmed) trimmed = raw;
+    trimmed = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    const value = trimmed.length > 40 ? trimmed.slice(0, 38) + "…" : trimmed;
     hazards.push({ kind: "fuels", label: "Fuels", value, severity: sev });
   }
 
