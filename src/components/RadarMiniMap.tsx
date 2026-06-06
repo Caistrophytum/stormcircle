@@ -172,7 +172,8 @@ const RadarStationMarkers = ({
               weight: isSelected ? 2 : 1,
             }}
             eventHandlers={{
-              click: () => {
+              click: (e) => {
+                L.DomEvent.stopPropagation(e);
                 onStationSelect(station);
                 onProductSelect("N0B");
               },
