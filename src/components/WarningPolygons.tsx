@@ -225,9 +225,17 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
           color,
           weight: 2,
           opacity: 1,
-          fillOpacity: 0,
+          // Tiny non-zero fill so the entire polygon interior is hit-testable
+          // on mobile taps — pure 0 fill on canvas can miss touch events away
+          // from the 2px stroke.
+          fillOpacity: 0.001,
+          fillColor: color,
           pane: WARNINGS_PANE,
           renderer: rendererRef.current ?? undefined,
+          // Don't let the polygon's click bubble up to the map — otherwise
+          // the map's own click handler immediately closes the popup we just
+          // opened (especially noticeable on mobile taps).
+          bubblingMouseEvents: false,
         }).addTo(map);
 
         // Click: open a combined popup containing every polygon at that point
