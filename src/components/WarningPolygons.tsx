@@ -123,6 +123,33 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
     const polygonsRef = useRef<WarningPolygon[]>(polygons);
     useEffect(() => { polygonsRef.current = polygons; }, [polygons]);
 
+    const openWarningPopup = (
+      latlng: L.LatLngExpression,
+      fallback?: WarningPolygon,
+    ) => {
+      const point = L.latLng(latlng);
+      const hits = polygonsRef.current.filter(
+        (q) => q.geometry && pointInPolygon(point.lng, point.lat, q.geometry),
+      );
+      const list = hits.length ? hits : fallback ? [fallback] : [];
+      if (!list.length) return;
+
+      const html = `<div class="warning-popup-stack">${list
+        .map((q) => buildTooltipHtml(q))
+        .join('<div class="warning-popup-sep"></div>')}</div>`;
+
+      L.popup({
+        maxWidth: 280,
+        className: "warning-popup",
+        autoClose: true,
+        closeOnClick: false,
+        keepInView: true,
+      })
+        .setLatLng(point)
+        .setContent(html)
+        .openOn(map);
+    };
+
     useImperativeHandle(ref, () => ({
       flyToWarning(eventType: string) {
         const match = polygonsRef.current.find((p) => p.event === eventType);
@@ -130,18 +157,7 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
         const [centerLat, centerLon] = polygonCenter(match.geometry);
         map.flyTo([centerLat, centerLon], 8, { duration: 1.2 });
         setTimeout(() => {
-          const [cLat, cLon] = [centerLat, centerLon];
-          const hits = polygonsRef.current.filter(
-            (q) => q.geometry && pointInPolygon(cLon, cLat, q.geometry),
-          );
-          const list = hits.length ? hits : [match];
-          const html = `<div class="warning-popup-stack">${list
-            .map((q) => buildTooltipHtml(q))
-            .join('<div class="warning-popup-sep"></div>')}</div>`;
-          L.popup({ maxWidth: 280, className: "warning-popup" })
-            .setLatLng([cLat, cLon])
-            .setContent(html)
-            .openOn(map);
+          openWarningPopup([centerLat, centerLon], match);
         }, 1400);
       },
     }));
@@ -344,6 +360,23 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
       return () => {
         map.off("mousemove", onMove);
         map.off("mouseout", onOut);
+      };
+    }, [map]);
+
+    useEffect(() => {
+      if (!IS_TOUCH_ONLY) return;
+
+      const onTap = (e: L.LeafletMouseEvent) => {
+        const hasHit = polygonsRef.current.some(
+          (p) => p.geometry && pointInPolygon(e.latlng.lng, e.latlng.lat, p.geometry),
+        );
+        if (!hasHit) return;
+        openWarningPopup(e.latlng);
+      };
+
+      map.on("click", onTap);
+      return () => {
+        map.off("click", onTap);
       };
     }, [map]);
 
