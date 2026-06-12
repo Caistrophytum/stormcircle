@@ -17,6 +17,7 @@ import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import { useUnitSystem, displayTemp, displayLengthM } from "@/hooks/useUnitSystem";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
+import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import type { RawMessage } from "@/lib/reportGrouping";
 
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
@@ -507,6 +508,15 @@ export default function MobileMain() {
       >
         {hometownText}
       </div>
+
+      {/* 2b. Current-location hazards — transparent, outlined per polygon color. */}
+      <CurrentLocationHazards
+        polygons={warningPolygons.polygons}
+        coords={homeRisk.coords}
+        cityLabel={profile?.location ?? null}
+      />
+
+
 
       {/* 3. SPC bot message — interactive (expandable per-risk dropdowns) */}
       {botMsg ? (
