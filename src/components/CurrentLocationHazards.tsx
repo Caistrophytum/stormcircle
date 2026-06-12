@@ -83,7 +83,7 @@ export default function CurrentLocationHazards({
       <div
         style={{
           fontFamily: "'JetBrains Mono', monospace",
-          fontSize: "9px",
+          fontSize: "10px",
           letterSpacing: "0.15em",
           color: "hsl(var(--muted-foreground))",
           textTransform: "uppercase",
@@ -105,7 +105,7 @@ export default function CurrentLocationHazards({
             style={{
               border: `1px solid ${color}`,
               background: "transparent",
-              padding: "4px 8px",
+              padding: "6px 10px",
               display: "flex",
               flexDirection: "column",
               gap: "2px",
@@ -116,7 +116,7 @@ export default function CurrentLocationHazards({
             <div
               style={{
                 color,
-                fontSize: "10px",
+                fontSize: "11px",
                 fontWeight: 700,
                 letterSpacing: "0.05em",
                 textTransform: "uppercase",
@@ -128,7 +128,7 @@ export default function CurrentLocationHazards({
             <div
               style={{
                 color,
-                fontSize: "9px",
+                fontSize: "10px",
                 opacity: 0.85,
                 lineHeight: 1.3,
               }}
