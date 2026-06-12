@@ -2,6 +2,7 @@ import { forwardRef, lazy, Suspense, useState, useMemo, useRef, useEffect, useLa
 import { motion, AnimatePresence } from "framer-motion";
 
 import EventInfoPanel from "./EventInfoPanel";
+import CurrentLocationHazards from "./CurrentLocationHazards";
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
