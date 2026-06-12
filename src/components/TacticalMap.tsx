@@ -454,6 +454,26 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         );
       })()}
 
+      {/* Current-location hazards — stacks above the risk strip, transparent
+          rows outlined in each hazard's polygon color. Hidden when empty. */}
+      {user && homeRisk.coords && (
+        <div
+          className="absolute z-10 transition-all duration-300 ease-in-out pointer-events-none"
+          style={{
+            left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+            bottom: "11.75rem",
+            maxWidth: "440px",
+          }}
+        >
+          <CurrentLocationHazards
+            polygons={warningPolygons.polygons}
+            coords={homeRisk.coords}
+            cityLabel={profile?.location ?? null}
+          />
+        </div>
+      )}
+
+
       {/* Data nodes – full width to right edge */}
       <div
         className="absolute bottom-[5.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
