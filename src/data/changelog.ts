@@ -20,7 +20,7 @@ export const changelog: ChangelogEntry[] = [
   {
     date: "2026-06-13 05z",
     tag: "NEW",
-    title: "Current hzards tab",
+    title: "Current hazards tab",
     body: "A new tab appearing when there's an active weather hazard (warning/advisory/etc.) in your hometown.",
   },
   {
