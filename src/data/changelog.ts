@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-06-13 05z",
+    tag: "NEW",
+    title: "Current hzards tab",
+    body: "A new tab appearing when there's an active weather hazard (warning/advisory/etc.) in your hometown.",
+  },
+  {
     date: "2026-05-27 06z",
     tag: "NEW",
     title: "Fire weather bot",
