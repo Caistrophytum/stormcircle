@@ -161,6 +161,72 @@ function hasPDS(haystack: string): boolean {
   return /particularly dangerous situation|\bpds\b/.test(haystack);
 }
 
+/**
+ * Fallback resolver: if NWS introduces or renames an event (e.g. the 2025
+ * "Extreme Heat Warning" rollout) and it isn't in WARNING_COLORS, pick the
+ * closest semantic sibling by keyword + tier (Warning/Watch/Advisory/
+ * Statement) so we never fall through to the generic default.
+ */
+function resolveByKeyword(event: string): string | null {
+  if (!event) return null;
+  const e = event.toLowerCase();
+  const tier =
+    /warning$/i.test(event) ? "Warning"
+    : /watch$/i.test(event) ? "Watch"
+    : /advisory$/i.test(event) ? "Advisory"
+    : /statement$/i.test(event) ? "Statement"
+    : null;
+
+  // Ordered keyword → canonical family. First match wins.
+  const families: Array<[RegExp, string]> = [
+    [/\btornado\b/, "Tornado"],
+    [/\b(severe\s+thunderstorm|thunderstorm)\b/, "Severe Thunderstorm"],
+    [/\bflash\s*flood\b/, "Flash Flood"],
+    [/\b(coastal|lakeshore)\s+flood\b/, "Coastal Flood"],
+    [/\bflood\b/, "Flood"],
+    [/\bhurricane\s+force\s+wind\b/, "Hurricane Force Wind"],
+    [/\bhurricane\b/, "Hurricane"],
+    [/\btyphoon\b/, "Typhoon"],
+    [/\btropical\s+storm\b/, "Tropical Storm"],
+    [/\btsunami\b/, "Tsunami"],
+    [/\bblizzard\b/, "Blizzard"],
+    [/\bice\s+storm\b/, "Ice Storm"],
+    [/\blake\s+effect\s+snow\b/, "Lake Effect Snow"],
+    [/\bwinter\s+storm\b/, "Winter Storm"],
+    [/\bwinter\s+weather\b/, "Winter Weather"],
+    [/\b(extreme\s+heat|excessive\s+heat)\b/, "Excessive Heat"],
+    [/\bheat\b/, "Heat"],
+    [/\b(extreme\s+cold|wind\s+chill)\b/, "Wind Chill"],
+    [/\bcold\s+weather\b/, "Wind Chill"],
+    [/\bfreeze\b/, "Freeze"],
+    [/\bfrost\b/, "Frost"],
+    [/\b(high\s+wind|wind)\b/, "High Wind"],
+    [/\bred\s+flag|fire\s+weather\b/, "Red Flag"],
+    [/\bdense\s+fog\b/, "Dense Fog"],
+    [/\bdust\s+storm\b/, "Dust Storm"],
+    [/\bavalanche\b/, "Avalanche"],
+    [/\bhigh\s+surf\b/, "High Surf"],
+    [/\bspecial\s+marine\b/, "Special Marine"],
+    [/\bsmall\s+craft\b/, "Small Craft"],
+    [/\bgale\b/, "Gale"],
+    [/\bstorm\b/, "Storm"],
+  ];
+
+  for (const [re, family] of families) {
+    if (!re.test(e)) continue;
+    if (tier) {
+      const key = `${family} ${tier}`;
+      if (WARNING_COLORS[key]) return WARNING_COLORS[key];
+    }
+    // Try any tier in known order if the exact one isn't mapped.
+    for (const t of ["Warning", "Watch", "Advisory", "Statement"]) {
+      const key = `${family} ${t}`;
+      if (WARNING_COLORS[key]) return WARNING_COLORS[key];
+    }
+  }
+  return null;
+}
+
 export function getWarningColor(properties: any): string {
   const event = properties?.event as string;
   const haystack = buildHaystack(properties);
@@ -176,7 +242,7 @@ export function getWarningColor(properties: any): string {
     if (pds) return "#ADFF2F";
   }
 
-  return WARNING_COLORS[event] ?? "#FFFFFF";
+  return WARNING_COLORS[event] ?? resolveByKeyword(event) ?? "#FFFFFF";
 }
 
 export function getWarningTags(properties: any): string[] {
