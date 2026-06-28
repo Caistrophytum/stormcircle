@@ -11,11 +11,17 @@
  * space inside the 280px drawer.
  */
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Bot } from "lucide-react";
+import { ChevronDown, ChevronRight, Bot, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import { useSPCOutlookLoading } from "@/hooks/useSPCOutlook";
 import IntegrationPanel from "@/components/IntegrationPanel";
+import CurrentLocationHazards from "@/components/CurrentLocationHazards";
+import { useAuth } from "@/hooks/useAuth";
+import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
+import { useWarningPolygons } from "@/hooks/useWarningPolygons";
+import type { RawMessage } from "@/lib/reportGrouping";
+
 import type { RawMessage } from "@/lib/reportGrouping";
 
 type BotMessage = RawMessage;
