@@ -129,6 +129,10 @@ function SectionHeader({
 export default function LeftSidePanel() {
   const botMessages = useBotMessages();
   const spcLoading = useSPCOutlookLoading();
+  const { profile } = useAuth();
+  const homeRisk = useHomeCityRisk(profile?.location ?? null);
+  const { polygons } = useWarningPolygons();
+  const [hazardsOpen, setHazardsOpen] = useState(true);
   const [botOpen, setBotOpen] = useState(true);
   const [reportsOpen, setReportsOpen] = useState(true);
   const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
@@ -140,9 +144,33 @@ export default function LeftSidePanel() {
       return next;
     });
 
+  const showHazards = !!homeRisk.coords;
+
   return (
     <div className="flex h-full flex-col">
+      {/* ── Current Location Hazards section ─────────────────────────── */}
+      {showHazards && (
+        <div className="shrink-0 flex flex-col border-b border-border">
+          <SectionHeader
+            title="Current Hazards"
+            open={hazardsOpen}
+            onToggle={() => setHazardsOpen((v) => !v)}
+            icon={<AlertTriangle className="size-3" />}
+          />
+          {hazardsOpen && (
+            <div className="max-h-[40vh] overflow-y-auto p-3">
+              <CurrentLocationHazards
+                polygons={polygons}
+                coords={homeRisk.coords}
+                cityLabel={profile?.location ?? null}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Bot Messages section ─────────────────────────────────────── */}
+
       <div className={`flex flex-col ${botOpen ? "flex-1 min-h-0" : "shrink-0"}`}>
         <SectionHeader
           title="Bot Messages"
