@@ -11,12 +11,18 @@
  * space inside the 280px drawer.
  */
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Bot } from "lucide-react";
+import { ChevronDown, ChevronRight, Bot, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import { useSPCOutlookLoading } from "@/hooks/useSPCOutlook";
 import IntegrationPanel from "@/components/IntegrationPanel";
+import CurrentLocationHazards from "@/components/CurrentLocationHazards";
+import { useAuth } from "@/hooks/useAuth";
+import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
+import { useWarningPolygons } from "@/hooks/useWarningPolygons";
+import { pointInPolygon } from "@/lib/pointInPolygon";
 import type { RawMessage } from "@/lib/reportGrouping";
+
 
 type BotMessage = RawMessage;
 
@@ -124,6 +130,10 @@ function SectionHeader({
 export default function LeftSidePanel() {
   const botMessages = useBotMessages();
   const spcLoading = useSPCOutlookLoading();
+  const { profile } = useAuth();
+  const homeRisk = useHomeCityRisk(profile?.location ?? null);
+  const { polygons } = useWarningPolygons();
+  const [hazardsOpen, setHazardsOpen] = useState(true);
   const [botOpen, setBotOpen] = useState(true);
   const [reportsOpen, setReportsOpen] = useState(true);
   const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
@@ -135,9 +145,38 @@ export default function LeftSidePanel() {
       return next;
     });
 
+  const showHazards = useMemo(() => {
+    if (!homeRisk.coords) return false;
+    return polygons.some(
+      (p) => p.geometry && pointInPolygon(homeRisk.coords!.lon, homeRisk.coords!.lat, p.geometry),
+    );
+  }, [polygons, homeRisk.coords]);
+
   return (
     <div className="flex h-full flex-col">
+      {/* ── Current Location Hazards section ─────────────────────────── */}
+      {showHazards && (
+        <div className="shrink-0 flex flex-col border-b border-border">
+          <SectionHeader
+            title="Current Hazards"
+            open={hazardsOpen}
+            onToggle={() => setHazardsOpen((v) => !v)}
+            icon={<AlertTriangle className="size-3" />}
+          />
+          {hazardsOpen && (
+            <div className="max-h-[40vh] overflow-y-auto p-3">
+              <CurrentLocationHazards
+                polygons={polygons}
+                coords={homeRisk.coords}
+                cityLabel={profile?.location ?? null}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Bot Messages section ─────────────────────────────────────── */}
+
       <div className={`flex flex-col ${botOpen ? "flex-1 min-h-0" : "shrink-0"}`}>
         <SectionHeader
           title="Bot Messages"

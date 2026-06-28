@@ -2,7 +2,7 @@ import { forwardRef, lazy, Suspense, useState, useMemo, useRef, useEffect, useLa
 import { motion, AnimatePresence } from "framer-motion";
 
 import EventInfoPanel from "./EventInfoPanel";
-import CurrentLocationHazards from "./CurrentLocationHazards";
+
 import { useWeatherData } from "@/hooks/useWeatherData";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
@@ -454,24 +454,9 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         );
       })()}
 
-      {/* Current-location hazards — stacks above the risk strip, transparent
-          rows outlined in each hazard's polygon color. Hidden when empty. */}
-      {user && homeRisk.coords && (
-        <div
-          className="absolute z-10 transition-all duration-300 ease-in-out pointer-events-none"
-          style={{
-            left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
-            bottom: "11.75rem",
-            maxWidth: "440px",
-          }}
-        >
-          <CurrentLocationHazards
-            polygons={warningPolygons.polygons}
-            coords={homeRisk.coords}
-            cityLabel={profile?.location ?? null}
-          />
-        </div>
-      )}
+      {/* Current-location hazards moved to the left side panel (LeftSidePanel). */}
+
+
 
 
       {/* Data nodes – full width to right edge */}
