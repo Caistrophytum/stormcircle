@@ -22,7 +22,6 @@ import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
 import type { RawMessage } from "@/lib/reportGrouping";
 
-import type { RawMessage } from "@/lib/reportGrouping";
 
 type BotMessage = RawMessage;
 
