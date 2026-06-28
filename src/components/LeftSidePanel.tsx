@@ -20,6 +20,7 @@ import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
+import { pointInPolygon } from "@/lib/pointInPolygon";
 import type { RawMessage } from "@/lib/reportGrouping";
 
 
