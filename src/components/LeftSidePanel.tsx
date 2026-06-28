@@ -145,7 +145,12 @@ export default function LeftSidePanel() {
       return next;
     });
 
-  const showHazards = !!homeRisk.coords;
+  const showHazards = useMemo(() => {
+    if (!homeRisk.coords) return false;
+    return polygons.some(
+      (p) => p.geometry && pointInPolygon(homeRisk.coords!.lon, homeRisk.coords!.lat, p.geometry),
+    );
+  }, [polygons, homeRisk.coords]);
 
   return (
     <div className="flex h-full flex-col">
