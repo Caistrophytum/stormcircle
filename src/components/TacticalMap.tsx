@@ -199,15 +199,14 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
     };
 
-    // Convert and format temperature (LIFTED INDEX) — flips with unit system
-    const fmtTemp = (v: number | null, digits = 1): string => {
+    // LIFTED INDEX is a dimensionless stability index (not a temperature),
+    // so it is never unit-converted between °C and °F.
+    const fmtLI = (v: number | null, digits = 1): string => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
       if (v === null) return "ERR";
-      const d = displayTemp(v, unitSystem);
-      return d ? d.value.toFixed(digits) : "ERR";
+      return v.toFixed(digits);
     };
-    const tempUnit = unitSystem === "metric" ? "°C" : "°F";
 
     // Convert and format length-in-meters (LCL, BL HEIGHT) — flips with unit system
     const fmtLenM = (v: number | null): string => {
@@ -252,7 +251,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     const nodes = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape !== null), wrsContribution: capeContrib },
       { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin !== null), wrsContribution: cinContrib },
-      { label: "LIFTED INDEX", value: fmtTemp(sounding.li, 1), unit: tempUnit, color: colorFromScore(liScore, sounding.li !== null), wrsContribution: liContrib },
+      { label: "LIFTED INDEX", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li !== null), wrsContribution: liContrib },
       { label: "BL HEIGHT", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh !== null), wrsContribution: blhContrib },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl !== null), wrsContribution: lclContrib },
     ];

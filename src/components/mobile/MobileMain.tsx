@@ -342,12 +342,12 @@ export default function MobileMain() {
       if (v === null) return "ERR";
       return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
     };
-    const fmtTemp = (v: number | null, digits = 1) => {
+    // LIFTED INDEX is a dimensionless stability index, never unit-converted.
+    const fmtLI = (v: number | null, digits = 1) => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
       if (v === null) return "ERR";
-      const d = displayTemp(v, unitSystem);
-      return d ? d.value.toFixed(digits) : "ERR";
+      return v.toFixed(digits);
     };
     const fmtLenM = (v: number | null) => {
       if (sounding.loading) return "...";
@@ -356,7 +356,6 @@ export default function MobileMain() {
       const d = displayLengthM(v, unitSystem);
       return d ? Math.round(d.value).toLocaleString() : "ERR";
     };
-    const tempUnit = unitSystem === "metric" ? "°C" : "°F";
     const lenUnit = unitSystem === "metric" ? "m" : "ft";
 
     const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
@@ -385,7 +384,7 @@ export default function MobileMain() {
     const nodes = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib },
       { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinContrib },
-      { label: "LI", value: fmtTemp(sounding.li, 1), unit: tempUnit, color: colorFromScore(liScore, sounding.li != null), w: liContrib },
+      { label: "LI", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li != null), w: liContrib },
       { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh != null), w: blhContrib },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib },
     ];
