@@ -232,11 +232,15 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     // LCL (inverted): 0 → 1, 2000 → 0
     const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
 
+    // CAPE-gated log multiplier: ingredients only pay out when CAPE is present.
+    // g(c) = ln(1 + 9c) / ln(10) — rises fast at low CAPE, plateaus near full.
+    // Prevents a calm, humid, capped day from collecting ~30 "free" WRS points.
+    const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
     const capeContrib = stationActive ? Math.round(capeScore * 35) : 0;
-    const liContrib = stationActive ? Math.round(liScore * 25) : 0;
-    const cinContrib = stationActive ? Math.round(cinScore * 15) : 0;
-    const lclContrib = stationActive ? Math.round(lclScore * 15) : 0;
-    const blhContrib = stationActive ? Math.round(blhScore * 10) : 0;
+    const liContrib = stationActive ? Math.round(liScore * 25 * capeGate) : 0;
+    const cinContrib = stationActive ? Math.round(cinScore * 15 * capeGate) : 0;
+    const lclContrib = stationActive ? Math.round(lclScore * 15 * capeGate) : 0;
+    const blhContrib = stationActive ? Math.round(blhScore * 10 * capeGate) : 0;
 
     // Unified color scale tied to each parameter's normalized severity score.
     // The redder the value, the more it pushes the WRS score upward.
