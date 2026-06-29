@@ -342,12 +342,12 @@ export default function MobileMain() {
       if (v === null) return "ERR";
       return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
     };
-    const fmtTemp = (v: number | null, digits = 1) => {
+    // LIFTED INDEX is a dimensionless stability index, never unit-converted.
+    const fmtLI = (v: number | null, digits = 1) => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
       if (v === null) return "ERR";
-      const d = displayTemp(v, unitSystem);
-      return d ? d.value.toFixed(digits) : "ERR";
+      return v.toFixed(digits);
     };
     const fmtLenM = (v: number | null) => {
       if (sounding.loading) return "...";
@@ -356,7 +356,6 @@ export default function MobileMain() {
       const d = displayLengthM(v, unitSystem);
       return d ? Math.round(d.value).toLocaleString() : "ERR";
     };
-    const tempUnit = unitSystem === "metric" ? "°C" : "°F";
     const lenUnit = unitSystem === "metric" ? "m" : "ft";
 
     const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
