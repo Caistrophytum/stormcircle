@@ -199,15 +199,14 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
     };
 
-    // Convert and format temperature (LIFTED INDEX) — flips with unit system
-    const fmtTemp = (v: number | null, digits = 1): string => {
+    // LIFTED INDEX is a dimensionless stability index (not a temperature),
+    // so it is never unit-converted between °C and °F.
+    const fmtLI = (v: number | null, digits = 1): string => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
       if (v === null) return "ERR";
-      const d = displayTemp(v, unitSystem);
-      return d ? d.value.toFixed(digits) : "ERR";
+      return v.toFixed(digits);
     };
-    const tempUnit = unitSystem === "metric" ? "°C" : "°F";
 
     // Convert and format length-in-meters (LCL, BL HEIGHT) — flips with unit system
     const fmtLenM = (v: number | null): string => {
