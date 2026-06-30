@@ -189,7 +189,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
-  const { soundingNodes, threatLevel } = useMemo(() => {
+  const { soundingNodes, physicalNodes, threatLevel } = useMemo(() => {
     const stationActive = radar.selectedStation !== null && !sounding.loading;
 
     const fmt = (v: number | null, digits = 0): string => {
@@ -276,8 +276,29 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl !== null), wrsContribution: lclContrib },
     ];
 
+    // Physical metrics — surface-felt parameters that gate the virtual block.
+    // Triangle % shows each parameter's own 0..1 score (drives physGate).
+    const gustDisp = sounding.gustMs != null
+      ? (unitSystem === "imperial" ? sounding.gustMs * 2.23694 : sounding.gustMs * 3.6)
+      : null;
+    const gustUnit = unitSystem === "imperial" ? "mph" : "km/h";
+    const precDisp = sounding.precipMmH != null
+      ? (unitSystem === "imperial" ? sounding.precipMmH / 25.4 : sounding.precipMmH)
+      : null;
+    const precUnit = unitSystem === "imperial" ? "in/h" : "mm/h";
+    const fmtPhys = (v: number | null, digits = 1) => {
+      if (sounding.loading) return "...";
+      if (radar.selectedStation === null) return "—";
+      if (v === null) return "ERR";
+      return v.toFixed(digits);
+    };
+    const physicalNodes = [
+      { label: "GUST", value: fmtPhys(gustDisp, 0), unit: gustUnit, color: colorFromScore(gustScore, sounding.gustMs != null), wrsContribution: stationActive ? Math.round(gustScore * 100) : 0 },
+      { label: "PRECIP", value: fmtPhys(precDisp, 2), unit: precUnit, color: colorFromScore(precScore, sounding.precipMmH != null), wrsContribution: stationActive ? Math.round(precScore * 100) : 0 },
+    ];
+
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
-    return { soundingNodes: nodes, threatLevel: threat };
+    return { soundingNodes: nodes, physicalNodes, threatLevel: threat };
   }, [sounding, radar.selectedStation, unitSystem]);
 
   // Derive weather condition from live threat level
@@ -455,7 +476,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 
         return (
           <div
-            className="absolute bottom-[9.75rem] right-4 z-10 transition-all duration-300 ease-in-out"
+            className="absolute bottom-[13.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
             style={{
               left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
             }}
@@ -478,13 +499,14 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 
 
 
-      {/* Data nodes – full width to right edge */}
+      {/* Virtual metrics – sounding-derived instability ingredients */}
       <div
-        className="absolute bottom-[5.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
+        className="absolute bottom-[9.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
         }}
       >
+        <div className="text-[8px] font-mono text-primary tracking-[0.15em] font-bold mb-1 uppercase">Virtual Metrics</div>
         <div className="flex gap-2 justify-between">
           {soundingNodes.map((node) => (
             <div
@@ -497,6 +519,46 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
                 <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>
               </span>
               {/* WRS contribution triangle */}
+              <div
+                className="absolute right-0 top-0 h-full"
+                style={{
+                  width: "28px",
+                  clipPath: "polygon(100% 0, 100% 100%, 0 50%)",
+                  background: "hsl(0 0% 92%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingLeft: "9px",
+                }}
+              >
+                <span className="text-[11px] font-mono font-bold text-background leading-none" style={{ marginRight: "3px" }}>
+                  {node.wrsContribution}%
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Physical metrics – surface-felt parameters that gate the virtual block */}
+      <div
+        className="absolute bottom-[5.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
+        style={{
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+        }}
+      >
+        <div className="text-[8px] font-mono text-primary tracking-[0.15em] font-bold mb-1 uppercase">Physical Metrics</div>
+        <div className="flex gap-2 justify-between">
+          {physicalNodes.map((node) => (
+            <div
+              key={node.label}
+              className="relative flex-1 px-3 py-2 bg-background border-l-2 border-primary/30 flex flex-col gap-1 overflow-visible"
+            >
+              <span className="text-[8px] font-mono text-muted-foreground leading-none">{node.label}</span>
+              <span className={`text-sm font-mono font-bold ${node.color} whitespace-nowrap`}>
+                {node.value}
+                <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>
+              </span>
               <div
                 className="absolute right-0 top-0 h-full"
                 style={{

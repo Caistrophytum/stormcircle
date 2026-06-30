@@ -334,7 +334,7 @@ export default function MobileMain() {
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
 
   // ── Sounding / WRS ───────────────────────────────────────────────
-  const { nodes, threatLevel } = useMemo(() => {
+  const { nodes, physicalNodes, threatLevel } = useMemo(() => {
     const stationActive = radar.selectedStation !== null && !sounding.loading;
     const fmt = (v: number | null, digits = 0) => {
       if (sounding.loading) return "...";
@@ -399,8 +399,29 @@ export default function MobileMain() {
       { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh != null), w: blhContrib },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib },
     ];
+
+    // Physical metrics — surface-felt parameters that gate the virtual block.
+    const gustDisp = sounding.gustMs != null
+      ? (unitSystem === "imperial" ? sounding.gustMs * 2.23694 : sounding.gustMs * 3.6)
+      : null;
+    const gustUnit = unitSystem === "imperial" ? "mph" : "km/h";
+    const precDisp = sounding.precipMmH != null
+      ? (unitSystem === "imperial" ? sounding.precipMmH / 25.4 : sounding.precipMmH)
+      : null;
+    const precUnit = unitSystem === "imperial" ? "in/h" : "mm/h";
+    const fmtPhys = (v: number | null, digits = 1) => {
+      if (sounding.loading) return "...";
+      if (radar.selectedStation === null) return "—";
+      if (v == null) return "ERR";
+      return v.toFixed(digits);
+    };
+    const physicalNodes = [
+      { label: "GUST", value: fmtPhys(gustDisp, 0), unit: gustUnit, color: colorFromScore(gustScore, sounding.gustMs != null), w: stationActive ? Math.round(gustScore * 100) : 0 },
+      { label: "PRECIP", value: fmtPhys(precDisp, 2), unit: precUnit, color: colorFromScore(precScore, sounding.precipMmH != null), w: stationActive ? Math.round(precScore * 100) : 0 },
+    ];
+
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
-    return { nodes, threatLevel: threat };
+    return { nodes, physicalNodes, threatLevel: threat };
   }, [sounding, radar.selectedStation, unitSystem]);
 
   // ── Hometown bar text ────────────────────────────────────────────
@@ -594,7 +615,7 @@ export default function MobileMain() {
           toggle={toggleKey}
         />
       )}
-      {/* 4. Environmental metrics */}
+      {/* 4. Virtual metrics */}
       <div
         style={{
           padding: "8px 10px",
@@ -606,10 +627,64 @@ export default function MobileMain() {
         <h2
           style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px", margin: "0 0 6px 0", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
         >
-          ENVIRONMENTAL METRICS
+          VIRTUAL METRICS
         </h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
           {nodes.map((n) => (
+            <div
+              key={n.label}
+              style={{
+                position: "relative",
+                padding: "4px 4px 4px 4px",
+                background: "#050505",
+                borderLeft: "2px solid rgba(255,157,0,0.3)",
+                minWidth: 0,
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ fontSize: "7px", color: "#888", lineHeight: 1 }}>{n.label}</div>
+              <div
+                style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
+              >
+                {n.value}
+              </div>
+              <div style={{ fontSize: "7px", color: "#666", marginTop: "1px" }}>{n.unit}</div>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 1,
+                  right: 1,
+                  fontSize: "8px",
+                  color: "#050505",
+                  background: "#eaeaea",
+                  fontWeight: 700,
+                  padding: "0 3px",
+                  borderRadius: "1px",
+                }}
+              >
+                {n.w}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 4b. Physical metrics — surface-felt parameters that gate the virtual block */}
+      <div
+        style={{
+          padding: "8px 10px",
+          border: "1px solid rgba(255,157,0,0.2)",
+          background: "rgba(10,10,14,0.6)",
+          borderRadius: "2px",
+        }}
+      >
+        <h2
+          style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px", margin: "0 0 6px 0", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
+        >
+          PHYSICAL METRICS
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "4px" }}>
+          {physicalNodes.map((n) => (
             <div
               key={n.label}
               style={{
