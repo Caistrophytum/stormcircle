@@ -334,7 +334,7 @@ export default function MobileMain() {
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
 
   // ── Sounding / WRS ───────────────────────────────────────────────
-  const { nodes, threatLevel } = useMemo(() => {
+  const { nodes, physicalNodes, threatLevel } = useMemo(() => {
     const stationActive = radar.selectedStation !== null && !sounding.loading;
     const fmt = (v: number | null, digits = 0) => {
       if (sounding.loading) return "...";
