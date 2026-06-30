@@ -19,6 +19,12 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
   {
     date: "2026-06-13 05z",
+    tag: "IMPROVED",
+    title: "Weather Risk Score calculation",
+    body: "Enhanced the WRS calculation by introducing a logarithmic decay model for CAPE effect, and adjusting the effect of physical metrics on virtual ones, to better convey the local environment as it is rather than ask 'what if?'",
+  },
+  {
+    date: "2026-06-13 05z",
     tag: "NEW",
     title: "Current hazards tab",
     body: "A new tab appearing when there's an active weather hazard (warning/advisory/etc.) in your hometown.",
