@@ -338,7 +338,7 @@ const RadarMiniMap = ({
         {/* External zoom buttons above the mini-map */}
         <div
           className="absolute flex flex-row gap-2 z-[500]"
-          style={{ top: "-18px", right: "-30px" }}
+          style={{ top: "-40px", right: "-30px" }}
           onClick={stopClick}
         >
           <button
