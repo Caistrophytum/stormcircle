@@ -189,7 +189,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 
   // Build the 5 sounding boxes from useSoundingData, including WRS contributions.
   // Weights (sum to 100): CAPE 35, LI 25, CIN 15, LCL 15, BLH 10.
-  const { soundingNodes, threatLevel } = useMemo(() => {
+  const { soundingNodes, physicalNodes, threatLevel } = useMemo(() => {
     const stationActive = radar.selectedStation !== null && !sounding.loading;
 
     const fmt = (v: number | null, digits = 0): string => {
