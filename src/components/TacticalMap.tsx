@@ -153,6 +153,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const alerts = useAlerts();
   const { user, profile } = useAuth();
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
+  const homeFireRisk = useHomeCityFireRisk(profile?.location ?? null);
   const warningPolygons = useWarningPolygons();
 
   // ─── Recovery indicator ───────────────────────────────────────────────
