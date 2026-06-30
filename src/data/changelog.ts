@@ -18,7 +18,7 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
-    date: "2026-06-13 05z",
+    date: "2026-06-30 06z",
     tag: "IMPROVED",
     title: "Weather Risk Score calculation",
     body: "Enhanced the WRS calculation by introducing a logarithmic decay model for CAPE effect, and adjusting the effect of physical metrics on virtual ones, to better convey the local environment as it is rather than ask 'what if?'",
