@@ -35,37 +35,8 @@ interface SPCFeature {
   };
 }
 
-function pointInRing(pt: [number, number], ring: number[][]): boolean {
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
-    const intersect =
-      yi > pt[1] !== yj > pt[1] &&
-      pt[0] < ((xj - xi) * (pt[1] - yi)) / (yj - yi + 1e-12) + xi;
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
-
 function pointInGeometry(pt: [number, number], geom: SPCFeature["geometry"]): boolean {
-  const polys =
-    geom.type === "Polygon"
-      ? [geom.coordinates as number[][][]]
-      : (geom.coordinates as number[][][][]);
-  for (const poly of polys) {
-    if (!poly.length) continue;
-    if (!pointInRing(pt, poly[0])) continue;
-    let inHole = false;
-    for (let h = 1; h < poly.length; h++) {
-      if (pointInRing(pt, poly[h])) {
-        inHole = true;
-        break;
-      }
-    }
-    if (!inHole) return true;
-  }
-  return false;
+  return pointInPolygon(pt[0], pt[1], geom as GeoJSON.Polygon | GeoJSON.MultiPolygon);
 }
 
 // Geocoding now lives in src/lib/openMeteo.ts (geocodeLabel).
