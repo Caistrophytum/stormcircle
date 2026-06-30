@@ -232,16 +232,16 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     // LCL (inverted): 0 → 1, 2000 → 0
     const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
 
-    // PHYSICAL inputs — surface-felt environmental moisture/wind. These are
-    // independent of SPC; they only describe what the airmass *feels* like.
-    //   gustKt        = m/s * 1.94384
-    //   gustScore     = clamp01((gustKt - 10) / 50)        // 10 kt→0, 60 kt→1
-    //   rhSfcScore    = clamp01((rhSurface - 30) / 60)     // 30%→0, 90%→1
-    //   rhMidScore    = clamp01((rhMid - 20) / 60)         // 20%→0, 80%→1
-    const gustKt = sounding.gustMs != null ? sounding.gustMs * 1.94384 : 0;
-    const gustScore = clamp01((gustKt - 10) / 50);
+    // PHYSICAL inputs — independent environmental moisture & mid-level motion.
+    // Wind gusts were dropped because they're a *consequence* of convection,
+    // which would couple the WRS to the very thing it's trying to predict.
+    //   rhSfcScore    = clamp01((rhSurface - 30) / 60)   // 30%→0, 90%→1
+    //   rhMidScore    = clamp01((rhMid - 20) / 60)       // 20%→0, 80%→1
+    //   liftScore     = clamp01((-omegaMid) / 0.3)       // ascent in Pa/s
+    //                   positive omega (subsidence) → 0, strong ascent → 1
     const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 60) : 0;
     const rhMidScore = sounding.rhMid != null ? clamp01((sounding.rhMid - 20) / 60) : 0;
+    const liftScore = sounding.omegaMid != null ? clamp01((-sounding.omegaMid) / 0.3) : 0;
 
     // CAPE-gated log multiplier on virtual ingredients (LI/CIN/LCL/BLH).
     // g(c) = ln(1 + 9c) / ln(10) — rises fast at low CAPE, plateaus near full.
@@ -252,13 +252,13 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     const lclContribRaw = stationActive ? lclScore * 15 * capeGate : 0;
     const blhContribRaw = stationActive ? blhScore * 10 * capeGate : 0;
 
-    // PHYSICAL GATE on the virtual block's combined output. Same logarithmic
-    // shape as the CAPE gate: the stronger physical signal pulls in the
-    // virtual ingredients (which already rode CAPE). If nothing is happening
-    // at the surface, the virtual stack collapses toward 0.
-    //   physScore = max(gust, rhSfc, rhMid)
-    //   physGate  = ln(1 + 9*physScore) / ln(10)
-    const physScore = Math.max(gustScore, rhSfcScore, rhMidScore);
+    // PHYSICAL GATE on the virtual block's combined output. Weighted blend:
+    //   SFC RH 50%, MID RH 35%, MID LIFT (anti-subsidence) 15%.
+    //   physGate = ln(1 + 9*physScore) / ln(10)  — same log shape as CAPE gate.
+    const PHYS_W = { sfc: 0.5, mid: 0.35, lift: 0.15 } as const;
+    const physScore = clamp01(
+      PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lift * liftScore,
+    );
     const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
 
     const liContrib = Math.round(liContribRaw * physGate);
@@ -285,12 +285,8 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl !== null), wrsContribution: lclContrib },
     ];
 
-    // Physical metrics — surface-felt parameters that gate the virtual block.
-    // Triangle % shows each parameter's own 0..1 score (drives physGate).
-    const gustDisp = sounding.gustMs != null
-      ? (unitSystem === "imperial" ? sounding.gustMs * 2.23694 : sounding.gustMs * 3.6)
-      : null;
-    const gustUnit = unitSystem === "imperial" ? "mph" : "km/h";
+    // Physical metrics — independent enabling inputs. Triangle % = each
+    // parameter's weighted contribution to physScore (sums to ≤100).
     const fmtPhys = (v: number | null, digits = 1) => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
@@ -298,9 +294,9 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       return v.toFixed(digits);
     };
     const physicalNodes = [
-      { label: "GUST", value: fmtPhys(gustDisp, 0), unit: gustUnit, color: colorFromScore(gustScore, sounding.gustMs != null), wrsContribution: stationActive ? Math.round(gustScore * 100) : 0 },
-      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), wrsContribution: stationActive ? Math.round(rhSfcScore * 100) : 0 },
-      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), wrsContribution: stationActive ? Math.round(rhMidScore * 100) : 0 },
+      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), wrsContribution: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0 },
+      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), wrsContribution: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0 },
+      { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "Pa/s", color: colorFromScore(liftScore, sounding.omegaMid != null), wrsContribution: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0 },
     ];
 
     const threat = Math.min(100, capeContribGated + liContrib + cinContrib + lclContrib + blhContrib);

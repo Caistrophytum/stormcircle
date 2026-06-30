@@ -365,11 +365,11 @@ export default function MobileMain() {
     const blhScore = sounding.blh != null ? clamp01(sounding.blh / 3000) : 0;
     const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
 
-    // Physical inputs — surface-felt environmental moisture/wind.
-    const gustKt = sounding.gustMs != null ? sounding.gustMs * 1.94384 : 0;
-    const gustScore = clamp01((gustKt - 10) / 50);
+    // Physical inputs — independent enabling environment (no gust: gusts are
+    // a *consequence* of convection and would couple the score to itself).
     const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 60) : 0;
     const rhMidScore = sounding.rhMid != null ? clamp01((sounding.rhMid - 20) / 60) : 0;
+    const liftScore = sounding.omegaMid != null ? clamp01((-sounding.omegaMid) / 0.3) : 0;
 
     // CAPE-gated log multiplier: ingredients only pay out when CAPE is present.
     const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
@@ -379,9 +379,13 @@ export default function MobileMain() {
     const lclContribRaw = stationActive ? lclScore * 15 * capeGate : 0;
     const blhContribRaw = stationActive ? blhScore * 10 * capeGate : 0;
 
-    // Physical gate on the virtual block's combined output — same log shape
-    // as the CAPE gate. physScore = max(gust, rhSfc, rhMid).
-    const physScore = Math.max(gustScore, rhSfcScore, rhMidScore);
+    // Physical gate on the virtual block's combined output — weighted blend
+    // (SFC RH 50%, MID RH 35%, MID LIFT 15%) through the same log shape as
+    // the CAPE gate.
+    const PHYS_W = { sfc: 0.5, mid: 0.35, lift: 0.15 } as const;
+    const physScore = clamp01(
+      PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lift * liftScore,
+    );
     const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
 
     const capeContrib = Math.round(capeContrib0 * physGate);
@@ -408,11 +412,8 @@ export default function MobileMain() {
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib },
     ];
 
-    // Physical metrics — surface-felt parameters that gate the virtual block.
-    const gustDisp = sounding.gustMs != null
-      ? (unitSystem === "imperial" ? sounding.gustMs * 2.23694 : sounding.gustMs * 3.6)
-      : null;
-    const gustUnit = unitSystem === "imperial" ? "mph" : "km/h";
+    // Physical metrics — triangle % is each parameter's weighted contribution
+    // to physScore (sums to ≤100).
     const fmtPhys = (v: number | null, digits = 1) => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
@@ -420,9 +421,9 @@ export default function MobileMain() {
       return v.toFixed(digits);
     };
     const physicalNodes = [
-      { label: "GUST", value: fmtPhys(gustDisp, 0), unit: gustUnit, color: colorFromScore(gustScore, sounding.gustMs != null), w: stationActive ? Math.round(gustScore * 100) : 0 },
-      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), w: stationActive ? Math.round(rhSfcScore * 100) : 0 },
-      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), w: stationActive ? Math.round(rhMidScore * 100) : 0 },
+      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0 },
+      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0 },
+      { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "Pa/s", color: colorFromScore(liftScore, sounding.omegaMid != null), w: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0 },
     ];
 
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
@@ -688,7 +689,7 @@ export default function MobileMain() {
         >
           PHYSICAL METRICS
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "4px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
           {physicalNodes.map((n) => (
             <div
               key={n.label}

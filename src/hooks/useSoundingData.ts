@@ -7,12 +7,12 @@ export interface SoundingData {
   li: number | null;
   blh: number | null;
   lcl: number | null;
-  /** 10 m wind gust (m/s) — physical WRS input. */
-  gustMs: number | null;
   /** Surface (2 m) relative humidity (%) — physical WRS input. */
   rhSurface: number | null;
   /** Mid-level (700 hPa) relative humidity (%) — physical WRS input. */
   rhMid: number | null;
+  /** Mid-level (700 hPa) vertical velocity, Pa/s. Negative = ascent, positive = subsidence. */
+  omegaMid: number | null;
   loading: boolean;
   error: boolean;
 }
@@ -23,9 +23,9 @@ const EMPTY: SoundingData = {
   li: null,
   blh: null,
   lcl: null,
-  gustMs: null,
   rhSurface: null,
   rhMid: null,
+  omegaMid: null,
   loading: false,
   error: false,
 };
@@ -64,8 +64,8 @@ export function useSoundingData(location: LatLon | null): SoundingData {
     const url =
       `https://api.open-meteo.com/v1/forecast` +
       `?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,dewpoint_2m,relative_humidity_2m,cape,convective_inhibition,lifted_index,boundary_layer_height,wind_gusts_10m` +
-      `&hourly=relative_humidity_700hPa` +
+      `&current=temperature_2m,dewpoint_2m,relative_humidity_2m,cape,convective_inhibition,lifted_index,boundary_layer_height` +
+      `&hourly=relative_humidity_700hPa,vertical_velocity_700hPa` +
       `&forecast_days=1&timezone=UTC`;
 
     const fetchSounding = async (showLoading: boolean) => {
@@ -88,17 +88,22 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         const td2m = typeof c.dewpoint_2m === "number" ? c.dewpoint_2m : null;
         const lcl = t2m != null && td2m != null ? computeLCL(t2m, td2m) : null;
 
-        // Pick the hourly RH700 sample matching the current UTC hour.
-        let rhMid: number | null = null;
+        // Pick the hourly samples matching the current UTC hour.
         const times: string[] = json?.hourly?.time ?? [];
         const rh700: Array<number | null> = json?.hourly?.relative_humidity_700hPa ?? [];
-        if (times.length && rh700.length) {
+        const omega700: Array<number | null> = json?.hourly?.vertical_velocity_700hPa ?? [];
+        let idx = 0;
+        if (times.length) {
           const nowHr = new Date().toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
-          let idx = times.findIndex((t) => t.startsWith(nowHr));
-          if (idx < 0) idx = 0;
-          const v = rh700[idx];
-          rhMid = typeof v === "number" ? v : null;
+          const found = times.findIndex((t) => t.startsWith(nowHr));
+          if (found >= 0) idx = found;
         }
+        const pick = (arr: Array<number | null>): number | null => {
+          const v = arr[idx];
+          return typeof v === "number" ? v : null;
+        };
+        const rhMid = rh700.length ? pick(rh700) : null;
+        const omegaMid = omega700.length ? pick(omega700) : null;
 
         if (cancelled) return;
         setData({
@@ -107,9 +112,9 @@ export function useSoundingData(location: LatLon | null): SoundingData {
           li: typeof c.lifted_index === "number" ? c.lifted_index : null,
           blh: typeof c.boundary_layer_height === "number" ? c.boundary_layer_height : null,
           lcl,
-          gustMs: typeof c.wind_gusts_10m === "number" ? c.wind_gusts_10m : null,
           rhSurface: typeof c.relative_humidity_2m === "number" ? c.relative_humidity_2m : null,
           rhMid,
+          omegaMid,
           loading: false,
           error: false,
         });
