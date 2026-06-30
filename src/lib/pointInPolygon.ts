@@ -4,7 +4,7 @@
  * Coordinates are [lon, lat].
  */
 
-function pointInRing(lon: number, lat: number, ring: number[][]): boolean {
+export function pointInRing(lon: number, lat: number, ring: number[][]): boolean {
   let inside = false;
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
     const xi = ring[i][0], yi = ring[i][1];
