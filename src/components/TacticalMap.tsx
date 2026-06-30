@@ -235,13 +235,13 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     // PHYSICAL inputs — independent environmental moisture & mid-level motion.
     // Wind gusts were dropped because they're a *consequence* of convection,
     // which would couple the WRS to the very thing it's trying to predict.
-    //   rhSfcScore    = clamp01((rhSurface - 30) / 60)   // 30%→0, 90%→1
-    //   rhMidScore    = clamp01((rhMid - 20) / 60)       // 20%→0, 80%→1
-    //   liftScore     = clamp01((-omegaMid) / 0.3)       // ascent in Pa/s
-    //                   positive omega (subsidence) → 0, strong ascent → 1
-    const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 60) : 0;
+    //   rhSfcScore  = clamp01((rhSurface - 30) / 70)   // 30%→0, 100%→1
+    //   rhMidScore  = clamp01((rhMid - 20) / 60)       // 20%→0, 80%→1
+    //   liftScore   = clamp01((25 - omegaMid) / 50)    // -25 Pa/s→1, +25 Pa/s→0
+    //                 negative omega (ascent) → high score, subsidence → low
+    const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 70) : 0;
     const rhMidScore = sounding.rhMid != null ? clamp01((sounding.rhMid - 20) / 60) : 0;
-    const liftScore = sounding.omegaMid != null ? clamp01((-sounding.omegaMid) / 0.3) : 0;
+    const liftScore = sounding.omegaMid != null ? clamp01((25 - sounding.omegaMid) / 50) : 0;
 
     // CAPE-gated log multiplier on virtual ingredients (LI/CIN/LCL/BLH).
     // g(c) = ln(1 + 9c) / ln(10) — rises fast at low CAPE, plateaus near full.
@@ -253,13 +253,14 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     const blhContribRaw = stationActive ? blhScore * 10 * capeGate : 0;
 
     // PHYSICAL GATE on the virtual block's combined output. Weighted blend:
-    //   SFC RH 50%, MID RH 35%, MID LIFT (anti-subsidence) 15%.
+    //   SFC RH 45%, MID RH 30%, MID LIFT (anti-subsidence) 25%.
     //   physGate = ln(1 + 9*physScore) / ln(10)  — same log shape as CAPE gate.
-    const PHYS_W = { sfc: 0.5, mid: 0.35, lift: 0.15 } as const;
+    const PHYS_W = { sfc: 0.45, mid: 0.30, lift: 0.25 } as const;
     const physScore = clamp01(
       PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lift * liftScore,
     );
     const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
+
 
     const liContrib = Math.round(liContribRaw * physGate);
     const cinContrib = Math.round(cinContribRaw * physGate);
