@@ -273,7 +273,7 @@ export const LeafletRadar = ({
       )}
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
       {interactive && <WarningPolygons ref={warningsRef} polygons={polygons} />}
-      {interactive && !mobile && (
+      {interactive && (
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
           subdomains="abcd"
