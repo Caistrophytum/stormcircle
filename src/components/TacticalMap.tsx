@@ -232,31 +232,40 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     // LCL (inverted): 0 → 1, 2000 → 0
     const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
 
-    // PHYSICAL GATE on CAPE. "Virtual" instability (CAPE/CIN/LI/LCL/BLH) only
-    // hurts people on the ground when something is actually happening: surface
-    // gusts or precipitation. We dampen CAPE itself by the stronger of the two
-    // physical signals, with a floor of 0.3 so a building (latent) airmass
-    // still registers, but a calm/dry day can't run away with the score.
-    //   gustKt    = m/s * 1.94384
-    //   gustScore = clamp01((gustKt - 10) / 50)   // 10 kt→0, 60 kt→1
-    //   precScore = clamp01(precipMmH / 20)        // 0→0, 20 mm/h→1
-    //   physGate  = 0.3 + 0.7 * ln(1 + 9*max)/ln(10)
+    // PHYSICAL inputs — surface-felt environmental moisture/wind. These are
+    // independent of SPC; they only describe what the airmass *feels* like.
+    //   gustKt        = m/s * 1.94384
+    //   gustScore     = clamp01((gustKt - 10) / 50)        // 10 kt→0, 60 kt→1
+    //   rhSfcScore    = clamp01((rhSurface - 30) / 60)     // 30%→0, 90%→1
+    //   rhMidScore    = clamp01((rhMid - 20) / 60)         // 20%→0, 80%→1
     const gustKt = sounding.gustMs != null ? sounding.gustMs * 1.94384 : 0;
     const gustScore = clamp01((gustKt - 10) / 50);
-    const precScore = sounding.precipMmH != null ? clamp01(sounding.precipMmH / 20) : 0;
-    const physRaw = Math.max(gustScore, precScore);
-    const physGate = 0.3 + 0.7 * (Math.log(1 + 9 * physRaw) / Math.log(10));
-    const effCapeScore = capeScore * physGate;
+    const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 60) : 0;
+    const rhMidScore = sounding.rhMid != null ? clamp01((sounding.rhMid - 20) / 60) : 0;
 
-    // CAPE-gated log multiplier: virtual ingredients only pay out when CAPE
-    // (already damped by the physical gate) is present.
+    // CAPE-gated log multiplier on virtual ingredients (LI/CIN/LCL/BLH).
     // g(c) = ln(1 + 9c) / ln(10) — rises fast at low CAPE, plateaus near full.
-    const capeGate = Math.log(1 + 9 * effCapeScore) / Math.log(10);
-    const capeContrib = stationActive ? Math.round(effCapeScore * 35) : 0;
-    const liContrib = stationActive ? Math.round(liScore * 25 * capeGate) : 0;
-    const cinContrib = stationActive ? Math.round(cinScore * 15 * capeGate) : 0;
-    const lclContrib = stationActive ? Math.round(lclScore * 15 * capeGate) : 0;
-    const blhContrib = stationActive ? Math.round(blhScore * 10 * capeGate) : 0;
+    const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
+    const capeContrib = stationActive ? Math.round(capeScore * 35) : 0;
+    const liContribRaw = stationActive ? liScore * 25 * capeGate : 0;
+    const cinContribRaw = stationActive ? cinScore * 15 * capeGate : 0;
+    const lclContribRaw = stationActive ? lclScore * 15 * capeGate : 0;
+    const blhContribRaw = stationActive ? blhScore * 10 * capeGate : 0;
+
+    // PHYSICAL GATE on the virtual block's combined output. Same logarithmic
+    // shape as the CAPE gate: the stronger physical signal pulls in the
+    // virtual ingredients (which already rode CAPE). If nothing is happening
+    // at the surface, the virtual stack collapses toward 0.
+    //   physScore = max(gust, rhSfc, rhMid)
+    //   physGate  = ln(1 + 9*physScore) / ln(10)
+    const physScore = Math.max(gustScore, rhSfcScore, rhMidScore);
+    const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
+
+    const liContrib = Math.round(liContribRaw * physGate);
+    const cinContrib = Math.round(cinContribRaw * physGate);
+    const lclContrib = Math.round(lclContribRaw * physGate);
+    const blhContrib = Math.round(blhContribRaw * physGate);
+    const capeContribGated = Math.round(capeContrib * physGate);
 
     // Unified color scale tied to each parameter's normalized severity score.
     // The redder the value, the more it pushes the WRS score upward.
@@ -269,7 +278,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     };
 
     const nodes = [
-      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape !== null), wrsContribution: capeContrib },
+      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape !== null), wrsContribution: capeContribGated },
       { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin !== null), wrsContribution: cinContrib },
       { label: "LIFTED INDEX", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li !== null), wrsContribution: liContrib },
       { label: "BL HEIGHT", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh !== null), wrsContribution: blhContrib },
@@ -282,10 +291,6 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       ? (unitSystem === "imperial" ? sounding.gustMs * 2.23694 : sounding.gustMs * 3.6)
       : null;
     const gustUnit = unitSystem === "imperial" ? "mph" : "km/h";
-    const precDisp = sounding.precipMmH != null
-      ? (unitSystem === "imperial" ? sounding.precipMmH / 25.4 : sounding.precipMmH)
-      : null;
-    const precUnit = unitSystem === "imperial" ? "in/h" : "mm/h";
     const fmtPhys = (v: number | null, digits = 1) => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
@@ -294,10 +299,11 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     };
     const physicalNodes = [
       { label: "GUST", value: fmtPhys(gustDisp, 0), unit: gustUnit, color: colorFromScore(gustScore, sounding.gustMs != null), wrsContribution: stationActive ? Math.round(gustScore * 100) : 0 },
-      { label: "PRECIP", value: fmtPhys(precDisp, 2), unit: precUnit, color: colorFromScore(precScore, sounding.precipMmH != null), wrsContribution: stationActive ? Math.round(precScore * 100) : 0 },
+      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), wrsContribution: stationActive ? Math.round(rhSfcScore * 100) : 0 },
+      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), wrsContribution: stationActive ? Math.round(rhMidScore * 100) : 0 },
     ];
 
-    const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
+    const threat = Math.min(100, capeContribGated + liContrib + cinContrib + lclContrib + blhContrib);
     return { soundingNodes: nodes, physicalNodes, threatLevel: threat };
   }, [sounding, radar.selectedStation, unitSystem]);
 
