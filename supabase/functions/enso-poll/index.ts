@@ -3,8 +3,19 @@
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const WEEKLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for";
+// Primary: ERSSTv5 monthly Niño-region SSTs (NOAA CPC's official monthly
+// product, baseline 1991-2020). Columns:
+//   YR MON  N1+2 ANOM  N3 ANOM  N4 ANOM  N3.4 ANOM
+// The Niño 3.4 anomaly here is what CPC quotes in its monthly ENSO
+// diagnostic discussions. The OISST weekly file (wksst9120.for) is a
+// different product whose single-week values often diverge by >1 °C from
+// the monthly ERSSTv5 number, so we no longer use it as the primary source.
+const MONTHLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/ersst5.nino.mth.91-20.ascii";
+// Fallback: 3-month running ONI (also ERSSTv5, smoother — used only if the
+// monthly file is unavailable).
 const ONI_URL = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt";
+
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function classify(v: number) {
   if (v >= 0.5) return { phase: "El Niño", lean: "warm" };
@@ -14,36 +25,28 @@ function classify(v: number) {
   return { phase: "Neutral", lean: "neutral" };
 }
 
-function parseWeekly(text: string) {
-  const lines = text.trim().split("\n").filter((l) => /\d{2}[A-Z]{3}\d{4}/.test(l));
-  const last = lines[lines.length - 1];
-  if (!last) return null;
-  const m = last.match(/(\d{2}[A-Z]{3}\d{4})/);
-  const week = m ? m[1] : "";
-  const nums = last.replace(/\d{2}[A-Z]{3}\d{4}/, "").trim().split(/\s+/).map(parseFloat);
-  if (nums.length < 6 || !isFinite(nums[5])) return null;
-  return { anom: nums[5], week };
-}
-function fmtWeek(w: string) {
-  const m = w.match(/^(\d{2})([A-Z]{3})(\d{4})$/);
-  if (!m) return w;
-  const months: Record<string, string> = {
-    JAN: "Jan", FEB: "Feb", MAR: "Mar", APR: "Apr", MAY: "May", JUN: "Jun",
-    JUL: "Jul", AUG: "Aug", SEP: "Sep", OCT: "Oct", NOV: "Nov", DEC: "Dec",
+async function fetchMonthlyN34() {
+  const res = await fetch(MONTHLY_URL, { headers: { "User-Agent": "StratoOps/1.0" } });
+  if (!res.ok) throw new Error(`monthly ${res.status}`);
+  const lines = (await res.text()).split("\n").map((l) => l.trim()).filter(Boolean);
+  // Last row that begins with a 4-digit year — last column pair is Niño 3.4.
+  const dataLines = lines.filter((l) => /^\d{4}\s/.test(l));
+  const last = dataLines[dataLines.length - 1];
+  if (!last) throw new Error("monthly: no data row");
+  const tok = last.split(/\s+/);
+  if (tok.length < 10) throw new Error("monthly: short row");
+  const year = parseInt(tok[0], 10);
+  const month = parseInt(tok[1], 10);
+  const anom = parseFloat(tok[9]); // Niño 3.4 anomaly
+  if (!isFinite(anom)) throw new Error("monthly: bad anom");
+  const { phase, lean } = classify(anom);
+  return {
+    source: "monthly", region: "Niño 3.4", oni: anom, phase, lean,
+    season: `${MONTHS_SHORT[month - 1] ?? month} ${year}`, year: String(year),
   };
-  return `${months[m[2]] ?? m[2]} ${parseInt(m[1], 10)}, ${m[3]}`;
 }
 
-async function fetchWeekly() {
-  const res = await fetch(WEEKLY_URL, { headers: { "User-Agent": "StratoOps/1.0" } });
-  if (!res.ok) throw new Error(`weekly ${res.status}`);
-  const p = parseWeekly(await res.text());
-  if (!p) throw new Error("weekly parse failed");
-  const { phase, lean } = classify(p.anom);
-  return { source: "weekly", region: "Niño 3.4", oni: p.anom, phase, lean,
-    season: `week of ${fmtWeek(p.week)}`, year: p.week.slice(-4) };
-}
-async function fetchMonthly() {
+async function fetchONI() {
   const res = await fetch(ONI_URL, { headers: { "User-Agent": "StratoOps/1.0" } });
   if (!res.ok) throw new Error(`ONI ${res.status}`);
   const lines = (await res.text()).trim().split("\n").slice(1).filter(Boolean);
@@ -51,8 +54,9 @@ async function fetchMonthly() {
   const anom = parseFloat(last[3]);
   if (!isFinite(anom)) throw new Error("ONI parse failed");
   const { phase, lean } = classify(anom);
-  return { source: "monthly", region: "ONI", oni: anom, phase, lean, season: last[0], year: last[1] };
+  return { source: "oni", region: "ONI", oni: anom, phase, lean, season: last[0], year: last[1] };
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -69,8 +73,8 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
   try {
     let payload;
-    try { payload = await fetchWeekly(); }
-    catch (e) { console.warn("[enso-poll] weekly failed, falling back:", e); payload = await fetchMonthly(); }
+    try { payload = await fetchMonthlyN34(); }
+    catch (e) { console.warn("[enso-poll] monthly failed, falling back to ONI:", e); payload = await fetchONI(); }
     await supabase.from("enso_state").update({
       ...payload, last_run_at: new Date().toISOString(), last_error: null,
       updated_at: new Date().toISOString(),
