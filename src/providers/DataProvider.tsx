@@ -91,13 +91,20 @@ function normalizeUrgency(s: unknown): Urgency {
 
 function deriveKind(event: string): AlertKind {
   const e = event.toLowerCase();
+  // NWS evacuation/shelter products carry life-safety urgency equivalent to
+  // a civil emergency even though the event name doesn't contain the word
+  // "emergency" — classify them as Emergency so they surface at the top of
+  // hazard lists and pick up the emergency styling/tag.
   if (e.includes("emergency")) return "Emergency";
+  if (e.includes("evacuation")) return "Emergency";
+  if (e.includes("shelter in place")) return "Emergency";
   if (e.includes("warning")) return "Warning";
   if (e.includes("watch")) return "Watch";
   if (e.includes("advisory")) return "Advisory";
   if (e.includes("statement")) return "Statement";
   return "Other";
 }
+
 
 function extractTags(props: Record<string, any>): string[] {
   const tags: string[] = [];
