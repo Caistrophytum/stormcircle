@@ -7,6 +7,10 @@ export interface SoundingData {
   li: number | null;
   blh: number | null;
   lcl: number | null;
+  /** 10 m wind gust (m/s) — used as a "physical" WRS gate on CAPE. */
+  gustMs: number | null;
+  /** Surface precipitation rate (mm/h) — used as a "physical" WRS gate on CAPE. */
+  precipMmH: number | null;
   loading: boolean;
   error: boolean;
 }
@@ -17,6 +21,8 @@ const EMPTY: SoundingData = {
   li: null,
   blh: null,
   lcl: null,
+  gustMs: null,
+  precipMmH: null,
   loading: false,
   error: false,
 };
