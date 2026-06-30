@@ -499,13 +499,14 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 
 
 
-      {/* Data nodes – full width to right edge */}
+      {/* Virtual metrics – sounding-derived instability ingredients */}
       <div
-        className="absolute bottom-[5.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
+        className="absolute bottom-[9.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
         style={{
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
         }}
       >
+        <div className="text-[8px] font-mono text-primary tracking-[0.15em] font-bold mb-1 uppercase">Virtual Metrics</div>
         <div className="flex gap-2 justify-between">
           {soundingNodes.map((node) => (
             <div
@@ -518,6 +519,46 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
                 <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>
               </span>
               {/* WRS contribution triangle */}
+              <div
+                className="absolute right-0 top-0 h-full"
+                style={{
+                  width: "28px",
+                  clipPath: "polygon(100% 0, 100% 100%, 0 50%)",
+                  background: "hsl(0 0% 92%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingLeft: "9px",
+                }}
+              >
+                <span className="text-[11px] font-mono font-bold text-background leading-none" style={{ marginRight: "3px" }}>
+                  {node.wrsContribution}%
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Physical metrics – surface-felt parameters that gate the virtual block */}
+      <div
+        className="absolute bottom-[5.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
+        style={{
+          left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
+        }}
+      >
+        <div className="text-[8px] font-mono text-primary tracking-[0.15em] font-bold mb-1 uppercase">Physical Metrics</div>
+        <div className="flex gap-2 justify-between">
+          {physicalNodes.map((node) => (
+            <div
+              key={node.label}
+              className="relative flex-1 px-3 py-2 bg-background border-l-2 border-primary/30 flex flex-col gap-1 overflow-visible"
+            >
+              <span className="text-[8px] font-mono text-muted-foreground leading-none">{node.label}</span>
+              <span className={`text-sm font-mono font-bold ${node.color} whitespace-nowrap`}>
+                {node.value}
+                <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>
+              </span>
               <div
                 className="absolute right-0 top-0 h-full"
                 style={{
