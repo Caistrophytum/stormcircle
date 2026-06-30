@@ -553,7 +553,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
         }}
       >
-        <div className="text-[8px] font-mono text-primary tracking-[0.15em] font-bold mb-1 uppercase">Physical Metrics</div>
+        
         <div className="flex gap-2 justify-between">
           {physicalNodes.map((node) => (
             <div
