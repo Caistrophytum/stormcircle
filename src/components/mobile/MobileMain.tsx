@@ -689,7 +689,7 @@ export default function MobileMain() {
         >
           PHYSICAL METRICS
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "4px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
           {physicalNodes.map((n) => (
             <div
               key={n.label}
