@@ -7,6 +7,7 @@ import {
   getExpiresLabel,
   getWarningColor,
 } from "@/hooks/useWarningPolygons";
+import { pointInPolygon } from "@/lib/pointInPolygon";
 
 export interface WarningPolygonsHandle {
   flyToWarning: (eventType: string) => void;
