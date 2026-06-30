@@ -232,11 +232,27 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     // LCL (inverted): 0 → 1, 2000 → 0
     const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
 
-    // CAPE-gated log multiplier: ingredients only pay out when CAPE is present.
+    // PHYSICAL GATE on CAPE. "Virtual" instability (CAPE/CIN/LI/LCL/BLH) only
+    // hurts people on the ground when something is actually happening: surface
+    // gusts or precipitation. We dampen CAPE itself by the stronger of the two
+    // physical signals, with a floor of 0.3 so a building (latent) airmass
+    // still registers, but a calm/dry day can't run away with the score.
+    //   gustKt    = m/s * 1.94384
+    //   gustScore = clamp01((gustKt - 10) / 50)   // 10 kt→0, 60 kt→1
+    //   precScore = clamp01(precipMmH / 20)        // 0→0, 20 mm/h→1
+    //   physGate  = 0.3 + 0.7 * ln(1 + 9*max)/ln(10)
+    const gustKt = sounding.gustMs != null ? sounding.gustMs * 1.94384 : 0;
+    const gustScore = clamp01((gustKt - 10) / 50);
+    const precScore = sounding.precipMmH != null ? clamp01(sounding.precipMmH / 20) : 0;
+    const physRaw = Math.max(gustScore, precScore);
+    const physGate = 0.3 + 0.7 * (Math.log(1 + 9 * physRaw) / Math.log(10));
+    const effCapeScore = capeScore * physGate;
+
+    // CAPE-gated log multiplier: virtual ingredients only pay out when CAPE
+    // (already damped by the physical gate) is present.
     // g(c) = ln(1 + 9c) / ln(10) — rises fast at low CAPE, plateaus near full.
-    // Prevents a calm, humid, capped day from collecting ~30 "free" WRS points.
-    const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
-    const capeContrib = stationActive ? Math.round(capeScore * 35) : 0;
+    const capeGate = Math.log(1 + 9 * effCapeScore) / Math.log(10);
+    const capeContrib = stationActive ? Math.round(effCapeScore * 35) : 0;
     const liContrib = stationActive ? Math.round(liScore * 25 * capeGate) : 0;
     const cinContrib = stationActive ? Math.round(cinScore * 15 * capeGate) : 0;
     const lclContrib = stationActive ? Math.round(lclScore * 15 * capeGate) : 0;
