@@ -476,7 +476,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 
         return (
           <div
-            className="absolute bottom-[9.75rem] right-4 z-10 transition-all duration-300 ease-in-out"
+            className="absolute bottom-[13.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
             style={{
               left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
             }}
