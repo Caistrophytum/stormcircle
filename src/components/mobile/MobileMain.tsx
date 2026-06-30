@@ -402,11 +402,11 @@ export default function MobileMain() {
     };
 
     const nodes = [
-      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinContrib },
-      { label: "LI", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li != null), w: liContrib },
-      { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh != null), w: blhContrib },
-      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib },
+      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib, primary: true },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinContrib, primary: false },
+      { label: "LI", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li != null), w: liContrib, primary: false },
+      { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh != null), w: blhContrib, primary: false },
+      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib, primary: false },
     ];
 
     // Physical metrics — triangle % is each parameter's weighted contribution
@@ -418,9 +418,9 @@ export default function MobileMain() {
       return v.toFixed(digits);
     };
     const physicalNodes = [
-      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0 },
-      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0 },
-      { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), w: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0 },
+      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0, primary: true },
+      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0, primary: true },
+      { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), w: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
     ];
 
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
