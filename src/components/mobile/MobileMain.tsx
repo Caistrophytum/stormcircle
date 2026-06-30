@@ -615,7 +615,7 @@ export default function MobileMain() {
           toggle={toggleKey}
         />
       )}
-      {/* 4. Environmental metrics */}
+      {/* 4. Virtual metrics */}
       <div
         style={{
           padding: "8px 10px",
@@ -627,10 +627,64 @@ export default function MobileMain() {
         <h2
           style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px", margin: "0 0 6px 0", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
         >
-          ENVIRONMENTAL METRICS
+          VIRTUAL METRICS
         </h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
           {nodes.map((n) => (
+            <div
+              key={n.label}
+              style={{
+                position: "relative",
+                padding: "4px 4px 4px 4px",
+                background: "#050505",
+                borderLeft: "2px solid rgba(255,157,0,0.3)",
+                minWidth: 0,
+                overflow: "hidden",
+              }}
+            >
+              <div style={{ fontSize: "7px", color: "#888", lineHeight: 1 }}>{n.label}</div>
+              <div
+                style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
+              >
+                {n.value}
+              </div>
+              <div style={{ fontSize: "7px", color: "#666", marginTop: "1px" }}>{n.unit}</div>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 1,
+                  right: 1,
+                  fontSize: "8px",
+                  color: "#050505",
+                  background: "#eaeaea",
+                  fontWeight: 700,
+                  padding: "0 3px",
+                  borderRadius: "1px",
+                }}
+              >
+                {n.w}%
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 4b. Physical metrics — surface-felt parameters that gate the virtual block */}
+      <div
+        style={{
+          padding: "8px 10px",
+          border: "1px solid rgba(255,157,0,0.2)",
+          background: "rgba(10,10,14,0.6)",
+          borderRadius: "2px",
+        }}
+      >
+        <h2
+          style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px", margin: "0 0 6px 0", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
+        >
+          PHYSICAL METRICS
+        </h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "4px" }}>
+          {physicalNodes.map((n) => (
             <div
               key={n.label}
               style={{
