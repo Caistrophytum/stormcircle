@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
+import { useHomeCityFireRisk, type FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
