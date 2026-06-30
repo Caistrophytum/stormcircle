@@ -58,7 +58,20 @@ export default function CurrentLocationHazards({
     const matched = polygons.filter(
       (p) => p.geometry && pointInPolygon(coords.lon, coords.lat, p.geometry),
     );
-    return matched.sort((a, b) => {
+    // Dedupe by event: NWS frequently re-issues the same product (e.g. Air
+    // Quality Alert) every few hours with a new alert_id but identical event
+    // + area. From a single point's perspective those are the same hazard,
+    // so we keep the instance with the latest expiry (newest re-issue).
+    const byEvent = new Map<string, WarningPolygon>();
+    for (const p of matched) {
+      const key = p.event ?? "";
+      const prev = byEvent.get(key);
+      if (!prev) { byEvent.set(key, p); continue; }
+      const pe = new Date(p.expires).getTime() || 0;
+      const pp = new Date(prev.expires).getTime() || 0;
+      if (pe > pp) byEvent.set(key, p);
+    }
+    return Array.from(byEvent.values()).sort((a, b) => {
       const r = severityRank(b) - severityRank(a);
       if (r !== 0) return r;
       const ea = new Date(a.expires).getTime() || Infinity;
