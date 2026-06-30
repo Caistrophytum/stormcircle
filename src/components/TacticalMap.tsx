@@ -284,11 +284,11 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
     };
 
     const nodes = [
-      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape !== null), wrsContribution: capeContribGated },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin !== null), wrsContribution: cinContrib },
-      { label: "LIFTED INDEX", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li !== null), wrsContribution: liContrib },
-      { label: "BL HEIGHT", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh !== null), wrsContribution: blhContrib },
-      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl !== null), wrsContribution: lclContrib },
+      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape !== null), wrsContribution: capeContribGated, primary: true },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin !== null), wrsContribution: cinContrib, primary: false },
+      { label: "LIFTED INDEX", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li !== null), wrsContribution: liContrib, primary: false },
+      { label: "BL HEIGHT", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh !== null), wrsContribution: blhContrib, primary: false },
+      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl !== null), wrsContribution: lclContrib, primary: false },
     ];
 
     // Physical metrics — independent enabling inputs. Triangle % = each
@@ -300,9 +300,9 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       return v.toFixed(digits);
     };
     const physicalNodes = [
-      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), wrsContribution: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0 },
-      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), wrsContribution: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0 },
-      { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), wrsContribution: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0 },
+      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), wrsContribution: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0, primary: true },
+      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), wrsContribution: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0, primary: true },
+      { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), wrsContribution: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
     ];
 
     const threat = Math.min(100, capeContribGated + liContrib + cinContrib + lclContrib + blhContrib);
@@ -548,7 +548,12 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               key={node.label}
               className="relative flex-1 px-3 py-3 bg-background border-l-2 border-primary/30 flex flex-col gap-1 overflow-visible"
             >
-              <span className="text-[8px] font-mono text-muted-foreground leading-none">{node.label}</span>
+              <span className="flex items-center gap-1 leading-none">
+                <span className="text-[8px] font-mono text-muted-foreground">{node.label}</span>
+                {node.primary && (
+                  <span className="text-[7px] font-mono font-bold text-primary border border-primary/60 px-1 leading-none tracking-wider">PRIMARY</span>
+                )}
+              </span>
               <span className={`text-sm font-mono font-bold ${node.color} whitespace-nowrap`}>
                 {node.value}
                 <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>
@@ -589,7 +594,12 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               key={node.label}
               className="relative flex-1 px-3 py-2 bg-background border-l-2 border-primary/30 flex flex-col gap-1 overflow-visible"
             >
-              <span className="text-[8px] font-mono text-muted-foreground leading-none">{node.label}</span>
+              <span className="flex items-center gap-1 leading-none">
+                <span className="text-[8px] font-mono text-muted-foreground">{node.label}</span>
+                {node.primary && (
+                  <span className="text-[7px] font-mono font-bold text-primary border border-primary/60 px-1 leading-none tracking-wider">PRIMARY</span>
+                )}
+              </span>
               <span className={`text-sm font-mono font-bold ${node.color} whitespace-nowrap`}>
                 {node.value}
                 <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>

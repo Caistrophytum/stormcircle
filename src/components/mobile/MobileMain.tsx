@@ -402,11 +402,11 @@ export default function MobileMain() {
     };
 
     const nodes = [
-      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinContrib },
-      { label: "LI", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li != null), w: liContrib },
-      { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh != null), w: blhContrib },
-      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib },
+      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib, primary: true },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinContrib, primary: false },
+      { label: "LI", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li != null), w: liContrib, primary: false },
+      { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh != null), w: blhContrib, primary: false },
+      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib, primary: false },
     ];
 
     // Physical metrics — triangle % is each parameter's weighted contribution
@@ -418,9 +418,9 @@ export default function MobileMain() {
       return v.toFixed(digits);
     };
     const physicalNodes = [
-      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0 },
-      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0 },
-      { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), w: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0 },
+      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0, primary: true },
+      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0, primary: true },
+      { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), w: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
     ];
 
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
@@ -681,7 +681,12 @@ export default function MobileMain() {
                 overflow: "hidden",
               }}
             >
-              <div style={{ fontSize: "7px", color: "#888", lineHeight: 1 }}>{n.label}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
+                <span style={{ fontSize: "7px", color: "#888" }}>{n.label}</span>
+                {n.primary && (
+                  <span style={{ fontSize: "6px", color: "#ff9d00", border: "1px solid rgba(255,157,0,0.6)", padding: "0 2px", fontWeight: 700, letterSpacing: "0.1em" }}>PRIMARY</span>
+                )}
+              </div>
               <div
                 style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
               >
@@ -735,7 +740,12 @@ export default function MobileMain() {
                 overflow: "hidden",
               }}
             >
-              <div style={{ fontSize: "7px", color: "#888", lineHeight: 1 }}>{n.label}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
+                <span style={{ fontSize: "7px", color: "#888" }}>{n.label}</span>
+                {n.primary && (
+                  <span style={{ fontSize: "6px", color: "#ff9d00", border: "1px solid rgba(255,157,0,0.6)", padding: "0 2px", fontWeight: 700, letterSpacing: "0.1em" }}>PRIMARY</span>
+                )}
+              </div>
               <div
                 style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
               >
