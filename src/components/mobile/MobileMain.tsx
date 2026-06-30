@@ -19,6 +19,7 @@ import { useUnitSystem, displayTemp, displayLengthM } from "@/hooks/useUnitSyste
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import type { RawMessage } from "@/lib/reportGrouping";
+import { pointInRing } from "@/lib/pointInPolygon";
 
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
 const HURRICANE_BOT_ID = "00000000-0000-0000-0000-000000000001";
