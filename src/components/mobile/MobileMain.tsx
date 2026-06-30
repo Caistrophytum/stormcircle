@@ -740,7 +740,12 @@ export default function MobileMain() {
                 overflow: "hidden",
               }}
             >
-              <div style={{ fontSize: "7px", color: "#888", lineHeight: 1 }}>{n.label}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
+                <span style={{ fontSize: "7px", color: "#888" }}>{n.label}</span>
+                {n.primary && (
+                  <span style={{ fontSize: "6px", color: "#ff9d00", border: "1px solid rgba(255,157,0,0.6)", padding: "0 2px", fontWeight: 700, letterSpacing: "0.1em" }}>PRIMARY</span>
+                )}
+              </div>
               <div
                 style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
               >
