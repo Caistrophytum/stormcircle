@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 import EventInfoPanel from "./EventInfoPanel";
 
-import { useWeatherData } from "@/hooks/useWeatherData";
+
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useAlerts } from "@/hooks/useAlerts";
