@@ -9,6 +9,7 @@ import { useSoundingData } from "@/hooks/useSoundingData";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
+import { useHomeCityFireRisk, type FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import { useDataContext } from "@/providers/DataProvider";
 import {
@@ -152,6 +153,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   const alerts = useAlerts();
   const { user, profile } = useAuth();
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
+  const homeFireRisk = useHomeCityFireRisk(profile?.location ?? null);
   const warningPolygons = useWarningPolygons();
 
   // ─── Recovery indicator ───────────────────────────────────────────────
@@ -480,9 +482,25 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           }
         }
 
+        const FIRE_TEXT: Record<FireRiskLevel, string> = {
+          NONE: "No Fire Weather Risk",
+          ELEV: "Elevated Fire Weather",
+          CRIT: "Critical Fire Weather",
+          EXTM: "Extreme Fire Weather",
+        };
+        const FIRE_BG: Record<FireRiskLevel, string> = {
+          NONE: "hsl(120 45% 70%)",
+          ELEV: "hsl(50 95% 55%)",
+          CRIT: "hsl(20 95% 50%)",
+          EXTM: "hsl(0 80% 50%)",
+        };
+        const showFire = hasLocation && homeFireRisk.risk !== "NONE";
+        const fireBg = FIRE_BG[homeFireRisk.risk];
+        const fireText = `Fire weather in ${profile?.location ?? ""}: ${FIRE_TEXT[homeFireRisk.risk]}.`;
+
         return (
           <div
-            className="absolute bottom-[13.5rem] right-4 z-10 transition-all duration-300 ease-in-out"
+            className="absolute bottom-[13.5rem] right-4 z-10 transition-all duration-300 ease-in-out flex flex-col gap-1"
             style={{
               left: `calc((clamp(0.75rem, 2vw, 1.5rem) + clamp(160px, 18vw, 240px) + 1rem) * ${overlayScale})`,
             }}
@@ -496,6 +514,17 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
                 className="text-[10px] font-mono font-bold text-background uppercase tracking-wide"
               />
             </div>
+            {showFire && (
+              <div
+                className="px-3 py-1.5 border-l-2 flex items-center gap-2 overflow-hidden"
+                style={{ background: fireBg, borderLeftColor: fireBg }}
+              >
+                <MarqueeText
+                  text={fireText}
+                  className="text-[10px] font-mono font-bold text-background uppercase tracking-wide"
+                />
+              </div>
+            )}
           </div>
         );
       })()}

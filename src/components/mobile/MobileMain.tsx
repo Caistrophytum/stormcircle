@@ -12,6 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
+import { useHomeCityFireRisk, type FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
@@ -286,6 +287,7 @@ function useRecentChatMessages(limit = 30) {
 export default function MobileMain() {
   const { user, profile } = useAuth();
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
+  const homeFireRisk = useHomeCityFireRisk(profile?.location ?? null);
   const radar = useRadar();
   const sounding = useSoundingData(
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
@@ -540,6 +542,42 @@ export default function MobileMain() {
       >
         {hometownText}
       </div>
+
+      {/* 2a. Fire weather news bar — appears only when home city is under an SPC fire weather risk. */}
+      {hasLocation && homeFireRisk.risk !== "NONE" && (() => {
+        const FIRE_TEXT: Record<FireRiskLevel, string> = {
+          NONE: "No Fire Weather Risk",
+          ELEV: "Elevated Fire Weather",
+          CRIT: "Critical Fire Weather",
+          EXTM: "Extreme Fire Weather",
+        };
+        const FIRE_BG: Record<FireRiskLevel, string> = {
+          NONE: "hsl(120 45% 70%)",
+          ELEV: "hsl(50 95% 55%)",
+          CRIT: "hsl(20 95% 50%)",
+          EXTM: "hsl(0 80% 50%)",
+        };
+        const bg = FIRE_BG[homeFireRisk.risk];
+        return (
+          <div
+            style={{
+              padding: "6px 10px",
+              background: bg,
+              borderLeft: `3px solid ${bg}`,
+              color: "#050505",
+              fontSize: "10px",
+              fontWeight: 700,
+              lineHeight: 1.4,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+              borderRadius: "2px",
+            }}
+          >
+            Fire weather in {profile!.location}: {FIRE_TEXT[homeFireRisk.risk]}.
+          </div>
+        );
+      })()}
+
 
       {/* 2b. Current-location hazards — transparent, outlined per polygon color. */}
       <CurrentLocationHazards
