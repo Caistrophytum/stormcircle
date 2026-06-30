@@ -1,8 +1,8 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { forwardRef, MutableRefObject, useEffect, useRef, useState } from "react";
+import { forwardRef, MutableRefObject, useEffect, useRef } from "react";
 import { CircleMarker, MapContainer, TileLayer, useMap } from "react-leaflet";
-import { Maximize2, Minimize2, Plus, Minus } from "lucide-react";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { RadarStation, RADAR_STATIONS } from "@/config/radarStations";
 import RadarControls from "./RadarControls";
 import { ProductCode, SelectedCity } from "@/hooks/useRadar";
@@ -304,13 +304,9 @@ const RadarMiniMap = ({
   warningsRef,
 }: Props) => {
   const noopTileRequest = () => {};
-  const [miniMap, setMiniMap] = useState<L.Map | null>(null);
   if (!expanded) {
     const circleSize = "clamp(160px, 18vw, 240px)";
 
-    const stopClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-    };
     return (
       <div
         className="relative"
@@ -329,38 +325,9 @@ const RadarMiniMap = ({
               selectedStation={selectedStation}
               onStationMarkerSelect={onStationMarkerSelect}
               setSelectedProduct={setSelectedProduct}
-              onMap={(m) => setMiniMap(m)}
             />
           </div>
           <Maximize2 className="absolute top-2 left-2 size-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity z-[400]" />
-        </div>
-
-        {/* External zoom buttons above the mini-map */}
-        <div
-          className="absolute flex flex-row gap-2 z-[500]"
-          style={{ top: "-40px", right: "-30px" }}
-          onClick={stopClick}
-        >
-          <button
-            onClick={(e) => {
-              stopClick(e);
-              miniMap?.zoomIn();
-            }}
-            className="size-8 rounded-full glass-panel flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors shadow-lg"
-            aria-label="Zoom in"
-          >
-            <Plus className="size-4 text-primary" strokeWidth={2.5} />
-          </button>
-          <button
-            onClick={(e) => {
-              stopClick(e);
-              miniMap?.zoomOut();
-            }}
-            className="size-8 rounded-full glass-panel flex items-center justify-center hover:border-primary hover:bg-primary/10 transition-colors shadow-lg"
-            aria-label="Zoom out"
-          >
-            <Minus className="size-4 text-primary" strokeWidth={2.5} />
-          </button>
         </div>
       </div>
     );
