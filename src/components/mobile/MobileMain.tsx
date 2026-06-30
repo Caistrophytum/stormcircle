@@ -74,19 +74,8 @@ function rankWarning(p: WarningPolygon): number | null {
 }
 
 
-// Point-in-ring (ray casting) in lon/lat space — fine for short-range warnings.
-function pointInRing(lon: number, lat: number, ring: number[][]): boolean {
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i];
-    const [xj, yj] = ring[j];
-    const intersect =
-      yi > lat !== yj > lat &&
-      lon < ((xj - xi) * (lat - yi)) / (yj - yi + 1e-12) + xi;
-    if (intersect) inside = !inside;
-  }
-  return inside;
-}
+// pointInRing imported from "@/lib/pointInPolygon"
+
 
 // Approximate great-circle distance from a point to a segment by projecting
 // into a local equirectangular plane (km). Accurate to <1% for segments
