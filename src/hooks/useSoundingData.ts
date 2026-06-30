@@ -7,12 +7,12 @@ export interface SoundingData {
   li: number | null;
   blh: number | null;
   lcl: number | null;
-  /** 10 m wind gust (m/s) — physical WRS input. */
-  gustMs: number | null;
   /** Surface (2 m) relative humidity (%) — physical WRS input. */
   rhSurface: number | null;
   /** Mid-level (700 hPa) relative humidity (%) — physical WRS input. */
   rhMid: number | null;
+  /** Mid-level (700 hPa) vertical velocity, Pa/s. Negative = ascent, positive = subsidence. */
+  omegaMid: number | null;
   loading: boolean;
   error: boolean;
 }
@@ -23,9 +23,9 @@ const EMPTY: SoundingData = {
   li: null,
   blh: null,
   lcl: null,
-  gustMs: null,
   rhSurface: null,
   rhMid: null,
+  omegaMid: null,
   loading: false,
   error: false,
 };
