@@ -399,8 +399,29 @@ export default function MobileMain() {
       { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh != null), w: blhContrib },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib },
     ];
+
+    // Physical metrics — surface-felt parameters that gate the virtual block.
+    const gustDisp = sounding.gustMs != null
+      ? (unitSystem === "imperial" ? sounding.gustMs * 2.23694 : sounding.gustMs * 3.6)
+      : null;
+    const gustUnit = unitSystem === "imperial" ? "mph" : "km/h";
+    const precDisp = sounding.precipMmH != null
+      ? (unitSystem === "imperial" ? sounding.precipMmH / 25.4 : sounding.precipMmH)
+      : null;
+    const precUnit = unitSystem === "imperial" ? "in/h" : "mm/h";
+    const fmtPhys = (v: number | null, digits = 1) => {
+      if (sounding.loading) return "...";
+      if (radar.selectedStation === null) return "—";
+      if (v == null) return "ERR";
+      return v.toFixed(digits);
+    };
+    const physicalNodes = [
+      { label: "GUST", value: fmtPhys(gustDisp, 0), unit: gustUnit, color: colorFromScore(gustScore, sounding.gustMs != null), w: stationActive ? Math.round(gustScore * 100) : 0 },
+      { label: "PRECIP", value: fmtPhys(precDisp, 2), unit: precUnit, color: colorFromScore(precScore, sounding.precipMmH != null), w: stationActive ? Math.round(precScore * 100) : 0 },
+    ];
+
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
-    return { nodes, threatLevel: threat };
+    return { nodes, physicalNodes, threatLevel: threat };
   }, [sounding, radar.selectedStation, unitSystem]);
 
   // ── Hometown bar text ────────────────────────────────────────────
