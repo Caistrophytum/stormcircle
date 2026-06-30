@@ -9,6 +9,7 @@ import { useSoundingData } from "@/hooks/useSoundingData";
 import { useAlerts } from "@/hooks/useAlerts";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
+import { useHomeCityFireRisk, type FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import { useDataContext } from "@/providers/DataProvider";
 import {
