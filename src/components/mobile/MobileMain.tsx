@@ -365,10 +365,18 @@ export default function MobileMain() {
     const blhScore = sounding.blh != null ? clamp01(sounding.blh / 3000) : 0;
     const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
 
-    // CAPE-gated log multiplier: ingredients only pay out when CAPE is present.
-    // g(c) = ln(1 + 9c) / ln(10) — rises fast at low CAPE, plateaus near full.
-    const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
-    const capeContrib = stationActive ? Math.round(capeScore * 35) : 0;
+    // Physical gate: surface gust + precip dampen CAPE before the virtual
+    // ingredients ride on it (floor 0.3 keeps latent setups visible).
+    const gustKt = sounding.gustMs != null ? sounding.gustMs * 1.94384 : 0;
+    const gustScore = clamp01((gustKt - 10) / 50);
+    const precScore = sounding.precipMmH != null ? clamp01(sounding.precipMmH / 20) : 0;
+    const physRaw = Math.max(gustScore, precScore);
+    const physGate = 0.3 + 0.7 * (Math.log(1 + 9 * physRaw) / Math.log(10));
+    const effCapeScore = capeScore * physGate;
+
+    // CAPE-gated log multiplier: ingredients only pay out when (effective) CAPE is present.
+    const capeGate = Math.log(1 + 9 * effCapeScore) / Math.log(10);
+    const capeContrib = stationActive ? Math.round(effCapeScore * 35) : 0;
     const liContrib = stationActive ? Math.round(liScore * 25 * capeGate) : 0;
     const cinContrib = stationActive ? Math.round(cinScore * 15 * capeGate) : 0;
     const lclContrib = stationActive ? Math.round(lclScore * 15 * capeGate) : 0;

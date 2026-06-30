@@ -7,6 +7,10 @@ export interface SoundingData {
   li: number | null;
   blh: number | null;
   lcl: number | null;
+  /** 10 m wind gust (m/s) — used as a "physical" WRS gate on CAPE. */
+  gustMs: number | null;
+  /** Surface precipitation rate (mm/h) — used as a "physical" WRS gate on CAPE. */
+  precipMmH: number | null;
   loading: boolean;
   error: boolean;
 }
@@ -17,6 +21,8 @@ const EMPTY: SoundingData = {
   li: null,
   blh: null,
   lcl: null,
+  gustMs: null,
+  precipMmH: null,
   loading: false,
   error: false,
 };
@@ -51,7 +57,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
     const url =
       `https://api.open-meteo.com/v1/forecast` +
       `?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,dewpoint_2m,cape,convective_inhibition,lifted_index,boundary_layer_height` +
+      `&current=temperature_2m,dewpoint_2m,cape,convective_inhibition,lifted_index,boundary_layer_height,wind_gusts_10m,precipitation` +
       `&timezone=UTC`;
 
     const fetchSounding = async (showLoading: boolean) => {
@@ -81,6 +87,8 @@ export function useSoundingData(location: LatLon | null): SoundingData {
           li: typeof c.lifted_index === "number" ? c.lifted_index : null,
           blh: typeof c.boundary_layer_height === "number" ? c.boundary_layer_height : null,
           lcl,
+          gustMs: typeof c.wind_gusts_10m === "number" ? c.wind_gusts_10m : null,
+          precipMmH: typeof c.precipitation === "number" ? c.precipitation : null,
           loading: false,
           error: false,
         });
