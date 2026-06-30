@@ -548,7 +548,12 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
               key={node.label}
               className="relative flex-1 px-3 py-3 bg-background border-l-2 border-primary/30 flex flex-col gap-1 overflow-visible"
             >
-              <span className="text-[8px] font-mono text-muted-foreground leading-none">{node.label}</span>
+              <span className="flex items-center gap-1 leading-none">
+                <span className="text-[8px] font-mono text-muted-foreground">{node.label}</span>
+                {node.primary && (
+                  <span className="text-[7px] font-mono font-bold text-primary border border-primary/60 px-1 leading-none tracking-wider">PRIMARY</span>
+                )}
+              </span>
               <span className={`text-sm font-mono font-bold ${node.color} whitespace-nowrap`}>
                 {node.value}
                 <span className="text-[8px] text-muted-foreground ml-0.5">{node.unit}</span>
