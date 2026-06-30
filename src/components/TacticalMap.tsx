@@ -276,8 +276,29 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl !== null), wrsContribution: lclContrib },
     ];
 
+    // Physical metrics — surface-felt parameters that gate the virtual block.
+    // Triangle % shows each parameter's own 0..1 score (drives physGate).
+    const gustDisp = sounding.gustMs != null
+      ? (unitSystem === "imperial" ? sounding.gustMs * 2.23694 : sounding.gustMs * 3.6)
+      : null;
+    const gustUnit = unitSystem === "imperial" ? "mph" : "km/h";
+    const precDisp = sounding.precipMmH != null
+      ? (unitSystem === "imperial" ? sounding.precipMmH / 25.4 : sounding.precipMmH)
+      : null;
+    const precUnit = unitSystem === "imperial" ? "in/h" : "mm/h";
+    const fmtPhys = (v: number | null, digits = 1) => {
+      if (sounding.loading) return "...";
+      if (radar.selectedStation === null) return "—";
+      if (v === null) return "ERR";
+      return v.toFixed(digits);
+    };
+    const physicalNodes = [
+      { label: "GUST", value: fmtPhys(gustDisp, 0), unit: gustUnit, color: colorFromScore(gustScore, sounding.gustMs != null), wrsContribution: stationActive ? Math.round(gustScore * 100) : 0 },
+      { label: "PRECIP", value: fmtPhys(precDisp, 2), unit: precUnit, color: colorFromScore(precScore, sounding.precipMmH != null), wrsContribution: stationActive ? Math.round(precScore * 100) : 0 },
+    ];
+
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
-    return { soundingNodes: nodes, threatLevel: threat };
+    return { soundingNodes: nodes, physicalNodes, threatLevel: threat };
   }, [sounding, radar.selectedStation, unitSystem]);
 
   // Derive weather condition from live threat level
