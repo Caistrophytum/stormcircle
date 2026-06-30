@@ -367,9 +367,11 @@ export default function MobileMain() {
 
     // Physical inputs — independent enabling environment (no gust: gusts are
     // a *consequence* of convection and would couple the score to itself).
-    const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 60) : 0;
+    //   SFC RH viable 30%→100%, MID RH 20%→80%, MID LIFT -25→+25 Pa/s
+    //   (negative omega = ascent = high score, positive = subsidence = 0).
+    const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 70) : 0;
     const rhMidScore = sounding.rhMid != null ? clamp01((sounding.rhMid - 20) / 60) : 0;
-    const liftScore = sounding.omegaMid != null ? clamp01((-sounding.omegaMid) / 0.3) : 0;
+    const liftScore = sounding.omegaMid != null ? clamp01((25 - sounding.omegaMid) / 50) : 0;
 
     // CAPE-gated log multiplier: ingredients only pay out when CAPE is present.
     const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
@@ -380,13 +382,14 @@ export default function MobileMain() {
     const blhContribRaw = stationActive ? blhScore * 10 * capeGate : 0;
 
     // Physical gate on the virtual block's combined output — weighted blend
-    // (SFC RH 50%, MID RH 35%, MID LIFT 15%) through the same log shape as
+    // (SFC RH 45%, MID RH 30%, MID LIFT 25%) through the same log shape as
     // the CAPE gate.
-    const PHYS_W = { sfc: 0.5, mid: 0.35, lift: 0.15 } as const;
+    const PHYS_W = { sfc: 0.45, mid: 0.30, lift: 0.25 } as const;
     const physScore = clamp01(
       PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lift * liftScore,
     );
     const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
+
 
     const capeContrib = Math.round(capeContrib0 * physGate);
     const liContrib = Math.round(liContribRaw * physGate);
