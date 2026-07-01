@@ -125,7 +125,9 @@ const Auth = () => {
       }
     };
     check();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   /**
@@ -323,324 +325,326 @@ const Auth = () => {
     <>
       <Helmet>
         <title>Sign In — StormCircle</title>
-        <meta name="description" content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city." />
+        <meta
+          name="description"
+          content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city."
+        />
         <link rel="canonical" href="https://stormcircle.net/auth" />
         <meta property="og:title" content="Sign In — StormCircle" />
-        <meta property="og:description" content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city." />
+        <meta
+          property="og:description"
+          content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city."
+        />
         <meta property="og:url" content="https://stormcircle.net/auth" />
       </Helmet>
       <main className="min-h-screen w-full bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-card-foreground transition-colors mb-4"
-        >
-          <ArrowLeft className="size-3" />
-          Back to Deck
-        </Link>
+        <div className="w-full max-w-md">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground hover:text-card-foreground transition-colors mb-4"
+          >
+            <ArrowLeft className="size-3" />
+            Back to Deck
+          </Link>
 
-        <div className="glass-panel rounded-sm overflow-hidden">
-          {/* Header bar */}
-          <div className="border-b border-border bg-cockpit/80 px-5 py-3 flex items-center gap-2">
-            <Icon className="size-4 text-primary" />
-            <h1 className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-card-foreground">
-              {titles[view].label}
-            </h1>
-            <span className="ml-auto text-[9px] font-mono text-muted-foreground">
-              StormCircle - Creating Aware Communities
-            </span>
-          </div>
+          <div className="glass-panel rounded-sm overflow-hidden">
+            {/* Header bar */}
+            <div className="border-b border-border bg-cockpit/80 px-5 py-3 flex items-center gap-2">
+              <Icon className="size-4 text-primary" />
+              <h1 className="text-xs font-mono font-bold uppercase tracking-[0.2em] text-card-foreground">
+                {titles[view].label}
+              </h1>
+              <span className="ml-auto text-[9px] font-mono text-muted-foreground">
+                StormCircle - Creating Aware Communities
+              </span>
+            </div>
 
-          {/* Tabs */}
-          <div className="grid grid-cols-4 border-b border-border">
-            {(["login", "signup", "forgot", "resend"] as View[]).map((v) => {
-              const active = view === v;
-              const labels: Record<View, string> = {
-                login: "Login",
-                signup: "Sign Up",
-                forgot: "Recover",
-                resend: "Resend",
-              };
-              return (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setView(v)}
-                  className={`text-[10px] font-mono uppercase tracking-wider py-2.5 transition-colors ${
-                    active
-                      ? "bg-primary/10 text-primary border-b-2 border-primary"
-                      : "text-muted-foreground hover:text-card-foreground border-b-2 border-transparent"
-                  }`}
-                >
-                  {labels[v]}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="p-5">
-            {backendDown && (
-              <div className="mb-4 rounded-sm border border-destructive/60 bg-destructive/10 px-3 py-2.5 text-[11px] font-mono leading-relaxed text-destructive">
-                Sadly, the servers are currently unavailable. The site is running
-                ad-free and without pay walls, while hosting costs a fair
-                chunk-of-change. For more information, contact{" "}
-                <a
-                  href="mailto:stormcirclecontect@gmail.com"
-                  className="underline hover:text-destructive-foreground"
-                >
-                  stormcirclecontect@gmail.com
-                </a>
-                .
-              </div>
-            )}
-            <p className="text-[10px] font-mono text-muted-foreground text-center mb-4">
-              Authentication emails may take up to 5 minutes to arrive
-            </p>
-            {view === "login" && (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="login-id">
-                    Email or Username
-                  </label>
-                  <input
-                    id="login-id"
-                    autoComplete="username"
-                    value={loginIdentifier}
-                    onChange={(e) => setLoginIdentifier(e.target.value)}
-                    className={inputClass}
-                    placeholder="operator@strato.ops"
-                    required
-                    maxLength={255}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="login-pw">
-                    Password
-                  </label>
-                  <input
-                    id="login-pw"
-                    type="password"
-                    autoComplete="current-password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    className={inputClass}
-                    placeholder="••••••••"
-                    required
-                    maxLength={128}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <LogIn className="size-3.5" />}
-                  Login
-                </button>
-                <div className="flex items-center justify-between pt-1 text-[10px] font-mono">
+            {/* Tabs */}
+            <div className="grid grid-cols-4 border-b border-border">
+              {(["login", "signup", "forgot", "resend"] as View[]).map((v) => {
+                const active = view === v;
+                const labels: Record<View, string> = {
+                  login: "Login",
+                  signup: "Sign Up",
+                  forgot: "Recover",
+                  resend: "Resend",
+                };
+                return (
                   <button
+                    key={v}
                     type="button"
-                    onClick={() => setView("signup")}
-                    className="text-muted-foreground hover:text-primary transition-colors"
+                    onClick={() => setView(v)}
+                    className={`text-[10px] font-mono uppercase tracking-wider py-2.5 transition-colors ${
+                      active
+                        ? "bg-primary/10 text-primary border-b-2 border-primary"
+                        : "text-muted-foreground hover:text-card-foreground border-b-2 border-transparent"
+                    }`}
                   >
-                    Create account →
+                    {labels[v]}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setView("forgot")}
-                    className="text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-              </form>
-            )}
+                );
+              })}
+            </div>
 
-            {view === "signup" && (
-              <form onSubmit={handleSignUp} className="space-y-4">
-                {/* Honeypot — hidden from real users; bots will auto-fill it */}
-                <div
-                  aria-hidden="true"
-                  style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}
-                >
-                  <label htmlFor="su-website">Website</label>
-                  <input
-                    id="su-website"
-                    type="text"
-                    name="website"
-                    tabIndex={-1}
-                    autoComplete="off"
-                    value={suHoneypot}
-                    onChange={(e) => setSuHoneypot(e.target.value)}
-                  />
+            <div className="p-5">
+              {backendDown && (
+                <div className="mb-4 rounded-sm border border-destructive/60 bg-destructive/10 px-3 py-2.5 text-[11px] font-mono leading-relaxed text-destructive">
+                  Sadly, the servers are currently unavailable. The site is running ad-free and without pay walls, while
+                  hosting costs a fair chunk-of-change. For more information, contact{" "}
+                  <a href="mailto:stormcirclecontact@gmail.com" className="underline hover:text-destructive-foreground">
+                    stormcirclecontact@gmail.com
+                  </a>
+                  .
                 </div>
-                <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="su-username">
-                    Username
-                  </label>
-                  <input
-                    id="su-username"
-                    value={suUsername}
-                    onChange={(e) => setSuUsername(e.target.value)}
-                    className={inputClass}
-                    placeholder="callsign"
-                    required
-                    maxLength={32}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="su-email">
-                    Email
-                  </label>
-                  <input
-                    id="su-email"
-                    type="email"
-                    autoComplete="email"
-                    value={suEmail}
-                    onChange={(e) => setSuEmail(e.target.value)}
-                    className={inputClass}
-                    placeholder="operator@strato.ops"
-                    required
-                    maxLength={255}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="su-pw">
-                    Password
-                  </label>
-                  <input
-                    id="su-pw"
-                    type="password"
-                    autoComplete="new-password"
-                    value={suPassword}
-                    onChange={(e) => setSuPassword(e.target.value)}
-                    className={inputClass}
-                    placeholder="8+ chars, 1 uppercase, 1 number"
-                    required
-                    maxLength={128}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="su-confirm">
-                    Confirm Password
-                  </label>
-                  <input
-                    id="su-confirm"
-                    type="password"
-                    autoComplete="new-password"
-                    value={suConfirm}
-                    onChange={(e) => setSuConfirm(e.target.value)}
-                    className={inputClass}
-                    placeholder="repeat password"
-                    required
-                    maxLength={128}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <UserPlus className="size-3.5" />}
-                  Create Account
-                </button>
-                <div className="text-[10px] font-mono text-center pt-1">
+              )}
+              <p className="text-[10px] font-mono text-muted-foreground text-center mb-4">
+                Authentication emails may take up to 5 minutes to arrive
+              </p>
+              {view === "login" && (
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className={labelClass} htmlFor="login-id">
+                      Email or Username
+                    </label>
+                    <input
+                      id="login-id"
+                      autoComplete="username"
+                      value={loginIdentifier}
+                      onChange={(e) => setLoginIdentifier(e.target.value)}
+                      className={inputClass}
+                      placeholder="operator@strato.ops"
+                      required
+                      maxLength={255}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className={labelClass} htmlFor="login-pw">
+                      Password
+                    </label>
+                    <input
+                      id="login-pw"
+                      type="password"
+                      autoComplete="current-password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className={inputClass}
+                      placeholder="••••••••"
+                      required
+                      maxLength={128}
+                    />
+                  </div>
                   <button
-                    type="button"
-                    onClick={() => setView("login")}
-                    className="text-muted-foreground hover:text-primary transition-colors"
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    ← Already have an account? Login
+                    {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <LogIn className="size-3.5" />}
+                    Login
                   </button>
-                </div>
-              </form>
-            )}
+                  <div className="flex items-center justify-between pt-1 text-[10px] font-mono">
+                    <button
+                      type="button"
+                      onClick={() => setView("signup")}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Create account →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setView("forgot")}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
+                </form>
+              )}
 
-            {view === "forgot" && (
-              <form onSubmit={handleForgot} className="space-y-4">
-                <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
-                  Enter the email associated with your account. We'll send a recovery link.
-                </p>
-                <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="fp-email">
-                    Email
-                  </label>
-                  <input
-                    id="fp-email"
-                    type="email"
-                    autoComplete="email"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    className={inputClass}
-                    placeholder="operator@strato.ops"
-                    required
-                    maxLength={255}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <KeyRound className="size-3.5" />}
-                  Send Reset Link
-                </button>
-                <div className="text-[10px] font-mono text-center pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setView("login")}
-                    className="text-muted-foreground hover:text-primary transition-colors"
+              {view === "signup" && (
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  {/* Honeypot — hidden from real users; bots will auto-fill it */}
+                  <div
+                    aria-hidden="true"
+                    style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}
                   >
-                    ← Back to Login
+                    <label htmlFor="su-website">Website</label>
+                    <input
+                      id="su-website"
+                      type="text"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      value={suHoneypot}
+                      onChange={(e) => setSuHoneypot(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className={labelClass} htmlFor="su-username">
+                      Username
+                    </label>
+                    <input
+                      id="su-username"
+                      value={suUsername}
+                      onChange={(e) => setSuUsername(e.target.value)}
+                      className={inputClass}
+                      placeholder="callsign"
+                      required
+                      maxLength={32}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className={labelClass} htmlFor="su-email">
+                      Email
+                    </label>
+                    <input
+                      id="su-email"
+                      type="email"
+                      autoComplete="email"
+                      value={suEmail}
+                      onChange={(e) => setSuEmail(e.target.value)}
+                      className={inputClass}
+                      placeholder="operator@strato.ops"
+                      required
+                      maxLength={255}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className={labelClass} htmlFor="su-pw">
+                      Password
+                    </label>
+                    <input
+                      id="su-pw"
+                      type="password"
+                      autoComplete="new-password"
+                      value={suPassword}
+                      onChange={(e) => setSuPassword(e.target.value)}
+                      className={inputClass}
+                      placeholder="8+ chars, 1 uppercase, 1 number"
+                      required
+                      maxLength={128}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className={labelClass} htmlFor="su-confirm">
+                      Confirm Password
+                    </label>
+                    <input
+                      id="su-confirm"
+                      type="password"
+                      autoComplete="new-password"
+                      value={suConfirm}
+                      onChange={(e) => setSuConfirm(e.target.value)}
+                      className={inputClass}
+                      placeholder="repeat password"
+                      required
+                      maxLength={128}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <UserPlus className="size-3.5" />}
+                    Create Account
                   </button>
-                </div>
-              </form>
-            )}
+                  <div className="text-[10px] font-mono text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setView("login")}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      ← Already have an account? Login
+                    </button>
+                  </div>
+                </form>
+              )}
 
-            {view === "resend" && (
-              <form onSubmit={handleResend} className="space-y-4">
-                <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
-                  Didn't get the confirmation email? Enter your registered email and we'll send a fresh link.
-                </p>
-                <div className="space-y-1.5">
-                  <label className={labelClass} htmlFor="rs-email">
-                    Email
-                  </label>
-                  <input
-                    id="rs-email"
-                    type="email"
-                    autoComplete="email"
-                    value={resendEmail}
-                    onChange={(e) => setResendEmail(e.target.value)}
-                    className={inputClass}
-                    placeholder="operator@strato.ops"
-                    required
-                    maxLength={255}
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <MailCheck className="size-3.5" />}
-                  Resend Confirmation
-                </button>
-                <div className="text-[10px] font-mono text-center pt-1">
+              {view === "forgot" && (
+                <form onSubmit={handleForgot} className="space-y-4">
+                  <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
+                    Enter the email associated with your account. We'll send a recovery link.
+                  </p>
+                  <div className="space-y-1.5">
+                    <label className={labelClass} htmlFor="fp-email">
+                      Email
+                    </label>
+                    <input
+                      id="fp-email"
+                      type="email"
+                      autoComplete="email"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      className={inputClass}
+                      placeholder="operator@strato.ops"
+                      required
+                      maxLength={255}
+                    />
+                  </div>
                   <button
-                    type="button"
-                    onClick={() => setView("login")}
-                    className="text-muted-foreground hover:text-primary transition-colors"
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    ← Back to Login
+                    {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <KeyRound className="size-3.5" />}
+                    Send Reset Link
                   </button>
-                </div>
-              </form>
-            )}
+                  <div className="text-[10px] font-mono text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setView("login")}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      ← Back to Login
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {view === "resend" && (
+                <form onSubmit={handleResend} className="space-y-4">
+                  <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
+                    Didn't get the confirmation email? Enter your registered email and we'll send a fresh link.
+                  </p>
+                  <div className="space-y-1.5">
+                    <label className={labelClass} htmlFor="rs-email">
+                      Email
+                    </label>
+                    <input
+                      id="rs-email"
+                      type="email"
+                      autoComplete="email"
+                      value={resendEmail}
+                      onChange={(e) => setResendEmail(e.target.value)}
+                      className={inputClass}
+                      placeholder="operator@strato.ops"
+                      required
+                      maxLength={255}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-2.5 rounded-sm hover:brightness-110 transition-all neon-glow-amber disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {submitting ? <Loader2 className="size-3.5 animate-spin" /> : <MailCheck className="size-3.5" />}
+                    Resend Confirmation
+                  </button>
+                  <div className="text-[10px] font-mono text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setView("login")}
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      ← Back to Login
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
     </>
   );
 };
