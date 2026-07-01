@@ -379,6 +379,20 @@ const Auth = () => {
           </div>
 
           <div className="p-5">
+            {backendDown && (
+              <div className="mb-4 rounded-sm border border-destructive/60 bg-destructive/10 px-3 py-2.5 text-[11px] font-mono leading-relaxed text-destructive">
+                Sadly, the servers are currently unavailable. The site is running
+                ad-free and without pay walls, while hosting costs a fair
+                chunk-of-change. For more information, contact{" "}
+                <a
+                  href="mailto:stormcirclecontect@gmail.com"
+                  className="underline hover:text-destructive-foreground"
+                >
+                  stormcirclecontect@gmail.com
+                </a>
+                .
+              </div>
+            )}
             <p className="text-[10px] font-mono text-muted-foreground text-center mb-4">
               Authentication emails may take up to 5 minutes to arrive
             </p>
