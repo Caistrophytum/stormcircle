@@ -61,6 +61,9 @@ const NEW_WINDOW_MS = 5 * 60_000;
 const REALTIME_DEBOUNCE_MS = 300;
 const ALERTS_REFRESH_MS = 60_000;
 const LSR_REFRESH_MS = 60_000;
+const PROFILE_TIMEOUT_MS = 5_000;
+const ALERTS_TIMEOUT_MS = 8_000;
+const POLYGONS_TIMEOUT_MS = 10_000;
 
 const VALID_SEVERITIES: Severity[] = ["Extreme", "Severe", "Moderate", "Minor", "Unknown"];
 const VALID_CERTAINTY: Certainty[] = ["Observed", "Likely", "Possible", "Unlikely", "Unknown"];
@@ -103,6 +106,18 @@ function deriveKind(event: string): AlertKind {
   if (e.includes("advisory")) return "Advisory";
   if (e.includes("statement")) return "Statement";
   return "Other";
+}
+
+function isAbortError(err: unknown): boolean {
+  if (!err) return false;
+  const name = (err as { name?: unknown }).name;
+  const message = (err as { message?: unknown }).message;
+  const details = (err as { details?: unknown }).details;
+  return (
+    name === "AbortError" ||
+    String(message ?? "").toLowerCase().includes("abort") ||
+    String(details ?? "").toLowerCase().includes("abort")
+  );
 }
 
 
@@ -462,10 +477,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     let polyTimer: ReturnType<typeof setTimeout> | null = null;
 
     async function loadSummary() {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), ALERTS_TIMEOUT_MS);
       try {
         const { data: rows, error } = await supabase
           .from("active_alerts")
-          .select("alert_id, event, severity, certainty, urgency, headline, area_desc, expires_at, first_seen_at, properties");
+          .select("alert_id, event, severity, certainty, urgency, headline, area_desc, expires_at, first_seen_at, properties")
+          .abortSignal(controller.signal);
         if (error) throw error;
         if (cancelled) return;
 
@@ -506,9 +524,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
         });
       } catch (err) {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : "Failed to load alerts";
+        const msg = isAbortError(err) ? "Alert feed timed out" : err instanceof Error ? err.message : "Failed to load alerts";
         // KEEP-LAST-GOOD: only set error, never wipe data.
         setAlerts((p) => ({ ...p, loading: false, error: msg }));
+      } finally {
+        clearTimeout(timer);
       }
     }
 
@@ -516,12 +536,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Route-aware: Account Center never needs polygons. Skip the heavy
       // geometry query so opening /account is as light as possible.
       if (typeof window !== "undefined" && window.location.pathname.startsWith("/account")) {
+        setPolygons((p) => ({ ...p, loading: false }));
         return;
       }
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), POLYGONS_TIMEOUT_MS);
       try {
         const { data: geoRows, error } = await supabase
           .from("active_alerts")
-          .select("alert_id, geometry");
+          .select("alert_id, geometry")
+          .abortSignal(controller.signal);
         if (error) throw error;
         if (cancelled) return;
 
@@ -581,8 +605,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : "Failed to load polygons";
+        const msg = isAbortError(err) ? "Warning geometry timed out" : err instanceof Error ? err.message : "Failed to load polygons";
         setPolygons((p) => ({ ...p, loading: false, error: msg }));
+      } finally {
+        clearTimeout(timer);
       }
     }
 
@@ -666,9 +692,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
 
       const promise = (async () => {
-        // 5 second hard timeout — profile fetch must never hang indefinitely
+        // Hard timeout — profile fetch must never hang indefinitely
         const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 5000);
+        const timer = setTimeout(() => controller.abort(), PROFILE_TIMEOUT_MS);
         try {
           const { data, error } = await supabase
             .from("profiles")
@@ -678,14 +704,16 @@ export function DataProvider({ children }: { children: ReactNode }) {
             .maybeSingle();
           if (!mounted) return;
           if (error) {
-            console.error("Failed to load profile:", error);
+            if (isAbortError(error)) console.warn("Profile fetch timed out; continuing without profile.");
+            else console.error("Failed to load profile:", error);
             setProfile(null);
             return;
           }
           profileUserIdRef.current = userId;
           setProfile(data as Profile | null);
         } catch (err) {
-          console.error("Profile fetch failed or timed out:", err);
+          if (isAbortError(err)) console.warn("Profile fetch timed out; continuing without profile.");
+          else console.error("Profile fetch failed:", err);
           if (mounted) setProfile(null);
         } finally {
           clearTimeout(timer);
