@@ -63,6 +63,11 @@ export default function MobileScreen({ screen, onClose }: Props) {
         {screen === "radar" && <MobileRadar />}
 
         {screen === "alerts" && <MobileAlertsPanel />}
+
+        {/* Exercise comfort — the component IS the modal; we render it with
+            open=true and route its close callback back to the screen closer.
+            The floating Return button below still works as a fallback. */}
+        {screen === "exercise" && <ExerciseComfort open onClose={onClose} />}
       </div>
 
       <button
