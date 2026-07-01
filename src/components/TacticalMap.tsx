@@ -384,7 +384,28 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         </div>
       )}
 
-      <div
+      {/* Top-center Exercise Comfort button — opens a modal that scores
+          outdoor walk/run/bike/hike comfort for the hometown, now + next 6h. */}
+      <button
+        onClick={() => setComfortOpen(true)}
+        aria-label="Open exercise comfort"
+        className="absolute z-30 left-1/2 -translate-x-1/2 top-3 px-3 py-1.5 rounded flex items-center gap-2 glass-panel"
+        style={{
+          color: "#ff9d00",
+          fontFamily: "JetBrains Mono, monospace",
+          fontSize: "10px",
+          letterSpacing: "0.12em",
+          fontWeight: 700,
+          border: "1px solid rgba(255,157,0,0.45)",
+          cursor: "pointer",
+        }}
+      >
+        <ActivityIcon size={14} />
+        EXERCISE
+      </button>
+
+      <ExerciseComfort open={comfortOpen} onClose={() => setComfortOpen(false)} wrs={threatLevel} />
+
         className="absolute z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
         style={{
           left: radarExpanded ? "0.75rem" : "clamp(0.75rem, 2vw, 1.5rem)",
