@@ -406,6 +406,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 
       <ExerciseComfort open={comfortOpen} onClose={() => setComfortOpen(false)} wrs={threatLevel} />
 
+      <div
         className="absolute z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
         style={{
           left: radarExpanded ? "0.75rem" : "clamp(0.75rem, 2vw, 1.5rem)",
