@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-07-01 05z",
+    tag: "NEW",
+    title: "Fire weather rectangle",
+    body: "Similarly to the convective weather outlook showing the user their current situation in their chosen hometown, the fire weather rectangle thingy does the same for fire weather.",
+  },
+  {
     date: "2026-06-30 06z",
     tag: "IMPROVED",
     title: "Weather Risk Score calculation",
