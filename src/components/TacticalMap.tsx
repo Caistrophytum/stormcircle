@@ -1,7 +1,9 @@
 import { forwardRef, lazy, Suspense, useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Activity as ActivityIcon } from "lucide-react";
 
 import EventInfoPanel from "./EventInfoPanel";
+import ExerciseComfort from "./ExerciseComfort";
 
 
 import { useRadar } from "@/hooks/useRadar";
@@ -145,6 +147,7 @@ interface Props {
 const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   
   const [radarExpanded, setRadarExpanded] = useState(false);
+  const [comfortOpen, setComfortOpen] = useState(false);
   const radar = useRadar();
   const sounding = useSoundingData(
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
@@ -380,6 +383,28 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
           TAKING LONGER THAN USUAL — RECOVERING…
         </div>
       )}
+
+      {/* Top-center Exercise Comfort button — opens a modal that scores
+          outdoor walk/run/bike/hike comfort for the hometown, now + next 6h. */}
+      <button
+        onClick={() => setComfortOpen(true)}
+        aria-label="Open exercise comfort"
+        className="absolute z-30 left-1/2 -translate-x-1/2 top-3 px-3 py-1.5 rounded flex items-center gap-2 glass-panel"
+        style={{
+          color: "#ff9d00",
+          fontFamily: "JetBrains Mono, monospace",
+          fontSize: "10px",
+          letterSpacing: "0.12em",
+          fontWeight: 700,
+          border: "1px solid rgba(255,157,0,0.45)",
+          cursor: "pointer",
+        }}
+      >
+        <ActivityIcon size={14} />
+        EXERCISE
+      </button>
+
+      <ExerciseComfort open={comfortOpen} onClose={() => setComfortOpen(false)} wrs={threatLevel} />
 
       <div
         className="absolute z-20 origin-bottom-left transition-transform duration-300 ease-in-out"
