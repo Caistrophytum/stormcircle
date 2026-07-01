@@ -184,15 +184,23 @@ function warningPenalty(event: string): { penalty: number; forceDangerous: boole
   const e = event.toLowerCase();
   const matched = OUTDOOR_HAZARD_KEYWORDS.some((k) => e.includes(k));
   if (!matched) return { penalty: 0, forceDangerous: false, label: "" };
+
+  // Air-quality / smoke / dust alerts: the alert itself is the evidence, and
+  // modelled US AQI often lags what the state agency saw when issuing it.
+  // Treat these as a strong floor regardless of severity phrasing.
+  const isAirQ = /air quality|smoke|dust/.test(e);
+
   // Warning / Emergency: hard downgrade.
   if (e.includes("emergency") || e.includes("warning")) {
     return { penalty: 100, forceDangerous: true, label: event };
   }
-  if (e.includes("watch")) return { penalty: 20, forceDangerous: false, label: event };
+  if (e.includes("watch")) return { penalty: isAirQ ? 30 : 20, forceDangerous: false, label: event };
+  // NWS "Alert" tier (e.g. Air Quality Alert) — stronger than advisory.
+  if (e.includes("alert")) return { penalty: isAirQ ? 35 : 22, forceDangerous: false, label: event };
   if (e.includes("advisory") || e.includes("statement")) {
-    return { penalty: 12, forceDangerous: false, label: event };
+    return { penalty: isAirQ ? 28 : 12, forceDangerous: false, label: event };
   }
-  return { penalty: 8, forceDangerous: false, label: event };
+  return { penalty: isAirQ ? 25 : 8, forceDangerous: false, label: event };
 }
 
 // ── Per-hour scorer ─────────────────────────────────────────────────────
