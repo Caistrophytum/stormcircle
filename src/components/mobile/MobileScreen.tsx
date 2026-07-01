@@ -17,6 +17,7 @@ import CitizenReports from "@/components/CitizenReports";
 import FAQ from "@/pages/FAQ";
 import MobileRadar from "./MobileRadar";
 import MobileAlertsPanel from "./MobileAlertsPanel";
+import ExerciseComfort from "@/components/ExerciseComfort";
 import type { MobileScreenId } from "./MobileLayout";
 
 interface Props {
