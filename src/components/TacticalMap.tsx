@@ -1,7 +1,9 @@
 import { forwardRef, lazy, Suspense, useState, useMemo, useRef, useEffect, useLayoutEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Activity as ActivityIcon } from "lucide-react";
 
 import EventInfoPanel from "./EventInfoPanel";
+import ExerciseComfort from "./ExerciseComfort";
 
 
 import { useRadar } from "@/hooks/useRadar";
