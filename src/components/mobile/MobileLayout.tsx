@@ -23,7 +23,7 @@ import MobileScreen from "./MobileScreen";
 // Identifiers for every overlay screen reachable from the floating button row.
 // "faq" was added to surface the FAQ page on mobile (desktop links to /faq
 // from the StatusBar — mobile has no status bar, so we use an overlay instead).
-export type MobileScreenId = "faq" | "account" | "chat" | "alerts" | "radar";
+export type MobileScreenId = "faq" | "account" | "chat" | "alerts" | "radar" | "exercise";
 
 export default function MobileLayout() {
   // Which overlay is currently visible (null = none, main content shown).
