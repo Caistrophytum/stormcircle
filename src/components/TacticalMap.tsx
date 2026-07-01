@@ -147,6 +147,7 @@ interface Props {
 const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
   
   const [radarExpanded, setRadarExpanded] = useState(false);
+  const [comfortOpen, setComfortOpen] = useState(false);
   const radar = useRadar();
   const sounding = useSoundingData(
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
