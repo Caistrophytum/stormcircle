@@ -359,12 +359,12 @@ export default function MobileMain() {
 
     // Physical inputs — independent enabling environment (no gust: gusts are
     // a *consequence* of convection and would couple the score to itself).
-    //   SFC RH viable 30→100%, MID RH 20→80%, MID LIFT 0→0.2 m/s (Open-Meteo
-    //   m/s, +up). Saturation calibrated from 22 d × 8 US sites: p99≈+0.18,
-    //   max≈+0.72 m/s. Subsidence (≤0) → 0; ≥0.2 m/s strong ascent → 1.
+    //   SFC RH viable 30→100%, MID RH 20→80%, MID LIFT 0.1→3 m/s (Open-Meteo
+    //   m/s, +up). Below 0.1 m/s → 0% (no representation); ≥3 m/s → 100%
+    //   (very strong ascent).
     const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 70) : 0;
     const rhMidScore = sounding.rhMid != null ? clamp01((sounding.rhMid - 20) / 60) : 0;
-    const liftScore = sounding.omegaMid != null ? clamp01(sounding.omegaMid / 0.2) : 0;
+    const liftScore = sounding.omegaMid != null ? clamp01((sounding.omegaMid - 0.1) / (3 - 0.1)) : 0;
 
 
     // CAPE-gated log multiplier: ingredients only pay out when CAPE is present.
