@@ -11,7 +11,7 @@
  * A trailing chevron toggles the whole row so the user can hide the buttons
  * when they obscure underlying content. The chevron itself stays visible.
  */
-import { User, MessageCircle, AlertTriangle, Radio, HelpCircle } from "lucide-react";
+import { User, MessageCircle, AlertTriangle, Radio, HelpCircle, Activity } from "lucide-react";
 import type { MobileScreenId } from "./MobileLayout";
 
 interface Props {
@@ -23,9 +23,12 @@ interface Props {
 export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen }: Props) {
   // Order matters — FAQ is placed first (leftmost) per spec, immediately
   // followed by Account so the help affordance sits next to the user's hub.
+  // Exercise sits between Account and Chat so wellness features cluster with
+  // personal (Account) rather than tactical (Radar/Alerts).
   const buttons = [
     { id: "faq" as const, icon: <HelpCircle size={18} />, color: "#ff9d00", label: "FAQ" },
     { id: "account" as const, icon: <User size={18} />, color: "#7dd3fc", label: "Account" },
+    { id: "exercise" as const, icon: <Activity size={18} />, color: "#a3e635", label: "Exercise comfort" },
     { id: "chat" as const, icon: <MessageCircle size={18} />, color: "#00ff88", label: "Chat" },
     { id: "alerts" as const, icon: <AlertTriangle size={18} />, color: "#ff9d00", label: "All alerts" },
     { id: "radar" as const, icon: <Radio size={18} />, color: "#ff6b6b", label: "Radar" },
