@@ -9,7 +9,7 @@
  * `null` means "no city picked" — components fall back to a default
  * (e.g. user's geolocation or a hardcoded center).
  */
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, ReactNode } from "react";
 
 export interface SelectedCity {
   name: string;
@@ -27,11 +27,11 @@ const CityContext = createContext<CityContextValue | null>(null);
 /** Wrap your tree in this once (we do it inside Index.tsx). */
 export const CityProvider = ({ children }: { children: ReactNode }) => {
   const [selectedCity, setSelectedCity] = useState<SelectedCity | null>(null);
-  return (
-    <CityContext.Provider value={{ selectedCity, setSelectedCity }}>
-      {children}
-    </CityContext.Provider>
-  );
+  // Perf: memoize the context value so consumers don't re-render on every
+  // parent render just because we allocated a fresh `{ selectedCity, ... }`
+  // object. `setSelectedCity` is stable across renders (from useState).
+  const value = useMemo(() => ({ selectedCity, setSelectedCity }), [selectedCity]);
+  return <CityContext.Provider value={value}>{children}</CityContext.Provider>;
 };
 
 /**
