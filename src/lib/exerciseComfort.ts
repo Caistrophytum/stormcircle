@@ -1,22 +1,14 @@
 /**
  * exerciseComfort — pure scoring for outdoor activity comfort.
  *
- * Combines "now + next 6 h" weather (Open-Meteo hourly), US AQI (Open-Meteo
- * air-quality), active NWS warnings that cover the user's home point, and the
- * outlook layer (SPC categorical, SPC Fire Weather, and the app's own WRS
- * threat number) into a 0–100 score per activity plus the top limiting factor.
+ * Framework:
+ *   Score = 100 − Σ(weight_i × penalty_i)   [clamped 0–100]
+ *   then apply HARD GATES (active NWS alerts) which cap the score.
  *
- * Design notes:
- *   • Score composition is *subtractive from 100* so we can trivially surface
- *     the biggest single penalty as the "limiter" for the UI.
- *   • Activity-specific weight vectors let a strong headwind hammer a bike run
- *     while barely nudging a walk; UV punishes long-exposure activities more
- *     than a brisk bike commute; heat index dominates run/hike; etc.
- *   • Active NWS Warning/Emergency polygons that contain the home point are a
- *     HARD downgrade to ≤ 15 ("Dangerous") — no matter how nice the sky looks
- *     you don't run through a Tornado Warning.
- *   • Outlooks (SPC / Fire / WRS) are SOFT downgrades — they nudge the score
- *     lower but don't force Dangerous.
+ * Penalty functions (0–100) are IDENTICAL across activities — only the
+ * per-activity weight vector (summing to 1.0) differs. This mirrors the
+ * WRS gating philosophy: physical variables produce sub-scores, activity
+ * context tunes their importance, and warnings act as hard overrides.
  */
 
 import type { SPCRiskLevel } from "@/hooks/useHomeCityRisk";
@@ -94,118 +86,153 @@ export function tierFor(score: number): ComfortTier {
   return "Dangerous";
 }
 
-// ── Activity-specific weight vectors ────────────────────────────────────
-// Each entry is the *maximum penalty* that factor can subtract from 100.
-// Tuned so that a single dominant hazard can drop you into Poor, and two
-// stacked hazards into Dangerous, without going negative in typical weather.
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const lerp = (x: number, x0: number, x1: number, y0: number, y1: number) =>
+  y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
+
+// ── Penalty functions (shared 0–100, activity-agnostic) ─────────────────
+
+/** Heat penalty from apparent temperature (°C). */
+function heatPenalty(appC: number | null): number {
+  if (appC == null) return 0;
+  if (appC <= 25) return 0;
+  if (appC <= 32) return clamp(lerp(appC, 25, 32, 0, 40), 0, 40);
+  if (appC <= 38) return clamp(lerp(appC, 32, 38, 40, 80), 40, 80);
+  return clamp(lerp(appC, 38, 45, 80, 100), 80, 100);
+}
+
+/** Cold penalty from apparent temperature (°C, wind-chill proxy). */
+function coldPenalty(appC: number | null): number {
+  if (appC == null) return 0;
+  if (appC >= 0) return 0;
+  if (appC >= -10) return clamp(lerp(appC, 0, -10, 0, 40), 0, 40);
+  if (appC >= -20) return clamp(lerp(appC, -10, -20, 40, 80), 40, 80);
+  return clamp(lerp(appC, -20, -30, 80, 100), 80, 100);
+}
+
+/** Wind penalty from sustained + 0.5×gust (km/h). Inputs are m/s. */
+function windPenalty(sustainedMs: number | null, gustsMs: number | null): number {
+  const s = sustainedMs == null ? 0 : sustainedMs;
+  const g = gustsMs == null ? s : gustsMs;
+  const kmh = (s + 0.5 * Math.max(0, g - s)) * 3.6;
+  if (kmh <= 15) return 0;
+  if (kmh <= 35) return clamp(lerp(kmh, 15, 35, 0, 50), 0, 50);
+  if (kmh <= 55) return clamp(lerp(kmh, 35, 55, 50, 85), 50, 85);
+  return clamp(lerp(kmh, 55, 80, 85, 100), 85, 100);
+}
+
+/** Precip penalty from rate (mm/h) × probability (0–100). */
+function precipPenalty(prob: number | null, mm: number | null): number {
+  const p = prob == null ? 0 : clamp(prob / 100, 0, 1);
+  const rate = mm == null ? 0 : mm;
+  // Effective intensity scales with probability.
+  const effective = rate * (0.4 + 0.6 * p);
+  if (effective <= 0) return 0;
+  if (effective < 0.5) return clamp(lerp(effective, 0, 0.5, 5, 20), 5, 20);   // drizzle
+  if (effective < 2.5) return clamp(lerp(effective, 0.5, 2.5, 20, 50), 20, 50); // moderate
+  if (effective < 7.5) return clamp(lerp(effective, 2.5, 7.5, 50, 85), 50, 85); // heavy
+  return clamp(lerp(effective, 7.5, 15, 85, 100), 85, 100);                    // torrential
+}
+
+/**
+ * Storm/lightning penalty — tiered, not linear.
+ * We don't have a live CG-lightning feed, so we proxy proximity using:
+ *   • active NWS thunderstorm-family warnings (⇒ TS within ~area)
+ *   • SPC categorical outlook covering the home point
+ *   • WRS convective threat (>60 ≈ storms likely)
+ */
+function stormPenalty(
+  activeWarnings: string[],
+  spc: SPCRiskLevel,
+  wrs: number,
+): number {
+  const warnStr = activeWarnings.join(" | ").toLowerCase();
+  // Tier 3 (100): tornado/severe TS warning or MDT+ SPC = lightning/severe imminent
+  if (
+    /tornado warning|severe thunderstorm warning|tornado emergency/.test(warnStr) ||
+    spc === "MDT" || spc === "HIGH"
+  ) return 100;
+  // Tier 2 (70): active TS-family warning nearby or ENH outlook
+  if (
+    /thunderstorm|flash flood warning/.test(warnStr) ||
+    spc === "ENH"
+  ) return 70;
+  // Tier 1 (30): TS possible — SLGT/MRGL, generic TSTM area, or high WRS
+  if (spc === "SLGT" || spc === "MRGL" || spc === "TSTM" || wrs >= 60) return 30;
+  return 0;
+}
+
+/** Air quality penalty (US AQI). */
+function aqPenalty(aqi: number | null): number {
+  if (aqi == null || aqi <= 50) return 0;
+  if (aqi <= 150) return clamp(lerp(aqi, 50, 150, 0, 60), 0, 60);
+  return clamp(lerp(aqi, 150, 300, 60, 100), 60, 100);
+}
+
+/** UV / sun exposure penalty. */
+function uvPenalty(uv: number | null): number {
+  if (uv == null || uv < 3) return 0;
+  if (uv <= 8) return clamp(lerp(uv, 3, 8, 0, 40), 0, 40);
+  return clamp(lerp(uv, 8, 12, 40, 70), 40, 70);
+}
+
+// ── Per-activity weights (must sum to 1.0) ──────────────────────────────
 interface Weights {
-  heat: number;      // apparent temp > 27°C
-  cold: number;      // apparent temp < 5°C
-  wind: number;      // gusts
-  precip: number;    // rain prob × intensity
-  uv: number;        // uv index
-  aq: number;        // US AQI
-  humidity: number;  // for hot & humid double-penalty
+  heat: number;
+  cold: number;
+  wind: number;
+  precip: number;
+  storm: number;
+  aq: number;
+  uv: number;
 }
 
 const WEIGHTS: Record<Activity, Weights> = {
-  walk: { heat: 30, cold: 20, wind: 10, precip: 20, uv: 15, aq: 25, humidity: 10 },
-  run:  { heat: 45, cold: 25, wind: 15, precip: 25, uv: 25, aq: 40, humidity: 20 },
-  bike: { heat: 30, cold: 35, wind: 45, precip: 35, uv: 20, aq: 35, humidity: 10 },
-  hike: { heat: 40, cold: 30, wind: 20, precip: 30, uv: 30, aq: 30, humidity: 15 },
+  run:  { heat: 0.30, cold: 0.15, wind: 0.10, precip: 0.20, storm: 0.15, aq: 0.05, uv: 0.05 },
+  walk: { heat: 0.20, cold: 0.15, wind: 0.10, precip: 0.20, storm: 0.15, aq: 0.10, uv: 0.10 },
+  bike: { heat: 0.15, cold: 0.10, wind: 0.25, precip: 0.20, storm: 0.20, aq: 0.05, uv: 0.05 },
+  hike: { heat: 0.20, cold: 0.15, wind: 0.15, precip: 0.15, storm: 0.20, aq: 0.05, uv: 0.10 },
 };
 
-// ── Individual factor scorers ───────────────────────────────────────────
-// Each returns a 0..1 severity, multiplied by the activity weight to get the
-// actual point penalty.
-const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-
-function heatSeverity(appC: number | null): number {
-  if (appC == null) return 0;
-  // 27 °C comfortable → 42 °C ≈ dangerous.
-  return clamp01((appC - 27) / (42 - 27));
-}
-function coldSeverity(appC: number | null): number {
-  if (appC == null) return 0;
-  // 5 °C fine → −20 °C dangerous.
-  return clamp01((5 - appC) / (5 - -20));
-}
-function windSeverity(gustsMs: number | null): number {
-  if (gustsMs == null) return 0;
-  // 5 m/s pleasant → 20 m/s (~45 mph) dangerous.
-  return clamp01((gustsMs - 5) / (20 - 5));
-}
-function precipSeverity(prob: number | null, mm: number | null): number {
-  const p = prob == null ? 0 : clamp01(prob / 100);
-  const i = mm == null ? 0 : clamp01(mm / 5); // 5 mm/h heavy
-  // combine — probability weighted, intensity boosts.
-  return clamp01(0.6 * p + 0.6 * i);
-}
-function uvSeverity(uv: number | null): number {
-  if (uv == null) return 0;
-  // UV 3 fine → UV 11+ extreme.
-  return clamp01((uv - 3) / (11 - 3));
-}
-function aqSeverity(aqi: number | null): number {
-  if (aqi == null) return 0;
-  // 50 (Good→Moderate) start → 200 (Very Unhealthy) full.
-  return clamp01((aqi - 50) / (200 - 50));
-}
-function humiditySeverity(rh: number | null, appC: number | null): number {
-  if (rh == null || appC == null) return 0;
-  // Only counts when it's warm — humid+cold is comfortable enough.
-  if (appC < 22) return 0;
-  return clamp01((rh - 60) / (100 - 60));
+// ── Hard gates: active NWS alert → per-activity score cap ───────────────
+interface HardGate {
+  /** Regex that matches the event string (case-insensitive) */
+  match: RegExp;
+  label: string;
+  caps: Record<Activity, number>;
 }
 
-// ── Outlook / warning penalties (activity-agnostic) ─────────────────────
-const SPC_PENALTY: Record<SPCRiskLevel, number> = {
-  NONE: 0, TSTM: 3, MRGL: 8, SLGT: 18, ENH: 30, MDT: 50, HIGH: 70,
-};
-const FIRE_PENALTY: Record<FireRiskLevel, number> = {
-  NONE: 0, ELEV: 8, CRIT: 30, EXTM: 55,
-};
-
-/** Keywords in an active alert event that make outdoor exercise unsafe. */
-const OUTDOOR_HAZARD_KEYWORDS = [
-  "tornado", "severe thunderstorm", "flash flood", "flood",
-  "hurricane", "tropical storm", "tsunami",
-  "air quality", "smoke", "dust",
-  "excessive heat", "extreme heat", "heat advisory",
-  "wind chill", "extreme cold", "cold weather",
-  "high wind", "wind advisory",
-  "winter storm", "blizzard", "ice storm", "freezing rain", "ice",
-  "red flag", "fire weather",
-  "evacuation", "shelter in place",
-  "coastal flood", "lakeshore flood",
+const HARD_GATES: HardGate[] = [
+  { match: /tornado (warning|emergency)/i, label: "Tornado Warning",
+    caps: { run: 0, walk: 0, bike: 0, hike: 0 } },
+  { match: /severe thunderstorm warning/i, label: "Severe T-storm Warning",
+    caps: { run: 5, walk: 5, bike: 0, hike: 0 } },
+  { match: /flash flood warning/i, label: "Flash Flood Warning",
+    caps: { run: 15, walk: 15, bike: 10, hike: 0 } },
+  { match: /(extreme heat|excessive heat) warning/i, label: "Extreme Heat Warning",
+    caps: { run: 10, walk: 10, bike: 10, hike: 5 } },
+  { match: /high wind warning/i, label: "High Wind Warning",
+    caps: { run: 30, walk: 30, bike: 5, hike: 15 } },
+  { match: /(winter storm|blizzard|ice storm) warning/i, label: "Winter Storm Warning",
+    caps: { run: 15, walk: 15, bike: 5, hike: 5 } },
+  // Fire outlook / red flag treated as a hard gate for exposed activities.
+  { match: /red flag warning|fire weather warning/i, label: "Red Flag Warning",
+    caps: { run: 20, walk: 25, bike: 20, hike: 10 } },
+  // Evacuation / shelter — everything stops.
+  { match: /evacuation|shelter in place/i, label: "Evacuation Order",
+    caps: { run: 0, walk: 0, bike: 0, hike: 0 } },
 ];
 
-function warningPenalty(event: string): { penalty: number; forceDangerous: boolean; label: string } {
-  const e = event.toLowerCase();
-  const matched = OUTDOOR_HAZARD_KEYWORDS.some((k) => e.includes(k));
-  if (!matched) return { penalty: 0, forceDangerous: false, label: "" };
-
-  // Air-quality / smoke / dust alerts: the alert itself is the evidence, and
-  // modelled US AQI often lags what the state agency saw when issuing it.
-  // Treat these as a strong floor regardless of severity phrasing.
-  const isAirQ = /air quality|smoke|dust/.test(e);
-
-  // Warning / Emergency: hard downgrade.
-  if (e.includes("emergency") || e.includes("warning")) {
-    return { penalty: 100, forceDangerous: true, label: event };
+/** AQI-based hard gate (Very Unhealthy = AQI > 200). */
+function aqiHardGate(aqi: number | null, activity: Activity): { cap: number; label: string } | null {
+  if (aqi != null && aqi > 200) {
+    const caps: Record<Activity, number> = { run: 20, walk: 20, bike: 15, hike: 20 };
+    return { cap: caps[activity], label: `AQI ${Math.round(aqi)} — Very Unhealthy` };
   }
-  if (e.includes("watch")) return { penalty: isAirQ ? 30 : 20, forceDangerous: false, label: event };
-  // NWS "Alert" tier (e.g. Air Quality Alert) — stronger than advisory.
-  if (e.includes("alert")) return { penalty: isAirQ ? 35 : 22, forceDangerous: false, label: event };
-  if (e.includes("advisory") || e.includes("statement")) {
-    return { penalty: isAirQ ? 28 : 12, forceDangerous: false, label: event };
-  }
-  return { penalty: isAirQ ? 25 : 8, forceDangerous: false, label: event };
+  return null;
 }
 
 // ── Per-hour scorer ─────────────────────────────────────────────────────
-interface Penalty { label: string; points: number }
-
 function scoreHour(
   h: HourlyPoint,
   aqi: number | null,
@@ -213,55 +240,55 @@ function scoreHour(
   ctx: Pick<ComfortContext, "activeWarnings" | "spcRisk" | "fireRisk" | "wrs">,
 ): HourResult {
   const w = WEIGHTS[activity];
-  const penalties: Penalty[] = [];
 
-  // Weather physical factors
-  penalties.push({ label: "Heat", points: heatSeverity(h.apparentTemperature) * w.heat });
-  penalties.push({ label: "Cold", points: coldSeverity(h.apparentTemperature) * w.cold });
-  penalties.push({ label: "Wind gusts", points: windSeverity(h.windGusts) * w.wind });
-  penalties.push({ label: "Precipitation", points: precipSeverity(h.precipProbability, h.precipMm) * w.precip });
-  penalties.push({ label: "UV index", points: uvSeverity(h.uvIndex) * w.uv });
-  penalties.push({ label: "Air quality", points: aqSeverity(aqi) * w.aq });
-  penalties.push({ label: "Humidity", points: humiditySeverity(h.humidity, h.apparentTemperature) * w.humidity });
+  const penalties: { label: string; raw: number; weighted: number }[] = [
+    { label: "Heat",           raw: heatPenalty(h.apparentTemperature), weighted: 0 },
+    { label: "Cold",           raw: coldPenalty(h.apparentTemperature), weighted: 0 },
+    { label: "Wind",           raw: windPenalty(h.windSpeed, h.windGusts), weighted: 0 },
+    { label: "Precipitation",  raw: precipPenalty(h.precipProbability, h.precipMm), weighted: 0 },
+    { label: "Storm/lightning",raw: stormPenalty(ctx.activeWarnings, ctx.spcRisk, ctx.wrs), weighted: 0 },
+    { label: "Air quality",    raw: aqPenalty(aqi), weighted: 0 },
+    { label: "UV/sun",         raw: uvPenalty(h.uvIndex), weighted: 0 },
+  ];
+  const wKeys: (keyof Weights)[] = ["heat", "cold", "wind", "precip", "storm", "aq", "uv"];
+  penalties.forEach((p, i) => { p.weighted = p.raw * w[wKeys[i]]; });
 
-  // Outlooks — soft downgrades
-  penalties.push({ label: `SPC ${ctx.spcRisk}`, points: SPC_PENALTY[ctx.spcRisk] ?? 0 });
-  penalties.push({ label: `Fire ${ctx.fireRisk}`, points: FIRE_PENALTY[ctx.fireRisk] ?? 0 });
-  penalties.push({ label: "Convective (WRS)", points: 0.3 * (isFinite(ctx.wrs) ? ctx.wrs : 0) });
+  const totalPenalty = penalties.reduce((s, p) => s + p.weighted, 0);
+  let score = clamp(100 - totalPenalty, 0, 100);
 
-  // Active warnings — potential hard downgrade
-  let forceDangerous = false;
-  let dangerLabel = "";
-  for (const ev of ctx.activeWarnings) {
-    const w2 = warningPenalty(ev);
-    if (w2.penalty > 0) penalties.push({ label: `Alert: ${w2.label}`, points: w2.penalty });
-    if (w2.forceDangerous) { forceDangerous = true; dangerLabel = w2.label; }
+  // Hard gates from active NWS alerts.
+  let gateLabel = "";
+  let gateCap = 100;
+  for (const g of HARD_GATES) {
+    if (ctx.activeWarnings.some((ev) => g.match.test(ev))) {
+      const cap = g.caps[activity];
+      if (cap < gateCap) { gateCap = cap; gateLabel = g.label; }
+    }
   }
+  const aqGate = aqiHardGate(aqi, activity);
+  if (aqGate && aqGate.cap < gateCap) { gateCap = aqGate.cap; gateLabel = aqGate.label; }
 
-  const totalPenalty = penalties.reduce((s, p) => s + p.points, 0);
-  let score = Math.max(0, Math.min(100, 100 - totalPenalty));
-  if (forceDangerous) score = Math.min(score, 12);
+  if (gateCap < score) score = gateCap;
 
-  // Top limiter: single biggest penalty (or the hard warning if forced).
+  // Top limiter.
   let limiter = "None";
-  if (forceDangerous) {
-    limiter = `Active ${dangerLabel}`;
+  if (gateCap < 100 && gateCap <= score) {
+    limiter = `Alert: ${gateLabel}`;
   } else {
-    const top = penalties.reduce((a, b) => (b.points > a.points ? b : a), { label: "None", points: 0 });
-    if (top.points >= 3) limiter = top.label;
+    const top = penalties.reduce((a, b) => (b.weighted > a.weighted ? b : a),
+      { label: "None", raw: 0, weighted: 0 });
+    if (top.weighted >= 3) limiter = top.label;
   }
 
   return { time: h.time, score: Math.round(score), tier: tierFor(score), limiter };
 }
 
-// ── Public entry — one activity ─────────────────────────────────────────
+// ── Public entry ────────────────────────────────────────────────────────
 export function computeComfort(
   activity: Activity,
   ctx: ComfortContext,
 ): ActivityResult {
   const series: HourResult[] = ctx.hourly.slice(0, 7).map((h) => {
-    // Match AQ by exact time; fall back to same-index if the two feeds happen
-    // to differ (Open-Meteo AQ occasionally lags by an hour).
     const idx = ctx.airQuality.findIndex((a) => a.time === h.time);
     const aq = idx >= 0 ? ctx.airQuality[idx].usAqi : (ctx.airQuality[0]?.usAqi ?? null);
     return scoreHour(h, aq, activity, ctx);
