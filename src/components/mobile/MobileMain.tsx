@@ -254,9 +254,10 @@ export default function MobileMain() {
   );
   const unitSystem = useUnitSystem();
   const warningPolygons = useWarningPolygons();
-  const botMsg = useSPCBotMessage();
-  const hurricaneMsg = useHurricaneBotMessage();
-  const fireMsg = useFireBotMessage();
+  const botLatest = useBotMessagesLatest([BOT_USER_ID, HURRICANE_BOT_ID, FIRE_BOT_ID]);
+  const botMsg = botLatest[BOT_USER_ID];
+  const hurricaneMsg = botLatest[HURRICANE_BOT_ID];
+  const fireMsg = botLatest[FIRE_BOT_ID];
   const chatMsgs = useRecentChatMessages(30);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
