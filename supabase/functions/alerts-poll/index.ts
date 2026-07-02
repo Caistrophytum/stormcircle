@@ -272,11 +272,18 @@ Deno.serve(async (req) => {
       };
     });
 
-    const BATCH = 200;
+    // Smaller batches keep each upsert well inside the Postgres
+    // statement_timeout (large geometry payloads can otherwise push a
+    // 200-row batch past the 8s limit and abort with SQLSTATE 57014).
+    const BATCH = UPSERT_BATCH;
     for (let i = 0; i < rows.length; i += BATCH) {
       const slice = rows.slice(i, i + BATCH);
-      const { error } = await supabase.from("active_alerts").upsert(slice, { onConflict: "alert_id" });
-      if (error) console.warn("[alerts-poll] batch upsert err:", error);
+      try {
+        const { error } = await supabase.from("active_alerts").upsert(slice, { onConflict: "alert_id" });
+        if (error) console.warn("[alerts-poll] batch upsert err:", error);
+      } catch (e) {
+        console.warn("[alerts-poll] batch upsert threw:", e);
+      }
     }
 
     const currentIds = new Set(rows.map((r) => r.alert_id));
@@ -288,7 +295,11 @@ Deno.serve(async (req) => {
     if (toDelete.length > 0) {
       for (let i = 0; i < toDelete.length; i += BATCH) {
         const chunk = toDelete.slice(i, i + BATCH);
-        await supabase.from("active_alerts").delete().in("alert_id", chunk);
+        try {
+          await supabase.from("active_alerts").delete().in("alert_id", chunk);
+        } catch (e) {
+          console.warn("[alerts-poll] batch delete threw:", e);
+        }
       }
     }
 
