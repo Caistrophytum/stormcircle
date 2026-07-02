@@ -192,9 +192,16 @@ Deno.serve(async (req) => {
 
       // Anything not in the cache (or expired) → fetch from NWS, then write
       // back to the cache for everyone (including all clients) to benefit.
-      const missing = zoneList.filter((z) => !zoneGeom.has(z));
+      // Cap per-run work so we don't exceed the edge-runtime CPU budget.
+      // Anything we skip will be picked up on subsequent cycles as the cache
+      // fills in — the alerts themselves are still written this cycle.
+      const missingAll = zoneList.filter((z) => !zoneGeom.has(z));
+      const missing = missingAll.slice(0, MAX_MISSING_ZONES_PER_RUN);
+      if (missingAll.length > missing.length) {
+        console.log(`[alerts-poll] deferring ${missingAll.length - missing.length} zone fetches to next cycle`);
+      }
       if (missing.length > 0) {
-        const fetched = await runWithConcurrency(missing, 8, fetchZoneFromNetwork);
+        const fetched = await runWithConcurrency(missing, ZONE_FETCH_CONCURRENCY, fetchZoneFromNetwork);
         const upserts: { zone_url: string; geometry: any; fetched_at: string }[] = [];
         for (let i = 0; i < missing.length; i++) {
           const g = fetched[i];
@@ -204,8 +211,8 @@ Deno.serve(async (req) => {
           }
         }
         if (upserts.length > 0) {
-          for (let i = 0; i < upserts.length; i += 200) {
-            const slice = upserts.slice(i, i + 200);
+          for (let i = 0; i < upserts.length; i += UPSERT_BATCH) {
+            const slice = upserts.slice(i, i + UPSERT_BATCH);
             const { error } = await supabase
               .from("zone_geom_cache")
               .upsert(slice, { onConflict: "zone_url" });
