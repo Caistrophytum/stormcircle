@@ -84,13 +84,26 @@ function fmtAdv(d: Date): string {
   return `${m} ${day}, ${y}. ${h}z`;
 }
 
+// Small helper: fetch with an AbortController-backed timeout so a slow
+// NHC endpoint can't stall the entire edge invocation up to the runtime
+// wall-clock kill.
+async function fetchWithTimeout(url: string, ms: number, init: RequestInit = {}): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal, cache: "no-store" });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Fetch the NHC Public Advisory and pull out its one-line headline
 // (the "...HEADLINE GOES HERE..." line that sits right above the SUMMARY).
 // Kept defensive — returns null on any failure so the bot still posts.
 async function fetchAdvisoryHeadline(url: string): Promise<string | null> {
   if (!url) return null;
   try {
-    const r = await fetch(url, { cache: "no-store" });
+    const r = await fetchWithTimeout(url, 6_000);
     if (!r.ok) return null;
     const html = await r.text();
     const pre = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i)?.[1] ?? html;
