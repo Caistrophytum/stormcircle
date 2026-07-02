@@ -14,12 +14,17 @@ const faqs = [
   {
     question: "What is StormCircle?",
     answer:
-      "StormCircle is a free weather social network where anyone, from curious members of the public to professional meteorologists can share real-time storm reports, follow severe weather events, and stay informed during active weather situations across the USA.",
+      "StormCircle is a forever-free, indie, solo-developed weather social network where anyone, from curious members of the public to professional meteorologists can share real-time storm reports, follow severe weather events, and stay informed during active weather situations across the USA.",
   },
   {
     question: "Who is StormCircle for?",
     answer:
       "StormCircle is built for everyone. Whether you're a professional meteorologist sharing a verified severe weather warning, a storm enthusiast tracking a supercell, or an everyday person wanting to know if that dark cloud is something to worry about - StormCircle connects you with the right information at the right time.",
+  },
+  {
+    question: "Who are you, Mr. developer?",
+    answer:
+      "Hi! Nice to meet you. First, let me extend my sincerest thanks for visiting my website. My name's Omri, at the time of writing this paragraph and developing the website (2026) I'm 18 years old. I've been a weather enthusiast since infancy, and since then I've been collecting measurment instruments, studying models and taking online university courses. This website is my little love project for the community. IF you'd like to contact me further, feel free to browse for AspiringMolecularEngineer on Tumblr or on email at stormcirclecontact@gmail.com.",
   },
   {
     question: "How do I report severe weather on StormCircle?",
