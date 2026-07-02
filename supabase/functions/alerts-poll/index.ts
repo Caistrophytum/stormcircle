@@ -19,6 +19,15 @@ const UA = "StormCircle/1.0 (bot@stormcircle.net)";
 // Re-fetch a cached zone if it's older than this — zones do change shape
 // occasionally (re-districting, WFO realignments). A day is plenty.
 const ZONE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+// Hard caps to keep a single invocation inside the edge-runtime CPU/wall
+// budget. Anything above these limits is left for the next cycle — the
+// zone cache means each subsequent run fills in more, and we never run out
+// of time to write the alerts themselves.
+const MAX_MISSING_ZONES_PER_RUN = 250;
+const ZONE_FETCH_CONCURRENCY = 6;
+const ZONE_FETCH_TIMEOUT_MS = 6_000;
+const NWS_FETCH_TIMEOUT_MS = 15_000;
+const UPSERT_BATCH = 100;
 
 function extractWatchNumber(event: string | null | undefined, parameters: Record<string, any>, headline: string | null | undefined): string | null {
   if (event !== "Tornado Watch" && event !== "Severe Thunderstorm Watch") return null;
@@ -68,9 +77,12 @@ async function runWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T)
 }
 
 async function fetchZoneFromNetwork(zoneUrl: string): Promise<GeomT> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ZONE_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(zoneUrl, {
       headers: { "User-Agent": UA, Accept: "application/geo+json" },
+      signal: ctrl.signal,
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -79,6 +91,8 @@ async function fetchZoneFromNetwork(zoneUrl: string): Promise<GeomT> {
     return null;
   } catch {
     return null;
+  } finally {
+    clearTimeout(t);
   }
 }
 
@@ -109,9 +123,19 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
   try {
-    const res = await fetch(NWS_URL, { headers: { "User-Agent": UA, Accept: "application/geo+json" } });
-    if (!res.ok) throw new Error(`NWS ${res.status}`);
-    const json = await res.json();
+    const nwsCtrl = new AbortController();
+    const nwsTimer = setTimeout(() => nwsCtrl.abort(), NWS_FETCH_TIMEOUT_MS);
+    let json: any;
+    try {
+      const res = await fetch(NWS_URL, {
+        headers: { "User-Agent": UA, Accept: "application/geo+json" },
+        signal: nwsCtrl.signal,
+      });
+      if (!res.ok) throw new Error(`NWS ${res.status}`);
+      json = await res.json();
+    } finally {
+      clearTimeout(nwsTimer);
+    }
     const features: any[] = Array.isArray(json?.features) ? json.features : [];
 
     // Preserve first_seen_at across upserts so the "New Warnings" panel can
@@ -168,9 +192,16 @@ Deno.serve(async (req) => {
 
       // Anything not in the cache (or expired) → fetch from NWS, then write
       // back to the cache for everyone (including all clients) to benefit.
-      const missing = zoneList.filter((z) => !zoneGeom.has(z));
+      // Cap per-run work so we don't exceed the edge-runtime CPU budget.
+      // Anything we skip will be picked up on subsequent cycles as the cache
+      // fills in — the alerts themselves are still written this cycle.
+      const missingAll = zoneList.filter((z) => !zoneGeom.has(z));
+      const missing = missingAll.slice(0, MAX_MISSING_ZONES_PER_RUN);
+      if (missingAll.length > missing.length) {
+        console.log(`[alerts-poll] deferring ${missingAll.length - missing.length} zone fetches to next cycle`);
+      }
       if (missing.length > 0) {
-        const fetched = await runWithConcurrency(missing, 8, fetchZoneFromNetwork);
+        const fetched = await runWithConcurrency(missing, ZONE_FETCH_CONCURRENCY, fetchZoneFromNetwork);
         const upserts: { zone_url: string; geometry: any; fetched_at: string }[] = [];
         for (let i = 0; i < missing.length; i++) {
           const g = fetched[i];
@@ -180,8 +211,8 @@ Deno.serve(async (req) => {
           }
         }
         if (upserts.length > 0) {
-          for (let i = 0; i < upserts.length; i += 200) {
-            const slice = upserts.slice(i, i + 200);
+          for (let i = 0; i < upserts.length; i += UPSERT_BATCH) {
+            const slice = upserts.slice(i, i + UPSERT_BATCH);
             const { error } = await supabase
               .from("zone_geom_cache")
               .upsert(slice, { onConflict: "zone_url" });
@@ -241,11 +272,18 @@ Deno.serve(async (req) => {
       };
     });
 
-    const BATCH = 200;
+    // Smaller batches keep each upsert well inside the Postgres
+    // statement_timeout (large geometry payloads can otherwise push a
+    // 200-row batch past the 8s limit and abort with SQLSTATE 57014).
+    const BATCH = UPSERT_BATCH;
     for (let i = 0; i < rows.length; i += BATCH) {
       const slice = rows.slice(i, i + BATCH);
-      const { error } = await supabase.from("active_alerts").upsert(slice, { onConflict: "alert_id" });
-      if (error) console.warn("[alerts-poll] batch upsert err:", error);
+      try {
+        const { error } = await supabase.from("active_alerts").upsert(slice, { onConflict: "alert_id" });
+        if (error) console.warn("[alerts-poll] batch upsert err:", error);
+      } catch (e) {
+        console.warn("[alerts-poll] batch upsert threw:", e);
+      }
     }
 
     const currentIds = new Set(rows.map((r) => r.alert_id));
@@ -257,7 +295,11 @@ Deno.serve(async (req) => {
     if (toDelete.length > 0) {
       for (let i = 0; i < toDelete.length; i += BATCH) {
         const chunk = toDelete.slice(i, i + BATCH);
-        await supabase.from("active_alerts").delete().in("alert_id", chunk);
+        try {
+          await supabase.from("active_alerts").delete().in("alert_id", chunk);
+        } catch (e) {
+          console.warn("[alerts-poll] batch delete threw:", e);
+        }
       }
     }
 
