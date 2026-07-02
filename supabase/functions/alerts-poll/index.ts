@@ -181,10 +181,14 @@ Deno.serve(async (req) => {
         const slice = zoneList.slice(i, i + CHUNK);
         const { data: cached } = await supabase
           .from("zone_geom_cache")
-          .select("zone_url, geometry, fetched_at")
-          .in("zone_url", slice);
+          .select("zone_url, geometry")
+          .in("zone_url", slice)
+          // Perf: push staleness filter into SQL (backed by
+          // zone_geom_cache_fetched_at_idx) so we don't ship stale rows
+          // over the wire just to discard them in JS.
+          .gte("fetched_at", cutoff);
         for (const row of cached ?? []) {
-          if (row.fetched_at && row.fetched_at >= cutoff && row.geometry) {
+          if (row.geometry) {
             zoneGeom.set(row.zone_url, row.geometry as GeomT);
           }
         }
