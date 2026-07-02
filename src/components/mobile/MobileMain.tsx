@@ -136,7 +136,6 @@ function nearestPolygonKm(
   return best;
 }
 
-interface SPCBotMessage {
 interface BotMessage {
   id: string;
   content: string;
