@@ -39,6 +39,22 @@ const renderValue = (
   return `${v.value.toFixed(digits)} ${v.unit}`;
 };
 
+/**
+ * MissionClock — isolated 1 Hz UTC ticker.
+ *
+ * Extracted so the 1-second `setInterval` only re-renders this ~20-char
+ * span instead of the entire StatusBar (which owns weather, unit toggle,
+ * user dropdown, online counter, etc.).
+ */
+const MissionClock = () => {
+  const [zulu, setZulu] = useState(() => new Date().toISOString().slice(11, 19));
+  useEffect(() => {
+    const id = setInterval(() => setZulu(new Date().toISOString().slice(11, 19)), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <span className="text-xs font-mono text-card-foreground">{zulu} Z</span>;
+};
+
 const StatusBar = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
