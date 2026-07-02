@@ -276,7 +276,19 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
     useEffect(() => {
       if (IS_TOUCH_ONLY) return;
 
-      const onMove = (e: L.LeafletMouseEvent) => {
+      // Perf: throttle mousemove hit-testing to one rAF tick.
+      // Native Leaflet mousemove fires at pointer-move rate (~60Hz on desktop,
+      // higher on hi-DPI mice). Point-in-polygon over ~400 alerts during an
+      // outbreak was pinning a CPU core. rAF coalesces to <=60Hz and skips
+      // work if a previous frame is still pending.
+      let rafId: number | null = null;
+      let pending: L.LeafletMouseEvent | null = null;
+
+      const processMove = () => {
+        rafId = null;
+        const e = pending;
+        pending = null;
+        if (!e) return;
         const { lat, lng } = e.latlng;
         const hits = new Set<string>();
         if (!popupOpenRef.current) {
@@ -310,7 +322,17 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
         });
       };
 
+      const onMove = (e: L.LeafletMouseEvent) => {
+        pending = e;
+        if (rafId == null) rafId = requestAnimationFrame(processMove);
+      };
+
       const onOut = () => {
+        if (rafId != null) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+        pending = null;
         openTooltipsRef.current.forEach((id) => {
           const t = tooltipsRef.current.get(id);
           if (t && map.hasLayer(t)) map.removeLayer(t);
@@ -323,6 +345,7 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
       return () => {
         map.off("mousemove", onMove);
         map.off("mouseout", onOut);
+        if (rafId != null) cancelAnimationFrame(rafId);
       };
     }, [map]);
 
