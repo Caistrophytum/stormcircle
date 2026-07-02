@@ -77,9 +77,12 @@ async function runWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T)
 }
 
 async function fetchZoneFromNetwork(zoneUrl: string): Promise<GeomT> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ZONE_FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(zoneUrl, {
       headers: { "User-Agent": UA, Accept: "application/geo+json" },
+      signal: ctrl.signal,
     });
     if (!res.ok) return null;
     const json = await res.json();
@@ -88,6 +91,8 @@ async function fetchZoneFromNetwork(zoneUrl: string): Promise<GeomT> {
     return null;
   } catch {
     return null;
+  } finally {
+    clearTimeout(t);
   }
 }
 
