@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
     // show items first observed in the last 5 minutes.
     const { data: existing } = await supabase
       .from("active_alerts")
-      .select("alert_id, first_seen_at, expires_at");
+      .select("alert_id, first_seen_at");
     const firstSeenById = new Map<string, string>();
     for (const r of existing ?? []) {
       if (r.first_seen_at) firstSeenById.set(r.alert_id, r.first_seen_at);
