@@ -137,115 +137,76 @@ function nearestPolygonKm(
 }
 
 interface SPCBotMessage {
+interface BotMessage {
   id: string;
   content: string;
   created_at: string;
-}
-
-function useSPCBotMessage() {
-  const [msg, setMsg] = useState<SPCBotMessage | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      const { data } = await supabase
-        .from("messages")
-        .select("id,content,created_at")
-        .eq("user_id", BOT_USER_ID)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!cancelled) setMsg((data as SPCBotMessage | null) ?? null);
-    };
-    void load();
-    const ch = supabase
-      .channel(`mobile-spc-bot_${Math.random().toString(36).slice(2)}_${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "messages", filter: `user_id=eq.${BOT_USER_ID}` },
-        () => void load(),
-      )
-      .subscribe();
-    return () => {
-      cancelled = true;
-      void supabase.removeChannel(ch);
-    };
-  }, []);
-  return msg;
-}
-
-interface HurricaneBotMessage {
-  id: string;
-  content: string;
-  created_at: string;
+  user_id: string;
 }
 
 /**
- * Subscribe to the most recent Hurricane Bot message (any of: season
- * status, advisory update, danger card). Mirrors `useSPCBotMessage` but
- * filters on the Hurricane Bot UUID and uses a distinct realtime channel
- * so the two bot streams don't collide.
+ * Subscribe to the latest message per bot in a single query + single
+ * realtime channel. Previously we had 3 hooks (SPC / Hurricane / Fire)
+ * each opening its own Postgres CDC subscription and its own reload
+ * fetch — 3× the DB round-trips and 3× the realtime channels per mobile
+ * page. This collapses them into one shared subscription that filters
+ * `user_id IN (…)` server-side (indexed) and dispatches by user_id
+ * client-side.
  */
-function useHurricaneBotMessage() {
-  const [msg, setMsg] = useState<HurricaneBotMessage | null>(null);
+function useBotMessagesLatest(botIds: string[]): Record<string, BotMessage | null> {
+  const [byId, setById] = useState<Record<string, BotMessage | null>>({});
+  // Freeze the id list per component lifetime to avoid effect churn.
+  const idsKey = botIds.join(",");
   useEffect(() => {
     let cancelled = false;
+    const ids = idsKey.split(",");
     const load = async () => {
-      const { data } = await supabase
+      // Pull the latest N per bot in one shot. `limit(ids.length * 4)` is a
+      // small safety buffer if multiple bots posted around the same time —
+      // we still only keep the newest per bot in JS.
+      const { data, error } = await supabase
         .from("messages")
-        .select("id,content,created_at")
-        .eq("user_id", HURRICANE_BOT_ID)
+        .select("id,content,created_at,user_id")
+        .in("user_id", ids)
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!cancelled) setMsg((data as HurricaneBotMessage | null) ?? null);
+        .limit(ids.length * 4);
+      if (cancelled) return;
+      if (error) {
+        console.warn("[useBotMessagesLatest] load failed:", error);
+        return;
+      }
+      const latest: Record<string, BotMessage | null> = {};
+      for (const id of ids) latest[id] = null;
+      for (const row of (data as BotMessage[] | null) ?? []) {
+        if (!latest[row.user_id]) latest[row.user_id] = row;
+      }
+      setById(latest);
     };
     void load();
     const ch = supabase
-      .channel(`mobile-hurricane-bot_${Math.random().toString(36).slice(2)}_${Date.now()}`)
+      .channel(`mobile-bots_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "messages", filter: `user_id=eq.${HURRICANE_BOT_ID}` },
-        () => void load(),
+        // No filter clause needed — we scope to bot ids in the reload query
+        // and only refetch when a row appears; volume on `messages` for these
+        // ids is tiny (a handful/day) so a broad channel is cheaper than
+        // maintaining N separate CDC filters.
+        { event: "*", schema: "public", table: "messages" },
+        (payload: any) => {
+          const uid = (payload?.new?.user_id ?? payload?.old?.user_id) as string | undefined;
+          if (uid && ids.includes(uid)) void load();
+        },
       )
       .subscribe();
     return () => {
       cancelled = true;
       void supabase.removeChannel(ch);
     };
-  }, []);
-  return msg;
+  }, [idsKey]);
+  return byId;
 }
 
-function useFireBotMessage() {
-  const [msg, setMsg] = useState<{ id: string; content: string; created_at: string } | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      const { data } = await supabase
-        .from("messages")
-        .select("id,content,created_at")
-        .eq("user_id", FIRE_BOT_ID)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (!cancelled) setMsg(data ?? null);
-    };
-    void load();
-    const ch = supabase
-      .channel(`mobile-fire-bot_${Math.random().toString(36).slice(2)}_${Date.now()}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "messages", filter: `user_id=eq.${FIRE_BOT_ID}` },
-        () => void load(),
-      )
-      .subscribe();
-    return () => {
-      cancelled = true;
-      void supabase.removeChannel(ch);
-    };
-  }, []);
-  return msg;
-}
+
 
 interface ChatMessage {
   id: string;
