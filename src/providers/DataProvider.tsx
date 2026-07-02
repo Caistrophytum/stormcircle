@@ -791,19 +791,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Then do one more fetch to pick up the just-saved row.
     }
     const promise = (async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id,username,email,badge,meteorologist_applied,location,created_at")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (error) {
-        console.error("Failed to refresh profile:", error);
-        return;
-      }
-      profileUserIdRef.current = user.id;
-      setProfile(data as Profile | null);
-      if (profileFetchRef.current?.userId === user.id) {
-        profileFetchRef.current = null;
+      // Perf/reliability: mirror the initial fetchProfile 5s abort so a slow
+      // DB during a save can't leave refreshProfile hanging indefinitely.
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), PROFILE_TIMEOUT_MS);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id,username,email,badge,meteorologist_applied,location,created_at")
+          .eq("id", user.id)
+          .abortSignal(controller.signal)
+          .maybeSingle();
+        if (error) {
+          if (isAbortError(error)) console.warn("refreshProfile timed out; keeping last-good profile.");
+          else console.error("Failed to refresh profile:", error);
+          return;
+        }
+        profileUserIdRef.current = user.id;
+        setProfile(data as Profile | null);
+      } catch (err) {
+        if (isAbortError(err)) console.warn("refreshProfile timed out; keeping last-good profile.");
+        else console.error("refreshProfile failed:", err);
+      } finally {
+        clearTimeout(timer);
+        if (profileFetchRef.current?.userId === user.id) {
+          profileFetchRef.current = null;
+        }
       }
     })();
     profileFetchRef.current = { userId: user.id, promise };

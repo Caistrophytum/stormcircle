@@ -84,13 +84,26 @@ function fmtAdv(d: Date): string {
   return `${m} ${day}, ${y}. ${h}z`;
 }
 
+// Small helper: fetch with an AbortController-backed timeout so a slow
+// NHC endpoint can't stall the entire edge invocation up to the runtime
+// wall-clock kill.
+async function fetchWithTimeout(url: string, ms: number, init: RequestInit = {}): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal, cache: "no-store" });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Fetch the NHC Public Advisory and pull out its one-line headline
 // (the "...HEADLINE GOES HERE..." line that sits right above the SUMMARY).
 // Kept defensive — returns null on any failure so the bot still posts.
 async function fetchAdvisoryHeadline(url: string): Promise<string | null> {
   if (!url) return null;
   try {
-    const r = await fetch(url, { cache: "no-store" });
+    const r = await fetchWithTimeout(url, 6_000);
     if (!r.ok) return null;
     const html = await r.text();
     const pre = html.match(/<pre[^>]*>([\s\S]*?)<\/pre>/i)?.[1] ?? html;
@@ -169,7 +182,9 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
   try {
-    const res = await fetch(NHC_URL, { cache: "no-store" });
+    // Reliability: 15s hard timeout around the NHC JSON fetch so an
+    // upstream stall can't burn the whole edge-function invocation.
+    const res = await fetchWithTimeout(NHC_URL, 15_000);
     if (!res.ok) throw new Error(`NHC ${res.status}`);
     const json = await res.json();
     const raws: any[] = Array.isArray(json?.activeStorms) ? json.activeStorms : [];
@@ -179,25 +194,61 @@ Deno.serve(async (req) => {
     const { data: existing } = await supabase.from("nhc_storms").select("storm_id, last_update");
     const existingMap = new Map<string, string>((existing ?? []).map((r: any) => [r.storm_id, r.last_update]));
 
-    // Upsert + post messages for new/updated storms
+    // Perf: classify once, then do all IO in parallel batches.
+    // Previously we awaited upsert → headline fetch → 1-2 bot inserts
+    // sequentially per storm (5-storm season = ~20 serial round-trips).
+    const changed: NormStorm[] = [];
     for (const s of storms) {
       const prev = existingMap.get(s.storm_id);
       const isNew = !prev;
-      const changed = isNew || new Date(s.last_update).getTime() !== new Date(prev!).getTime();
-      await supabase.from("nhc_storms").upsert({ ...s, updated_at: new Date().toISOString() });
-      if (changed) {
-        const headline = await fetchAdvisoryHeadline(s.advisory_url);
-        await postBot(supabase, advisoryMsg(s, isNew, headline));
-        if (s.is_dangerous) await postBot(supabase, dangerMsg(s, headline));
-      }
+      const isChanged = isNew || new Date(s.last_update).getTime() !== new Date(prev!).getTime();
+      if (isChanged) changed.push(s);
+      // annotate isNew for later message building
+      (s as any).__isNew = isNew;
     }
 
-    // Remove storms NHC dropped
-    const currentIds = new Set(storms.map((s) => s.storm_id));
-    for (const id of existingMap.keys()) {
-      if (!currentIds.has(id)) {
-        await supabase.from("nhc_storms").delete().eq("storm_id", id);
+    const nowIso = new Date().toISOString();
+    // Batch upsert every storm in one round-trip.
+    if (storms.length > 0) {
+      const { error: upsertErr } = await supabase
+        .from("nhc_storms")
+        .upsert(storms.map((s) => ({ ...s, updated_at: nowIso })));
+      if (upsertErr) console.warn("[nhc-poll] batch upsert failed:", upsertErr);
+    }
+
+    // Fetch all advisory headlines in parallel (each with its own 6s
+    // timeout so one slow storm page can't block the others).
+    const headlines = await Promise.all(
+      changed.map((s) => fetchAdvisoryHeadline(s.advisory_url)),
+    );
+
+    // Build all bot messages, then insert in a single call.
+    const botRows: { user_id: string; username: string; badge: string; content: string }[] = [];
+    changed.forEach((s, i) => {
+      const headline = headlines[i];
+      botRows.push({
+        user_id: HURRICANE_BOT_ID, username: "Hurricane Bot", badge: "System",
+        content: advisoryMsg(s, (s as any).__isNew, headline),
+      });
+      if (s.is_dangerous) {
+        botRows.push({
+          user_id: HURRICANE_BOT_ID, username: "Hurricane Bot", badge: "System",
+          content: dangerMsg(s, headline),
+        });
       }
+    });
+    if (botRows.length > 0) {
+      const { error: insErr } = await supabase.from("messages").insert(botRows);
+      if (insErr) console.warn("[nhc-poll] bot insert failed:", insErr);
+    }
+
+    // Remove storms NHC dropped — single .in() delete instead of N deletes.
+    const currentIds = new Set(storms.map((s) => s.storm_id));
+    const removedIds = Array.from(existingMap.keys()).filter((id) => !currentIds.has(id));
+    if (removedIds.length > 0) {
+      const { error: delErr } = await supabase
+        .from("nhc_storms").delete().in("storm_id", removedIds);
+      if (delErr) console.warn("[nhc-poll] batch delete failed:", delErr);
     }
 
     // Season status repost (once per 6h)

@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Activity as ActivityIcon } from "lucide-react";
 
 import EventInfoPanel from "./EventInfoPanel";
-import ExerciseComfort from "./ExerciseComfort";
+// Lazy-load ExerciseComfort: modal-only, pulls its own Open-Meteo data hook.
+const ExerciseComfort = lazy(() => import("./ExerciseComfort"));
 
 
 import { useRadar } from "@/hooks/useRadar";
@@ -404,7 +405,11 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         EXERCISE
       </button>
 
-      <ExerciseComfort open={comfortOpen} onClose={() => setComfortOpen(false)} wrs={threatLevel} />
+      {comfortOpen && (
+        <Suspense fallback={null}>
+          <ExerciseComfort open={comfortOpen} onClose={() => setComfortOpen(false)} wrs={threatLevel} />
+        </Suspense>
+      )}
 
       <div
         className="absolute z-20 origin-bottom-left transition-transform duration-300 ease-in-out"

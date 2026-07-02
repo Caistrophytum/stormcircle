@@ -39,6 +39,22 @@ const renderValue = (
   return `${v.value.toFixed(digits)} ${v.unit}`;
 };
 
+/**
+ * MissionClock — isolated 1 Hz UTC ticker.
+ *
+ * Extracted so the 1-second `setInterval` only re-renders this ~20-char
+ * span instead of the entire StatusBar (which owns weather, unit toggle,
+ * user dropdown, online counter, etc.).
+ */
+const MissionClock = () => {
+  const [zulu, setZulu] = useState(() => new Date().toISOString().slice(11, 19));
+  useEffect(() => {
+    const id = setInterval(() => setZulu(new Date().toISOString().slice(11, 19)), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <span className="text-xs font-mono text-card-foreground">{zulu} Z</span>;
+};
+
 const StatusBar = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
@@ -47,7 +63,6 @@ const StatusBar = () => {
     : profile?.badge === "Meteorologist"
       ? "meteorologist"
       : "citizen";
-  const [time, setTime] = useState(new Date());
   const { selectedCity } = useSelectedCity();
   const weather = useCurrentWeather(
     selectedCity ? { lat: selectedCity.lat, lon: selectedCity.lon } : null,
@@ -58,13 +73,6 @@ const StatusBar = () => {
   const pressureDisplay = displayPressure(weather.pressureHpa, unitSystem);
   const tempFallbackUnit = unitSystem === "metric" ? "°C" : "°F";
   const pressureFallbackUnit = unitSystem === "metric" ? "hPa" : "inHg";
-
-  useEffect(() => {
-    const interval = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const zulu = time.toISOString().slice(11, 19);
 
   const roleBadge = {
     guest: null,
@@ -162,7 +170,7 @@ const StatusBar = () => {
       <div className="flex items-center gap-4">
         <div className="text-right">
           <span className="block text-[9px] font-mono text-muted-foreground leading-none">Mission Time</span>
-          <span className="text-xs font-mono text-card-foreground">{zulu} Z</span>
+          <MissionClock />
         </div>
 
         <OnlineCounter />
