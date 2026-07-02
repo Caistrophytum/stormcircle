@@ -123,9 +123,19 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
   try {
-    const res = await fetch(NWS_URL, { headers: { "User-Agent": UA, Accept: "application/geo+json" } });
-    if (!res.ok) throw new Error(`NWS ${res.status}`);
-    const json = await res.json();
+    const nwsCtrl = new AbortController();
+    const nwsTimer = setTimeout(() => nwsCtrl.abort(), NWS_FETCH_TIMEOUT_MS);
+    let json: any;
+    try {
+      const res = await fetch(NWS_URL, {
+        headers: { "User-Agent": UA, Accept: "application/geo+json" },
+        signal: nwsCtrl.signal,
+      });
+      if (!res.ok) throw new Error(`NWS ${res.status}`);
+      json = await res.json();
+    } finally {
+      clearTimeout(nwsTimer);
+    }
     const features: any[] = Array.isArray(json?.features) ? json.features : [];
 
     // Preserve first_seen_at across upserts so the "New Warnings" panel can
