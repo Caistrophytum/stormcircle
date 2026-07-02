@@ -19,6 +19,15 @@ const UA = "StormCircle/1.0 (bot@stormcircle.net)";
 // Re-fetch a cached zone if it's older than this — zones do change shape
 // occasionally (re-districting, WFO realignments). A day is plenty.
 const ZONE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+// Hard caps to keep a single invocation inside the edge-runtime CPU/wall
+// budget. Anything above these limits is left for the next cycle — the
+// zone cache means each subsequent run fills in more, and we never run out
+// of time to write the alerts themselves.
+const MAX_MISSING_ZONES_PER_RUN = 250;
+const ZONE_FETCH_CONCURRENCY = 6;
+const ZONE_FETCH_TIMEOUT_MS = 6_000;
+const NWS_FETCH_TIMEOUT_MS = 15_000;
+const UPSERT_BATCH = 100;
 
 function extractWatchNumber(event: string | null | undefined, parameters: Record<string, any>, headline: string | null | undefined): string | null {
   if (event !== "Tornado Watch" && event !== "Severe Thunderstorm Watch") return null;
