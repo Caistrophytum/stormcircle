@@ -139,7 +139,11 @@ async function buildEnsoLine(supabase: any): Promise<string | null> {
   if (!data || typeof data.oni !== "number") return null;
   const sign = data.oni > 0 ? "+" : "";
   const region = data.region ?? "ONI";
-  const period = data.source === "weekly" ? data.season : `${data.season} ${data.year}`;
+  const season = String(data.season ?? "").trim();
+  const year = String(data.year ?? "").trim();
+  const period = data.source === "weekly"
+    ? season
+    : (season.includes(year) ? season : `${season} ${year}`.trim());
   return `ENSO: ${data.phase} (${data.lean}, ${region} ${sign}${Number(data.oni).toFixed(2)} °C, ${period})`;
 }
 
