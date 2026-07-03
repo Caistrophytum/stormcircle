@@ -198,13 +198,13 @@ Deno.serve(async (req) => {
     // Previously we awaited upsert → headline fetch → 1-2 bot inserts
     // sequentially per storm (5-storm season = ~20 serial round-trips).
     const changed: NormStorm[] = [];
+    const newIds = new Set<string>();
     for (const s of storms) {
       const prev = existingMap.get(s.storm_id);
       const isNew = !prev;
       const isChanged = isNew || new Date(s.last_update).getTime() !== new Date(prev!).getTime();
       if (isChanged) changed.push(s);
-      // annotate isNew for later message building
-      (s as any).__isNew = isNew;
+      if (isNew) newIds.add(s.storm_id);
     }
 
     const nowIso = new Date().toISOString();
