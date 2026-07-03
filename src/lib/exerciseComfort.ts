@@ -203,21 +203,62 @@ interface HardGate {
 }
 
 const HARD_GATES: HardGate[] = [
+  // Tornado
   { match: /tornado (warning|emergency)/i, label: "Tornado Warning",
     caps: { run: 0, walk: 0, bike: 0, hike: 0 } },
+  { match: /tornado watch/i, label: "Tornado Watch",
+    caps: { run: 20, walk: 25, bike: 15, hike: 10 } },
+  // Severe thunderstorm
   { match: /severe thunderstorm warning/i, label: "Severe T-storm Warning",
-    caps: { run: 5, walk: 5, bike: 0, hike: 0 } },
+    caps: { run: 5, walk: 10, bike: 0, hike: 0 } },
+  { match: /severe thunderstorm watch/i, label: "Severe T-storm Watch",
+    caps: { run: 40, walk: 45, bike: 30, hike: 25 } },
+  // Flood
   { match: /flash flood warning/i, label: "Flash Flood Warning",
-    caps: { run: 15, walk: 15, bike: 10, hike: 0 } },
+    caps: { run: 15, walk: 20, bike: 10, hike: 0 } },
+  { match: /flood warning/i, label: "Flood Warning",
+    caps: { run: 30, walk: 35, bike: 20, hike: 10 } },
+  // Air quality — tier by wording. Match hazardous/unhealthy-for-all first so
+  // it wins over the milder generic alert when both would apply (min-cap
+  // reducer still takes the lowest, but ordering keeps the label accurate).
+  { match: /air quality.*(hazardous|unhealthy(?! for sensitive))|(hazardous|unhealthy(?! for sensitive)).*air quality/i,
+    label: "Air Quality — Unhealthy/Hazardous",
+    caps: { run: 15, walk: 20, bike: 10, hike: 15 } },
+  { match: /air quality (alert|advisory|action)/i, label: "Air Quality Alert",
+    caps: { run: 40, walk: 45, bike: 35, hike: 40 } },
+  // Heat
   { match: /(extreme heat|excessive heat) warning/i, label: "Extreme Heat Warning",
-    caps: { run: 10, walk: 10, bike: 10, hike: 5 } },
+    caps: { run: 10, walk: 15, bike: 10, hike: 5 } },
+  { match: /excessive heat watch/i, label: "Excessive Heat Watch",
+    caps: { run: 55, walk: 60, bike: 55, hike: 45 } },
+  { match: /heat advisory/i, label: "Heat Advisory",
+    caps: { run: 40, walk: 50, bike: 45, hike: 30 } },
+  // Wind
   { match: /high wind warning/i, label: "High Wind Warning",
-    caps: { run: 30, walk: 30, bike: 5, hike: 15 } },
+    caps: { run: 30, walk: 40, bike: 5, hike: 15 } },
+  { match: /wind advisory/i, label: "Wind Advisory",
+    caps: { run: 55, walk: 60, bike: 25, hike: 40 } },
+  // Winter
   { match: /(winter storm|blizzard|ice storm) warning/i, label: "Winter Storm Warning",
     caps: { run: 15, walk: 15, bike: 5, hike: 5 } },
-  // Fire outlook / red flag treated as a hard gate for exposed activities.
+  { match: /winter weather advisory/i, label: "Winter Weather Advisory",
+    caps: { run: 45, walk: 45, bike: 20, hike: 25 } },
+  // Fog
+  { match: /dense fog advisory/i, label: "Dense Fog Advisory",
+    caps: { run: 55, walk: 65, bike: 30, hike: 45 } },
+  // Fire weather
   { match: /red flag warning|fire weather warning/i, label: "Red Flag Warning",
-    caps: { run: 20, walk: 25, bike: 20, hike: 10 } },
+    caps: { run: 40, walk: 45, bike: 30, hike: 20 } },
+  // Freeze
+  { match: /freeze warning|frost advisory/i, label: "Freeze/Frost",
+    caps: { run: 60, walk: 55, bike: 55, hike: 50 } },
+  // Dust
+  { match: /dust storm warning/i, label: "Dust Storm Warning",
+    caps: { run: 15, walk: 20, bike: 5, hike: 10 } },
+  // Lightning-focused SPC Mesoscale Discussion
+  { match: /mesoscale discussion.*(lightning|thunderstorm)|lightning.*mesoscale/i,
+    label: "SPC Lightning MD",
+    caps: { run: 35, walk: 40, bike: 25, hike: 20 } },
   // Evacuation / shelter — everything stops.
   { match: /evacuation|shelter in place/i, label: "Evacuation Order",
     caps: { run: 0, walk: 0, bike: 0, hike: 0 } },
