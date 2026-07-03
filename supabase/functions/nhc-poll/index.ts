@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
       const headline = headlines[i];
       botRows.push({
         user_id: HURRICANE_BOT_ID, username: "Hurricane Bot", badge: "System",
-        content: advisoryMsg(s, (s as any).__isNew, headline),
+        content: advisoryMsg(s, newIds.has(s.storm_id), headline),
       });
       if (s.is_dangerous) {
         botRows.push({
