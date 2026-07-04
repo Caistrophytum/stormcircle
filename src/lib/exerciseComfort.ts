@@ -91,47 +91,78 @@ const lerp = (x: number, x0: number, x1: number, y0: number, y1: number) =>
   y0 + ((x - x0) / (x1 - x0)) * (y1 - y0);
 
 // ── Penalty functions (shared 0–100, activity-agnostic) ─────────────────
+// All thresholds below are from published external standards (NWS, EPA,
+// WHO, ACSM/NATA, WMO, Beaufort). The mapping from category → 0–100 point
+// value is our design choice; the *boundaries* are not.
 
-/** Heat penalty from apparent temperature (°C). */
-function heatPenalty(appC: number | null): number {
-  if (appC == null) return 0;
-  if (appC <= 25) return 0;
-  if (appC <= 32) return clamp(lerp(appC, 25, 32, 0, 40), 0, 40);
-  if (appC <= 38) return clamp(lerp(appC, 32, 38, 40, 80), 40, 80);
-  return clamp(lerp(appC, 38, 45, 80, 100), 80, 100);
+/**
+ * Heat penalty from WBGT (Wet Bulb Globe Temperature).
+ * Uses Australian BoM outdoor approximation when no globe thermometer:
+ *   e = (RH/100) * 6.105 * exp(17.27*Ta / (237.7+Ta))     [Ta °C, e hPa]
+ *   WBGT ≈ 0.567*Ta + 0.393*e + 3.94
+ * Tiers per ACSM/NATA flag system (Green/Yellow/Red/Black).
+ */
+function heatPenalty(tempC: number | null, rh: number | null): number {
+  if (tempC == null || rh == null) return 0;
+  const e = (clamp(rh, 0, 100) / 100) * 6.105 * Math.exp((17.27 * tempC) / (237.7 + tempC));
+  const wbgt = 0.567 * tempC + 0.393 * e + 3.94;
+  if (wbgt < 18) return 0;          // Green
+  if (wbgt < 23) return 15;         // Yellow
+  if (wbgt < 28) return 45;         // Red
+  return 85;                         // Black
 }
 
-/** Cold penalty from apparent temperature (°C, wind-chill proxy). */
-function coldPenalty(appC: number | null): number {
-  if (appC == null) return 0;
-  if (appC >= 0) return 0;
-  if (appC >= -10) return clamp(lerp(appC, 0, -10, 0, 40), 0, 40);
-  if (appC >= -20) return clamp(lerp(appC, -10, -20, 40, 80), 40, 80);
-  return clamp(lerp(appC, -20, -30, 80, 100), 80, 100);
+/**
+ * Cold penalty from NWS/Environment Canada Wind Chill (2001 formula).
+ *   WCT(°F) = 35.74 + 0.6215T − 35.75(V^0.16) + 0.4275T(V^0.16)
+ * Valid for T ≤ 50°F, V ≥ 3 mph; otherwise fall back to air temp.
+ * Tiers from NWS frostbite-time chart.
+ */
+function coldPenalty(tempC: number | null, windMs: number | null): number {
+  if (tempC == null) return 0;
+  const tF = tempC * 9 / 5 + 32;
+  const vMph = (windMs ?? 0) * 2.23694;
+  let wct = tF;
+  if (tF <= 50 && vMph >= 3) {
+    const v16 = Math.pow(vMph, 0.16);
+    wct = 35.74 + 0.6215 * tF - 35.75 * v16 + 0.4275 * tF * v16;
+  }
+  if (wct > 0) return 0;
+  if (wct > -15) return 25;
+  if (wct > -35) return 60;
+  return 90;
 }
 
-/** Wind penalty from sustained + 0.5×gust (km/h). Inputs are m/s. */
+/**
+ * Wind penalty per Beaufort scale (uses the stronger of sustained/gust).
+ * Inputs m/s → km/h.
+ */
 function windPenalty(sustainedMs: number | null, gustsMs: number | null): number {
-  const s = sustainedMs == null ? 0 : sustainedMs;
-  const g = gustsMs == null ? s : gustsMs;
-  const kmh = (s + 0.5 * Math.max(0, g - s)) * 3.6;
-  if (kmh <= 15) return 0;
-  if (kmh <= 35) return clamp(lerp(kmh, 15, 35, 0, 50), 0, 50);
-  if (kmh <= 55) return clamp(lerp(kmh, 35, 55, 50, 85), 50, 85);
-  return clamp(lerp(kmh, 55, 80, 85, 100), 85, 100);
+  const s = sustainedMs ?? 0;
+  const g = gustsMs ?? s;
+  const kmh = Math.max(s, g) * 3.6;
+  if (kmh <= 19) return 0;   // Beaufort ≤3
+  if (kmh <= 38) return 15;  // Beaufort 4–5
+  if (kmh <= 61) return 45;  // Beaufort 6–7
+  return 80;                  // Beaufort 8+
 }
 
-/** Precip penalty from rate (mm/h) × probability (0–100). */
+/**
+ * Precipitation penalty per WMO rainfall-intensity classification (mm/h),
+ * scaled by probability so a 10% chance of heavy rain isn't full heavy.
+ */
 function precipPenalty(prob: number | null, mm: number | null): number {
-  const p = prob == null ? 0 : clamp(prob / 100, 0, 1);
-  const rate = mm == null ? 0 : mm;
-  // Effective intensity scales with probability.
-  const effective = rate * (0.4 + 0.6 * p);
-  if (effective <= 0) return 0;
-  if (effective < 0.5) return clamp(lerp(effective, 0, 0.5, 5, 20), 5, 20);   // drizzle
-  if (effective < 2.5) return clamp(lerp(effective, 0.5, 2.5, 20, 50), 20, 50); // moderate
-  if (effective < 7.5) return clamp(lerp(effective, 2.5, 7.5, 50, 85), 50, 85); // heavy
-  return clamp(lerp(effective, 7.5, 15, 85, 100), 85, 100);                    // torrential
+  const rate = mm ?? 0;
+  if (rate <= 0) return 0;
+  const p = prob == null ? 1 : clamp(prob / 100, 0, 1);
+  let base: number;
+  if (rate < 2.5) base = 10;         // WMO Light
+  else if (rate < 7.6) base = 30;    // WMO Moderate
+  else if (rate < 50) base = 60;     // WMO Heavy
+  else base = 95;                     // WMO Violent
+  // Probability floor of 0.4 so an imminent-but-uncertain forecast still
+  // registers something; certain rain gets full weight.
+  return base * (0.4 + 0.6 * p);
 }
 
 /**
@@ -147,33 +178,35 @@ function stormPenalty(
   wrs: number,
 ): number {
   const warnStr = activeWarnings.join(" | ").toLowerCase();
-  // Tier 3 (100): tornado/severe TS warning or MDT+ SPC = lightning/severe imminent
   if (
     /tornado warning|severe thunderstorm warning|tornado emergency/.test(warnStr) ||
     spc === "MDT" || spc === "HIGH"
   ) return 100;
-  // Tier 2 (70): active TS-family warning nearby or ENH outlook
   if (
     /thunderstorm|flash flood warning/.test(warnStr) ||
     spc === "ENH"
   ) return 70;
-  // Tier 1 (30): TS possible — SLGT/MRGL, generic TSTM area, or high WRS
   if (spc === "SLGT" || spc === "MRGL" || spc === "TSTM" || wrs >= 60) return 30;
   return 0;
 }
 
-/** Air quality penalty (US AQI). */
+/** Air quality penalty per EPA AQI category + EPA outdoor-activity guide. */
 function aqPenalty(aqi: number | null): number {
-  if (aqi == null || aqi <= 50) return 0;
-  if (aqi <= 150) return clamp(lerp(aqi, 50, 150, 0, 60), 0, 60);
-  return clamp(lerp(aqi, 150, 300, 60, 100), 60, 100);
+  if (aqi == null || aqi <= 50) return 0;   // Good
+  if (aqi <= 100) return 10;                 // Moderate
+  if (aqi <= 150) return 35;                 // Unhealthy for Sensitive Groups
+  if (aqi <= 200) return 60;                 // Unhealthy
+  if (aqi <= 300) return 85;                 // Very Unhealthy
+  return 100;                                 // Hazardous
 }
 
-/** UV / sun exposure penalty. */
+/** UV penalty per WHO UV Index categories. */
 function uvPenalty(uv: number | null): number {
-  if (uv == null || uv < 3) return 0;
-  if (uv <= 8) return clamp(lerp(uv, 3, 8, 0, 40), 0, 40);
-  return clamp(lerp(uv, 8, 12, 40, 70), 40, 70);
+  if (uv == null || uv < 3) return 0;   // Low
+  if (uv < 6) return 10;                 // Moderate
+  if (uv < 8) return 25;                 // High
+  if (uv < 11) return 45;                // Very High
+  return 65;                              // Extreme
 }
 
 // ── Per-activity weights (must sum to 1.0) ──────────────────────────────
@@ -283,8 +316,8 @@ function scoreHour(
   const w = WEIGHTS[activity];
 
   const penalties: { label: string; raw: number; weighted: number }[] = [
-    { label: "Heat",           raw: heatPenalty(h.apparentTemperature), weighted: 0 },
-    { label: "Cold",           raw: coldPenalty(h.apparentTemperature), weighted: 0 },
+    { label: "Heat",           raw: heatPenalty(h.temperature, h.humidity), weighted: 0 },
+    { label: "Cold",           raw: coldPenalty(h.temperature, h.windSpeed), weighted: 0 },
     { label: "Wind",           raw: windPenalty(h.windSpeed, h.windGusts), weighted: 0 },
     { label: "Precipitation",  raw: precipPenalty(h.precipProbability, h.precipMm), weighted: 0 },
     { label: "Storm/lightning",raw: stormPenalty(ctx.activeWarnings, ctx.spcRisk, ctx.wrs), weighted: 0 },
