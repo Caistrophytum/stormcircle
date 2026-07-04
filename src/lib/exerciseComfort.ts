@@ -316,8 +316,8 @@ function scoreHour(
   const w = WEIGHTS[activity];
 
   const penalties: { label: string; raw: number; weighted: number }[] = [
-    { label: "Heat",           raw: heatPenalty(h.apparentTemperature), weighted: 0 },
-    { label: "Cold",           raw: coldPenalty(h.apparentTemperature), weighted: 0 },
+    { label: "Heat",           raw: heatPenalty(h.temperature, h.humidity), weighted: 0 },
+    { label: "Cold",           raw: coldPenalty(h.temperature, h.windSpeed), weighted: 0 },
     { label: "Wind",           raw: windPenalty(h.windSpeed, h.windGusts), weighted: 0 },
     { label: "Precipitation",  raw: precipPenalty(h.precipProbability, h.precipMm), weighted: 0 },
     { label: "Storm/lightning",raw: stormPenalty(ctx.activeWarnings, ctx.spcRisk, ctx.wrs), weighted: 0 },
