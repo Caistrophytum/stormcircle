@@ -46,6 +46,7 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
       setQuery("");
       setPending(null);
       onSaved();
+      if (typeof window !== "undefined") window.location.reload();
     } finally {
       setSaving(false);
     }
