@@ -10,7 +10,7 @@
  */
 import { useMemo } from "react";
 import { useSoundingData } from "@/hooks/useSoundingData";
-import { useRadar } from "@/hooks/useRadar";
+import { useRadarContext } from "@/contexts/RadarContext";
 import { useUnitSystem, displayLengthM } from "@/hooks/useUnitSystem";
 
 export type WeatherCondition = "sunny" | "cloudy" | "rainy" | "stormy";
@@ -46,7 +46,7 @@ export interface WRSMetrics {
 }
 
 export function useWRSMetrics(): WRSMetrics {
-  const radar = useRadar();
+  const radar = useRadarContext();
   const sounding = useSoundingData(
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
   );

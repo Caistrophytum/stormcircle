@@ -6,7 +6,8 @@ import { lazy, Suspense, useState } from "react";
 import { Radar, Radio } from "lucide-react";
 import FloatingWindow from "@/components/desktop/FloatingWindow";
 import IntegrationPanel from "@/components/IntegrationPanel";
-import { useRadar, PRODUCTS, type ProductCode } from "@/hooks/useRadar";
+import { PRODUCTS, type ProductCode } from "@/hooks/useRadar";
+import { useRadarContext } from "@/contexts/RadarContext";
 import RadarControls from "@/components/RadarControls";
 
 const LeafletRadar = lazy(() =>
@@ -15,7 +16,7 @@ const LeafletRadar = lazy(() =>
 
 export default function RadarReportsTab() {
   const [expanded, setExpanded] = useState(false);
-  const radar = useRadar();
+  const radar = useRadarContext();
 
   const previewSize = 128;
 
