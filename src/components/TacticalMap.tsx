@@ -15,7 +15,7 @@ interface Props {
   overlayScale?: number;
 }
 
-const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
+const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
   const { weatherCondition } = useWRSMetrics();
   const { appReady } = useDataContext();
   const [loadingTooLong, setLoadingTooLong] = useState(false);
