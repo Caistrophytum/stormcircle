@@ -288,6 +288,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           SPC / Fire / WRS outlooks (soft downgrade).
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
