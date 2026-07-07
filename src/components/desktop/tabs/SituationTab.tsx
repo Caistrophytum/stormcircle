@@ -7,6 +7,7 @@ import { lazy, Suspense, useState, useMemo } from "react";
 import { Activity as ActivityIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnitSystem, displayLengthKm } from "@/hooks/useUnitSystem";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import { useHomeCityFireRisk, type FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
