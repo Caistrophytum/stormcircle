@@ -5,6 +5,7 @@
  */
 import { motion } from "framer-motion";
 import { useWRSMetrics } from "@/hooks/useWRSMetrics";
+import { useAuth } from "@/hooks/useAuth";
 
 function wrsColor(v: number) {
   // Linear HSL interpolation green→amber→red
