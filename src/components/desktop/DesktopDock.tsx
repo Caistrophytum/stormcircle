@@ -32,7 +32,7 @@ export default function DesktopDock() {
       className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl"
       style={{
         width: "calc((100vw - 56px) / 3)",
-        maxHeight: "40dvh",
+        height: "40dvh",
         background: "rgba(18,18,22,0.72)",
         backdropFilter: "blur(24px)",
         border: `1px solid rgba(${active.accent},0.35)`,
@@ -79,6 +79,7 @@ export default function DesktopDock() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
+            className="h-full"
           >
             {tab === "metrics" && <MetricsTab />}
             {tab === "situation" && <SituationTab />}
