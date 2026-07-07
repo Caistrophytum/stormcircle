@@ -29,10 +29,7 @@ export default function RadarReportsTab() {
   });
 
   return (
-    <div
-      className="flex flex-col gap-2 p-4"
-      style={{ minHeight: "calc(40dvh - 56px)" }}
-    >
+    <div className="flex h-full flex-col gap-2 p-4">
       <button
         onClick={() => setOpen("radar")}
         className="flex w-full flex-1 items-center gap-3 rounded-xl px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-widest transition-all"
