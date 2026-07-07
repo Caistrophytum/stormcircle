@@ -86,7 +86,7 @@ export default function BotsTab() {
 
   return (
     <div className="p-4">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-col gap-2">
         {botIds.map((id) => {
           const meta = KNOWN_BOTS[id] ?? {
             label: byBot.get(id)?.[0]?.username ?? "Bot",
