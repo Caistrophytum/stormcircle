@@ -1,6 +1,6 @@
-import { forwardRef, useRef, useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import EventInfoPanel from "./EventInfoPanel";
+import HazardTabs from "./desktop/HazardTabs";
 import { useWRSMetrics, type WeatherCondition } from "@/hooks/useWRSMetrics";
 import { useDataContext } from "@/providers/DataProvider";
 
@@ -12,10 +12,10 @@ const weatherBackgrounds: Record<WeatherCondition, string> = {
 };
 
 interface Props {
-  overlayScale: number;
+  overlayScale?: number;
 }
 
-const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
+const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
   const { weatherCondition } = useWRSMetrics();
   const { appReady } = useDataContext();
   const [loadingTooLong, setLoadingTooLong] = useState(false);
@@ -60,7 +60,9 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
         </div>
       )}
 
-      <LeftRightHazardOverlays overlayScale={overlayScale} />
+      <div className="absolute top-3 left-3 z-10">
+        <HazardTabs />
+      </div>
     </motion.section>
   );
 });
@@ -68,76 +70,3 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
 TacticalMap.displayName = "TacticalMap";
 
 export default TacticalMap;
-
-const PANEL_GAP = 12;
-
-function LeftRightHazardOverlays({ overlayScale }: { overlayScale: number }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const commonRef = useRef<HTMLDivElement>(null);
-  const newRef = useRef<HTMLDivElement>(null);
-  const dangerousRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const GAP = PANEL_GAP;
-    const RATIO = 0.405;
-
-    function recalculate() {
-      const parent = containerRef.current?.offsetParent as HTMLElement | null;
-      const availableH = parent?.offsetHeight ?? window.innerHeight;
-      const combinedH = Math.floor(availableH * RATIO);
-      const panelH = Math.max(0, Math.floor((combinedH - GAP) / 2));
-
-      if (commonRef.current) {
-        commonRef.current.style.height = `${panelH}px`;
-        commonRef.current.style.maxHeight = `${panelH}px`;
-      }
-      if (newRef.current) {
-        newRef.current.style.height = `${panelH}px`;
-        newRef.current.style.maxHeight = `${panelH}px`;
-      }
-      if (dangerousRef.current) {
-        dangerousRef.current.style.height = `${combinedH}px`;
-        dangerousRef.current.style.maxHeight = `${combinedH}px`;
-      }
-    }
-
-    const parent = containerRef.current?.offsetParent as HTMLElement | null;
-    const observer = new ResizeObserver(recalculate);
-    if (parent) observer.observe(parent);
-    recalculate();
-    return () => observer.disconnect();
-  }, []);
-
-  const scrollStyle: React.CSSProperties = {
-    overflowY: "auto",
-    scrollbarWidth: "thin",
-    scrollbarColor: "rgba(100, 200, 255, 0.3) transparent",
-  };
-  const leftPanelStyle: React.CSSProperties = { ...scrollStyle, flexShrink: 0, minHeight: 0 };
-  const dangerousStyle: React.CSSProperties = { ...scrollStyle, flexShrink: 0, minHeight: 0 };
-
-  return (
-    <>
-      <div ref={containerRef} className="absolute inset-0 pointer-events-none" aria-hidden />
-      <div
-        className="absolute top-3 left-3 z-10 origin-top-left transition-all duration-300 ease-in-out"
-        style={{ transform: `scale(${overlayScale})` }}
-      >
-        <EventInfoPanel
-          show="hazards"
-          hazardsRef={commonRef}
-          newWarningsRef={newRef}
-          hazardsStyle={leftPanelStyle}
-          newWarningsStyle={leftPanelStyle}
-          stackGapPx={PANEL_GAP}
-        />
-      </div>
-      <div
-        className="absolute top-3 right-3 z-10 origin-top-right transition-all duration-300 ease-in-out"
-        style={{ transform: `scale(${overlayScale})` }}
-      >
-        <EventInfoPanel show="dangerous" dangerousRef={dangerousRef} dangerousStyle={dangerousStyle} />
-      </div>
-    </>
-  );
-}
