@@ -27,7 +27,6 @@ export default function FloatingChat() {
       style={{
         width: "calc((100vw - 56px) / 3)",
         height: "40dvh",
-        minHeight: 320,
         background: "rgba(18,18,22,0.72)",
         backdropFilter: "blur(24px)",
         border: flash
