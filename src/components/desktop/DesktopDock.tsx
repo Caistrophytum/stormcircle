@@ -13,10 +13,10 @@ import RadarReportsTab from "./tabs/RadarReportsTab";
 type TabId = "metrics" | "situation" | "bots" | "radar";
 
 const TABS: { id: TabId; label: string; Icon: typeof Gauge; accent: string }[] = [
-  { id: "metrics", label: "Hometown Metrics", Icon: Gauge, accent: "255,157,0" },
-  { id: "situation", label: "Hometown Situation", Icon: ShieldAlert, accent: "255,80,80" },
-  { id: "bots", label: "Bot Network", Icon: Bot, accent: "125,211,252" },
-  { id: "radar", label: "Radar & Reports", Icon: RadarIcon, accent: "142,255,180" },
+  { id: "metrics", label: "Metrics", Icon: Gauge, accent: "255,157,0" },
+  { id: "situation", label: "Alerts", Icon: ShieldAlert, accent: "255,80,80" },
+  { id: "bots", label: "Bots", Icon: Bot, accent: "125,211,252" },
+  { id: "radar", label: "Radar", Icon: RadarIcon, accent: "142,255,180" },
 ];
 
 export default function DesktopDock() {
