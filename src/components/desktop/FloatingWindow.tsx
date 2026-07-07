@@ -75,9 +75,9 @@ export default function FloatingWindow({
   const panel = (
     <motion.div
       onClick={(e) => e.stopPropagation()}
-      initial={{ scale: 0.97, opacity: 0, x: isModal ? 0 : 20 }}
+      initial={{ scale: isModal ? 0.97 : 1, opacity: 0, x: isModal ? 0 : 20 }}
       animate={{ scale: 1, opacity: 1, x: 0 }}
-      exit={{ scale: 0.97, opacity: 0, x: isModal ? 0 : 20 }}
+      exit={{ scale: isModal ? 0.97 : 1, opacity: 0, x: isModal ? 0 : 20 }}
       transition={{ type: "spring", damping: 22, stiffness: 260 }}
       className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl font-mono"
       style={{
