@@ -85,8 +85,8 @@ export default function BotsTab() {
     });
 
   return (
-    <div className="p-4">
-      <div className="flex flex-col gap-2">
+    <div className="p-4" style={{ minHeight: "calc(100dvh - 160px)" }}>
+      <div className="flex h-full flex-col gap-2" style={{ minHeight: "calc(100dvh - 192px)" }}>
         {botIds.map((id) => {
           const meta = KNOWN_BOTS[id] ?? {
             label: byBot.get(id)?.[0]?.username ?? "Bot",
@@ -100,7 +100,7 @@ export default function BotsTab() {
               key={id}
               onClick={() => hasMessages && setOpenBotId(id)}
               disabled={!hasMessages}
-              className="group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40"
+              className="group flex w-full flex-1 items-center gap-3 rounded-xl p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: `1px solid rgba(${meta.accent},0.4)`,
