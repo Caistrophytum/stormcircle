@@ -108,13 +108,17 @@ export default function RadarReportsTab() {
         height="min(88dvh, 900px)"
       >
         <div className="flex h-full flex-col gap-3 p-3">
+          {(() => null)()}
           <RadarControls
             selectedCity={radar.selectedCity}
             onCityChange={radar.setSelectedCity}
             selectedStation={radar.selectedStation}
             stationDistanceKm={radar.stationDistanceKm}
             selectedProduct={radar.selectedProduct}
-            onProductChange={radar.setSelectedProduct}
+            onProductChange={(code) => {
+              radar.setSelectedProduct(code);
+              setOpen("radar");
+            }}
           />
           <div>
             <div className="mb-1.5 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
@@ -124,7 +128,10 @@ export default function RadarReportsTab() {
               {PRODUCTS.map((p) => (
                 <button
                   key={p.code}
-                  onClick={() => radar.setSelectedProduct(p.code as ProductCode)}
+                  onClick={() => {
+                    radar.setSelectedProduct(p.code as ProductCode);
+                    setOpen("radar");
+                  }}
                   className="rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors"
                   style={{
                     background:
@@ -157,7 +164,10 @@ export default function RadarReportsTab() {
                 interactive
                 selectedStation={radar.selectedStation}
                 onStationMarkerSelect={radar.selectStationByMarker}
-                setSelectedProduct={radar.setSelectedProduct}
+                setSelectedProduct={(code) => {
+                  radar.setSelectedProduct(code);
+                  setOpen("radar");
+                }}
               />
             </Suspense>
           </div>
