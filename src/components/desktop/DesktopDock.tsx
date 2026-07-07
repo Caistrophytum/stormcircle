@@ -28,6 +28,7 @@ export default function DesktopDock() {
       initial={{ opacity: 0, y: 20, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.1, type: "spring", damping: 24 }}
+      id="desktop-dock"
       className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl"
       style={{
         width: "33vw",

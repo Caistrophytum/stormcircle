@@ -4,7 +4,27 @@
  */
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
+function useDockRect() {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  useEffect(() => {
+    const el = document.getElementById("desktop-dock");
+    if (!el) return;
+    const update = () => setRect(el.getBoundingClientRect());
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, []);
+  return rect;
+}
 
 interface Props {
   open: boolean;
@@ -25,50 +45,71 @@ export default function FloatingWindow({
   title,
   subtitle,
   children,
-  width = "33vw",
-  height = "min(80dvh, 720px)",
+  width,
+  height,
   accent = "255,157,0",
   anchor = "left-of-dock",
 }: Props) {
   const isModal = anchor === "center";
+  const dockRect = useDockRect();
+
+  // Anchored geometry: right edge aligns with dock's left edge; height matches dock exactly.
+  const anchoredWidth = width ?? "33.33vw";
+  const anchoredStyle: React.CSSProperties = dockRect
+    ? {
+        position: "fixed",
+        top: dockRect.top,
+        height: dockRect.height,
+        right: `calc(100vw - ${dockRect.left}px + 12px)`,
+        width: anchoredWidth,
+      }
+    : {
+        position: "fixed",
+        bottom: 16,
+        right: `calc(33.33vw + 28px)`,
+        height: "min(80dvh, 720px)",
+        width: anchoredWidth,
+      };
 
   const panel = (
     <motion.div
       onClick={(e) => e.stopPropagation()}
-      initial={{ scale: 0.95, opacity: 0, x: isModal ? 0 : 20 }}
+      initial={{ scale: 0.97, opacity: 0, x: isModal ? 0 : 20 }}
       animate={{ scale: 1, opacity: 1, x: 0 }}
-      exit={{ scale: 0.95, opacity: 0, x: isModal ? 0 : 20 }}
+      exit={{ scale: 0.97, opacity: 0, x: isModal ? 0 : 20 }}
       transition={{ type: "spring", damping: 22, stiffness: 260 }}
       className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl font-mono"
       style={{
-        width,
-        height,
+        ...(isModal
+          ? { width: width ?? "33vw", height: height ?? "min(80dvh, 720px)" }
+          : anchoredStyle),
         background: "rgba(10,10,14,0.92)",
         backdropFilter: "blur(20px)",
         border: `1px solid rgba(${accent},0.4)`,
         boxShadow: `0 0 40px rgba(${accent},0.25), 0 20px 60px rgba(0,0,0,0.6)`,
         color: "#e8e8e8",
+        zIndex: 1200,
       }}
     >
       <div
         className="flex items-center justify-between px-4 py-3"
         style={{ borderBottom: `1px solid rgba(${accent},0.25)` }}
       >
-        <div>
+        <div className="min-w-0">
           <div
-            className="text-xs font-bold uppercase tracking-widest"
+            className="truncate text-xs font-bold uppercase tracking-widest"
             style={{ color: `rgb(${accent})` }}
           >
             {title}
           </div>
           {subtitle && (
-            <div className="mt-0.5 text-[10px] text-muted-foreground">{subtitle}</div>
+            <div className="mt-0.5 truncate text-[10px] text-muted-foreground">{subtitle}</div>
           )}
         </div>
         <button
           aria-label="Close"
           onClick={onClose}
-          className="flex h-8 w-8 items-center justify-center rounded-md transition-colors"
+          className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors"
           style={{
             border: `1px solid rgba(${accent},0.35)`,
             color: `rgb(${accent})`,
@@ -77,7 +118,7 @@ export default function FloatingWindow({
           <X size={16} />
         </button>
       </div>
-      <div className="flex-1 overflow-auto">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
     </motion.div>
   );
 
@@ -99,18 +140,7 @@ export default function FloatingWindow({
             {panel}
           </motion.div>
         ) : (
-          <div
-            role="dialog"
-            aria-label={title}
-            className="pointer-events-none fixed z-[1200] flex items-end"
-            style={{
-              bottom: 16,
-              right: `calc(33vw + 32px)`,
-              maxWidth: "calc(100vw - 33vw - 48px)",
-            }}
-          >
-            {panel}
-          </div>
+          panel
         ))}
     </AnimatePresence>
   );
