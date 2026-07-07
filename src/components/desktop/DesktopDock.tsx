@@ -3,7 +3,7 @@
  * screen (left of FloatingChat). Handles tab switching with smooth motion.
  */
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Gauge, ShieldAlert, Bot, Radar as RadarIcon } from "lucide-react";
 import MetricsTab from "./tabs/MetricsTab";
 import SituationTab from "./tabs/SituationTab";
