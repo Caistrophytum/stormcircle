@@ -76,6 +76,8 @@ const EventInfoPanel = ({
         className="flex flex-col self-start"
         style={{ gap: stackGapPx != null ? `${stackGapPx}px` : undefined }}
       >
+      {show !== "new" && (
+      <>
       {/* Top 5 Hazards */}
       <div
         ref={hazardsRef}
