@@ -3,7 +3,7 @@
  * screen (left of FloatingChat). Handles tab switching with smooth motion.
  */
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Gauge, ShieldAlert, Bot, Radar as RadarIcon } from "lucide-react";
 import MetricsTab from "./tabs/MetricsTab";
 import SituationTab from "./tabs/SituationTab";
@@ -70,23 +70,26 @@ export default function DesktopDock() {
         })}
       </div>
 
-      {/* Tab content */}
-      <div className="min-h-0 flex-1 overflow-auto">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={tab}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2 }}
-            className="h-full"
-          >
-            {tab === "metrics" && <MetricsTab />}
-            {tab === "situation" && <SituationTab />}
-            {tab === "bots" && <BotsTab />}
-            {tab === "radar" && <RadarReportsTab />}
-          </motion.div>
-        </AnimatePresence>
+      {/* Tab content — keep all tabs mounted so floating windows opened from a
+          tab survive switching to another tab. Inactive tabs are hidden but
+          preserve their state. */}
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        {TABS.map((t) => {
+          const isActive = t.id === tab;
+          return (
+            <div
+              key={t.id}
+              className="absolute inset-0 overflow-auto"
+              style={{ display: isActive ? "block" : "none" }}
+              aria-hidden={!isActive}
+            >
+              {t.id === "metrics" && <MetricsTab />}
+              {t.id === "situation" && <SituationTab />}
+              {t.id === "bots" && <BotsTab />}
+              {t.id === "radar" && <RadarReportsTab />}
+            </div>
+          );
+        })}
       </div>
     </motion.div>
   );
