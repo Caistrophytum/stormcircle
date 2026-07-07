@@ -158,18 +158,7 @@ export default function FloatingWindow({
             {panel}
           </motion.div>
         ) : (
-          <motion.div
-            key="anchored-wrap"
-            onClick={onClose}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-[1200]"
-            style={{ background: "transparent", pointerEvents: "auto" }}
-          >
-            {panel}
-          </motion.div>
+          panel
         ))}
     </AnimatePresence>
   );
