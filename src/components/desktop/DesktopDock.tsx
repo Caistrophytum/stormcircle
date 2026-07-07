@@ -31,7 +31,7 @@ export default function DesktopDock() {
       id="desktop-dock"
       className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl"
       style={{
-        width: "33vw",
+        width: "calc((100vw - 56px) / 3)",
         maxHeight: "calc(100dvh - 96px)",
         background: "rgba(18,18,22,0.72)",
         backdropFilter: "blur(24px)",

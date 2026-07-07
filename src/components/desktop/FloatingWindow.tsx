@@ -54,30 +54,30 @@ export default function FloatingWindow({
   const isModal = anchor === "center";
   const dockRect = useDockRect();
 
-  // Anchored geometry: right edge aligns with dock's left edge; height matches dock exactly.
-  const anchoredWidth = width ?? "33.33vw";
+  // Anchored geometry: body-level overlay, same width/height as the tabs window,
+  // with its right edge 12px to the left of the tabs window's left edge.
   const anchoredStyle: React.CSSProperties = dockRect
     ? {
         position: "fixed",
         top: dockRect.top,
         height: dockRect.height,
-        right: `calc(100vw - ${dockRect.left}px + 12px)`,
-        width: anchoredWidth,
+        left: dockRect.left - dockRect.width - 12,
+        width: dockRect.width,
       }
     : {
         position: "fixed",
         bottom: 16,
-        right: `calc(33.33vw + 28px)`,
+        left: 16,
         height: "min(80dvh, 720px)",
-        width: anchoredWidth,
+        width: "calc((100vw - 56px) / 3)",
       };
 
   const panel = (
     <motion.div
       onClick={(e) => e.stopPropagation()}
-      initial={{ scale: 0.97, opacity: 0, x: isModal ? 0 : 20 }}
-      animate={{ scale: 1, opacity: 1, x: 0 }}
-      exit={{ scale: 0.97, opacity: 0, x: isModal ? 0 : 20 }}
+      initial={isModal ? { scale: 0.97, opacity: 0 } : { opacity: 0 }}
+      animate={isModal ? { scale: 1, opacity: 1 } : { opacity: 1 }}
+      exit={isModal ? { scale: 0.97, opacity: 0 } : { opacity: 0 }}
       transition={{ type: "spring", damping: 22, stiffness: 260 }}
       className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl font-mono"
       style={{
