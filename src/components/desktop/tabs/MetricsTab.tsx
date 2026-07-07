@@ -5,6 +5,7 @@
  */
 import { motion } from "framer-motion";
 import { useWRSMetrics } from "@/hooks/useWRSMetrics";
+import { useAuth } from "@/hooks/useAuth";
 
 function wrsColor(v: number) {
   // Linear HSL interpolation green→amber→red
@@ -38,6 +39,8 @@ const VIRTUAL_COLORS = [
 
 export default function MetricsTab() {
   const { threatLevel, physicalNodes, soundingNodes, stationActive } = useWRSMetrics();
+  const { profile } = useAuth();
+  const cityName = profile?.location ?? null;
   const size = 140;
   const stroke = 12;
   const r = (size - stroke) / 2;
@@ -50,6 +53,12 @@ export default function MetricsTab() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
+      <div
+        className="font-mono text-[11px] font-bold uppercase tracking-widest"
+        style={{ color, textShadow: `0 0 8px ${color}`, transition: "color 800ms ease" }}
+      >
+        In {cityName ?? "your area"}
+      </div>
       {/* WRS circle + physical line */}
       <div className="flex items-center gap-4">
         <div className="relative shrink-0" style={{ width: size, height: size }}>
