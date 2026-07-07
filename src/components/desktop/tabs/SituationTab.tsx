@@ -85,6 +85,7 @@ export default function SituationTab() {
   const fireRisk = useHomeCityFireRisk(location);
   const { polygons } = useWarningPolygons();
   const { threatLevel } = useWRSMetrics();
+  const unitSystem = useUnitSystem();
   const [comfortOpen, setComfortOpen] = useState(false);
 
   const hazards = useMemo(() => {
