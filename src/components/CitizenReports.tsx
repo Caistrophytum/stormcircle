@@ -186,8 +186,12 @@ export default function CitizenReports() {
     const channel = supabase
       .channel(`citizen-reports_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const next = payload.new as Message;
+        // Bot/system messages are shown in their dedicated Bots tab — never
+        // in the citizen chat feed. Mirror the server-side .neq filter used
+        // by the initial load so realtime inserts don't leak them through.
+        if (next.badge === "System") return;
         setMessages((prev) => {
-          const next = payload.new as Message;
           if (prev.some((m) => m.id === next.id)) return prev;
           // Bound in-memory messages: drop the oldest if we exceed the cap.
           const appended = [...prev, next];
