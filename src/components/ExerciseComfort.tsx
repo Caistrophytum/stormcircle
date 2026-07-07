@@ -13,8 +13,8 @@
  *   • SPC categorical, SPC fire outlook, and WRS threat via existing hooks.
  */
 import { useMemo } from "react";
-import { createPortal } from "react-dom";
-import { X, PersonStanding, Bike, Mountain, Footprints, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Bike, Footprints, Mountain, PersonStanding } from "lucide-react";
+import FloatingWindow from "@/components/desktop/FloatingWindow";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
 import { useHomeCityFireRisk } from "@/hooks/useHomeCityFireRisk";
