@@ -32,7 +32,7 @@ export default function DesktopDock() {
       className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl"
       style={{
         width: "calc((100vw - 56px) / 3)",
-        maxHeight: "calc(100dvh - 96px)",
+        maxHeight: "40dvh",
         background: "rgba(18,18,22,0.72)",
         backdropFilter: "blur(24px)",
         border: `1px solid rgba(${active.accent},0.35)`,
