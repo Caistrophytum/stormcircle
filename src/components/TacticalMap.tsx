@@ -12,7 +12,7 @@ const weatherBackgrounds: Record<WeatherCondition, string> = {
 };
 
 interface Props {
-  overlayScale: number;
+  overlayScale?: number;
 }
 
 const TacticalMap = forwardRef<HTMLElement, Props>(({ overlayScale }, ref) => {
