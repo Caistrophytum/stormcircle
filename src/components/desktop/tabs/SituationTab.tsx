@@ -75,8 +75,6 @@ export default function SituationTab() {
   const { threatLevel } = useWRSMetrics();
   const [comfortOpen, setComfortOpen] = useState(false);
 
-  const showConvective = homeRisk.risk !== "NONE";
-  const showFire = fireRisk.risk !== "NONE";
   const hazards = useMemo(() => {
     if (!homeRisk.coords) return [];
     return polygons.filter(
@@ -85,7 +83,29 @@ export default function SituationTab() {
   }, [polygons, homeRisk.coords]);
   const showHazards = hazards.length > 0;
 
-  const nothing = !showConvective && !showFire && !showHazards;
+  // Nearest convective warning (Tornado / Severe Thunderstorm / Flash Flood).
+  const nearestConvective = useMemo(() => {
+    if (!homeRisk.coords) return null;
+    const CONV = /(Tornado|Thunderstorm|Flash Flood|Severe)/i;
+    const { lat, lon } = homeRisk.coords;
+    let best: { event: string; km: number } | null = null;
+    for (const p of polygons) {
+      if (!p.geometry || !CONV.test(p.event)) continue;
+      const coords: number[][] =
+        p.geometry.type === "Polygon"
+          ? p.geometry.coordinates[0]
+          : p.geometry.coordinates[0]?.[0] ?? [];
+      let min = Infinity;
+      for (const [plon, plat] of coords) {
+        const d = haversineKm(lat, lon, plat, plon);
+        if (d < min) min = d;
+      }
+      if (best === null || min < best.km) best = { event: p.event, km: min };
+    }
+    return best;
+  }, [polygons, homeRisk.coords]);
+
+  const nothing = !showHazards && homeRisk.risk === "NONE" && fireRisk.risk === "NONE" && !nearestConvective;
 
   return (
     <div className="flex flex-col gap-3 p-4">
