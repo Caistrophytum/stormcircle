@@ -4,6 +4,7 @@
  */
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { createPortal } from "react-dom";
 import { useEffect, useState, type ReactNode } from "react";
 
 function useDockRect() {
