@@ -72,8 +72,19 @@ export default function FloatingWindow({
         width: "calc((100vw - 56px) / 3)",
       };
 
+  // Global ESC to close (works for both anchored + modal variants).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   const panel = (
     <motion.div
+      key="panel"
       onClick={(e) => e.stopPropagation()}
       initial={isModal ? { scale: 0.97, opacity: 0 } : { opacity: 0 }}
       animate={isModal ? { scale: 1, opacity: 1 } : { opacity: 1 }}
@@ -89,7 +100,7 @@ export default function FloatingWindow({
         border: `1px solid rgba(${accent},0.4)`,
         boxShadow: `0 0 40px rgba(${accent},0.25), 0 20px 60px rgba(0,0,0,0.6)`,
         color: "#e8e8e8",
-        zIndex: 1200,
+        zIndex: 1201,
       }}
     >
       <div
@@ -108,12 +119,17 @@ export default function FloatingWindow({
           )}
         </div>
         <button
+          type="button"
           aria-label="Close"
-          onClick={onClose}
-          className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors hover:brightness-125"
           style={{
             border: `1px solid rgba(${accent},0.35)`,
             color: `rgb(${accent})`,
+            background: "rgba(0,0,0,0.4)",
           }}
         >
           <X size={16} />
@@ -128,6 +144,7 @@ export default function FloatingWindow({
       {open &&
         (isModal ? (
           <motion.div
+            key="modal-backdrop"
             role="dialog"
             aria-label={title}
             onClick={onClose}
@@ -141,7 +158,18 @@ export default function FloatingWindow({
             {panel}
           </motion.div>
         ) : (
-          panel
+          <motion.div
+            key="anchored-wrap"
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[1200]"
+            style={{ background: "transparent", pointerEvents: "auto" }}
+          >
+            {panel}
+          </motion.div>
         ))}
     </AnimatePresence>
   );
