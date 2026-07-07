@@ -145,9 +145,6 @@ export default function SituationTab() {
           )}
           {showHazards && (
             <GlowCard color="hsl(0 100% 60%)">
-              <div className="mb-1 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-                Current Hazards
-              </div>
               <CurrentLocationHazards
                 polygons={polygons}
                 coords={homeRisk.coords}

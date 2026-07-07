@@ -86,7 +86,7 @@ export default function BotsTab() {
 
   return (
     <div className="p-4">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-col gap-2">
         {botIds.map((id) => {
           const meta = KNOWN_BOTS[id] ?? {
             label: byBot.get(id)?.[0]?.username ?? "Bot",
@@ -100,24 +100,26 @@ export default function BotsTab() {
               key={id}
               onClick={() => hasMessages && setOpenBotId(id)}
               disabled={!hasMessages}
-              className="group flex flex-col items-start gap-1 rounded-xl p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40"
+              className="group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: `1px solid rgba(${meta.accent},0.4)`,
                 boxShadow: `inset 0 0 12px rgba(${meta.accent},0.12), 0 0 8px rgba(${meta.accent},0.18)`,
               }}
             >
-              <meta.Icon size={16} style={{ color: `rgb(${meta.accent})` }} />
-              <div
-                className="font-mono text-[10px] font-bold uppercase leading-tight tracking-wider"
-                style={{ color: `rgb(${meta.accent})` }}
-              >
-                {meta.label}
-              </div>
-              <div className="text-[9px] font-mono text-muted-foreground">
-                {hasMessages
-                  ? new Date(latest.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                  : "No messages"}
+              <meta.Icon size={18} style={{ color: `rgb(${meta.accent})` }} />
+              <div className="flex flex-1 flex-col">
+                <div
+                  className="font-mono text-[11px] font-bold uppercase leading-tight tracking-wider"
+                  style={{ color: `rgb(${meta.accent})` }}
+                >
+                  {meta.label}
+                </div>
+                <div className="text-[9px] font-mono text-muted-foreground">
+                  {hasMessages
+                    ? `Last message ${new Date(latest.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                    : "No messages"}
+                </div>
               </div>
             </button>
           );
@@ -130,7 +132,7 @@ export default function BotsTab() {
         title={openMeta?.label ?? "Bot"}
         subtitle={`${openMessages.length} recent message${openMessages.length === 1 ? "" : "s"}`}
         accent={openMeta?.accent}
-        width="min(720px, 92vw)"
+        width="33vw"
         height="min(80dvh, 780px)"
       >
         <div className="space-y-3 p-4 text-[13px]">

@@ -34,7 +34,7 @@ const Index = () => {
               </Suspense>
 
               {/* Bottom-right floating dock + chat */}
-              <div className="pointer-events-none absolute bottom-4 right-4 z-30 flex items-end gap-3">
+              <div className="pointer-events-none absolute bottom-4 right-4 z-30 flex items-stretch gap-3">
                 <DesktopDock />
                 <FloatingChat />
               </div>
