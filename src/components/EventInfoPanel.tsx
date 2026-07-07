@@ -71,7 +71,7 @@ const EventInfoPanel = ({
         stacked ? "flex-col" : "flex-row"
       }`}
     >
-      {show !== "dangerous" && (
+      {(show === "hazards" || show === "both" || show === "common" || show === "new") && (
       <div
         className="flex flex-col self-start"
         style={{ gap: stackGapPx != null ? `${stackGapPx}px` : undefined }}
