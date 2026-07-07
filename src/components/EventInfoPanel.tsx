@@ -159,6 +159,7 @@ const EventInfoPanel = ({
           Last 5 refresh cycles
         </div>
       </div>
+      )}
       </div>
       )}
 
