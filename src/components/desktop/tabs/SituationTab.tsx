@@ -7,6 +7,7 @@ import { lazy, Suspense, useState, useMemo } from "react";
 import { Activity as ActivityIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnitSystem, displayLengthKm } from "@/hooks/useUnitSystem";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import { useHomeCityFireRisk, type FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
@@ -84,6 +85,7 @@ export default function SituationTab() {
   const fireRisk = useHomeCityFireRisk(location);
   const { polygons } = useWarningPolygons();
   const { threatLevel } = useWRSMetrics();
+  const unitSystem = useUnitSystem();
   const [comfortOpen, setComfortOpen] = useState(false);
 
   const hazards = useMemo(() => {
@@ -162,7 +164,11 @@ export default function SituationTab() {
               Nearest Warning:{" "}
               {nearestConvective ? (
                 <span style={{ color: SPC_COLOR[homeRisk.risk] }}>
-                  {nearestConvective.event} — {nearestConvective.km < 1 ? "at your location" : `${nearestConvective.km.toFixed(0)} km`}
+                  {nearestConvective.event} — {(() => {
+                    if (nearestConvective.km < 1) return "at your location";
+                    const d = displayLengthKm(nearestConvective.km, unitSystem)!;
+                    return `${d.value.toFixed(0)} ${d.unit}`;
+                  })()}
                 </span>
               ) : (
                 <span className="text-[hsl(142_100%_60%)]">None active</span>
