@@ -4,7 +4,27 @@
  */
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
+function useDockRect() {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  useEffect(() => {
+    const el = document.getElementById("desktop-dock");
+    if (!el) return;
+    const update = () => setRect(el.getBoundingClientRect());
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, []);
+  return rect;
+}
 
 interface Props {
   open: boolean;
