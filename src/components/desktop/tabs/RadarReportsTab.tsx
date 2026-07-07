@@ -4,7 +4,7 @@
  *   • Live Reports → opens weather-reports feed in a floating window
  */
 import { lazy, Suspense, useState } from "react";
-import { Radar as RadarIcon, Radio } from "lucide-react";
+import { Radar as RadarIcon, Radio, Maximize2 } from "lucide-react";
 import FloatingWindow from "@/components/desktop/FloatingWindow";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { PRODUCTS, type ProductCode } from "@/hooks/useRadar";
@@ -15,7 +15,7 @@ const LeafletRadar = lazy(() =>
   import("@/components/RadarMiniMap").then((m) => ({ default: m.LeafletRadar })),
 );
 
-type OpenPanel = null | "radar" | "reports";
+type OpenPanel = null | "radar" | "reports" | "radar-full";
 
 export default function RadarReportsTab() {
   const [open, setOpen] = useState<OpenPanel>(null);
