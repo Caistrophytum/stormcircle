@@ -33,7 +33,7 @@ interface EventInfoPanelProps {
   /** When true, the two cards stack vertically instead of side-by-side. */
   stacked?: boolean;
   /** Which card(s) to render. Defaults to "both". */
-  show?: "both" | "hazards" | "dangerous";
+  show?: "both" | "hazards" | "dangerous" | "common" | "new";
   /** Refs for height-syncing the three panels. */
   hazardsRef?: React.Ref<HTMLDivElement>;
   newWarningsRef?: React.Ref<HTMLDivElement>;
