@@ -137,32 +137,38 @@ export default function SituationTab() {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {showConvective && (
-            <GlowCard color={SPC_COLOR[homeRisk.risk]}>
-              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-                Convective Outlook
-              </div>
-              <div
-                className="mt-1 font-mono text-sm font-bold uppercase tracking-wider"
-                style={{ color: SPC_COLOR[homeRisk.risk] }}
-              >
-                {SPC_TEXT[homeRisk.risk]}
-              </div>
-            </GlowCard>
-          )}
-          {showFire && (
-            <GlowCard color={FIRE_COLOR[fireRisk.risk]}>
-              <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-                Fire Risk
-              </div>
-              <div
-                className="mt-1 font-mono text-sm font-bold uppercase tracking-wider"
-                style={{ color: FIRE_COLOR[fireRisk.risk] }}
-              >
-                {FIRE_TEXT[fireRisk.risk]}
-              </div>
-            </GlowCard>
-          )}
+          <GlowCard color={SPC_COLOR[homeRisk.risk]}>
+            <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+              Convective Outlook
+            </div>
+            <div
+              className="mt-1 font-mono text-sm font-bold uppercase tracking-wider"
+              style={{ color: SPC_COLOR[homeRisk.risk] }}
+            >
+              {SPC_TEXT[homeRisk.risk]}
+            </div>
+            <div className="mt-1.5 border-t border-white/10 pt-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              Nearest Warning:{" "}
+              {nearestConvective ? (
+                <span style={{ color: SPC_COLOR[homeRisk.risk] }}>
+                  {nearestConvective.event} — {nearestConvective.km < 1 ? "at your location" : `${nearestConvective.km.toFixed(0)} km`}
+                </span>
+              ) : (
+                <span className="text-[hsl(142_100%_60%)]">None active</span>
+              )}
+            </div>
+          </GlowCard>
+          <GlowCard color={FIRE_COLOR[fireRisk.risk]}>
+            <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+              Fire Risk
+            </div>
+            <div
+              className="mt-1 font-mono text-sm font-bold uppercase tracking-wider"
+              style={{ color: FIRE_COLOR[fireRisk.risk] }}
+            >
+              {FIRE_TEXT[fireRisk.risk]}
+            </div>
+          </GlowCard>
           {showHazards && (
             <GlowCard color="hsl(0 100% 60%)">
               <CurrentLocationHazards
