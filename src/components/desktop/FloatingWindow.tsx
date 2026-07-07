@@ -123,7 +123,7 @@ export default function FloatingWindow({
     </motion.div>
   );
 
-  return (
+  const tree = (
     <AnimatePresence>
       {open &&
         (isModal ? (
@@ -145,4 +145,7 @@ export default function FloatingWindow({
         ))}
     </AnimatePresence>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(tree, document.body);
 }
