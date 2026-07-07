@@ -108,7 +108,6 @@ export default function RadarReportsTab() {
         height="min(88dvh, 900px)"
       >
         <div className="flex h-full flex-col gap-3 p-3">
-          {(() => null)()}
           <RadarControls
             selectedCity={radar.selectedCity}
             onCityChange={radar.setSelectedCity}
