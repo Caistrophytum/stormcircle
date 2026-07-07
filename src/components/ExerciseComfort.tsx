@@ -164,7 +164,8 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const hasLocation = !!location;
   const loading = data.loading && !data.hourly.length;
 
-  return (
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       role="dialog"
       aria-label="Exercise comfort"
