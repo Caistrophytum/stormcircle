@@ -163,7 +163,7 @@ const EventInfoPanel = ({
       </div>
       )}
 
-      {show !== "hazards" && (
+      {(show === "dangerous" || show === "both") && (
       <>
       {/* Top 6 Most Dangerous */}
       <div
