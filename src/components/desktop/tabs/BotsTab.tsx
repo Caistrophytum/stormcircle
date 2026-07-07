@@ -132,7 +132,7 @@ export default function BotsTab() {
         title={openMeta?.label ?? "Bot"}
         subtitle={`${openMessages.length} recent message${openMessages.length === 1 ? "" : "s"}`}
         accent={openMeta?.accent}
-        width="min(720px, 92vw)"
+        width="33vw"
         height="min(80dvh, 780px)"
       >
         <div className="space-y-3 p-4 text-[13px]">
