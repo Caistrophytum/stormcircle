@@ -164,7 +164,11 @@ export default function SituationTab() {
               Nearest Warning:{" "}
               {nearestConvective ? (
                 <span style={{ color: SPC_COLOR[homeRisk.risk] }}>
-                  {nearestConvective.event} — {nearestConvective.km < 1 ? "at your location" : `${nearestConvective.km.toFixed(0)} km`}
+                  {nearestConvective.event} — {(() => {
+                    if (nearestConvective.km < 1) return "at your location";
+                    const d = displayLengthKm(nearestConvective.km, unitSystem)!;
+                    return `${d.value.toFixed(0)} ${d.unit}`;
+                  })()}
                 </span>
               ) : (
                 <span className="text-[hsl(142_100%_60%)]">None active</span>
