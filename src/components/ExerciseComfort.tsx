@@ -159,121 +159,55 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
     });
   }, [data.hourly, data.airQuality, activeWarnings, home.risk, fire.risk, wrs]);
 
-  if (!open) return null;
-
   const hasLocation = !!location;
   const loading = data.loading && !data.hourly.length;
 
-  if (typeof document === "undefined") return null;
-  return createPortal(
-    <div
-      role="dialog"
-      aria-label="Exercise comfort"
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.72)",
-        zIndex: 1200,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        fontFamily: "'JetBrains Mono', monospace",
-      }}
+  return (
+    <FloatingWindow
+      open={open}
+      onClose={onClose}
+      title="Exercise Comfort"
+      subtitle={hasLocation ? `${location} — now + next 6 h` : "Set a hometown to compute local comfort"}
+      accent="255,157,0"
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: "min(520px, 100%)",
-          maxHeight: "88dvh",
-          background: "#0a0a0e",
-          border: "1px solid rgba(255,157,0,0.35)",
-          borderRadius: 10,
-          boxShadow: "0 0 24px rgba(255,157,0,0.18)",
-          color: "#e8e8e8",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "12px 14px",
-            borderBottom: "1px solid rgba(255,157,0,0.25)",
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", color: "#ff9d00" }}>
-              EXERCISE COMFORT
-            </div>
-            <div style={{ fontSize: 10, color: "#a1a1aa", marginTop: 2 }}>
-              {hasLocation ? `${location} — now + next 6 h` : "Set a hometown to compute local comfort"}
-            </div>
+      <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8e8e8" }}>
+        {!hasLocation && (
+          <div style={{ padding: 20, fontSize: 12, color: "#d4d4d8" }}>
+            Open your Account Center and set a hometown. Exercise comfort scores use your
+            home coordinates for weather, air quality, and local hazard checks.
           </div>
-          <button
-            aria-label="Close"
-            onClick={onClose}
+        )}
+        {hasLocation && loading && (
+          <div style={{ padding: 20, fontSize: 12, color: "#a1a1aa" }}>Loading forecast…</div>
+        )}
+        {hasLocation && !loading && !results.length && (
+          <div style={{ padding: 20, fontSize: 12, color: "#ff6b6b" }}>
+            Couldn't load the forecast — try again in a minute.
+          </div>
+        )}
+        {activeWarnings.length > 0 && (
+          <div
             style={{
-              background: "transparent",
-              border: "1px solid rgba(255,157,0,0.35)",
-              color: "#ff9d00",
-              width: 32,
-              height: 32,
-              borderRadius: 6,
-              cursor: "pointer",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              gap: 8,
+              alignItems: "flex-start",
+              padding: "10px 14px",
+              background: "rgba(255,77,77,0.08)",
+              borderBottom: "1px solid rgba(255,77,77,0.25)",
+              color: "#ffb4b4",
+              fontSize: 11,
             }}
           >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div style={{ flex: 1, overflow: "auto" }}>
-          {!hasLocation && (
-            <div style={{ padding: 20, fontSize: 12, color: "#d4d4d8" }}>
-              Open your Account Center and set a hometown. Exercise comfort scores use your
-              home coordinates for weather, air quality, and local hazard checks.
+            <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+            <div>
+              <div style={{ fontWeight: 700, color: "#ff9d9d" }}>Active alerts at your location</div>
+              <div style={{ marginTop: 2 }}>{activeWarnings.join(" • ")}</div>
             </div>
-          )}
-          {hasLocation && loading && (
-            <div style={{ padding: 20, fontSize: 12, color: "#a1a1aa" }}>Loading forecast…</div>
-          )}
-          {hasLocation && !loading && !results.length && (
-            <div style={{ padding: 20, fontSize: 12, color: "#ff6b6b" }}>
-              Couldn't load the forecast — try again in a minute.
-            </div>
-          )}
-          {activeWarnings.length > 0 && (
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                alignItems: "flex-start",
-                padding: "10px 14px",
-                background: "rgba(255,77,77,0.08)",
-                borderBottom: "1px solid rgba(255,77,77,0.25)",
-                color: "#ffb4b4",
-                fontSize: 11,
-              }}
-            >
-              <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-              <div>
-                <div style={{ fontWeight: 700, color: "#ff9d9d" }}>Active alerts at your location</div>
-                <div style={{ marginTop: 2 }}>{activeWarnings.join(" • ")}</div>
-              </div>
-            </div>
-          )}
-          {results.map((r) => (
-            <ScoreRow key={r.activity} r={r} />
-          ))}
-        </div>
-
+          </div>
+        )}
+        {results.map((r) => (
+          <ScoreRow key={r.activity} r={r} />
+        ))}
         <div
           style={{
             padding: "8px 14px",
@@ -288,7 +222,6 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           SPC / Fire / WRS outlooks (soft downgrade).
         </div>
       </div>
-    </div>,
-    document.body,
+    </FloatingWindow>
   );
 }
