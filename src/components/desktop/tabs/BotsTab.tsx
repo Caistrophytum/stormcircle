@@ -85,8 +85,8 @@ export default function BotsTab() {
     });
 
   return (
-    <div className="p-4" style={{ minHeight: "calc(40dvh - 56px)" }}>
-      <div className="flex h-full flex-col gap-2" style={{ minHeight: "calc(40dvh - 88px)" }}>
+    <div className="flex h-full flex-col p-4">
+      <div className="flex flex-1 flex-col gap-2 min-h-0">
         {botIds.map((id) => {
           const meta = KNOWN_BOTS[id] ?? {
             label: byBot.get(id)?.[0]?.username ?? "Bot",
