@@ -33,7 +33,7 @@ interface EventInfoPanelProps {
   /** When true, the two cards stack vertically instead of side-by-side. */
   stacked?: boolean;
   /** Which card(s) to render. Defaults to "both". */
-  show?: "both" | "hazards" | "dangerous";
+  show?: "both" | "hazards" | "dangerous" | "common" | "new";
   /** Refs for height-syncing the three panels. */
   hazardsRef?: React.Ref<HTMLDivElement>;
   newWarningsRef?: React.Ref<HTMLDivElement>;
@@ -71,11 +71,13 @@ const EventInfoPanel = ({
         stacked ? "flex-col" : "flex-row"
       }`}
     >
-      {show !== "dangerous" && (
+      {(show === "hazards" || show === "both" || show === "common" || show === "new") && (
       <div
         className="flex flex-col self-start"
         style={{ gap: stackGapPx != null ? `${stackGapPx}px` : undefined }}
       >
+      {show !== "new" && (
+      <>
       {/* Top 5 Hazards */}
       <div
         ref={hazardsRef}
@@ -118,7 +120,10 @@ const EventInfoPanel = ({
         )}
       </div>
 
-      {/* New Warnings (last 5 refreshes) */}
+      </>
+      )}
+
+      {show !== "common" && (
       <div
         ref={newWarningsRef}
         style={newWarningsStyle}
@@ -154,6 +159,7 @@ const EventInfoPanel = ({
           Last 5 refresh cycles
         </div>
       </div>
+      )}
       </div>
       )}
 
