@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-07-07 07z",
+    tag: "IMPROVED",
+    title: "Desktop interface V2",
+    body: "Upgraded and updated the website's desktop UI to better batch the look I envisioned: calm, art-sy, yet attention demanding when neccessary.",
+  },
+  {
     date: "2026-07-01 20z",
     tag: "NEW",
     title: "Exercise-o-meter V1",
