@@ -13,6 +13,7 @@
  *   • SPC categorical, SPC fire outlook, and WRS threat via existing hooks.
  */
 import { useMemo } from "react";
+import { createPortal } from "react-dom";
 import { X, PersonStanding, Bike, Mountain, Footprints, AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
@@ -163,7 +164,8 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const hasLocation = !!location;
   const loading = data.loading && !data.hourly.length;
 
-  return (
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div
       role="dialog"
       aria-label="Exercise comfort"
@@ -286,6 +288,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           SPC / Fire / WRS outlooks (soft downgrade).
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
