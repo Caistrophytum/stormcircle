@@ -54,22 +54,22 @@ export default function FloatingWindow({
   const isModal = anchor === "center";
   const dockRect = useDockRect();
 
-  // Anchored geometry: right edge aligns with dock's left edge; height matches dock exactly.
-  const anchoredWidth = width ?? "33.33vw";
+  // Anchored geometry: body-level overlay, same width/height as the tabs window,
+  // with its right edge 12px to the left of the tabs window's left edge.
   const anchoredStyle: React.CSSProperties = dockRect
     ? {
         position: "fixed",
         top: dockRect.top,
         height: dockRect.height,
-        right: `calc(100vw - ${dockRect.left}px + 12px)`,
-        width: anchoredWidth,
+        left: dockRect.left - dockRect.width - 12,
+        width: dockRect.width,
       }
     : {
         position: "fixed",
         bottom: 16,
-        right: `calc(33.33vw + 28px)`,
+        left: 16,
         height: "min(80dvh, 720px)",
-        width: anchoredWidth,
+        width: "calc((100vw - 56px) / 3)",
       };
 
   const panel = (
