@@ -60,6 +60,51 @@ export default function RadarReportsTab() {
         width="33vw"
         height="min(80dvh, 720px)"
       >
+        <div className="relative flex h-full flex-col p-2">
+          <button
+            onClick={() => setOpen("radar-full")}
+            aria-label="Expand radar"
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-md"
+            style={{
+              background: "rgba(10,10,14,0.85)",
+              border: "1px solid rgba(125,211,252,0.45)",
+              color: "rgb(125,211,252)",
+            }}
+          >
+            <Maximize2 size={14} />
+          </button>
+          <div
+            className="relative min-h-0 flex-1 overflow-hidden rounded-lg"
+            style={{ background: "#1a1a2e" }}
+          >
+            <Suspense fallback={null}>
+              <LeafletRadar
+                station={radar.selectedStation}
+                tileUrl={radar.tileUrl}
+                interactive
+                selectedStation={radar.selectedStation}
+                onStationMarkerSelect={radar.selectStationByMarker}
+                setSelectedProduct={radar.setSelectedProduct}
+              />
+            </Suspense>
+          </div>
+        </div>
+      </FloatingWindow>
+
+      <FloatingWindow
+        open={open === "radar-full"}
+        onClose={() => setOpen(null)}
+        title="NEXRAD Radar — Full View"
+        subtitle={
+          radar.selectedStation
+            ? `${radar.selectedStation.id} — ${radar.selectedStation.name}`
+            : "Select a station on the map"
+        }
+        accent="125,211,252"
+        anchor="center"
+        width="min(1100px, 92vw)"
+        height="min(88dvh, 900px)"
+      >
         <div className="flex h-full flex-col gap-3 p-3">
           <RadarControls
             selectedCity={radar.selectedCity}
