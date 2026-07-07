@@ -23,9 +23,10 @@ export default function FloatingChat() {
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.15, type: "spring", damping: 24 }}
-      className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl self-stretch"
+      className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl"
       style={{
         width: "calc((100vw - 56px) / 3)",
+        height: "40dvh",
         minHeight: 320,
         background: "rgba(18,18,22,0.72)",
         backdropFilter: "blur(24px)",
