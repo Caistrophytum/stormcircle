@@ -64,11 +64,13 @@ export default function RadarReportsTab() {
           <button
             onClick={() => setOpen("radar-full")}
             aria-label="Expand radar"
-            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-md"
+            className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-md"
             style={{
-              background: "rgba(10,10,14,0.85)",
-              border: "1px solid rgba(125,211,252,0.45)",
+              zIndex: 1000,
+              background: "rgba(10,10,14,0.9)",
+              border: "1px solid rgba(125,211,252,0.55)",
               color: "rgb(125,211,252)",
+              boxShadow: "0 0 10px rgba(125,211,252,0.35)",
             }}
           >
             <Maximize2 size={14} />
