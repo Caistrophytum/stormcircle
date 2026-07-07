@@ -28,7 +28,7 @@ const Index = () => {
         <RadarProvider>
           <div className="flex h-[100dvh] flex-col overflow-hidden bg-background">
             <StatusBar />
-            <main className="relative flex-1 overflow-hidden">
+            <main className="relative flex flex-1 overflow-hidden">
               <Suspense fallback={<MapFallback />}>
                 <TacticalMap overlayScale={1} />
               </Suspense>
