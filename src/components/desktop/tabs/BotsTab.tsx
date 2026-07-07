@@ -100,7 +100,7 @@ export default function BotsTab() {
               key={id}
               onClick={() => hasMessages && setOpenBotId(id)}
               disabled={!hasMessages}
-              className="group flex w-full items-center gap-3 rounded-xl p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40"
+              className="group flex w-full flex-1 items-center gap-3 rounded-xl p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: `1px solid rgba(${meta.accent},0.4)`,
