@@ -120,6 +120,10 @@ const EventInfoPanel = ({
         )}
       </div>
 
+      </>
+      )}
+
+      {show !== "common" && (
       {/* New Warnings (last 5 refreshes) */}
       <div
         ref={newWarningsRef}
