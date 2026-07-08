@@ -34,7 +34,7 @@ export default function HazardTabs() {
       initial={{ opacity: 0, y: -20, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.1, type: "spring", damping: 24 }}
-      className="pointer-events-auto flex w-fit max-w-[33vw] flex-col overflow-hidden rounded-2xl"
+      className="pointer-events-auto flex w-[30vw] flex-col overflow-hidden rounded-2xl"
       style={{
         maxHeight: "50dvh",
         background: "rgba(18,18,22,0.72)",
@@ -103,7 +103,7 @@ export default function HazardTabs() {
             className="overflow-hidden"
           >
             <div
-              className="p-2 [&_.glass-panel]:!bg-transparent [&_.glass-panel]:!border-0 [&_.glass-panel]:!p-0 [&_.glass-panel]:!shadow-none"
+              className="px-4 py-2 [&_.glass-panel]:!bg-transparent [&_.glass-panel]:!border-0 [&_.glass-panel]:!p-0 [&_.glass-panel]:!shadow-none"
               style={scrollStyle}
             >
               <AnimatePresence mode="wait">
