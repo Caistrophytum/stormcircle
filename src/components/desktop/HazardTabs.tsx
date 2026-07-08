@@ -34,7 +34,7 @@ export default function HazardTabs() {
       initial={{ opacity: 0, y: -20, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.1, type: "spring", damping: 24 }}
-      className="pointer-events-auto flex w-fit max-w-[33vw] flex-col overflow-hidden rounded-2xl"
+      className="pointer-events-auto flex w-[30vw] flex-col overflow-hidden rounded-2xl"
       style={{
         maxHeight: "50dvh",
         background: "rgba(18,18,22,0.72)",
