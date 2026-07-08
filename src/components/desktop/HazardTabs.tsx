@@ -103,7 +103,7 @@ export default function HazardTabs() {
             className="overflow-hidden"
           >
             <div
-              className="p-2 [&_.glass-panel]:!bg-transparent [&_.glass-panel]:!border-0 [&_.glass-panel]:!p-0 [&_.glass-panel]:!shadow-none"
+              className="px-4 py-2 [&_.glass-panel]:!bg-transparent [&_.glass-panel]:!border-0 [&_.glass-panel]:!p-0 [&_.glass-panel]:!shadow-none"
               style={scrollStyle}
             >
               <AnimatePresence mode="wait">
