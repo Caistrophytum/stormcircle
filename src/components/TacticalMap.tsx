@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import HazardTabs from "./desktop/HazardTabs";
+import HazardTabs, { DangerousPanel } from "./desktop/HazardTabs";
 import { useWRSMetrics, type WeatherCondition } from "@/hooks/useWRSMetrics";
 import { useDataContext } from "@/providers/DataProvider";
 
