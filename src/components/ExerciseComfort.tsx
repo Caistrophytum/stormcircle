@@ -170,13 +170,62 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
 
   const body = (
     <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8e8e8" }}>
-      {/* content moved below */}
+      {!hasLocation && (
+        <div style={{ padding: 20, fontSize: 12, color: "#d4d4d8" }}>
+          Open your Account Center and set a hometown. Exercise comfort scores use your
+          home coordinates for weather, air quality, and local hazard checks.
+        </div>
+      )}
+      {hasLocation && loading && (
+        <div style={{ padding: 20, fontSize: 12, color: "#a1a1aa" }}>Loading forecast…</div>
+      )}
+      {hasLocation && !loading && !results.length && (
+        <div style={{ padding: 20, fontSize: 12, color: "#ff6b6b" }}>
+          Couldn't load the forecast — try again in a minute.
+        </div>
+      )}
+      {activeWarnings.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "flex-start",
+            padding: "10px 14px",
+            background: "rgba(255,77,77,0.08)",
+            borderBottom: "1px solid rgba(255,77,77,0.25)",
+            color: "#ffb4b4",
+            fontSize: 11,
+          }}
+        >
+          <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <div style={{ fontWeight: 700, color: "#ff9d9d" }}>Active alerts at your location</div>
+            <div style={{ marginTop: 2 }}>{activeWarnings.join(" • ")}</div>
+          </div>
+        </div>
+      )}
+      {results.map((r) => (
+        <ScoreRow key={r.activity} r={r} />
+      ))}
+      <div
+        style={{
+          padding: "8px 14px",
+          borderTop: "1px solid rgba(255,157,0,0.18)",
+          fontSize: 9.5,
+          color: "#71717a",
+          lineHeight: 1.5,
+        }}
+      >
+        0–100 (Ideal ≥ 80, Good ≥ 60, Fair ≥ 40, Poor ≥ 20, Dangerous &lt; 20). Model blends
+        apparent temperature, wind, precip, UV, US AQI, active NWS alerts (hard downgrade), and
+        SPC / Fire / WRS outlooks (soft downgrade).
+      </div>
     </div>
   );
 
-  // Mobile: render inline (full-width) inside the MobileScreen shell — the
-  // desktop FloatingWindow's anchored geometry collapses to a ~thin column
-  // when no #desktop-dock is present.
+  // Mobile: render inline full-width inside the MobileScreen shell — the
+  // desktop FloatingWindow anchors to #desktop-dock which doesn't exist on
+  // mobile, so its geometry would collapse to a thin column.
   if (isMobile) {
     if (!open) return null;
     return (
@@ -218,15 +267,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
             <X size={16} />
           </button>
         </div>
-        <div style={{ flex: 1, overflowY: "auto" }}>{renderBody()}</div>
-      </div>
-    );
-  }
-
-  function renderBody() {
-    return (
-      <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8e8e8" }}>
-        {/* placeholder replaced below via inline JSX */}
+        <div style={{ flex: 1, overflowY: "auto" }}>{body}</div>
       </div>
     );
   }
@@ -239,58 +280,8 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
       subtitle={subtitle}
       accent="255,157,0"
     >
-      <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8e8e8" }}>
-        {!hasLocation && (
-          <div style={{ padding: 20, fontSize: 12, color: "#d4d4d8" }}>
-            Open your Account Center and set a hometown. Exercise comfort scores use your
-            home coordinates for weather, air quality, and local hazard checks.
-          </div>
-        )}
-        {hasLocation && loading && (
-          <div style={{ padding: 20, fontSize: 12, color: "#a1a1aa" }}>Loading forecast…</div>
-        )}
-        {hasLocation && !loading && !results.length && (
-          <div style={{ padding: 20, fontSize: 12, color: "#ff6b6b" }}>
-            Couldn't load the forecast — try again in a minute.
-          </div>
-        )}
-        {activeWarnings.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              alignItems: "flex-start",
-              padding: "10px 14px",
-              background: "rgba(255,77,77,0.08)",
-              borderBottom: "1px solid rgba(255,77,77,0.25)",
-              color: "#ffb4b4",
-              fontSize: 11,
-            }}
-          >
-            <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-            <div>
-              <div style={{ fontWeight: 700, color: "#ff9d9d" }}>Active alerts at your location</div>
-              <div style={{ marginTop: 2 }}>{activeWarnings.join(" • ")}</div>
-            </div>
-          </div>
-        )}
-        {results.map((r) => (
-          <ScoreRow key={r.activity} r={r} />
-        ))}
-        <div
-          style={{
-            padding: "8px 14px",
-            borderTop: "1px solid rgba(255,157,0,0.18)",
-            fontSize: 9.5,
-            color: "#71717a",
-            lineHeight: 1.5,
-          }}
-        >
-          0–100 (Ideal ≥ 80, Good ≥ 60, Fair ≥ 40, Poor ≥ 20, Dangerous &lt; 20). Model blends
-          apparent temperature, wind, precip, UV, US AQI, active NWS alerts (hard downgrade), and
-          SPC / Fire / WRS outlooks (soft downgrade).
-        </div>
-      </div>
+      {body}
     </FloatingWindow>
   );
+
 }
