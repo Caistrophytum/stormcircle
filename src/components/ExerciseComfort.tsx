@@ -162,13 +162,81 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
 
   const hasLocation = !!location;
   const loading = data.loading && !data.hourly.length;
+  const isMobile = useMobile();
+
+  const subtitle = hasLocation
+    ? `${location} — now + next 6 h`
+    : "Set a hometown to compute local comfort";
+
+  const body = (
+    <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8e8e8" }}>
+      {/* content moved below */}
+    </div>
+  );
+
+  // Mobile: render inline (full-width) inside the MobileScreen shell — the
+  // desktop FloatingWindow's anchored geometry collapses to a ~thin column
+  // when no #desktop-dock is present.
+  if (isMobile) {
+    if (!open) return null;
+    return (
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "flex",
+          flexDirection: "column",
+          background: "rgba(10,10,14,0.96)",
+          color: "#e8e8e8",
+          fontFamily: "'JetBrains Mono', monospace",
+        }}
+      >
+        <div
+          className="flex items-center justify-between px-4 py-3"
+          style={{ borderBottom: "1px solid rgba(255,157,0,0.25)" }}
+        >
+          <div className="min-w-0">
+            <div
+              className="truncate text-xs font-bold uppercase tracking-widest"
+              style={{ color: "rgb(255,157,0)" }}
+            >
+              Exercise Comfort
+            </div>
+            <div className="mt-0.5 truncate text-[10px] text-muted-foreground">{subtitle}</div>
+          </div>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-md"
+            style={{
+              border: "1px solid rgba(255,157,0,0.35)",
+              color: "rgb(255,157,0)",
+              background: "rgba(0,0,0,0.4)",
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto" }}>{renderBody()}</div>
+      </div>
+    );
+  }
+
+  function renderBody() {
+    return (
+      <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8e8e8" }}>
+        {/* placeholder replaced below via inline JSX */}
+      </div>
+    );
+  }
 
   return (
     <FloatingWindow
       open={open}
       onClose={onClose}
       title="Exercise Comfort"
-      subtitle={hasLocation ? `${location} — now + next 6 h` : "Set a hometown to compute local comfort"}
+      subtitle={subtitle}
       accent="255,157,0"
     >
       <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8e8e8" }}>
