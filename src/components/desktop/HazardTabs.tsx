@@ -4,8 +4,9 @@
  * DangerousPanel — standalone panel showing the 10 most dangerous alerts.
  * HazardTabs     — two-tab panel (Common, New) beneath it.
  *
- * Both share the DesktopDock aesthetic. Width fixed at 33vw. Each panel has
- * its own collapse toggle and each caps at 50dvh independently.
+ * Both share the DesktopDock aesthetic. Width matches the chatbox
+ * (calc((100vw - 56px) / 3)). Each panel has its own collapse toggle and
+ * each caps at 50dvh independently.
  */
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
