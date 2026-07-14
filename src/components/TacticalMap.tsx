@@ -60,8 +60,10 @@ const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
         </div>
       )}
 
-      <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+      <div className="absolute top-3 left-3 z-10">
         <DangerousPanel />
+      </div>
+      <div className="absolute top-3 right-3 z-10">
         <HazardTabs />
       </div>
     </motion.section>
