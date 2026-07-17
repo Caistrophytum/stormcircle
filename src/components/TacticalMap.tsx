@@ -32,24 +32,41 @@ const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
   return (
     <motion.section ref={ref} layout className="relative overflow-hidden flex-1">
       <AnimatePresence mode="wait">
-        <motion.img
+        <motion.div
           key={weatherCondition}
-          src={weatherBackgrounds[weatherCondition]}
-          alt={`${weatherCondition} weather`}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
-          width={1600}
-          height={900}
-          decoding="async"
-          // @ts-expect-error fetchpriority is not in React types yet
-          fetchpriority="high"
-        />
+        >
+          {/* Blurred, cover-sized backdrop fills the whole viewport with no
+              letterbox bars. */}
+          <img
+            src={weatherBackgrounds[weatherCondition]}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 w-full h-full object-cover scale-110"
+            style={{ filter: "blur(28px) brightness(0.75) saturate(1.1)" }}
+            decoding="async"
+            // @ts-expect-error fetchpriority is not in React types yet
+            fetchpriority="high"
+          />
+          {/* Sharp, fully-contained foreground so no subject (palm, sun, storm
+              cell, etc.) is ever cropped by the container aspect. */}
+          <img
+            src={weatherBackgrounds[weatherCondition]}
+            alt={`${weatherCondition} weather`}
+            className="absolute inset-0 w-full h-full object-contain"
+            width={1600}
+            height={900}
+            decoding="async"
+          />
+        </motion.div>
       </AnimatePresence>
 
       <div className="absolute inset-0 bg-background/15" />
+
 
       {loadingTooLong && !appReady && (
         <div
