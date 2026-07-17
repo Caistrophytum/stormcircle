@@ -37,7 +37,7 @@ const LSR_COLORS: Record<string, string> = {
   "DUST STORM": "#D2B48C",
 };
 
-export const LSR_DEFAULT_COLOR = "#AAAAAA";
+const LSR_DEFAULT_COLOR = "#AAAAAA";
 
 export function getLSRColor(typetext: string): string {
   const upper = typetext.toUpperCase();
