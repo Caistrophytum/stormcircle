@@ -385,7 +385,7 @@ export default function MobileMain() {
     ];
 
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
-    return { nodes, physicalNodes, threatLevel: threat };
+    return { nodes, physicalNodes, threatLevel: threat, physGatePercent: Math.round(physGate * 100) };
   }, [sounding, radar.selectedStation, unitSystem]);
 
   // ── Hometown bar text ────────────────────────────────────────────
