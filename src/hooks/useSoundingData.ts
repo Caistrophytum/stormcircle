@@ -11,7 +11,7 @@ export interface SoundingData {
   rhSurface: number | null;
   /** Mid-level (700 hPa) relative humidity (%) — physical WRS input. */
   rhMid: number | null;
-  /** Mid-level (700 hPa) vertical velocity, Pa/s. Negative = ascent, positive = subsidence. */
+  /** Mid-level (700 hPa) vertical velocity from OpenMeteo, in m/s. Positive = ascent (updraft), negative = subsidence. Score ramps 0.1 → 3 m/s. */
   omegaMid: number | null;
   loading: boolean;
   error: boolean;
