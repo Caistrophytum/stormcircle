@@ -15,10 +15,10 @@ const LeafletRadar = lazy(() =>
   import("@/components/RadarMiniMap").then((m) => ({ default: m.LeafletRadar })),
 );
 
-type OpenPanel = null | "radar" | "reports" | "radar-full";
-
 export default function RadarReportsTab() {
-  const [open, setOpen] = useState<OpenPanel>(null);
+  const [radarOpen, setRadarOpen] = useState(false);
+  const [radarFullOpen, setRadarFullOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
   const radar = useRadarContext();
 
   const btnStyle = (accent: string): React.CSSProperties => ({
@@ -31,7 +31,7 @@ export default function RadarReportsTab() {
   return (
     <div className="flex h-full flex-col gap-2 p-4">
       <button
-        onClick={() => setOpen("radar")}
+        onClick={() => setRadarOpen(true)}
         className="flex w-full flex-1 items-center gap-3 rounded-xl px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-widest transition-all"
         style={btnStyle("125,211,252")}
       >
@@ -39,7 +39,7 @@ export default function RadarReportsTab() {
         Live Radar
       </button>
       <button
-        onClick={() => setOpen("reports")}
+        onClick={() => setReportsOpen(true)}
         className="flex w-full flex-1 items-center gap-3 rounded-xl px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-widest transition-all"
         style={btnStyle("142,255,180")}
       >
@@ -48,8 +48,8 @@ export default function RadarReportsTab() {
       </button>
 
       <FloatingWindow
-        open={open === "radar"}
-        onClose={() => setOpen(null)}
+        open={radarOpen}
+        onClose={() => setRadarOpen(false)}
         title="NEXRAD Radar"
         subtitle={
           radar.selectedStation
@@ -62,7 +62,7 @@ export default function RadarReportsTab() {
       >
         <div className="relative flex h-full flex-col p-2">
           <button
-            onClick={() => setOpen("radar-full")}
+            onClick={() => setRadarFullOpen(true)}
             aria-label="Expand radar"
             className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-md"
             style={{
@@ -94,8 +94,8 @@ export default function RadarReportsTab() {
       </FloatingWindow>
 
       <FloatingWindow
-        open={open === "radar-full"}
-        onClose={() => setOpen(null)}
+        open={radarFullOpen}
+        onClose={() => setRadarFullOpen(false)}
         title="NEXRAD Radar — Full View"
         subtitle={
           radar.selectedStation
@@ -116,7 +116,7 @@ export default function RadarReportsTab() {
             selectedProduct={radar.selectedProduct}
             onProductChange={(code) => {
               radar.setSelectedProduct(code);
-              setOpen("radar");
+              setRadarOpen(true);
             }}
           />
           <div>
@@ -129,7 +129,7 @@ export default function RadarReportsTab() {
                   key={p.code}
                   onClick={() => {
                     radar.setSelectedProduct(p.code as ProductCode);
-                    setOpen("radar");
+                    setRadarOpen(true);
                   }}
                   className="rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors"
                   style={{
@@ -165,7 +165,7 @@ export default function RadarReportsTab() {
                 onStationMarkerSelect={radar.selectStationByMarker}
                 setSelectedProduct={(code) => {
                   radar.setSelectedProduct(code);
-                  setOpen("radar");
+                  setRadarOpen(true);
                 }}
               />
             </Suspense>
@@ -174,8 +174,8 @@ export default function RadarReportsTab() {
       </FloatingWindow>
 
       <FloatingWindow
-        open={open === "reports"}
-        onClose={() => setOpen(null)}
+        open={reportsOpen}
+        onClose={() => setReportsOpen(false)}
         title="Live Weather Reports"
         subtitle="Professional stations & reporters"
         accent="142,255,180"
