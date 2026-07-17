@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Authenticated users can send realtime" ON public.messages;
