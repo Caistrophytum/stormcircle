@@ -146,7 +146,7 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
               }}
             >
               {results.map((r) => {
-                const label = formatCity(r.name, r.admin1);
+                const label = formatCity(r.name, r.admin1, r.country_code);
                 return (
                   <li key={r.id}>
                     <button
