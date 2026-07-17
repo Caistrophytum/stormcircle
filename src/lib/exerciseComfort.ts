@@ -358,7 +358,7 @@ function scoreHour(
 }
 
 // ── Public entry ────────────────────────────────────────────────────────
-export function computeComfort(
+function computeComfort(
   activity: Activity,
   ctx: ComfortContext,
 ): ActivityResult {
