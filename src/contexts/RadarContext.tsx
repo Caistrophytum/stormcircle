@@ -24,7 +24,12 @@ export function RadarProvider({ children }: { children: ReactNode }) {
     if (!home.coords || !profile?.location) return;
     pannedRef.current = true;
     const cityName = profile.location.split(",")[0].trim();
-    value.setSelectedCity({ name: cityName, lat: home.coords.lat, lon: home.coords.lon });
+    value.setSelectedCity({
+      name: cityName,
+      lat: home.coords.lat,
+      lon: home.coords.lon,
+      countryCode: home.coords.countryCode,
+    });
   }, [home.coords, profile?.location, value]);
 
   return <RadarContext.Provider value={value}>{children}</RadarContext.Provider>;

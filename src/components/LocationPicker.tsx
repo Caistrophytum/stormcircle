@@ -28,8 +28,11 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
     ? "grid grid-cols-1 sm:grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)_auto] items-stretch sm:items-center gap-2"
     : "grid grid-cols-1 sm:grid-cols-[minmax(10rem,16rem)_minmax(0,1fr)] items-stretch sm:items-center gap-2";
 
-  const formatCity = (name: string, admin1?: string) =>
-    admin1 ? `${name}, ${admin1}` : name;
+  const formatCity = (name: string, admin1?: string, countryCode?: string) => {
+    const cc = (countryCode ?? "").toUpperCase();
+    if (cc && cc !== "US") return [name, admin1, cc].filter(Boolean).join(", ");
+    return admin1 ? `${name}, ${admin1}` : name;
+  };
 
   const handleSave = async (label: string) => {
     setSaving(true);
@@ -143,7 +146,7 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
               }}
             >
               {results.map((r) => {
-                const label = formatCity(r.name, r.admin1);
+                const label = formatCity(r.name, r.admin1, r.country_code);
                 return (
                   <li key={r.id}>
                     <button

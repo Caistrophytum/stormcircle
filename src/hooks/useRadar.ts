@@ -23,6 +23,7 @@ export interface SelectedCity {
   name: string;
   lat: number;
   lon: number;
+  countryCode?: string;
 }
 
 export function useRadar() {
@@ -32,19 +33,24 @@ export function useRadar() {
   const [selectedProduct, setSelectedProduct] = useState<ProductCode | null>(null);
 
   // Keep nearest-station state in sync with the shared selectedCity.
-  // Also auto-select Base Reflectivity (N0B) so the radar overlay appears
-  // immediately whenever a city is picked.
+  // The NEXRAD radar network is CONUS-only, so when the selected city is
+  // outside the US we anchor the radar to Washington DC as a default point
+  // while weather / WRS keep using the real city coordinates.
   useEffect(() => {
     if (selectedCity) {
-      const { station, distanceKm } = findNearestStation(selectedCity.lat, selectedCity.lon);
+      const isUS = (selectedCity.countryCode ?? "US").toUpperCase() === "US";
+      const anchor = isUS
+        ? { lat: selectedCity.lat, lon: selectedCity.lon }
+        : { lat: 38.9072, lon: -77.0369 }; // Washington, DC
+      const { station, distanceKm } = findNearestStation(anchor.lat, anchor.lon);
       setSelectedStation(station);
-      setStationDistanceKm(distanceKm);
+      setStationDistanceKm(isUS ? distanceKm : null);
       setSelectedProduct("N0B");
     } else {
       setSelectedStation(null);
       setStationDistanceKm(null);
     }
-  }, [selectedCity?.lat, selectedCity?.lon]);
+  }, [selectedCity?.lat, selectedCity?.lon, selectedCity?.countryCode]);
 
   const setSelectedCity = (city: CtxSelectedCity | null) => {
     setCtxCity(city);
@@ -67,14 +73,19 @@ export function useRadar() {
       const results = await searchGeocode(cityName, 1);
       const hit = results[0];
       if (hit) {
-        setCtxCity({ name: hit.name, lat: hit.latitude, lon: hit.longitude });
+        setCtxCity({
+          name: hit.name,
+          lat: hit.latitude,
+          lon: hit.longitude,
+          countryCode: (hit.country_code ?? "US").toUpperCase(),
+        });
         return;
       }
     } catch (err) {
       console.warn("[useRadar] reverse geocode failed, using station coords", err);
     }
-    // Fallback: use the station's own coordinates as the "city".
-    setCtxCity({ name: cityName, lat: station.lat, lon: station.lon });
+    // Fallback: use the station's own coordinates as the "city" (CONUS station).
+    setCtxCity({ name: cityName, lat: station.lat, lon: station.lon, countryCode: "US" });
   };
 
   const tileUrl = useMemo(() => {

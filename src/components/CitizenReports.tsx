@@ -862,7 +862,10 @@ function ComposerDropdowns({
                 </li>
               ) : (
                 placeResults.map((r) => {
-                  const label = r.admin1 ? `${r.name}, ${r.admin1}` : r.name;
+                  const cc = (r.country_code ?? "").toUpperCase();
+                  const label = cc && cc !== "US"
+                    ? [r.name, r.admin1, cc].filter(Boolean).join(", ")
+                    : r.admin1 ? `${r.name}, ${r.admin1}` : r.name;
                   return (
                     <li key={r.id}>
                       <button
