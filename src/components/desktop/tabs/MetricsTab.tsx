@@ -61,8 +61,8 @@ export default function MetricsTab() {
       </div>
       {/* WRS circle + physical line */}
       <div className="flex items-center gap-4">
-        <div className="relative shrink-0" style={{ width: size, height: size }}>
-          <svg width={size} height={size} className="-rotate-90">
+        <div className="relative shrink-0" style={{ width: size, height: size, overflow: "visible" }}>
+          <svg width={size} height={size} className="-rotate-90" style={{ overflow: "visible" }}>
             <circle
               cx={size / 2}
               cy={size / 2}
