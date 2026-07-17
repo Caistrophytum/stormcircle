@@ -415,6 +415,9 @@ export default function MobileMain() {
   }, [warningPolygons.polygons, homeRisk.coords]);
 
   const hasLocation = !!profile?.location;
+  // SPC + SPC Fire outlooks only cover the CONUS — hide the at-location risk
+  // rectangles for international hometowns.
+  const isUS = homeRisk.coords?.countryCode === "US";
   const hometownBg = hasLocation ? RISK_BG[homeRisk.risk] : "hsl(0 80% 45%)";
   let hometownText: string;
   if (!user) {
