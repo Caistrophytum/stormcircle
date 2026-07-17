@@ -23,6 +23,7 @@ export interface SelectedCity {
   name: string;
   lat: number;
   lon: number;
+  countryCode?: string;
 }
 
 export function useRadar() {
