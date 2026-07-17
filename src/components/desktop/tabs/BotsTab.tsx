@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RawMessage } from "@/lib/reportGrouping";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import FloatingWindow from "@/components/desktop/FloatingWindow";
+import { useMiniWindow, openMiniWindow, closeMiniWindow } from "@/components/desktop/miniWindowStore";
 
 const KNOWN_BOTS: Record<string, { label: string; accent: string; Icon: typeof Bot }> = {
   "00000000-0000-0000-0000-000000000000": { label: "Convective Weather Bot", accent: "255,165,0", Icon: Zap },
@@ -15,10 +16,19 @@ const KNOWN_BOTS: Record<string, { label: string; accent: string; Icon: typeof B
   "00000000-0000-0000-0000-000000000002": { label: "Fire Weather Bot", accent: "255,107,26", Icon: Flame },
 };
 
+const BOT_MINI_ID = "bot-messages";
+
 export default function BotsTab() {
   const [messages, setMessages] = useState<RawMessage[]>([]);
   const [openBotId, setOpenBotId] = useState<string | null>(null);
+  const botMini = useMiniWindow(BOT_MINI_ID);
   const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
+
+  // Sync local bot selection with the shared mini-window store: if another
+  // mini window claims the slot, clear the selected bot so this window closes.
+  useEffect(() => {
+    if (!botMini.isOpen && openBotId) setOpenBotId(null);
+  }, [botMini.isOpen, openBotId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,7 +108,11 @@ export default function BotsTab() {
           return (
             <button
               key={id}
-              onClick={() => hasMessages && setOpenBotId(id)}
+              onClick={() => {
+                if (!hasMessages) return;
+                setOpenBotId(id);
+                openMiniWindow(BOT_MINI_ID);
+              }}
               disabled={!hasMessages}
               className="group flex w-full flex-1 items-center gap-3 rounded-xl p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40"
               style={{
@@ -127,8 +141,11 @@ export default function BotsTab() {
       </div>
 
       <FloatingWindow
-        open={!!openBotId}
-        onClose={() => setOpenBotId(null)}
+        open={!!openBotId && botMini.isOpen}
+        onClose={() => {
+          setOpenBotId(null);
+          closeMiniWindow(BOT_MINI_ID);
+        }}
         title={openMeta?.label ?? "Bot"}
         subtitle={`${openMessages.length} recent message${openMessages.length === 1 ? "" : "s"}`}
         accent={openMeta?.accent}

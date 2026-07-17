@@ -6,6 +6,7 @@
 import { lazy, Suspense, useState } from "react";
 import { Radar as RadarIcon, Radio, Maximize2 } from "lucide-react";
 import FloatingWindow from "@/components/desktop/FloatingWindow";
+import { useMiniWindow } from "@/components/desktop/miniWindowStore";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { PRODUCTS, type ProductCode } from "@/hooks/useRadar";
 import { useRadarContext } from "@/contexts/RadarContext";
@@ -16,9 +17,9 @@ const LeafletRadar = lazy(() =>
 );
 
 export default function RadarReportsTab() {
-  const [radarOpen, setRadarOpen] = useState(false);
+  const radarMini = useMiniWindow("radar");
+  const reportsMini = useMiniWindow("reports");
   const [radarFullOpen, setRadarFullOpen] = useState(false);
-  const [reportsOpen, setReportsOpen] = useState(false);
   const radar = useRadarContext();
 
   const btnStyle = (accent: string): React.CSSProperties => ({
@@ -31,7 +32,7 @@ export default function RadarReportsTab() {
   return (
     <div className="flex h-full flex-col gap-2 p-4">
       <button
-        onClick={() => setRadarOpen(true)}
+        onClick={() => radarMini.open()}
         className="flex w-full flex-1 items-center gap-3 rounded-xl px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-widest transition-all"
         style={btnStyle("125,211,252")}
       >
@@ -39,7 +40,7 @@ export default function RadarReportsTab() {
         Live Radar
       </button>
       <button
-        onClick={() => setReportsOpen(true)}
+        onClick={() => reportsMini.open()}
         className="flex w-full flex-1 items-center gap-3 rounded-xl px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-widest transition-all"
         style={btnStyle("142,255,180")}
       >
@@ -48,8 +49,8 @@ export default function RadarReportsTab() {
       </button>
 
       <FloatingWindow
-        open={radarOpen}
-        onClose={() => setRadarOpen(false)}
+        open={radarMini.isOpen}
+        onClose={() => radarMini.close()}
         title="NEXRAD Radar"
         subtitle={
           radar.selectedStation
@@ -116,7 +117,7 @@ export default function RadarReportsTab() {
             selectedProduct={radar.selectedProduct}
             onProductChange={(code) => {
               radar.setSelectedProduct(code);
-              setRadarOpen(true);
+              radarMini.open();
             }}
           />
           <div>
@@ -129,7 +130,7 @@ export default function RadarReportsTab() {
                   key={p.code}
                   onClick={() => {
                     radar.setSelectedProduct(p.code as ProductCode);
-                    setRadarOpen(true);
+                    radarMini.open();
                   }}
                   className="rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors"
                   style={{
@@ -165,7 +166,7 @@ export default function RadarReportsTab() {
                 onStationMarkerSelect={radar.selectStationByMarker}
                 setSelectedProduct={(code) => {
                   radar.setSelectedProduct(code);
-                  setRadarOpen(true);
+                  radarMini.open();
                 }}
               />
             </Suspense>
@@ -174,8 +175,8 @@ export default function RadarReportsTab() {
       </FloatingWindow>
 
       <FloatingWindow
-        open={reportsOpen}
-        onClose={() => setReportsOpen(false)}
+        open={reportsMini.isOpen}
+        onClose={() => reportsMini.close()}
         title="Live Weather Reports"
         subtitle="Professional stations & reporters"
         accent="142,255,180"

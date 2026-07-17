@@ -38,6 +38,8 @@ interface Props {
   accent?: string;
   /** "center" = modal with backdrop; "left-of-dock" = anchored beside the dock (no backdrop). */
   anchor?: "center" | "left-of-dock";
+  /** Panel z-index. Anchored mini windows should stay behind modal full-views. */
+  zIndex?: number;
 }
 
 export default function FloatingWindow({
@@ -50,9 +52,12 @@ export default function FloatingWindow({
   height,
   accent = "255,157,0",
   anchor = "left-of-dock",
+  zIndex,
 }: Props) {
   const isModal = anchor === "center";
   const dockRect = useDockRect();
+  const panelZ = zIndex ?? (isModal ? 1201 : 1100);
+  const backdropZ = (zIndex ?? 1201) - 1;
 
   // Anchored geometry: body-level overlay, same width/height as the tabs window,
   // with its right edge 12px to the left of the tabs window's left edge.
@@ -100,7 +105,7 @@ export default function FloatingWindow({
         border: `1px solid rgba(${accent},0.4)`,
         boxShadow: `0 0 40px rgba(${accent},0.25), 0 20px 60px rgba(0,0,0,0.6)`,
         color: "#e8e8e8",
-        zIndex: 1201,
+        zIndex: panelZ,
       }}
     >
       <div
@@ -152,8 +157,8 @@ export default function FloatingWindow({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[1200] flex items-center justify-center p-4"
-            style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)" }}
+            className="fixed inset-0 flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)", zIndex: backdropZ }}
           >
             {panel}
           </motion.div>
