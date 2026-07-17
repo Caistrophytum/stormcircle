@@ -108,9 +108,12 @@ export default function MobileRadar() {
                   {results.length > 0 && (
                     <CommandGroup>
                       {results.map((city) => {
-                        const label = city.admin1
-                          ? `${city.name}, ${city.admin1}`
-                          : city.name;
+                        const cc = (city.country_code ?? "").toUpperCase();
+                        const label = cc && cc !== "US"
+                          ? [city.name, city.admin1, cc].filter(Boolean).join(", ")
+                          : city.admin1
+                            ? `${city.name}, ${city.admin1}`
+                            : city.name;
                         return (
                           <CommandItem
                             key={city.id}
@@ -120,6 +123,7 @@ export default function MobileRadar() {
                                 name: label,
                                 lat: city.latitude,
                                 lon: city.longitude,
+                                countryCode: cc || undefined,
                               });
                               setCityOpen(false);
                             }}
@@ -132,6 +136,9 @@ export default function MobileRadar() {
                               <span className="text-muted-foreground">
                                 / {city.admin1}
                               </span>
+                            )}
+                            {cc && cc !== "US" && (
+                              <span className="text-muted-foreground ml-1">· {cc}</span>
                             )}
                           </CommandItem>
                         );
