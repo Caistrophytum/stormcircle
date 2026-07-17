@@ -15,6 +15,9 @@ export interface SelectedCity {
   name: string;
   lat: number;
   lon: number;
+  /** ISO-3166-1 alpha-2. Used by the radar to fall back to a CONUS
+   *  station (Washington DC) when the picked city is outside the US. */
+  countryCode?: string;
 }
 
 interface CityContextValue {
