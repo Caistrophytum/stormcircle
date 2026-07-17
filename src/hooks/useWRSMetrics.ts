@@ -43,6 +43,7 @@ export interface WRSMetrics {
   threatLevel: number;
   weatherCondition: WeatherCondition;
   stationActive: boolean;
+  physGatePercent: number;
 }
 
 export function useWRSMetrics(): WRSMetrics {
@@ -130,7 +131,7 @@ export function useWRSMetrics(): WRSMetrics {
     const weatherCondition: WeatherCondition =
       threat > 85 ? "stormy" : threat >= 61 ? "rainy" : threat >= 31 ? "cloudy" : "sunny";
 
-    return { soundingNodes, physicalNodes, threatLevel: threat, weatherCondition, stationActive };
+    return { soundingNodes, physicalNodes, threatLevel: threat, weatherCondition, stationActive, physGatePercent: Math.round(physGate * 100) };
   }, [sounding, radar.selectedStation, unitSystem]);
 
   return metrics;

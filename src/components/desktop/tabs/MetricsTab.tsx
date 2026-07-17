@@ -38,7 +38,7 @@ const VIRTUAL_COLORS = [
 ];
 
 export default function MetricsTab() {
-  const { threatLevel, physicalNodes, soundingNodes, stationActive } = useWRSMetrics();
+  const { threatLevel, physicalNodes, soundingNodes, stationActive, physGatePercent } = useWRSMetrics();
   const { profile } = useAuth();
   const cityName = profile?.location ?? null;
   const size = 140;
@@ -161,8 +161,20 @@ export default function MetricsTab() {
 
       {/* Virtual parameters — rounded boxes */}
       <div>
-        <div className="mb-2 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-          Virtual Parameters
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+            Virtual Parameters
+          </span>
+          <span
+            className="rounded px-1.5 py-0.5 text-[8px] font-mono font-bold uppercase"
+            style={{
+              color: "#ff9d00",
+              border: "1px solid rgba(255,157,0,0.35)",
+              background: "rgba(255,157,0,0.08)",
+            }}
+          >
+            Scaled to {physGatePercent}%
+          </span>
         </div>
         <div className="grid grid-cols-5 gap-2">
           {soundingNodes.map((n, i) => {

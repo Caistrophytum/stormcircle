@@ -287,7 +287,7 @@ export default function MobileMain() {
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
 
   // ── Sounding / WRS ───────────────────────────────────────────────
-  const { nodes, physicalNodes, threatLevel } = useMemo(() => {
+  const { nodes, physicalNodes, threatLevel, physGatePercent } = useMemo(() => {
     const stationActive = radar.selectedStation !== null && !sounding.loading;
     const fmt = (v: number | null, digits = 0) => {
       if (sounding.loading) return "...";
@@ -385,7 +385,7 @@ export default function MobileMain() {
     ];
 
     const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
-    return { nodes, physicalNodes, threatLevel: threat };
+    return { nodes, physicalNodes, threatLevel: threat, physGatePercent: Math.round(physGate * 100) };
   }, [sounding, radar.selectedStation, unitSystem]);
 
   // ── Hometown bar text ────────────────────────────────────────────
@@ -624,11 +624,28 @@ export default function MobileMain() {
           borderRadius: "2px",
         }}
       >
-        <h2
-          style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px", margin: "0 0 6px 0", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
-        >
-          VIRTUAL METRICS
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+          <h2
+            style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
+          >
+            VIRTUAL METRICS
+          </h2>
+          <span
+            style={{
+              fontSize: "8px",
+              color: "#ff9d00",
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              border: "1px solid rgba(255,157,0,0.35)",
+              background: "rgba(255,157,0,0.08)",
+              padding: "1px 4px",
+              borderRadius: "1px",
+            }}
+          >
+            Scaled to {physGatePercent}%
+          </span>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
           {nodes.map((n) => (
             <div
