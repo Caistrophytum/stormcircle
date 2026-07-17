@@ -108,7 +108,11 @@ export default function BotsTab() {
           return (
             <button
               key={id}
-              onClick={() => hasMessages && setOpenBotId(id)}
+              onClick={() => {
+                if (!hasMessages) return;
+                setOpenBotId(id);
+                openMiniWindow(BOT_MINI_ID);
+              }}
               disabled={!hasMessages}
               className="group flex w-full flex-1 items-center gap-3 rounded-xl p-3 text-left transition-all disabled:cursor-not-allowed disabled:opacity-40"
               style={{
