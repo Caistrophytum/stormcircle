@@ -115,7 +115,11 @@ export default function MetricsTab() {
           >
             {physicalNodes.map((p, i) => {
               const col = PHYS_COLORS[i % PHYS_COLORS.length];
-              const pct = physTotal > 0 ? (p.wrsContribution / physTotal) * 100 : 0;
+              // Width in the bar = the raw contribution % (0–100). The bar
+              // therefore fills to physScore total, and each segment is sized
+              // by its own share of the overall 100% — leaving unfilled space
+              // when the physical parameters aren't maxed out.
+              const pct = Math.max(0, Math.min(100, p.wrsContribution));
               return (
                 <motion.div
                   key={p.label}
