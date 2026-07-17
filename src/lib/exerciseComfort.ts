@@ -78,7 +78,7 @@ export interface ActivityResult {
 }
 
 // ── Tier mapping ────────────────────────────────────────────────────────
-export function tierFor(score: number): ComfortTier {
+function tierFor(score: number): ComfortTier {
   if (score >= 80) return "Ideal";
   if (score >= 60) return "Good";
   if (score >= 40) return "Fair";
