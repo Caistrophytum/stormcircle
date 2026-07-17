@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { RawMessage } from "@/lib/reportGrouping";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import FloatingWindow from "@/components/desktop/FloatingWindow";
+import { useMiniWindow, openMiniWindow, closeMiniWindow } from "@/components/desktop/miniWindowStore";
 
 const KNOWN_BOTS: Record<string, { label: string; accent: string; Icon: typeof Bot }> = {
   "00000000-0000-0000-0000-000000000000": { label: "Convective Weather Bot", accent: "255,165,0", Icon: Zap },
@@ -15,10 +16,19 @@ const KNOWN_BOTS: Record<string, { label: string; accent: string; Icon: typeof B
   "00000000-0000-0000-0000-000000000002": { label: "Fire Weather Bot", accent: "255,107,26", Icon: Flame },
 };
 
+const BOT_MINI_ID = "bot-messages";
+
 export default function BotsTab() {
   const [messages, setMessages] = useState<RawMessage[]>([]);
   const [openBotId, setOpenBotId] = useState<string | null>(null);
+  const botMini = useMiniWindow(BOT_MINI_ID);
   const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
+
+  // Sync local bot selection with the shared mini-window store: if another
+  // mini window claims the slot, clear the selected bot so this window closes.
+  useEffect(() => {
+    if (!botMini.isOpen && openBotId) setOpenBotId(null);
+  }, [botMini.isOpen, openBotId]);
 
   useEffect(() => {
     let cancelled = false;
