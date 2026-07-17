@@ -141,8 +141,11 @@ export default function BotsTab() {
       </div>
 
       <FloatingWindow
-        open={!!openBotId}
-        onClose={() => setOpenBotId(null)}
+        open={!!openBotId && botMini.isOpen}
+        onClose={() => {
+          setOpenBotId(null);
+          closeMiniWindow(BOT_MINI_ID);
+        }}
         title={openMeta?.label ?? "Bot"}
         subtitle={`${openMessages.length} recent message${openMessages.length === 1 ? "" : "s"}`}
         accent={openMeta?.accent}
