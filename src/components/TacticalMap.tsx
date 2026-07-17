@@ -45,7 +45,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
           <img
             src={weatherBackgrounds[weatherCondition]}
             alt={`${weatherCondition} weather`}
-            className="absolute inset-0 w-full h-full object-contain bg-background"
+            className="absolute inset-0 w-full h-full object-cover bg-background"
             width={1600}
             height={900}
             decoding="async"
