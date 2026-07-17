@@ -40,7 +40,7 @@ export interface StackedReport {
  * `public.message_signature`: lowercase, strip non-alphanumerics, dedupe,
  * sort, and join with "|".
  */
-export function messageSignature(content: string): string {
+function messageSignature(content: string): string {
   const tokens = new Set<string>();
   for (const raw of content.toLowerCase().split(/\s+/)) {
     const cleaned = raw.replace(/[^a-z0-9]/g, "");
