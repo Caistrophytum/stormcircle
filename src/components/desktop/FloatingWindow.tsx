@@ -38,6 +38,8 @@ interface Props {
   accent?: string;
   /** "center" = modal with backdrop; "left-of-dock" = anchored beside the dock (no backdrop). */
   anchor?: "center" | "left-of-dock";
+  /** Panel z-index. Anchored mini windows should stay behind modal full-views. */
+  zIndex?: number;
 }
 
 export default function FloatingWindow({
@@ -50,9 +52,12 @@ export default function FloatingWindow({
   height,
   accent = "255,157,0",
   anchor = "left-of-dock",
+  zIndex,
 }: Props) {
   const isModal = anchor === "center";
   const dockRect = useDockRect();
+  const panelZ = zIndex ?? (isModal ? 1201 : 1100);
+  const backdropZ = (zIndex ?? 1201) - 1;
 
   // Anchored geometry: body-level overlay, same width/height as the tabs window,
   // with its right edge 12px to the left of the tabs window's left edge.
