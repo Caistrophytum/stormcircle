@@ -118,7 +118,12 @@ export default function SituationTab() {
     return best;
   }, [polygons, homeRisk.coords]);
 
-  const nothing = !showHazards && homeRisk.risk === "NONE" && fireRisk.risk === "NONE" && !nearestConvective;
+  // SPC + SPC Fire outlooks only cover the CONUS — hide the at-location risk
+  // rectangles for international hometowns.
+  const isUS = homeRisk.coords?.countryCode === "US";
+  const nothing =
+    !showHazards &&
+    (!isUS || (homeRisk.risk === "NONE" && fireRisk.risk === "NONE" && !nearestConvective));
 
   return (
     <div className="flex flex-col gap-3 p-4">
