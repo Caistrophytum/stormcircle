@@ -15,7 +15,7 @@ import { useDataContext } from "@/providers/DataProvider";
  * WarningColorTable published by the NWS so polygons, list rows, and
  * legends stay consistent with broadcast/SPC conventions.
  */
-export const WARNING_COLORS: Record<string, string> = {
+const WARNING_COLORS: Record<string, string> = {
   // Convective
   "Tornado Warning": "#FF0000",
   "Tornado Watch": "#FFFF00",
