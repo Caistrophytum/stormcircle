@@ -48,7 +48,7 @@ export function useHomeCityRisk(location: string | null): {
 } {
   const [risk, setRisk] = useState<SPCRiskLevel>("NONE");
   const [loading, setLoading] = useState(false);
-  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [coords, setCoords] = useState<{ lat: number; lon: number; countryCode?: string } | null>(null);
   const isFetchingRef = useRef(false);
 
   useEffect(() => {
@@ -59,7 +59,7 @@ export function useHomeCityRisk(location: string | null): {
     }
 
     let cancelled = false;
-    let resolved: { lat: number; lon: number } | null = null;
+    let resolved: { lat: number; lon: number; countryCode?: string } | null = null;
 
     async function evaluate() {
       if (cancelled) return;
