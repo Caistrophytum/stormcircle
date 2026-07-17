@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-07-17 14z",
+    tag: "NEW",
+    title: "The global update",
+    body: "From now on, the WRS, virtual & physical metrics and the chat is working for the ENTIRE WORLD! The radar, warnings and bot systems still only apply for the US only. If you have any suggestions, feel free to send them via the suggestion box.",
+  },
+  {
     date: "2026-07-07 07z",
     tag: "IMPROVED",
     title: "Desktop interface V2",
