@@ -488,27 +488,29 @@ export default function MobileMain() {
         <div style={{ fontSize: "14px", color: "#fff", fontWeight: 700, marginTop: "2px" }}>{displayName}</div>
       </div>
 
-      {/* 2. Hometown news bar */}
-      <div
-        style={{
-          padding: "6px 10px",
-          background: hometownBg,
-          borderLeft: `3px solid ${hometownBg}`,
-          color: "#050505",
-          fontSize: "10px",
-          fontWeight: 700,
-          lineHeight: 1.4,
-          textTransform: "uppercase",
-          letterSpacing: "0.04em",
-          borderRadius: "2px",
-          whiteSpace: "pre-line",
-        }}
-      >
-        {hometownText}
-      </div>
+      {/* 2. Hometown news bar — SPC severe risk (CONUS only). */}
+      {(!user || !hasLocation || isUS) && (
+        <div
+          style={{
+            padding: "6px 10px",
+            background: hometownBg,
+            borderLeft: `3px solid ${hometownBg}`,
+            color: "#050505",
+            fontSize: "10px",
+            fontWeight: 700,
+            lineHeight: 1.4,
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+            borderRadius: "2px",
+            whiteSpace: "pre-line",
+          }}
+        >
+          {hometownText}
+        </div>
+      )}
 
       {/* 2a. Fire weather news bar — appears only when home city is under an SPC fire weather risk. */}
-      {hasLocation && homeFireRisk.risk !== "NONE" && (() => {
+      {isUS && hasLocation && homeFireRisk.risk !== "NONE" && (() => {
         const FIRE_TEXT: Record<FireRiskLevel, string> = {
           NONE: "No Fire Weather Risk",
           ELEV: "Elevated Fire Weather",
