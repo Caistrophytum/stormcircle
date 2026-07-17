@@ -6,6 +6,7 @@
 import { lazy, Suspense, useState } from "react";
 import { Radar as RadarIcon, Radio, Maximize2 } from "lucide-react";
 import FloatingWindow from "@/components/desktop/FloatingWindow";
+import { useMiniWindow } from "@/components/desktop/miniWindowStore";
 import IntegrationPanel from "@/components/IntegrationPanel";
 import { PRODUCTS, type ProductCode } from "@/hooks/useRadar";
 import { useRadarContext } from "@/contexts/RadarContext";
@@ -16,9 +17,9 @@ const LeafletRadar = lazy(() =>
 );
 
 export default function RadarReportsTab() {
-  const [radarOpen, setRadarOpen] = useState(false);
+  const radarMini = useMiniWindow("radar");
+  const reportsMini = useMiniWindow("reports");
   const [radarFullOpen, setRadarFullOpen] = useState(false);
-  const [reportsOpen, setReportsOpen] = useState(false);
   const radar = useRadarContext();
 
   const btnStyle = (accent: string): React.CSSProperties => ({
