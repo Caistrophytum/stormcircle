@@ -49,7 +49,7 @@ export default function RadarReportsTab() {
 
       <FloatingWindow
         open={radarOpen}
-        onClose={() => setOpen(null)}
+        onClose={() => setRadarOpen(false)}
         title="NEXRAD Radar"
         subtitle={
           radar.selectedStation
@@ -95,7 +95,7 @@ export default function RadarReportsTab() {
 
       <FloatingWindow
         open={radarFullOpen}
-        onClose={() => setOpen(null)}
+        onClose={() => setRadarFullOpen(false)}
         title="NEXRAD Radar — Full View"
         subtitle={
           radar.selectedStation
@@ -116,7 +116,7 @@ export default function RadarReportsTab() {
             selectedProduct={radar.selectedProduct}
             onProductChange={(code) => {
               radar.setSelectedProduct(code);
-              setOpen("radar");
+              setRadarOpen(true);
             }}
           />
           <div>
@@ -129,7 +129,7 @@ export default function RadarReportsTab() {
                   key={p.code}
                   onClick={() => {
                     radar.setSelectedProduct(p.code as ProductCode);
-                    setOpen("radar");
+                    setRadarOpen(true);
                   }}
                   className="rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors"
                   style={{
@@ -165,7 +165,7 @@ export default function RadarReportsTab() {
                 onStationMarkerSelect={radar.selectStationByMarker}
                 setSelectedProduct={(code) => {
                   radar.setSelectedProduct(code);
-                  setOpen("radar");
+                  setRadarOpen(true);
                 }}
               />
             </Suspense>
@@ -175,7 +175,7 @@ export default function RadarReportsTab() {
 
       <FloatingWindow
         open={reportsOpen}
-        onClose={() => setOpen(null)}
+        onClose={() => setReportsOpen(false)}
         title="Live Weather Reports"
         subtitle="Professional stations & reporters"
         accent="142,255,180"
