@@ -157,8 +157,8 @@ export default function FloatingWindow({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[1200] flex items-center justify-center p-4"
-            style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)" }}
+            className="fixed inset-0 flex items-center justify-center p-4"
+            style={{ background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)", zIndex: backdropZ }}
           >
             {panel}
           </motion.div>
