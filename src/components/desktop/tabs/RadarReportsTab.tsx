@@ -31,7 +31,7 @@ export default function RadarReportsTab() {
   return (
     <div className="flex h-full flex-col gap-2 p-4">
       <button
-        onClick={() => setOpen("radar")}
+        onClick={() => setRadarOpen(true)}
         className="flex w-full flex-1 items-center gap-3 rounded-xl px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-widest transition-all"
         style={btnStyle("125,211,252")}
       >
@@ -39,7 +39,7 @@ export default function RadarReportsTab() {
         Live Radar
       </button>
       <button
-        onClick={() => setOpen("reports")}
+        onClick={() => setReportsOpen(true)}
         className="flex w-full flex-1 items-center gap-3 rounded-xl px-4 py-3 font-mono text-[11px] font-bold uppercase tracking-widest transition-all"
         style={btnStyle("142,255,180")}
       >
@@ -48,7 +48,7 @@ export default function RadarReportsTab() {
       </button>
 
       <FloatingWindow
-        open={open === "radar"}
+        open={radarOpen}
         onClose={() => setOpen(null)}
         title="NEXRAD Radar"
         subtitle={
@@ -62,7 +62,7 @@ export default function RadarReportsTab() {
       >
         <div className="relative flex h-full flex-col p-2">
           <button
-            onClick={() => setOpen("radar-full")}
+            onClick={() => setRadarFullOpen(true)}
             aria-label="Expand radar"
             className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-md"
             style={{
@@ -94,7 +94,7 @@ export default function RadarReportsTab() {
       </FloatingWindow>
 
       <FloatingWindow
-        open={open === "radar-full"}
+        open={radarFullOpen}
         onClose={() => setOpen(null)}
         title="NEXRAD Radar — Full View"
         subtitle={
@@ -174,7 +174,7 @@ export default function RadarReportsTab() {
       </FloatingWindow>
 
       <FloatingWindow
-        open={open === "reports"}
+        open={reportsOpen}
         onClose={() => setOpen(null)}
         title="Live Weather Reports"
         subtitle="Professional stations & reporters"
