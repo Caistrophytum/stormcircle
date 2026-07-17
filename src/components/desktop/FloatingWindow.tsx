@@ -105,7 +105,7 @@ export default function FloatingWindow({
         border: `1px solid rgba(${accent},0.4)`,
         boxShadow: `0 0 40px rgba(${accent},0.25), 0 20px 60px rgba(0,0,0,0.6)`,
         color: "#e8e8e8",
-        zIndex: 1201,
+        zIndex: panelZ,
       }}
     >
       <div
