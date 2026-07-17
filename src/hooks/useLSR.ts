@@ -45,7 +45,7 @@ export function getLSRColor(typetext: string): string {
   return key ? LSR_COLORS[key] : LSR_DEFAULT_COLOR;
 }
 
-export const SOURCE_BADGES: Record<string, string> = {
+const SOURCE_BADGES: Record<string, string> = {
   "Trained Spotter": "#00FF00",
   SKYWARN: "#00FF00",
   "Law Enforcement": "#4169E1",
