@@ -44,7 +44,7 @@ function pointInGeometry(pt: [number, number], geom: SPCFeature["geometry"]): bo
 export function useHomeCityRisk(location: string | null): {
   risk: SPCRiskLevel;
   loading: boolean;
-  coords: { lat: number; lon: number } | null;
+  coords: { lat: number; lon: number; countryCode?: string } | null;
 } {
   const [risk, setRisk] = useState<SPCRiskLevel>("NONE");
   const [loading, setLoading] = useState(false);
