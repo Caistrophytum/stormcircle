@@ -24,8 +24,8 @@
  */
 import emailjs from "@emailjs/browser";
 
-export const EMAILJS_SERVICE_ID = "service_xxk4g8g";
-export const EMAILJS_PUBLIC_KEY = "s0M3hsjSA8UikMSrN";
+const EMAILJS_SERVICE_ID = "service_xxk4g8g";
+const EMAILJS_PUBLIC_KEY = "s0M3hsjSA8UikMSrN";
 
 export const TEMPLATE_IDS = {
   meteorologistApplication: "template_idpisy9",

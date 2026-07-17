@@ -38,22 +38,12 @@ export async function searchGeocode(
   return (json?.results ?? []) as GeocodeResult[];
 }
 
-/**
- * Human-readable label: "Name, Admin1" for US, "Name, Admin1, CC" or
- * "Name, CC" for international results. Keeps output compact for menus.
- */
-export function formatCityLabel(r: {
-  name: string;
-  admin1?: string;
-  country_code?: string;
-}): string {
-  const cc = (r.country_code ?? "").toUpperCase();
-  if (cc === "US") return r.admin1 ? `${r.name}, ${r.admin1}` : r.name;
-  const parts = [r.name];
-  if (r.admin1) parts.push(r.admin1);
-  if (cc) parts.push(cc);
-  return parts.join(", ");
-}
+// NOTE: A shared `formatCityLabel` helper used to live here. All four call
+// sites (RadarControls, MobileRadar, LocationPicker, CitizenReports) inline
+// their own equivalent formatting today, so the helper was removed. If a
+// third place needs the same label, re-export a helper here rather than
+// copy-pasting a fourth variant.
+
 
 /**
  * Resolve a saved label to coordinates + country. Prefers an admin1/state

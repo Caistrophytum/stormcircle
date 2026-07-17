@@ -11,7 +11,7 @@ import { RADAR_STATIONS, RadarStation } from "@/config/radarStations";
  *
  * R = mean Earth radius in km.
  */
-export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);

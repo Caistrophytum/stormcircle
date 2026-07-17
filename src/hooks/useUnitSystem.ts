@@ -48,7 +48,7 @@ export function useUnitSystem(): UnitSystem {
   return system;
 }
 
-export function setUnitSystem(next: UnitSystem) {
+function setUnitSystem(next: UnitSystem) {
   if (next === current) return;
   current = next;
   try {
@@ -63,12 +63,14 @@ export function toggleUnitSystem() {
   setUnitSystem(current === "metric" ? "imperial" : "metric");
 }
 
-// ---------- Conversion helpers ----------
+// ---------- Conversion helpers (module-private; only the display* wrappers
+// below are exported so all callers go through a single formatting path) ----
 
-export const cToF = (c: number) => c * 9 / 5 + 32;
-export const mToFt = (m: number) => m * 3.28084;
-export const kmToMi = (km: number) => km * 0.621371;
-export const hpaToInHg = (hpa: number) => hpa * 0.02953;
+const cToF = (c: number) => c * 9 / 5 + 32;
+const mToFt = (m: number) => m * 3.28084;
+const kmToMi = (km: number) => km * 0.621371;
+const hpaToInHg = (hpa: number) => hpa * 0.02953;
+
 
 export interface DisplayValue {
   value: number;

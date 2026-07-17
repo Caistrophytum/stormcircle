@@ -14,7 +14,7 @@ import { geocodeLabel } from "@/lib/openMeteo";
 
 const RELATIONS = [" heading towards ", " near ", " in "];
 
-export function extractPlace(content: string): string | null {
+function extractPlace(content: string): string | null {
   const lower = content.toLowerCase();
   for (const rel of RELATIONS) {
     const idx = lower.indexOf(rel);

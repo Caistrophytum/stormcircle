@@ -18,7 +18,7 @@ export interface LSRReport {
   lon: number;
 }
 
-export const LSR_COLORS: Record<string, string> = {
+const LSR_COLORS: Record<string, string> = {
   TORNADO: "#FF0000",
   "FUNNEL CLOUD": "#FF69B4",
   "WALL CLOUD": "#DA70D6",
@@ -37,7 +37,7 @@ export const LSR_COLORS: Record<string, string> = {
   "DUST STORM": "#D2B48C",
 };
 
-export const LSR_DEFAULT_COLOR = "#AAAAAA";
+const LSR_DEFAULT_COLOR = "#AAAAAA";
 
 export function getLSRColor(typetext: string): string {
   const upper = typetext.toUpperCase();
@@ -45,7 +45,7 @@ export function getLSRColor(typetext: string): string {
   return key ? LSR_COLORS[key] : LSR_DEFAULT_COLOR;
 }
 
-export const SOURCE_BADGES: Record<string, string> = {
+const SOURCE_BADGES: Record<string, string> = {
   "Trained Spotter": "#00FF00",
   SKYWARN: "#00FF00",
   "Law Enforcement": "#4169E1",
