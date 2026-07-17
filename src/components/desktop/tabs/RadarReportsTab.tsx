@@ -15,10 +15,10 @@ const LeafletRadar = lazy(() =>
   import("@/components/RadarMiniMap").then((m) => ({ default: m.LeafletRadar })),
 );
 
-type OpenPanel = null | "radar" | "reports" | "radar-full";
-
 export default function RadarReportsTab() {
-  const [open, setOpen] = useState<OpenPanel>(null);
+  const [radarOpen, setRadarOpen] = useState(false);
+  const [radarFullOpen, setRadarFullOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
   const radar = useRadarContext();
 
   const btnStyle = (accent: string): React.CSSProperties => ({
