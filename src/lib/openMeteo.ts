@@ -26,9 +26,12 @@ export async function searchGeocode(
 ): Promise<GeocodeResult[]> {
   const trimmed = name.trim();
   if (!trimmed) return [];
+  // Global search — Open-Meteo geocoder covers every city worldwide.
+  // The radar module handles US-only NEXRAD by falling back to Washington DC
+  // when a non-US city is selected.
   const url =
     `https://geocoding-api.open-meteo.com/v1/search` +
-    `?name=${encodeURIComponent(trimmed)}&count=${count}&language=en&format=json&countryCode=US`;
+    `?name=${encodeURIComponent(trimmed)}&count=${count}&language=en&format=json`;
   const res = await fetchWithTimeout(url);
   if (!res.ok) return [];
   const json = await res.json();
@@ -36,22 +39,48 @@ export async function searchGeocode(
 }
 
 /**
- * Resolve a "City, State" label to coordinates, preferring an admin1
- * (state) match when the label includes a state token.
+ * Human-readable label: "Name, Admin1" for US, "Name, Admin1, CC" or
+ * "Name, CC" for international results. Keeps output compact for menus.
+ */
+export function formatCityLabel(r: {
+  name: string;
+  admin1?: string;
+  country_code?: string;
+}): string {
+  const cc = (r.country_code ?? "").toUpperCase();
+  if (cc === "US") return r.admin1 ? `${r.name}, ${r.admin1}` : r.name;
+  const parts = [r.name];
+  if (r.admin1) parts.push(r.admin1);
+  if (cc) parts.push(cc);
+  return parts.join(", ");
+}
+
+/**
+ * Resolve a saved label to coordinates + country. Prefers an admin1/state
+ * match when the label carries one, then falls back to a country-code match
+ * on the trailing token, then the first result.
  */
 export async function geocodeLabel(
   label: string,
-): Promise<{ lat: number; lon: number } | null> {
-  const [name] = label.split(",").map((s) => s.trim());
+): Promise<{ lat: number; lon: number; countryCode?: string } | null> {
+  const tokens = label.split(",").map((s) => s.trim()).filter(Boolean);
+  const name = tokens[0];
   if (!name) return null;
   try {
     const results = await searchGeocode(name, 5);
     if (!results.length) return null;
-    const state = label.split(",").map((s) => s.trim().toLowerCase())[1];
+    const trailing = (tokens[tokens.length - 1] ?? "").toLowerCase();
+    const admin = tokens[1]?.toLowerCase();
     const match =
-      (state && results.find((r) => (r.admin1 ?? "").toLowerCase() === state)) ||
+      (trailing.length === 2 &&
+        results.find((r) => (r.country_code ?? "").toLowerCase() === trailing)) ||
+      (admin && results.find((r) => (r.admin1 ?? "").toLowerCase() === admin)) ||
       results[0];
-    return { lat: match.latitude, lon: match.longitude };
+    return {
+      lat: match.latitude,
+      lon: match.longitude,
+      countryCode: (match.country_code ?? "").toUpperCase() || undefined,
+    };
   } catch {
     return null;
   }
