@@ -161,45 +161,45 @@ export default function MetricsTab() {
         </div>
       </div>
 
-      {/* Virtual parameters — rounded boxes */}
-      <div>
-        <div className="mb-2 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
+      {/* Virtual parameters — single column rows */}
+      <div className="flex flex-col gap-2">
+        <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
           Virtual Parameters
         </div>
-        <div className="grid grid-cols-5 gap-2">
-          {soundingNodes.map((n, i) => {
-            const accent = VIRTUAL_COLORS[i % VIRTUAL_COLORS.length];
-            return (
-              <div
-                key={n.label}
-                className="relative flex flex-col gap-1 rounded-xl p-2"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: `1px solid ${accent}55`,
-                  boxShadow: `inset 0 0 12px ${accent}18, 0 0 8px ${accent}22`,
-                  transition: "border-color 500ms ease, box-shadow 500ms ease",
-                }}
-              >
-                <div className="text-[8px] font-mono uppercase leading-none text-muted-foreground">
+        {soundingNodes.map((n, i) => {
+          const accent = VIRTUAL_COLORS[i % VIRTUAL_COLORS.length];
+          return (
+            <div
+              key={n.label}
+              className="flex items-center justify-between rounded-xl px-3 py-2"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: `1px solid ${accent}55`,
+                boxShadow: `inset 0 0 12px ${accent}18, 0 0 8px ${accent}22`,
+                transition: "border-color 500ms ease, box-shadow 500ms ease",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="text-[10px] font-mono uppercase text-muted-foreground">
                   {n.label}
                 </div>
                 <div
-                  className="font-mono text-sm font-bold leading-tight tabular-nums"
+                  className="font-mono text-sm font-bold tabular-nums"
                   style={{ color: n.colorHsl, transition: "color 500ms ease" }}
                 >
                   {n.value}
                   <span className="ml-0.5 text-[8px] text-muted-foreground">{n.unit}</span>
                 </div>
-                <div
-                  className="text-[9px] font-mono font-bold leading-none"
-                  style={{ color: accent }}
-                >
-                  {n.wrsContribution}%
-                </div>
               </div>
-            );
-          })}
-        </div>
+              <div
+                className="text-[10px] font-mono font-bold"
+                style={{ color: accent }}
+              >
+                {n.wrsContribution}%
+              </div>
+            </div>
+          );
+        })}
         {!stationActive && (
           <p className="mt-2 text-center text-[10px] font-mono italic text-muted-foreground">
             Pick a radar station on the map to enable metrics.
