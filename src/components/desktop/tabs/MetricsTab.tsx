@@ -106,48 +106,56 @@ export default function MetricsTab() {
           <div className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
             Physical Parameters
           </div>
-          <div className="flex flex-1 items-end gap-2">
+          <div
+            className="flex h-6 overflow-hidden rounded-full"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
             {physicalNodes.map((p, i) => {
               const col = PHYS_COLORS[i % PHYS_COLORS.length];
               const pct = Math.max(0, Math.min(100, p.wrsContribution));
               return (
-                <div key={p.label} className="flex flex-1 flex-col items-center gap-1">
-                  <div
-                    className="relative flex w-full flex-col justify-end overflow-hidden rounded-md"
-                    style={{
-                      height: 72,
-                      background: "rgba(255,255,255,0.05)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                    }}
-                    title={`${p.label}: ${p.wrsContribution}%`}
-                  >
-                    <motion.div
-                      initial={false}
-                      animate={{ height: `${pct}%` }}
-                      transition={{ duration: 0.7, ease: "easeOut" }}
-                      style={{
-                        background: col,
-                        boxShadow: `inset 0 0 12px ${col}, 0 0 6px ${col}`,
-                      }}
-                    />
-                  </div>
-                  <div className="flex flex-col items-center leading-tight">
-                    <span className="text-[9px] font-mono uppercase text-muted-foreground">
-                      {p.label}
-                    </span>
-                    <span
-                      className="text-[10px] font-mono font-bold tabular-nums"
-                      style={{ color: p.colorHsl, transition: "color 500ms ease" }}
-                    >
-                      {p.value}
-                      <span className="ml-0.5 text-[8px] text-muted-foreground">{p.unit}</span>
-                    </span>
-                  </div>
-                </div>
+                <motion.div
+                  key={p.label}
+                  initial={false}
+                  animate={{ width: `${pct}%` }}
+                  transition={{ duration: 0.7, ease: "easeOut" }}
+                  style={{
+                    background: col,
+                    boxShadow: `inset 0 0 12px ${col}, 0 0 6px ${col}`,
+                  }}
+                  title={`${p.label}: ${p.wrsContribution}%`}
+                />
               );
             })}
           </div>
+          <div className="flex">
+            {physicalNodes.map((p, i) => (
+              <div key={p.label} className="flex flex-1 flex-col items-center gap-0.5">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{
+                    background: PHYS_COLORS[i % PHYS_COLORS.length],
+                    boxShadow: `0 0 6px ${PHYS_COLORS[i % PHYS_COLORS.length]}`,
+                  }}
+                />
+                <span className="text-[9px] font-mono uppercase text-muted-foreground">
+                  {p.label}
+                </span>
+                <span
+                  className="text-[10px] font-mono font-bold tabular-nums"
+                  style={{ color: p.colorHsl, transition: "color 500ms ease" }}
+                >
+                  {p.value}
+                  <span className="ml-0.5 text-[8px] text-muted-foreground">{p.unit}</span>
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
+
 
       </div>
 
