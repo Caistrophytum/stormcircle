@@ -83,8 +83,8 @@ export function useRadar() {
     } catch (err) {
       console.warn("[useRadar] reverse geocode failed, using station coords", err);
     }
-    // Fallback: use the station's own coordinates as the "city".
-    setCtxCity({ name: cityName, lat: station.lat, lon: station.lon });
+    // Fallback: use the station's own coordinates as the "city" (CONUS station).
+    setCtxCity({ name: cityName, lat: station.lat, lon: station.lon, countryCode: "US" });
   };
 
   const tileUrl = useMemo(() => {
