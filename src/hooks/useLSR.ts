@@ -18,7 +18,7 @@ export interface LSRReport {
   lon: number;
 }
 
-export const LSR_COLORS: Record<string, string> = {
+const LSR_COLORS: Record<string, string> = {
   TORNADO: "#FF0000",
   "FUNNEL CLOUD": "#FF69B4",
   "WALL CLOUD": "#DA70D6",
