@@ -94,41 +94,6 @@ const Auth = () => {
 
   const [submitting, setSubmitting] = useState(false);
 
-  /**
-   * Backend reachability probe.
-   *
-   * When Lovable Cloud credits (including top-ups) are exhausted the backend
-   * instance stops accepting requests — auth calls hang or 5xx. We surface a
-   * friendly, project-specific banner so users understand it's a hosting-cost
-   * issue rather than a broken site. Same banner is shown for any other
-   * transient backend-unreachable state.
-   */
-  const [backendDown, setBackendDown] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    const check = async () => {
-      const url = import.meta.env.VITE_SUPABASE_URL;
-      if (!url) return;
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 5000);
-      try {
-        const res = await fetch(`${url}/auth/v1/health`, {
-          method: "GET",
-          signal: ctrl.signal,
-          cache: "no-store",
-        });
-        if (!cancelled) setBackendDown(!res.ok);
-      } catch {
-        if (!cancelled) setBackendDown(true);
-      } finally {
-        clearTimeout(t);
-      }
-    };
-    check();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   /**
    * Login flow:
@@ -387,16 +352,6 @@ const Auth = () => {
             </div>
 
             <div className="p-5">
-              {backendDown && (
-                <div className="mb-4 rounded-sm border border-destructive/60 bg-destructive/10 px-3 py-2.5 text-[11px] font-mono leading-relaxed text-destructive">
-                  Sadly, the servers are currently unavailable. The site is running ad-free and without pay walls, while
-                  hosting costs a fair chunk-of-change. For more information, contact{" "}
-                  <a href="mailto:stormcirclecontact@gmail.com" className="underline hover:text-destructive-foreground">
-                    stormcirclecontact@gmail.com
-                  </a>
-                  .
-                </div>
-              )}
               <p className="text-[10px] font-mono text-muted-foreground text-center mb-4">
                 Authentication emails may take up to 5 minutes to arrive
               </p>
