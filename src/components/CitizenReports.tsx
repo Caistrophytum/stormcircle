@@ -602,7 +602,7 @@ export default function CitizenReports() {
 
                 {/* Expanded individual reports */}
                 {isOpen && stack.reports.length > 1 && (
-                  <ul className="border-t border-border bg-background/20 divide-y divide-border/50">
+                  <ul className="border-t border-white/10 bg-white/[0.02] divide-y divide-white/5">
                     {stack.reports.map((r) => (
                       <li key={r.id} className="px-2 py-1.5 space-y-0.5">
                         <div className="flex items-center justify-between gap-2">
