@@ -73,10 +73,10 @@ const StatusBar = () => {
       ? "meteorologist"
       : "citizen";
   const { selectedCity } = useSelectedCity();
-  const hometownLoc =
-    profile?.hometownLat != null && profile?.hometownLon != null
-      ? { lat: profile.hometownLat, lon: profile.hometownLon }
-      : null;
+  const homeRisk = useHomeCityRisk(profile?.location ?? null);
+  const hometownLoc = homeRisk.coords
+    ? { lat: homeRisk.coords.lat, lon: homeRisk.coords.lon }
+    : null;
   const hometown = useHometownWeather(hometownLoc);
   const unitSystem = useUnitSystem();
   const tempFallbackUnit = unitSystem === "metric" ? "°C" : "°F";
@@ -119,6 +119,15 @@ const StatusBar = () => {
       : hometown.uvIndex == null
         ? "ERR"
         : `${Math.round(hometown.uvIndex)}`;
+
+  const tempDisp = displayTemp(hometown.temperatureC, unitSystem);
+  const dewDisp = displayTemp(hometown.dewpointC, unitSystem);
+  const feelDisp = displayTemp(hometown.apparentTemperatureC, unitSystem);
+  const windDisp = displayWindSpeed(hometown.windSpeedKmh, unitSystem);
+  const hometownLabel = profile?.location
+    ? `Now in ${profile.location.split(",")[0]}`
+    : "Now in —";
+
 
 
   return (
