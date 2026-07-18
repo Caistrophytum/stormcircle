@@ -40,32 +40,33 @@ import { useRefreshTick } from "@/hooks/useRefreshTick";
 
 type SortMode = "default" | "newest" | "nearest";
 
-/** Curated list of reportable phenomena. Labels are inserted verbatim into
- *  the composed message, so they should already match grouping vocabulary
- *  in `reportGrouping.ts` (METEO_WORDS / SYNONYMS). */
-const PHENOMENA: { label: string; value: string }[] = [
-  { label: "Tornado", value: "Tornado" },
-  { label: "Funnel cloud", value: "Funnel cloud" },
-  { label: "Wall cloud", value: "Wall cloud" },
-  { label: "Hail", value: "Hail" },
-  { label: "Heavy rain", value: "Heavy rain" },
-  { label: "Thunderstorm", value: "Thunderstorm" },
-  { label: "Lightning", value: "Lightning" },
-  { label: "Damaging wind", value: "Damaging wind" },
-  { label: "Flooding", value: "Flooding" },
-  { label: "Snow", value: "Snow" },
-  { label: "Blizzard", value: "Blizzard" },
-  { label: "Ice / freezing rain", value: "Freezing rain" },
-  { label: "Fog", value: "Fog" },
-  { label: "Extreme heat", value: "Extreme heat" },
-  { label: "Heat wave", value: "Heat wave" },
-  { label: "Heat burst", value: "Heat burst" },
-  { label: "Wildfire smoke", value: "Wildfire smoke" },
-  { label: "Active wildfire", value: "Active wildfire" },
-  { label: "Power outage", value: "Power outage" },
-  { label: "Tree down", value: "Tree down" },
-  { label: "Road flooded", value: "Road flooded" },
-];
+/** Curated list of reportable phenomena. Labels are shown with a leading risk
+ *  emoji in the picker; the plain `value` is inserted into the composed
+ *  message so grouping vocabulary in `reportGrouping.ts` stays unaffected.
+ *  Sorted alphabetically by label text for faster scanning. */
+const PHENOMENA: { emoji: string; label: string; value: string }[] = [
+  { emoji: "🔥", label: "Active wildfire", value: "Active wildfire" },
+  { emoji: "❄️", label: "Blizzard", value: "Blizzard" },
+  { emoji: "💨", label: "Damaging wind", value: "Damaging wind" },
+  { emoji: "🌡️", label: "Extreme heat", value: "Extreme heat" },
+  { emoji: "🌊", label: "Flooding", value: "Flooding" },
+  { emoji: "🌫️", label: "Fog", value: "Fog" },
+  { emoji: "🌪️", label: "Funnel cloud", value: "Funnel cloud" },
+  { emoji: "🧊", label: "Hail", value: "Hail" },
+  { emoji: "🌡️", label: "Heat burst", value: "Heat burst" },
+  { emoji: "🌡️", label: "Heat wave", value: "Heat wave" },
+  { emoji: "🌧️", label: "Heavy rain", value: "Heavy rain" },
+  { emoji: "🧊", label: "Ice / freezing rain", value: "Freezing rain" },
+  { emoji: "⚡", label: "Lightning", value: "Lightning" },
+  { emoji: "🔌", label: "Power outage", value: "Power outage" },
+  { emoji: "🌊", label: "Road flooded", value: "Road flooded" },
+  { emoji: "❄️", label: "Snow", value: "Snow" },
+  { emoji: "⛈️", label: "Thunderstorm", value: "Thunderstorm" },
+  { emoji: "🌪️", label: "Tornado", value: "Tornado" },
+  { emoji: "🌳", label: "Tree down", value: "Tree down" },
+  { emoji: "🌪️", label: "Wall cloud", value: "Wall cloud" },
+  { emoji: "🌫️", label: "Wildfire smoke", value: "Wildfire smoke" },
+].sort((a, b) => a.label.localeCompare(b.label));
 
 const RELATIONS = ["in", "near", "around", "heading towards"] as const;
 type Relation = (typeof RELATIONS)[number];
@@ -809,7 +810,7 @@ function ComposerDropdowns({
                     phenomenon === p.value ? "text-primary" : "text-card-foreground"
                   }`}
                 >
-                  {p.label}
+                  {p.emoji} {p.label}
                 </button>
               </li>
             ))}
@@ -900,7 +901,12 @@ function ComposerDropdowns({
             onClick={() => setOpen(open === "phenom" ? null : "phenom")}
             className={triggerCls(open === "phenom", !!phenomenon)}
           >
-            <span className="truncate">{phenomenon ?? "Phenomenon"}</span>
+            <span className="truncate">
+              {(() => {
+                const p = PHENOMENA.find((x) => x.value === phenomenon);
+                return p ? `${p.emoji} ${p.label}` : "Phenomenon";
+              })()}
+            </span>
             <ChevronDown className="size-3 shrink-0 opacity-60" />
           </button>
 
@@ -944,7 +950,10 @@ function ComposerDropdowns({
       {hasAny && (
         <div className="flex items-center justify-between gap-2">
           <p className="text-[10px] font-mono text-muted-foreground truncate">
-            {phenomenon ?? "—"} {relation ?? "—"} {placeLabel ?? "—"}
+            {(() => {
+              const p = PHENOMENA.find((x) => x.value === phenomenon);
+              return p ? `${p.emoji} ${p.label}` : "—";
+            })()} {relation ?? "—"} {placeLabel ?? "—"}
           </p>
           <button
             type="button"
