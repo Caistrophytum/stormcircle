@@ -546,6 +546,22 @@ export default function MobileMain() {
               return "Extreme";
             };
 
+            /** Apparent temperature (Real Feel) categories (raw °C). */
+            const realFeelDescriptor = (c: number) => {
+              if (c < 11) return "Cold";
+              if (c <= 16) return "Cool";
+              if (c <= 21) return "Pleasant";
+              if (c <= 26) return "Warm";
+              if (c <= 31) return "Very Warm";
+              if (c <= 37) return "Hot";
+              if (c <= 41) return "Very Hot";
+              if (c <= 45) return "Dangerous Heat";
+              if (c <= 50) return "Very Dangerous Heat";
+              if (c <= 55) return "Extremely Dangerous Heat";
+              if (c <= 60) return "Extraordinarily Dangerous Heat";
+              return "Extreme Heat";
+            };
+
             const render = (
               label: string,
               display: { value: number; unit: string } | null,
