@@ -133,14 +133,14 @@ export function useSoundingData(location: LatLon | null): SoundingData {
       }
     };
 
-    fetchSounding(true);
-    const intervalId = setInterval(() => fetchSounding(false), 60_000);
+    const showLoading = firstRunRef.current;
+    firstRunRef.current = false;
+    fetchSounding(showLoading);
 
     return () => {
       cancelled = true;
-      clearInterval(intervalId);
     };
-  }, [location?.lat, location?.lon]);
+  }, [location?.lat, location?.lon, tick]);
 
   return data;
 }
