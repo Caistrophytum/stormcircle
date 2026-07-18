@@ -249,6 +249,9 @@ export default function MobileMain() {
   const { user, profile } = useAuth();
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
   const homeFireRisk = useHomeCityFireRisk(profile?.location ?? null);
+  const hometownWeather = useHometownWeather(
+    homeRisk.coords ? { lat: homeRisk.coords.lat, lon: homeRisk.coords.lon } : null,
+  );
   const radar = useRadar();
   const sounding = useSoundingData(
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
