@@ -4,6 +4,25 @@ import { findNearestStation } from "@/lib/nearestStation";
 import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/CityContext";
 import { searchGeocode } from "@/lib/openMeteo";
 
+/** Open-Meteo returns admin1 as the full state name; NEXRAD station labels
+ *  use the 2-letter USPS code. Map full-name → abbrev for state matching. */
+const US_STATE_ABBREV: Record<string, string> = {
+  alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+  colorado: "CO", connecticut: "CT", delaware: "DE", "district of columbia": "DC",
+  florida: "FL", georgia: "GA", hawaii: "HI", idaho: "ID", illinois: "IL",
+  indiana: "IN", iowa: "IA", kansas: "KS", kentucky: "KY", louisiana: "LA",
+  maine: "ME", maryland: "MD", massachusetts: "MA", michigan: "MI",
+  minnesota: "MN", mississippi: "MS", missouri: "MO", montana: "MT",
+  nebraska: "NE", nevada: "NV", "new hampshire": "NH", "new jersey": "NJ",
+  "new mexico": "NM", "new york": "NY", "north carolina": "NC",
+  "north dakota": "ND", ohio: "OH", oklahoma: "OK", oregon: "OR",
+  pennsylvania: "PA", "rhode island": "RI", "south carolina": "SC",
+  "south dakota": "SD", tennessee: "TN", texas: "TX", utah: "UT",
+  vermont: "VT", virginia: "VA", washington: "WA", "west virginia": "WV",
+  wisconsin: "WI", wyoming: "WY",
+};
+
+
 export type ProductCode = "N0B" | "N0U" | "N0S" | "N0Z" | "NET";
 
 export interface RadarProduct {
