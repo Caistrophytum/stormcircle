@@ -85,13 +85,13 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
       }
     };
 
-    fetchNow(true);
-    const id = setInterval(() => fetchNow(false), 60_000);
+    const showLoading = firstRunRef.current;
+    firstRunRef.current = false;
+    fetchNow(showLoading);
     return () => {
       cancelled = true;
-      clearInterval(id);
     };
-  }, [location?.lat, location?.lon]);
+  }, [location?.lat, location?.lon, tick]);
 
   return data;
 }
