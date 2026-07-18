@@ -168,38 +168,19 @@ const StatusBar = () => {
         </div>
         <div className="h-5 w-px bg-border" />
         <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Pressure</span>
-          <span className="text-xs font-mono text-neon-blue">
-            {renderValue(pressureDisplay, pressureFallbackUnit, weather.loading, hasCity, 1)}
+          <span className="text-[9px] font-mono text-primary uppercase leading-none tracking-wide">
+            {hometownLabel}
           </span>
+          <div className="flex items-center gap-3 mt-0.5">
+            <MetricCell label="Temp" value={renderMetric(tempDisp, tempFallbackUnit, 0)} />
+            <MetricCell label="Dew" value={renderMetric(dewDisp, tempFallbackUnit, 0)} />
+            <MetricCell label="Real Feel" value={renderMetric(feelDisp, tempFallbackUnit, 0)} />
+            <MetricCell label="Wind" value={renderMetric(windDisp, windFallbackUnit, 0)} />
+            <MetricCell label="UV" value={uvText} tone="accent" />
+          </div>
         </div>
-        <div className="h-5 w-px bg-border" />
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Humidity</span>
-          <span className="text-xs font-mono text-card-foreground">
-            {hasCity
-              ? weather.loading
-                ? "..."
-                : weather.humidity == null
-                  ? "ERR"
-                  : `${Math.round(weather.humidity)}%`
-              : "— %"}
-          </span>
-        </div>
-        <div className="h-5 w-px bg-border" />
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Temp</span>
-          <span className="text-xs font-mono text-card-foreground">
-            {renderValue(tempDisplay, tempFallbackUnit, weather.loading, hasCity, 1)}
-          </span>
-        </div>
-        <div className="h-5 w-px bg-border" />
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Dewpoint</span>
-          <span className="text-xs font-mono text-card-foreground">
-            {renderValue(dewDisplay, tempFallbackUnit, weather.loading, hasCity, 1)}
-          </span>
-        </div>
+      </div>
+
       </div>
 
       {/* Right: time + auth */}
