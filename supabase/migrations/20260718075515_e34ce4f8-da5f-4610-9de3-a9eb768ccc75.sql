@@ -1,0 +1,1 @@
+SELECT cron.unschedule('process-email-queue-10min');
