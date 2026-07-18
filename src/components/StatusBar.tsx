@@ -288,7 +288,8 @@ const StatusBar = () => {
 
 
       {/* Right: time + auth — pinned to the right edge so it never gets squished */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-4 shrink-0 pl-2">
+        <div className="shrink-0 h-5 w-px bg-border" />
         <div className="text-right shrink-0 whitespace-nowrap">
           <span className="block text-[9px] font-mono text-muted-foreground leading-none">Mission Time</span>
           <MissionClock />
