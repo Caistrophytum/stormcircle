@@ -61,6 +61,7 @@ const PHENOMENA: { label: string; value: string }[] = [
   { label: "Heat wave", value: "Heat wave" },
   { label: "Heat burst", value: "Heat burst" },
   { label: "Wildfire smoke", value: "Wildfire smoke" },
+  { label: "Active wildfire", value: "Active wildfire" },
   { label: "Power outage", value: "Power outage" },
   { label: "Tree down", value: "Tree down" },
   { label: "Road flooded", value: "Road flooded" },
