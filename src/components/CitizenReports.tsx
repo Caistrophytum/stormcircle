@@ -372,7 +372,7 @@ export default function CitizenReports() {
   }
 
   return (
-    <aside className="w-80 h-full flex flex-col shrink-0 bg-transparent">
+    <aside className="w-72 h-full flex flex-col shrink-0 bg-transparent">
       {/* Header */}
       <div className="p-4 border-b border-white/10 bg-white/[0.02] backdrop-blur-sm">
         <h2 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
@@ -418,7 +418,7 @@ export default function CitizenReports() {
       </div>
 
       {/* Stacked reports */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-0">
         {stacks.length === 0 ? (
           <p className="text-[10px] font-mono text-muted-foreground italic text-center pt-4">
             No reports yet. Be the first to report an event.
@@ -439,9 +439,9 @@ export default function CitizenReports() {
             return (
               <div
                 key={stack.id}
-                className={`relative rounded-2xl border backdrop-blur-sm transition-colors ${
+                className={`relative rounded-xl border backdrop-blur-sm transition-colors ${
                   stack.approved
-                    ? "border-neon-green/40 bg-neon-green/[0.05] shadow-[0_0_16px_hsl(var(--neon-green)/0.18)]"
+                    ? "border-neon-green/40 bg-neon-green/[0.05] shadow-[0_0_12px_hsl(var(--neon-green)/0.14)]"
                     : "border-white/10 bg-white/[0.04] hover:border-white/20"
                 }`}
               >
@@ -450,9 +450,9 @@ export default function CitizenReports() {
                   <span
                     aria-label="Verified report"
                     title="Verified"
-                    className="absolute -top-2 -left-2 z-10 flex items-center justify-center size-6 rounded-full bg-neon-green text-background border border-background shadow-[0_0_10px_hsl(var(--neon-green)/0.6)]"
+                    className="absolute -top-1.5 -left-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-neon-green text-background border border-background shadow-[0_0_8px_hsl(var(--neon-green)/0.6)]"
                   >
-                    <svg viewBox="0 0 20 20" fill="none" className="size-3.5" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none" className="size-3" aria-hidden="true">
                       <path
                         d="M4 10.5l3.5 3.5L16 6"
                         stroke="currentColor"
@@ -475,12 +475,12 @@ export default function CitizenReports() {
                       toggleExpand(stack.id);
                     }
                   }}
-                  className="w-full text-left px-3.5 py-3 space-y-2 hover:bg-background/20 rounded-2xl transition-colors cursor-pointer"
+                  className="w-full text-left px-3 py-2 space-y-1.5 hover:bg-background/20 rounded-xl transition-colors cursor-pointer"
                 >
                   {/* Sentence: [badge] [username] reported a [topic] */}
-                  <p className="text-[13px] font-mono text-foreground leading-relaxed break-words whitespace-pre-wrap pr-6">
+                  <p className="text-[12px] font-mono text-foreground leading-snug break-words whitespace-pre-wrap pr-5">
                     <span
-                      className={`inline-flex items-center text-[9px] font-mono px-1.5 py-0.5 border rounded uppercase align-middle mr-1.5 ${
+                      className={`inline-flex items-center text-[8px] font-mono px-1 py-[1px] border rounded uppercase align-middle mr-1 ${
                         primaryBadge === "Meteorologist"
                           ? "border-neon-green/40 text-neon-green bg-neon-green/10"
                           : "border-border text-muted-foreground bg-background/40"
@@ -500,7 +500,7 @@ export default function CitizenReports() {
 
                   {/* Meta row: time + count + expand chevron */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono text-muted-foreground">
+                    <span className="text-[9px] font-mono text-muted-foreground">
                       {new Date(stack.latestTime).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -508,11 +508,11 @@ export default function CitizenReports() {
                     </span>
                     <span className="flex items-center gap-1.5 shrink-0">
                       {stack.count > 1 && (
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-primary/15 border border-primary/30 text-primary rounded-full">
+                        <span className="text-[8px] font-mono font-bold px-1 py-[1px] bg-primary/15 border border-primary/30 text-primary rounded-full">
                           ×{stack.count}
                         </span>
                       )}
-                      <span className="text-[10px] font-mono text-muted-foreground">{isOpen ? "▾" : "▸"}</span>
+                      <span className="text-[9px] font-mono text-muted-foreground">{isOpen ? "▾" : "▸"}</span>
                     </span>
                   </div>
 
@@ -524,10 +524,10 @@ export default function CitizenReports() {
                     if (!isGeneral && latest.content === stack.topic) return null;
                     return (
                       <div className="pt-1 pl-2 border-l border-primary/30">
-                        <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide mb-0.5">
+                        <p className="text-[8px] font-mono text-muted-foreground uppercase tracking-wide mb-0.5">
                           Latest · {latest.username}
                         </p>
-                        <p className="text-[11px] font-mono text-foreground/75 leading-snug break-words whitespace-pre-wrap line-clamp-2">
+                        <p className="text-[10px] font-mono text-foreground/75 leading-snug break-words whitespace-pre-wrap line-clamp-2">
                           {latest.content}
                         </p>
                       </div>
@@ -545,13 +545,13 @@ export default function CitizenReports() {
                     return (
                       <div className="flex justify-center pt-0.5" onClick={(e) => e.stopPropagation()}>
                         {alreadyJoined ? (
-                          <span className="text-[9px] font-mono uppercase tracking-wide px-2.5 py-1 border border-neon-green/30 text-neon-green/80 bg-neon-green/5 rounded-full">
+                          <span className="text-[8px] font-mono uppercase tracking-wide px-2 py-0.5 border border-neon-green/30 text-neon-green/80 bg-neon-green/5 rounded-full">
                             ✓ Joined
                           </span>
                         ) : isOwnReport ? (
                           <span
                             title="You authored this report"
-                            className="text-[9px] font-mono uppercase tracking-wide px-2.5 py-1 border border-muted-foreground/30 text-muted-foreground/70 bg-muted/5 rounded-full cursor-not-allowed"
+                            className="text-[8px] font-mono uppercase tracking-wide px-2 py-0.5 border border-muted-foreground/30 text-muted-foreground/70 bg-muted/5 rounded-full cursor-not-allowed"
                           >
                             Your report
                           </span>
@@ -559,7 +559,7 @@ export default function CitizenReports() {
                           <button
                             type="button"
                             onClick={() => joinReport(stack)}
-                            className="text-[9px] font-mono uppercase font-bold px-3 py-1 border border-primary/40 text-primary hover:bg-primary/10 rounded-full transition-colors"
+                            className="text-[8px] font-mono uppercase font-bold px-2.5 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 rounded-full transition-colors"
                           >
                             Join Report
                           </button>
@@ -572,14 +572,14 @@ export default function CitizenReports() {
                 {/* Moderator action bar — bottom of the card, meteorologists only */}
                 {(showApprove || showUnapprove || showSoloDelete || showStackDelete) && (
                   <div
-                    className="flex items-center justify-end gap-1.5 px-3.5 py-2 border-t border-white/10 bg-white/[0.02] rounded-b-2xl"
+                    className="flex items-center justify-end gap-1.5 px-3 py-1.5 border-t border-white/10 bg-white/[0.02] rounded-b-xl"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {showApprove && (
                       <button
                         type="button"
                         onClick={() => approveStack(stack)}
-                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-neon-green/40 text-neon-green hover:bg-neon-green/10 rounded-full transition-colors"
+                        className="text-[8px] font-mono uppercase font-bold px-2 py-0.5 border border-neon-green/40 text-neon-green hover:bg-neon-green/10 rounded-full transition-colors"
                       >
                         ✓ Approve
                       </button>
@@ -588,7 +588,7 @@ export default function CitizenReports() {
                       <button
                         type="button"
                         onClick={() => unapproveStack(stack)}
-                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-border text-muted-foreground hover:border-foreground hover:text-foreground rounded-full transition-colors"
+                        className="text-[8px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-foreground hover:text-foreground rounded-full transition-colors"
                       >
                         Unapprove
                       </button>
@@ -604,7 +604,7 @@ export default function CitizenReports() {
                           })
                         }
                         aria-label="Remove report"
-                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
+                        className="text-[8px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
                       >
                         × Remove
                       </button>
@@ -621,7 +621,7 @@ export default function CitizenReports() {
                           })
                         }
                         aria-label="Remove entire stack"
-                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
+                        className="text-[8px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
                       >
                         × Remove all
                       </button>
@@ -631,15 +631,15 @@ export default function CitizenReports() {
 
                 {/* Expanded individual reports */}
                 {isOpen && stack.reports.length > 1 && (
-                  <ul className="border-t border-white/10 bg-white/[0.02] divide-y divide-white/5 rounded-b-2xl overflow-hidden">
+                  <ul className="border-t border-white/10 bg-white/[0.02] divide-y divide-white/5 rounded-b-xl overflow-hidden">
                     {stack.reports.map((r) => (
-                      <li key={r.id} className="px-3.5 py-2 space-y-1">
+                      <li key={r.id} className="px-3 py-1.5 space-y-1">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-mono font-bold text-primary truncate">
+                          <span className="text-[10px] font-mono font-bold text-primary truncate">
                             {r.username}
                           </span>
                           <span className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[9px] font-mono text-muted-foreground">
+                            <span className="text-[8px] font-mono text-muted-foreground">
                               {new Date(r.created_at).toLocaleTimeString([], {
                                 hour: "2-digit",
                                 minute: "2-digit",
@@ -656,14 +656,14 @@ export default function CitizenReports() {
                                   })
                                 }
                                 aria-label="Remove report"
-                                className="text-[10px] font-mono leading-none px-1.5 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
+                                className="text-[9px] font-mono leading-none px-1 py-[1px] border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
                               >
                                 ×
                               </button>
                             )}
                           </span>
                         </div>
-                        <p className="text-[11px] font-mono text-foreground/85 leading-snug break-words whitespace-pre-wrap">
+                        <p className="text-[10px] font-mono text-foreground/85 leading-snug break-words whitespace-pre-wrap">
                           {r.content}
                         </p>
                       </li>
