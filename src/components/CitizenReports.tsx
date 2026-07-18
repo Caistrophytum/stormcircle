@@ -231,16 +231,15 @@ export default function CitizenReports() {
 
   // ── Client-side expiry sweep (defense-in-depth vs server pg_cron) ─────
   // System (bot) messages are exempt — they persist until replaced by a
-  // newer issuance.
+  // newer issuance. Driven by the shared 60 s clock so all in-app refreshes
+  // fire in lockstep.
+  const sweepTick = useRefreshTick();
   useEffect(() => {
-    const interval = setInterval(() => {
-      const cutoff = Date.now() - TWO_HOURS_MS;
-      setMessages((prev) =>
-        prev.filter((m) => m.badge === "System" || new Date(m.created_at).getTime() > cutoff),
-      );
-    }, 60_000);
-    return () => clearInterval(interval);
-  }, []);
+    const cutoff = Date.now() - TWO_HOURS_MS;
+    setMessages((prev) =>
+      prev.filter((m) => m.badge === "System" || new Date(m.created_at).getTime() > cutoff),
+    );
+  }, [sweepTick]);
 
   // ── Send ──────────────────────────────────────────────────────────────
   function resetComposer() {
