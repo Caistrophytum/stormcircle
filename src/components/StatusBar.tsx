@@ -198,11 +198,11 @@ const StatusBar = () => {
   return (
     <>
       <RulerCarouselStyles />
-      <header className="h-12 border-b border-border bg-cockpit/95 flex items-center justify-between px-6 z-20 shrink-0">
-      {/* Left: role badge + coords + hometown ruler */}
-      <div className="flex items-center gap-6">
+      <header className="h-12 border-b border-border bg-cockpit/95 flex items-center justify-between px-6 z-20 shrink-0 gap-4">
+      {/* Left: role badge + coords + hometown ruler — shrinks to make room for the right cluster */}
+      <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
         {badge && (
-          <div className={`flex items-center gap-1.5 px-2 py-1 border rounded-sm ${badge.className}`}>
+          <div className={`shrink-0 flex items-center gap-1.5 px-2 py-1 border rounded-sm ${badge.className}`}>
             <badge.icon className="size-3" />
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider">{badge.label}</span>
           </div>
@@ -211,7 +211,7 @@ const StatusBar = () => {
           onClick={() => navigate("/faq")}
           aria-label="Open Frequently Asked Questions"
           title="FAQ"
-          className="flex items-center gap-1.5 px-2 py-1 border border-primary/25 bg-primary/5 text-primary rounded-sm hover:bg-primary/10 hover:border-primary/50 transition-colors"
+          className="shrink-0 flex items-center gap-1.5 px-2 py-1 border border-primary/25 bg-primary/5 text-primary rounded-sm hover:bg-primary/10 hover:border-primary/50 transition-colors"
         >
           <HelpCircle className="size-3" />
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider">FAQ</span>
@@ -220,14 +220,14 @@ const StatusBar = () => {
           onClick={toggleUnitSystem}
           aria-label="Toggle metric / imperial units"
           title={`Switch to ${unitSystem === "metric" ? "imperial" : "metric"}`}
-          className="flex items-center gap-1.5 px-2 py-1 border border-neon-blue/25 bg-neon-blue/5 text-neon-blue rounded-sm hover:bg-neon-blue/10 hover:border-neon-blue/50 transition-colors"
+          className="shrink-0 flex items-center gap-1.5 px-2 py-1 border border-neon-blue/25 bg-neon-blue/5 text-neon-blue rounded-sm hover:bg-neon-blue/10 hover:border-neon-blue/50 transition-colors"
         >
           <Ruler className="size-3" />
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
             {unitSystem === "metric" ? "SI" : "US"}
           </span>
         </button>
-        <div className="flex flex-col w-28 shrink-0">
+        <div className="shrink-0 flex flex-col w-24">
           <span
             className="text-[9px] font-mono text-muted-foreground uppercase leading-none truncate"
             title={selectedCity ? selectedCity.name : "Coord"}
@@ -238,8 +238,8 @@ const StatusBar = () => {
             {coordText}
           </span>
         </div>
-        <div className="h-5 w-px bg-border" />
-        <div className="flex flex-col min-w-0">
+        <div className="shrink-0 h-5 w-px bg-border" />
+        <div className="flex flex-col min-w-0 flex-1">
           <span className="text-[9px] font-mono text-primary uppercase leading-none tracking-wide truncate">
             {hometownLabel}
           </span>
