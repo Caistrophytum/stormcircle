@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useSelectedCity } from "@/contexts/CityContext";
 import { useHometownWeather } from "@/hooks/useHometownWeather";
 import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
@@ -25,7 +26,7 @@ import {
 const formatCoord = (lat: number, lon: number) => {
   const ns = lat >= 0 ? "N" : "S";
   const ew = lon >= 0 ? "E" : "W";
-  return `${Math.abs(lat).toFixed(4)}°${ns}, ${Math.abs(lon).toFixed(4)}°${ew}`;
+  return `${Math.abs(lat).toFixed(2)}°${ns}, ${Math.abs(lon).toFixed(2)}°${ew}`;
 };
 
 /**
@@ -43,6 +44,23 @@ const MissionClock = () => {
   }, []);
   return <span className="text-xs font-mono text-card-foreground">{zulu} Z</span>;
 };
+
+/**
+ * Keyframes for the ruler text carousel. The animation only runs when the
+ * content is wider than its container; CSS variables --container-width and
+ * --content-width are injected at runtime to make the bounce distance exact.
+ */
+const RulerCarouselStyles = () => (
+  <style>{`
+    @keyframes ruler-bounce {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(min(0px, calc(var(--container-width) - var(--content-width)))); }
+    }
+    .ruler-bounce {
+      animation: ruler-bounce 8s ease-in-out infinite;
+    }
+  `}</style>
+);
 
 const StatusBar = () => {
   const navigate = useNavigate();
@@ -86,6 +104,20 @@ const StatusBar = () => {
   const hometownLabel = profile?.location
     ? `Now in ${profile.location.split(",")[0]}`
     : "Now in —";
+
+  const rulerContainerRef = useRef<HTMLDivElement>(null);
+  const rulerContentRef = useRef<HTMLDivElement>(null);
+  const [rulerOverflows, setRulerOverflows] = useState(false);
+
+  useEffect(() => {
+    const container = rulerContainerRef.current;
+    const content = rulerContentRef.current;
+    if (!container || !content) return;
+    const measure = () => setRulerOverflows(content.scrollWidth > container.clientWidth);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [hometownLabel, hometown, profile?.location]);
 
   /** Dew point comfort categories (raw °C from Open-Meteo). */
   const dewPointDescriptor = (c: number) => {
@@ -164,7 +196,9 @@ const StatusBar = () => {
   const rulerSeparator = <span className="text-card-foreground/25">\</span>;
 
   return (
-    <header className="h-12 border-b border-border bg-cockpit/95 flex items-center justify-between px-6 z-20 shrink-0">
+    <>
+      <RulerCarouselStyles />
+      <header className="h-12 border-b border-border bg-cockpit/95 flex items-center justify-between px-6 z-20 shrink-0">
       {/* Left: role badge + coords + hometown ruler */}
       <div className="flex items-center gap-6">
         {badge && (
@@ -193,40 +227,60 @@ const StatusBar = () => {
             {unitSystem === "metric" ? "SI" : "US"}
           </span>
         </button>
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">
+        <div className="flex flex-col w-28 shrink-0">
+          <span
+            className="text-[9px] font-mono text-muted-foreground uppercase leading-none truncate"
+            title={selectedCity ? selectedCity.name : "Coord"}
+          >
             {selectedCity ? selectedCity.name : "Coord"}
           </span>
-          <span className="text-xs font-mono text-card-foreground">{coordText}</span>
+          <span className="text-[10px] font-mono text-card-foreground tracking-tight truncate">
+            {coordText}
+          </span>
         </div>
         <div className="h-5 w-px bg-border" />
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-primary uppercase leading-none tracking-wide">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[9px] font-mono text-primary uppercase leading-none tracking-wide truncate">
             {hometownLabel}
           </span>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-[11px] font-mono text-card-foreground">
-            {!profile?.location ? (
-              <span className="text-muted-foreground">
-                {user ? "Please choose a hometown from the account center portal." : "Sign in and set a hometown to see local conditions."}
-              </span>
-            ) : (
-              <>
-                {renderRulerMetric("Temp", tempDisp, hometown.temperatureC)}
-                {rulerSeparator}
-                {renderRulerMetric("Dew", dewDisp, hometown.dewpointC, hometown.dewpointC != null ? dewPointDescriptor(hometown.dewpointC) : undefined)}
-                {rulerSeparator}
-                {renderRulerMetric("Real Feel", feelDisp, hometown.apparentTemperatureC, hometown.apparentTemperatureC != null ? realFeelDescriptor(hometown.apparentTemperatureC) : undefined)}
-                {rulerSeparator}
-                {renderRulerMetric("Wind", windDisp, hometown.windSpeedKmh)}
-                {rulerSeparator}
-                {renderRulerMetric(
-                  "UV",
-                  hometown.uvIndex != null ? { value: hometown.uvIndex, unit: "" } : null,
-                  hometown.uvIndex,
-                  hometown.uvIndex != null ? uvDescriptor(hometown.uvIndex) : undefined,
-                )}
-              </>
-            )}
+          <div
+            ref={rulerContainerRef}
+            className="relative mt-0.5 overflow-hidden min-w-0"
+          >
+            <div
+              ref={rulerContentRef}
+              className={cn(
+                "flex items-center gap-x-3 text-[11px] font-mono text-card-foreground whitespace-nowrap",
+                rulerOverflows && "ruler-bounce"
+              )}
+              style={{
+                "--container-width": `${rulerContainerRef.current?.clientWidth ?? 0}px`,
+                "--content-width": `${rulerContentRef.current?.scrollWidth ?? 0}px`,
+              } as React.CSSProperties}
+            >
+              {!profile?.location ? (
+                <span className="text-muted-foreground">
+                  {user ? "Please choose a hometown from the account center portal." : "Sign in and set a hometown to see local conditions."}
+                </span>
+              ) : (
+                <>
+                  {renderRulerMetric("Temp", tempDisp, hometown.temperatureC)}
+                  {rulerSeparator}
+                  {renderRulerMetric("Dew", dewDisp, hometown.dewpointC, hometown.dewpointC != null ? dewPointDescriptor(hometown.dewpointC) : undefined)}
+                  {rulerSeparator}
+                  {renderRulerMetric("Real Feel", feelDisp, hometown.apparentTemperatureC, hometown.apparentTemperatureC != null ? realFeelDescriptor(hometown.apparentTemperatureC) : undefined)}
+                  {rulerSeparator}
+                  {renderRulerMetric("Wind", windDisp, hometown.windSpeedKmh)}
+                  {rulerSeparator}
+                  {renderRulerMetric(
+                    "UV",
+                    hometown.uvIndex != null ? { value: hometown.uvIndex, unit: "" } : null,
+                    hometown.uvIndex,
+                    hometown.uvIndex != null ? uvDescriptor(hometown.uvIndex) : undefined,
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -299,6 +353,7 @@ const StatusBar = () => {
         )}
       </div>
     </header>
+  </>
   );
 };
 
