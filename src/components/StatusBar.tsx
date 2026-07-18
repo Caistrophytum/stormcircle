@@ -97,6 +97,20 @@ const StatusBar = () => {
     ? formatCoord(selectedCity.lat, selectedCity.lon)
     : "— SELECT CITY —";
 
+  const rulerContainerRef = useRef<HTMLDivElement>(null);
+  const rulerContentRef = useRef<HTMLDivElement>(null);
+  const [rulerOverflows, setRulerOverflows] = useState(false);
+
+  useEffect(() => {
+    const container = rulerContainerRef.current;
+    const content = rulerContentRef.current;
+    if (!container || !content) return;
+    const measure = () => setRulerOverflows(content.scrollWidth > container.clientWidth);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [hometownLabel, hometown, profile?.location]);
+
   const tempDisp = displayTemp(hometown.temperatureC, unitSystem);
   const dewDisp = displayTemp(hometown.dewpointC, unitSystem);
   const feelDisp = displayTemp(hometown.apparentTemperatureC, unitSystem);
