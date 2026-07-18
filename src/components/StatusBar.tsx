@@ -353,6 +353,7 @@ const StatusBar = () => {
         )}
       </div>
     </header>
+  </>
   );
 };
 
