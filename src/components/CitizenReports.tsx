@@ -810,7 +810,7 @@ function ComposerDropdowns({
                     phenomenon === p.value ? "text-primary" : "text-card-foreground"
                   }`}
                 >
-                  {p.label}
+                  {p.emoji} {p.label}
                 </button>
               </li>
             ))}
