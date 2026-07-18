@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { useRefreshTick } from "./useRefreshTick";
 
 export interface SoundingData {
   cape: number | null;
