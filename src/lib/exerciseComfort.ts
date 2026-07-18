@@ -217,9 +217,9 @@ const LABELS: Record<keyof Weights, string> = {
 };
 
 // ── Aggregation: weighted power-mean (Minkowski) ────────────────────────
-// p=1 reproduces the old linear model; p≈2.5 lets the worst hazard
+// p=1 reproduces the old linear model; p=3 lets the worst hazard
 // organically dominate. limiter = highest weight×penalty contribution.
-const POWER = 2.5;
+const POWER = 3;
 
 function aggregate(
   penalties: Record<keyof Weights, number>,
