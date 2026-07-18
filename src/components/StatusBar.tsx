@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler } from "lucide-react";
 import { useSelectedCity } from "@/contexts/CityContext";
-import { useCurrentWeather } from "@/hooks/useCurrentWeather";
+import { useHometownWeather } from "@/hooks/useHometownWeather";
+import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
+
 import {
   useUnitSystem,
   toggleUnitSystem,
   displayTemp,
-  displayPressure,
+  displayWindSpeed,
 } from "@/hooks/useUnitSystem";
 import { useAuth } from "@/hooks/useAuth";
 import OnlineCounter from "@/components/OnlineCounter";
@@ -26,19 +28,6 @@ const formatCoord = (lat: number, lon: number) => {
   return `${Math.abs(lat).toFixed(4)}°${ns}, ${Math.abs(lon).toFixed(4)}°${ew}`;
 };
 
-const renderValue = (
-  v: { value: number; unit: string } | null,
-  fallbackUnit: string,
-  loading: boolean,
-  hasCity: boolean,
-  digits = 1,
-) => {
-  if (!hasCity) return `— ${fallbackUnit}`;
-  if (loading) return "...";
-  if (v == null) return "ERR";
-  return `${v.value.toFixed(digits)} ${v.unit}`;
-};
-
 /**
  * MissionClock — isolated 1 Hz UTC ticker.
  *
@@ -55,6 +44,26 @@ const MissionClock = () => {
   return <span className="text-xs font-mono text-card-foreground">{zulu} Z</span>;
 };
 
+/** Compact metric cell for the "Now in X" ruler. */
+const MetricCell = ({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string;
+  tone?: "default" | "accent";
+}) => (
+  <div className="flex flex-col">
+    <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">{label}</span>
+    <span
+      className={`text-xs font-mono ${tone === "accent" ? "text-neon-blue" : "text-card-foreground"}`}
+    >
+      {value}
+    </span>
+  </div>
+);
+
 const StatusBar = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
@@ -64,15 +73,14 @@ const StatusBar = () => {
       ? "meteorologist"
       : "citizen";
   const { selectedCity } = useSelectedCity();
-  const weather = useCurrentWeather(
-    selectedCity ? { lat: selectedCity.lat, lon: selectedCity.lon } : null,
-  );
+  const homeRisk = useHomeCityRisk(profile?.location ?? null);
+  const hometownLoc = homeRisk.coords
+    ? { lat: homeRisk.coords.lat, lon: homeRisk.coords.lon }
+    : null;
+  const hometown = useHometownWeather(hometownLoc);
   const unitSystem = useUnitSystem();
-  const tempDisplay = displayTemp(weather.temperatureC, unitSystem);
-  const dewDisplay = displayTemp(weather.dewpointC, unitSystem);
-  const pressureDisplay = displayPressure(weather.pressureHpa, unitSystem);
   const tempFallbackUnit = unitSystem === "metric" ? "°C" : "°F";
-  const pressureFallbackUnit = unitSystem === "metric" ? "hPa" : "inHg";
+  const windFallbackUnit = unitSystem === "metric" ? "km/h" : "mph";
 
   const roleBadge = {
     guest: null,
@@ -89,10 +97,38 @@ const StatusBar = () => {
   };
 
   const badge = roleBadge[userRole];
-  const hasCity = !!selectedCity;
   const coordText = selectedCity
     ? formatCoord(selectedCity.lat, selectedCity.lon)
     : "— SELECT CITY —";
+
+  const renderMetric = (
+    display: { value: number; unit: string } | null,
+    fallbackUnit: string,
+    digits = 0,
+  ) => {
+    if (!hometownLoc) return `— ${fallbackUnit}`;
+    if (hometown.loading) return "...";
+    if (!display) return "ERR";
+    return `${display.value.toFixed(digits)} ${display.unit}`.trim();
+  };
+
+  const uvText = !hometownLoc
+    ? "—"
+    : hometown.loading
+      ? "..."
+      : hometown.uvIndex == null
+        ? "ERR"
+        : `${Math.round(hometown.uvIndex)}`;
+
+  const tempDisp = displayTemp(hometown.temperatureC, unitSystem);
+  const dewDisp = displayTemp(hometown.dewpointC, unitSystem);
+  const feelDisp = displayTemp(hometown.apparentTemperatureC, unitSystem);
+  const windDisp = displayWindSpeed(hometown.windSpeedKmh, unitSystem);
+  const hometownLabel = profile?.location
+    ? `Now in ${profile.location.split(",")[0]}`
+    : "Now in —";
+
+
 
   return (
     <header className="h-12 border-b border-border bg-cockpit/95 flex items-center justify-between px-6 z-20 shrink-0">
@@ -132,39 +168,20 @@ const StatusBar = () => {
         </div>
         <div className="h-5 w-px bg-border" />
         <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Pressure</span>
-          <span className="text-xs font-mono text-neon-blue">
-            {renderValue(pressureDisplay, pressureFallbackUnit, weather.loading, hasCity, 1)}
+          <span className="text-[9px] font-mono text-primary uppercase leading-none tracking-wide">
+            {hometownLabel}
           </span>
-        </div>
-        <div className="h-5 w-px bg-border" />
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Humidity</span>
-          <span className="text-xs font-mono text-card-foreground">
-            {hasCity
-              ? weather.loading
-                ? "..."
-                : weather.humidity == null
-                  ? "ERR"
-                  : `${Math.round(weather.humidity)}%`
-              : "— %"}
-          </span>
-        </div>
-        <div className="h-5 w-px bg-border" />
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Temp</span>
-          <span className="text-xs font-mono text-card-foreground">
-            {renderValue(tempDisplay, tempFallbackUnit, weather.loading, hasCity, 1)}
-          </span>
-        </div>
-        <div className="h-5 w-px bg-border" />
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">Dewpoint</span>
-          <span className="text-xs font-mono text-card-foreground">
-            {renderValue(dewDisplay, tempFallbackUnit, weather.loading, hasCity, 1)}
-          </span>
+          <div className="flex items-center gap-3 mt-0.5">
+            <MetricCell label="Temp" value={renderMetric(tempDisp, tempFallbackUnit, 0)} />
+            <MetricCell label="Dew" value={renderMetric(dewDisp, tempFallbackUnit, 0)} />
+            <MetricCell label="Real Feel" value={renderMetric(feelDisp, tempFallbackUnit, 0)} />
+            <MetricCell label="Wind" value={renderMetric(windDisp, windFallbackUnit, 0)} />
+            <MetricCell label="UV" value={uvText} tone="accent" />
+          </div>
         </div>
       </div>
+
+
 
       {/* Right: time + auth */}
       <div className="flex items-center gap-4">
