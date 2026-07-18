@@ -545,13 +545,13 @@ export default function CitizenReports() {
                     return (
                       <div className="flex justify-center pt-0.5" onClick={(e) => e.stopPropagation()}>
                         {alreadyJoined ? (
-                          <span className="text-[9px] font-mono uppercase tracking-wide px-2.5 py-1 border border-neon-green/30 text-neon-green/80 bg-neon-green/5 rounded-full">
+                          <span className="text-[8px] font-mono uppercase tracking-wide px-2 py-0.5 border border-neon-green/30 text-neon-green/80 bg-neon-green/5 rounded-full">
                             ✓ Joined
                           </span>
                         ) : isOwnReport ? (
                           <span
                             title="You authored this report"
-                            className="text-[9px] font-mono uppercase tracking-wide px-2.5 py-1 border border-muted-foreground/30 text-muted-foreground/70 bg-muted/5 rounded-full cursor-not-allowed"
+                            className="text-[8px] font-mono uppercase tracking-wide px-2 py-0.5 border border-muted-foreground/30 text-muted-foreground/70 bg-muted/5 rounded-full cursor-not-allowed"
                           >
                             Your report
                           </span>
@@ -559,7 +559,7 @@ export default function CitizenReports() {
                           <button
                             type="button"
                             onClick={() => joinReport(stack)}
-                            className="text-[9px] font-mono uppercase font-bold px-3 py-1 border border-primary/40 text-primary hover:bg-primary/10 rounded-full transition-colors"
+                            className="text-[8px] font-mono uppercase font-bold px-2.5 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 rounded-full transition-colors"
                           >
                             Join Report
                           </button>
@@ -572,7 +572,7 @@ export default function CitizenReports() {
                 {/* Moderator action bar — bottom of the card, meteorologists only */}
                 {(showApprove || showUnapprove || showSoloDelete || showStackDelete) && (
                   <div
-                    className="flex items-center justify-end gap-1.5 px-3.5 py-2 border-t border-white/10 bg-white/[0.02] rounded-b-2xl"
+                    className="flex items-center justify-end gap-1.5 px-3 py-1.5 border-t border-white/10 bg-white/[0.02] rounded-b-xl"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {showApprove && (
