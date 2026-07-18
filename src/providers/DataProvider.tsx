@@ -657,14 +657,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         scheduleLoad)
       .subscribe();
 
-    const interval = setInterval(() => { void load(); }, ALERTS_REFRESH_MS);
+    // NOTE: 60 s refresh is driven by the shared `useRefreshTick` clock —
+    // see the tick-effect further down. This effect only handles startup +
+    // realtime + route change; no independent interval here.
 
     return () => {
       cancelled = true;
       cic(idleId);
       if (debounceTimer) clearTimeout(debounceTimer);
       if (polyTimer) clearTimeout(polyTimer);
-      clearInterval(interval);
       window.removeEventListener("popstate", onRouteChange);
       void supabase.removeChannel(channel);
     };
