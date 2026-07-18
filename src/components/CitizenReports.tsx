@@ -36,6 +36,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCitySearch } from "@/hooks/useCitySearch";
 import { groupMessages, type RawMessage, type StackedReport } from "@/lib/reportGrouping";
 import { useReportDistances } from "@/hooks/useReportDistances";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 
 type SortMode = "default" | "newest" | "nearest";
 
