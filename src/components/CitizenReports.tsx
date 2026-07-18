@@ -648,7 +648,7 @@ export default function CitizenReports() {
       </div>
 
       {/* Structured composer — three upward dropdowns */}
-      <div className="p-3 border-t border-border bg-shroud/30">
+      <div className="p-3 border-t border-white/10 bg-white/[0.02] backdrop-blur-sm">
         {user && profile ? (
           <ComposerDropdowns
             phenomenon={phenomenon}
@@ -669,7 +669,7 @@ export default function CitizenReports() {
             onReset={resetComposer}
           />
         ) : (
-          <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
+          <div className="text-center py-2 px-3 bg-white/[0.03] border border-white/10 rounded-sm">
             <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
               Sign in to report an event
             </p>
