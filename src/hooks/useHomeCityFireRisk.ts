@@ -16,7 +16,9 @@ export type FireRiskLevel = "NONE" | "ELEV" | "CRIT" | "EXTM";
 const FIRE_URL =
   "https://mapservices.weather.noaa.gov/vector/rest/services/fire_weather/SPC_firewx/MapServer/1/query?where=1%3D1&outFields=*&returnGeometry=true&f=geojson";
 
-const POLL_MS = 5 * 60 * 1000;
+// SPC fire-weather outlook is issued twice daily; 45 min polling is more
+// than enough and roughly 9× cheaper than the previous 5-minute cadence.
+const POLL_MS = 45 * 60 * 1000;
 
 // SPC fire layer encodes severity in the `dn` field.
 const DN_TO_LEVEL: Record<number, FireRiskLevel> = { 5: "ELEV", 8: "CRIT", 10: "EXTM" };
