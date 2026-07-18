@@ -901,7 +901,12 @@ function ComposerDropdowns({
             onClick={() => setOpen(open === "phenom" ? null : "phenom")}
             className={triggerCls(open === "phenom", !!phenomenon)}
           >
-            <span className="truncate">{phenomenon ?? "Phenomenon"}</span>
+            <span className="truncate">
+              {(() => {
+                const p = PHENOMENA.find((x) => x.value === phenomenon);
+                return p ? `${p.emoji} ${p.label}` : "Phenomenon";
+              })()}
+            </span>
             <ChevronDown className="size-3 shrink-0 opacity-60" />
           </button>
 
@@ -945,7 +950,10 @@ function ComposerDropdowns({
       {hasAny && (
         <div className="flex items-center justify-between gap-2">
           <p className="text-[10px] font-mono text-muted-foreground truncate">
-            {phenomenon ?? "—"} {relation ?? "—"} {placeLabel ?? "—"}
+            {(() => {
+              const p = PHENOMENA.find((x) => x.value === phenomenon);
+              return p ? `${p.emoji} ${p.label}` : "—";
+            })()} {relation ?? "—"} {placeLabel ?? "—"}
           </p>
           <button
             type="button"
