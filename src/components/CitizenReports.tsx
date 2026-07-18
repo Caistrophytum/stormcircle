@@ -372,11 +372,11 @@ export default function CitizenReports() {
   }
 
   return (
-    <aside className="w-80 h-full border-l border-border bg-cockpit flex flex-col shrink-0">
+    <aside className="w-80 h-full flex flex-col shrink-0 bg-transparent">
       {/* Header */}
-      <div className="p-4 border-b border-border bg-shroud/30">
+      <div className="p-4 border-b border-white/10 bg-white/[0.02] backdrop-blur-sm">
         <h2 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
-          <span className="size-1.5 bg-primary rounded-full animate-pulse" />
+          <span className="size-1.5 bg-primary rounded-full animate-pulse shadow-[0_0_6px_hsl(var(--primary))]" />
           Public Weather Reports
         </h2>
         <p className="text-[9px] font-mono text-muted-foreground mt-1 uppercase">2-hour rolling history</p>
@@ -406,9 +406,9 @@ export default function CitizenReports() {
                 }}
                 className={`flex-1 text-[9px] font-mono uppercase px-1.5 py-0.5 border rounded-sm transition-colors ${
                   active
-                    ? "border-primary/60 text-primary bg-primary/10"
-                    : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                } ${disabled ? "opacity-40 cursor-not-allowed hover:border-border hover:text-muted-foreground" : ""}`}
+                    ? "border-primary/60 text-primary bg-primary/10 shadow-[0_0_8px_hsl(var(--primary)/0.25)]"
+                    : "border-white/10 text-muted-foreground bg-white/[0.02] hover:border-primary/40 hover:text-foreground"
+                } ${disabled ? "opacity-40 cursor-not-allowed hover:border-white/10 hover:text-muted-foreground" : ""}`}
               >
                 {label}
               </button>
@@ -436,8 +436,10 @@ export default function CitizenReports() {
             return (
               <div
                 key={stack.id}
-                className={`bg-shroud border ${
-                  stack.approved ? "border-neon-green/40 shadow-[0_0_0_1px_hsl(var(--primary)/0.05)]" : "border-border"
+                className={`rounded-lg border backdrop-blur-sm transition-colors ${
+                  stack.approved
+                    ? "border-neon-green/40 bg-neon-green/[0.04] shadow-[0_0_12px_hsl(var(--neon-green)/0.15)]"
+                    : "border-white/10 bg-white/[0.03] hover:border-white/20"
                 }`}
               >
                 {/* Stack header — clickable to expand */}
@@ -600,7 +602,7 @@ export default function CitizenReports() {
 
                 {/* Expanded individual reports */}
                 {isOpen && stack.reports.length > 1 && (
-                  <ul className="border-t border-border bg-background/20 divide-y divide-border/50">
+                  <ul className="border-t border-white/10 bg-white/[0.02] divide-y divide-white/5">
                     {stack.reports.map((r) => (
                       <li key={r.id} className="px-2 py-1.5 space-y-0.5">
                         <div className="flex items-center justify-between gap-2">
@@ -646,7 +648,7 @@ export default function CitizenReports() {
       </div>
 
       {/* Structured composer — three upward dropdowns */}
-      <div className="p-3 border-t border-border bg-shroud/30">
+      <div className="p-3 border-t border-white/10 bg-white/[0.02] backdrop-blur-sm">
         {user && profile ? (
           <ComposerDropdowns
             phenomenon={phenomenon}
@@ -667,7 +669,7 @@ export default function CitizenReports() {
             onReset={resetComposer}
           />
         ) : (
-          <div className="text-center py-2 px-3 bg-background/30 border border-border rounded-sm">
+          <div className="text-center py-2 px-3 bg-white/[0.03] border border-white/10 rounded-sm">
             <p className="text-[10px] font-mono text-muted-foreground uppercase leading-relaxed">
               Sign in to report an event
             </p>
