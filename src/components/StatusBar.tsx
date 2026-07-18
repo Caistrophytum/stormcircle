@@ -105,6 +105,20 @@ const StatusBar = () => {
     ? `Now in ${profile.location.split(",")[0]}`
     : "Now in —";
 
+  const rulerContainerRef = useRef<HTMLDivElement>(null);
+  const rulerContentRef = useRef<HTMLDivElement>(null);
+  const [rulerOverflows, setRulerOverflows] = useState(false);
+
+  useEffect(() => {
+    const container = rulerContainerRef.current;
+    const content = rulerContentRef.current;
+    if (!container || !content) return;
+    const measure = () => setRulerOverflows(content.scrollWidth > container.clientWidth);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [hometownLabel, hometown, profile?.location]);
+
   /** Dew point comfort categories (raw °C from Open-Meteo). */
   const dewPointDescriptor = (c: number) => {
     if (c < 4.9) return "Very Dry";
