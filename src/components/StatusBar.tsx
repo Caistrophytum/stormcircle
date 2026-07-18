@@ -287,17 +287,19 @@ const StatusBar = () => {
 
 
 
-      {/* Right: time + auth */}
-      <div className="flex items-center gap-4">
-        <div className="text-right">
+      {/* Right: time + auth — pinned to the right edge so it never gets squished */}
+      <div className="flex items-center gap-3 shrink-0">
+        <div className="text-right shrink-0 whitespace-nowrap">
           <span className="block text-[9px] font-mono text-muted-foreground leading-none">Mission Time</span>
           <MissionClock />
         </div>
 
-        <OnlineCounter />
+        <div className="shrink-0">
+          <OnlineCounter />
+        </div>
 
         {userRole === "guest" ? (
-          <div className="flex items-center gap-2">
+          <div className="shrink-0 flex items-center gap-2">
             <button
               onClick={() => navigate("/auth")}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground font-mono text-[10px] font-bold uppercase tracking-wider rounded-sm hover:brightness-110 transition-all neon-glow-amber"
@@ -311,7 +313,7 @@ const StatusBar = () => {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="flex items-center gap-2 px-2 py-1 glass-panel cursor-pointer hover:border-primary/30 transition-colors"
+                className="shrink-0 flex items-center gap-2 px-2 py-1 glass-panel cursor-pointer hover:border-primary/30 transition-colors"
               >
                 <div className="size-5 bg-secondary rounded flex items-center justify-center font-mono text-[9px] text-card-foreground uppercase">
                   {(profile?.username ?? user?.email ?? "??").slice(0, 2)}
