@@ -57,12 +57,16 @@ const PHENOMENA: { label: string; value: string }[] = [
   { label: "Blizzard", value: "Blizzard" },
   { label: "Ice / freezing rain", value: "Freezing rain" },
   { label: "Fog", value: "Fog" },
+  { label: "Extreme heat", value: "Extreme heat" },
+  { label: "Heat wave", value: "Heat wave" },
+  { label: "Heat burst", value: "Heat burst" },
+  { label: "Wildfire smoke", value: "Wildfire smoke" },
   { label: "Power outage", value: "Power outage" },
   { label: "Tree down", value: "Tree down" },
   { label: "Road flooded", value: "Road flooded" },
 ];
 
-const RELATIONS = ["in", "near", "heading towards"] as const;
+const RELATIONS = ["in", "near", "around", "heading towards"] as const;
 type Relation = (typeof RELATIONS)[number];
 import {
   AlertDialog,

@@ -75,6 +75,8 @@ const METEO_WORDS = new Set<string>([
   "gust", "gusts", "gale", "squall", "derecho", "microburst", "downburst",
   "snow", "snowstorm", "blizzard", "graupel", "sleet", "ice", "icy",
   "freezing", "frost", "fog", "mist", "haze", "visibility",
+  "heat", "heatwave", "hot", "scorching", "sweltering", "humid", "humidity",
+  "wildfire", "wildfires", "smoke", "smoky", "smokey", "fire", "fires",
   "power", "outage", "blackout", "lines", "down", "electricity",
   "tree", "trees", "branch", "branches", "fallen", "uprooted",
   "damage", "damaged", "destroyed", "debris", "roof", "roofing",
