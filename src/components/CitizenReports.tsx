@@ -478,9 +478,9 @@ export default function CitizenReports() {
                   className="w-full text-left px-3 py-2 space-y-1.5 hover:bg-background/20 rounded-xl transition-colors cursor-pointer"
                 >
                   {/* Sentence: [badge] [username] reported a [topic] */}
-                  <p className="text-[13px] font-mono text-foreground leading-relaxed break-words whitespace-pre-wrap pr-6">
+                  <p className="text-[12px] font-mono text-foreground leading-snug break-words whitespace-pre-wrap pr-5">
                     <span
-                      className={`inline-flex items-center text-[9px] font-mono px-1.5 py-0.5 border rounded uppercase align-middle mr-1.5 ${
+                      className={`inline-flex items-center text-[8px] font-mono px-1 py-[1px] border rounded uppercase align-middle mr-1 ${
                         primaryBadge === "Meteorologist"
                           ? "border-neon-green/40 text-neon-green bg-neon-green/10"
                           : "border-border text-muted-foreground bg-background/40"
