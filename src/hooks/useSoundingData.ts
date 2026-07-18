@@ -48,6 +48,8 @@ export interface LatLon {
 export function useSoundingData(location: LatLon | null): SoundingData {
   const [data, setData] = useState<SoundingData>(EMPTY);
   const isFetchingRef = useRef(false);
+  const firstRunRef = useRef(true);
+  const tick = useRefreshTick();
 
   useEffect(() => {
     if (!location) {
