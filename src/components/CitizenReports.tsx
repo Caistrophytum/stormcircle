@@ -579,7 +579,7 @@ export default function CitizenReports() {
                       <button
                         type="button"
                         onClick={() => approveStack(stack)}
-                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-neon-green/40 text-neon-green hover:bg-neon-green/10 rounded-full transition-colors"
+                        className="text-[8px] font-mono uppercase font-bold px-2 py-0.5 border border-neon-green/40 text-neon-green hover:bg-neon-green/10 rounded-full transition-colors"
                       >
                         ✓ Approve
                       </button>
@@ -588,7 +588,7 @@ export default function CitizenReports() {
                       <button
                         type="button"
                         onClick={() => unapproveStack(stack)}
-                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-border text-muted-foreground hover:border-foreground hover:text-foreground rounded-full transition-colors"
+                        className="text-[8px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-foreground hover:text-foreground rounded-full transition-colors"
                       >
                         Unapprove
                       </button>
@@ -604,7 +604,7 @@ export default function CitizenReports() {
                           })
                         }
                         aria-label="Remove report"
-                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
+                        className="text-[8px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
                       >
                         × Remove
                       </button>
@@ -621,7 +621,7 @@ export default function CitizenReports() {
                           })
                         }
                         aria-label="Remove entire stack"
-                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
+                        className="text-[8px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
                       >
                         × Remove all
                       </button>
@@ -631,15 +631,15 @@ export default function CitizenReports() {
 
                 {/* Expanded individual reports */}
                 {isOpen && stack.reports.length > 1 && (
-                  <ul className="border-t border-white/10 bg-white/[0.02] divide-y divide-white/5 rounded-b-2xl overflow-hidden">
+                  <ul className="border-t border-white/10 bg-white/[0.02] divide-y divide-white/5 rounded-b-xl overflow-hidden">
                     {stack.reports.map((r) => (
-                      <li key={r.id} className="px-3.5 py-2 space-y-1">
+                      <li key={r.id} className="px-3 py-1.5 space-y-1">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-mono font-bold text-primary truncate">
+                          <span className="text-[10px] font-mono font-bold text-primary truncate">
                             {r.username}
                           </span>
                           <span className="flex items-center gap-1.5 shrink-0">
-                            <span className="text-[9px] font-mono text-muted-foreground">
+                            <span className="text-[8px] font-mono text-muted-foreground">
                               {new Date(r.created_at).toLocaleTimeString([], {
                                 hour: "2-digit",
                                 minute: "2-digit",
@@ -656,14 +656,14 @@ export default function CitizenReports() {
                                   })
                                 }
                                 aria-label="Remove report"
-                                className="text-[10px] font-mono leading-none px-1.5 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
+                                className="text-[9px] font-mono leading-none px-1 py-[1px] border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
                               >
                                 ×
                               </button>
                             )}
                           </span>
                         </div>
-                        <p className="text-[11px] font-mono text-foreground/85 leading-snug break-words whitespace-pre-wrap">
+                        <p className="text-[10px] font-mono text-foreground/85 leading-snug break-words whitespace-pre-wrap">
                           {r.content}
                         </p>
                       </li>
