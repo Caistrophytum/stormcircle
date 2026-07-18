@@ -372,11 +372,11 @@ export default function CitizenReports() {
   }
 
   return (
-    <aside className="w-80 h-full border-l border-border bg-cockpit flex flex-col shrink-0">
+    <aside className="w-80 h-full flex flex-col shrink-0 bg-transparent">
       {/* Header */}
-      <div className="p-4 border-b border-border bg-shroud/30">
+      <div className="p-4 border-b border-white/10 bg-white/[0.02] backdrop-blur-sm">
         <h2 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
-          <span className="size-1.5 bg-primary rounded-full animate-pulse" />
+          <span className="size-1.5 bg-primary rounded-full animate-pulse shadow-[0_0_6px_hsl(var(--primary))]" />
           Public Weather Reports
         </h2>
         <p className="text-[9px] font-mono text-muted-foreground mt-1 uppercase">2-hour rolling history</p>
@@ -406,9 +406,9 @@ export default function CitizenReports() {
                 }}
                 className={`flex-1 text-[9px] font-mono uppercase px-1.5 py-0.5 border rounded-sm transition-colors ${
                   active
-                    ? "border-primary/60 text-primary bg-primary/10"
-                    : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                } ${disabled ? "opacity-40 cursor-not-allowed hover:border-border hover:text-muted-foreground" : ""}`}
+                    ? "border-primary/60 text-primary bg-primary/10 shadow-[0_0_8px_hsl(var(--primary)/0.25)]"
+                    : "border-white/10 text-muted-foreground bg-white/[0.02] hover:border-primary/40 hover:text-foreground"
+                } ${disabled ? "opacity-40 cursor-not-allowed hover:border-white/10 hover:text-muted-foreground" : ""}`}
               >
                 {label}
               </button>
