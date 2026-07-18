@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler } from "lucide-react";
 import { useSelectedCity } from "@/contexts/CityContext";
 import { useHometownWeather } from "@/hooks/useHometownWeather";
+import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
+
 import {
   useUnitSystem,
   toggleUnitSystem,
