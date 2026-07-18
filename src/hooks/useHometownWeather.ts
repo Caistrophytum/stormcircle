@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { useRefreshTick } from "./useRefreshTick";
 
 export interface HometownWeather {
   temperatureC: number | null;
@@ -34,6 +35,8 @@ export interface LatLon {
 export function useHometownWeather(location: LatLon | null): HometownWeather {
   const [data, setData] = useState<HometownWeather>(EMPTY);
   const isFetchingRef = useRef(false);
+  const firstRunRef = useRef(true);
+  const tick = useRefreshTick();
 
   useEffect(() => {
     if (!location) {
@@ -96,13 +99,13 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
       }
     };
 
-    fetchNow(true);
-    const id = setInterval(() => fetchNow(false), 60_000);
+    const showLoading = firstRunRef.current;
+    firstRunRef.current = false;
+    fetchNow(showLoading);
     return () => {
       cancelled = true;
-      clearInterval(id);
     };
-  }, [location?.lat, location?.lon]);
+  }, [location?.lat, location?.lon, tick]);
 
   return data;
 }

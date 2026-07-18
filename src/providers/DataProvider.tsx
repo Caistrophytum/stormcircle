@@ -54,13 +54,14 @@ import { getWarningColor } from "@/hooks/useWarningPolygons";
 import type { LSRReport } from "@/hooks/useLSR";
 import type { Profile } from "@/hooks/useAuth";
 import { IEM_LSR_URL as LSR_URL } from "@/lib/endpoints";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 
 // ---------------- shared constants ----------------
 
 const NEW_WINDOW_MS = 5 * 60_000;
 const REALTIME_DEBOUNCE_MS = 300;
-const ALERTS_REFRESH_MS = 60_000;
-const LSR_REFRESH_MS = 60_000;
+// 60 s background refreshes for alerts + LSRs are driven by the shared
+// `useRefreshTick` clock (see the tick-effect below). No local intervals.
 const PROFILE_TIMEOUT_MS = 5_000;
 const ALERTS_TIMEOUT_MS = 8_000;
 const POLYGONS_TIMEOUT_MS = 10_000;
@@ -451,6 +452,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [recoveryAttempt, setRecoveryAttempt] = useState(0);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lsrFetchRef = useRef<() => void>(() => {});
+  const tick = useRefreshTick();
 
   // -------- alerts/polygons loader --------
   //
@@ -655,14 +657,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
         scheduleLoad)
       .subscribe();
 
-    const interval = setInterval(() => { void load(); }, ALERTS_REFRESH_MS);
+    // NOTE: 60 s refresh is driven by the shared `useRefreshTick` clock —
+    // see the tick-effect further down. This effect only handles startup +
+    // realtime + route change; no independent interval here.
 
     return () => {
       cancelled = true;
       cic(idleId);
       if (debounceTimer) clearTimeout(debounceTimer);
       if (polyTimer) clearTimeout(polyTimer);
-      clearInterval(interval);
       window.removeEventListener("popstate", onRouteChange);
       void supabase.removeChannel(channel);
     };
@@ -878,14 +881,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
     lsrFetchRef.current = () => { void fetchReports(); };
 
     // Stagger LSR ~800ms after mount: non-critical, can lag a beat.
+    // 60 s refresh is driven by the shared `useRefreshTick` clock — see the
+    // tick-effect further down. No independent interval here.
     const startId = window.setTimeout(() => { void fetchReports(); }, 800);
-    const id = setInterval(fetchReports, LSR_REFRESH_MS);
     return () => {
       cancelled = true;
-      clearInterval(id);
       clearTimeout(startId);
     };
   }, []);
+
+  // -------- shared 60 s refresh clock --------
+  // Every 60 s consumer that used to run its own setInterval now hooks into
+  // this single tick, so all background refetches fire in lockstep. Skip the
+  // very first tick (equal to whatever the module-level counter was when
+  // this provider mounted) — the mount-time loaders already ran.
+  const initialTickRef = useRef(tick);
+  useEffect(() => {
+    if (tick === initialTickRef.current) return;
+    loadAlertsRef.current?.();
+    lsrFetchRef.current?.();
+  }, [tick]);
 
   // -------- watchdog --------
   //

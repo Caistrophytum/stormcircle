@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { useRefreshTick } from "./useRefreshTick";
 
 export interface SoundingData {
   cape: number | null;
@@ -47,6 +48,8 @@ export interface LatLon {
 export function useSoundingData(location: LatLon | null): SoundingData {
   const [data, setData] = useState<SoundingData>(EMPTY);
   const isFetchingRef = useRef(false);
+  const firstRunRef = useRef(true);
+  const tick = useRefreshTick();
 
   useEffect(() => {
     if (!location) {
@@ -130,14 +133,14 @@ export function useSoundingData(location: LatLon | null): SoundingData {
       }
     };
 
-    fetchSounding(true);
-    const intervalId = setInterval(() => fetchSounding(false), 60_000);
+    const showLoading = firstRunRef.current;
+    firstRunRef.current = false;
+    fetchSounding(showLoading);
 
     return () => {
       cancelled = true;
-      clearInterval(intervalId);
     };
-  }, [location?.lat, location?.lon]);
+  }, [location?.lat, location?.lon, tick]);
 
   return data;
 }
