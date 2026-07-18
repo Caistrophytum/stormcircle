@@ -452,6 +452,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [recoveryAttempt, setRecoveryAttempt] = useState(0);
   const watchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lsrFetchRef = useRef<() => void>(() => {});
+  const alertsLoadRef = useRef<() => void>(() => {});
+  const tick = useRefreshTick();
 
   // -------- alerts/polygons loader --------
   //
