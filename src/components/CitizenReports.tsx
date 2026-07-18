@@ -500,7 +500,7 @@ export default function CitizenReports() {
 
                   {/* Meta row: time + count + expand chevron */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono text-muted-foreground">
+                    <span className="text-[9px] font-mono text-muted-foreground">
                       {new Date(stack.latestTime).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -508,11 +508,11 @@ export default function CitizenReports() {
                     </span>
                     <span className="flex items-center gap-1.5 shrink-0">
                       {stack.count > 1 && (
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-primary/15 border border-primary/30 text-primary rounded-full">
+                        <span className="text-[8px] font-mono font-bold px-1 py-[1px] bg-primary/15 border border-primary/30 text-primary rounded-full">
                           ×{stack.count}
                         </span>
                       )}
-                      <span className="text-[10px] font-mono text-muted-foreground">{isOpen ? "▾" : "▸"}</span>
+                      <span className="text-[9px] font-mono text-muted-foreground">{isOpen ? "▾" : "▸"}</span>
                     </span>
                   </div>
 
@@ -524,10 +524,10 @@ export default function CitizenReports() {
                     if (!isGeneral && latest.content === stack.topic) return null;
                     return (
                       <div className="pt-1 pl-2 border-l border-primary/30">
-                        <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide mb-0.5">
+                        <p className="text-[8px] font-mono text-muted-foreground uppercase tracking-wide mb-0.5">
                           Latest · {latest.username}
                         </p>
-                        <p className="text-[11px] font-mono text-foreground/75 leading-snug break-words whitespace-pre-wrap line-clamp-2">
+                        <p className="text-[10px] font-mono text-foreground/75 leading-snug break-words whitespace-pre-wrap line-clamp-2">
                           {latest.content}
                         </p>
                       </div>
