@@ -44,26 +44,6 @@ const MissionClock = () => {
   return <span className="text-xs font-mono text-card-foreground">{zulu} Z</span>;
 };
 
-/** Compact metric cell for the "Now in X" ruler. */
-const MetricCell = ({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  tone?: "default" | "accent";
-}) => (
-  <div className="flex flex-col">
-    <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">{label}</span>
-    <span
-      className={`text-xs font-mono ${tone === "accent" ? "text-neon-blue" : "text-card-foreground"}`}
-    >
-      {value}
-    </span>
-  </div>
-);
-
 const StatusBar = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
@@ -79,8 +59,6 @@ const StatusBar = () => {
     : null;
   const hometown = useHometownWeather(hometownLoc);
   const unitSystem = useUnitSystem();
-  const tempFallbackUnit = unitSystem === "metric" ? "°C" : "°F";
-  const windFallbackUnit = unitSystem === "metric" ? "km/h" : "mph";
 
   const roleBadge = {
     guest: null,
@@ -101,25 +79,6 @@ const StatusBar = () => {
     ? formatCoord(selectedCity.lat, selectedCity.lon)
     : "— SELECT CITY —";
 
-  const renderMetric = (
-    display: { value: number; unit: string } | null,
-    fallbackUnit: string,
-    digits = 0,
-  ) => {
-    if (!hometownLoc) return `— ${fallbackUnit}`;
-    if (hometown.loading) return "...";
-    if (!display) return "ERR";
-    return `${display.value.toFixed(digits)} ${display.unit}`.trim();
-  };
-
-  const uvText = !hometownLoc
-    ? "—"
-    : hometown.loading
-      ? "..."
-      : hometown.uvIndex == null
-        ? "ERR"
-        : `${Math.round(hometown.uvIndex)}`;
-
   const tempDisp = displayTemp(hometown.temperatureC, unitSystem);
   const dewDisp = displayTemp(hometown.dewpointC, unitSystem);
   const feelDisp = displayTemp(hometown.apparentTemperatureC, unitSystem);
@@ -128,11 +87,85 @@ const StatusBar = () => {
     ? `Now in ${profile.location.split(",")[0]}`
     : "Now in —";
 
+  /** Dew point comfort categories (raw °C from Open-Meteo). */
+  const dewPointDescriptor = (c: number) => {
+    if (c < 4.9) return "Very Dry";
+    if (c <= 9.9) return "Dry";
+    if (c <= 14.9) return "Comfortable";
+    if (c <= 19.9) return "Mostly Comfortable";
+    if (c <= 23.9) return "Muggy";
+    return "Oppressive";
+  };
 
+  /** UV index exposure categories. */
+  const uvDescriptor = (uv: number) => {
+    if (uv === 0) return "None";
+    if (uv <= 2) return "Low";
+    if (uv <= 5) return "Medium";
+    if (uv <= 7) return "High";
+    if (uv <= 10) return "Very High";
+    return "Extreme";
+  };
+
+  /** Apparent temperature (Real Feel) categories (raw °C). */
+  const realFeelDescriptor = (c: number) => {
+    if (c < 11) return "Cold";
+    if (c <= 16) return "Cool";
+    if (c <= 21) return "Pleasant";
+    if (c <= 26) return "Warm";
+    if (c <= 31) return "Very Warm";
+    if (c <= 37) return "Hot";
+    if (c <= 41) return "Very Hot";
+    if (c <= 45) return "Dangerous Heat";
+    if (c <= 50) return "Very Dangerous Heat";
+    if (c <= 55) return "Extremely Dangerous Heat";
+    if (c <= 60) return "Extraordinarily Dangerous Heat";
+    return "Extreme Heat";
+  };
+
+  const renderRulerMetric = (
+    label: string,
+    display: { value: number; unit: string } | null,
+    raw: number | null,
+    descriptor?: string,
+  ) => {
+    if (!hometownLoc) {
+      return (
+        <span key={label}>
+          {label}: <span className="text-muted-foreground">—</span>
+        </span>
+      );
+    }
+    if (hometown.loading) {
+      return (
+        <span key={label}>
+          {label}: <span className="text-muted-foreground">...</span>
+        </span>
+      );
+    }
+    if (display == null || raw == null) {
+      return (
+        <span key={label}>
+          {label}: <span className="text-destructive">ERR</span>
+        </span>
+      );
+    }
+    const value = label === "UV" ? Math.round(display.value) : display.value.toFixed(0);
+    return (
+      <span key={label}>
+        {label}: <span className="text-primary font-semibold">{value}{display.unit}</span>
+        {descriptor && (
+          <span className="text-card-foreground/55"> ({descriptor})</span>
+        )}
+      </span>
+    );
+  };
+
+  const rulerSeparator = <span className="text-card-foreground/25">\</span>;
 
   return (
     <header className="h-12 border-b border-border bg-cockpit/95 flex items-center justify-between px-6 z-20 shrink-0">
-      {/* Left: role badge + coords + pressure */}
+      {/* Left: role badge + coords + hometown ruler */}
       <div className="flex items-center gap-6">
         {badge && (
           <div className={`flex items-center gap-1.5 px-2 py-1 border rounded-sm ${badge.className}`}>
@@ -171,12 +204,29 @@ const StatusBar = () => {
           <span className="text-[9px] font-mono text-primary uppercase leading-none tracking-wide">
             {hometownLabel}
           </span>
-          <div className="flex items-center gap-3 mt-0.5">
-            <MetricCell label="Temp" value={renderMetric(tempDisp, tempFallbackUnit, 0)} />
-            <MetricCell label="Dew" value={renderMetric(dewDisp, tempFallbackUnit, 0)} />
-            <MetricCell label="Real Feel" value={renderMetric(feelDisp, tempFallbackUnit, 0)} />
-            <MetricCell label="Wind" value={renderMetric(windDisp, windFallbackUnit, 0)} />
-            <MetricCell label="UV" value={uvText} tone="accent" />
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-[11px] font-mono text-card-foreground">
+            {!profile?.location ? (
+              <span className="text-muted-foreground">
+                {user ? "Please choose a hometown from the account center portal." : "Sign in and set a hometown to see local conditions."}
+              </span>
+            ) : (
+              <>
+                {renderRulerMetric("Temp", tempDisp, hometown.temperatureC)}
+                {rulerSeparator}
+                {renderRulerMetric("Dew", dewDisp, hometown.dewpointC, hometown.dewpointC != null ? dewPointDescriptor(hometown.dewpointC) : undefined)}
+                {rulerSeparator}
+                {renderRulerMetric("Real Feel", feelDisp, hometown.apparentTemperatureC, hometown.apparentTemperatureC != null ? realFeelDescriptor(hometown.apparentTemperatureC) : undefined)}
+                {rulerSeparator}
+                {renderRulerMetric("Wind", windDisp, hometown.windSpeedKmh)}
+                {rulerSeparator}
+                {renderRulerMetric(
+                  "UV",
+                  hometown.uvIndex != null ? { value: hometown.uvIndex, unit: "" } : null,
+                  hometown.uvIndex,
+                  hometown.uvIndex != null ? uvDescriptor(hometown.uvIndex) : undefined,
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
