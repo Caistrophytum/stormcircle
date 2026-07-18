@@ -181,7 +181,7 @@ const StatusBar = () => {
         </div>
       </div>
 
-      </div>
+
 
       {/* Right: time + auth */}
       <div className="flex items-center gap-4">
