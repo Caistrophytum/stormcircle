@@ -881,14 +881,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
     lsrFetchRef.current = () => { void fetchReports(); };
 
     // Stagger LSR ~800ms after mount: non-critical, can lag a beat.
+    // 60 s refresh is driven by the shared `useRefreshTick` clock — see the
+    // tick-effect further down. No independent interval here.
     const startId = window.setTimeout(() => { void fetchReports(); }, 800);
-    const id = setInterval(fetchReports, LSR_REFRESH_MS);
     return () => {
       cancelled = true;
-      clearInterval(id);
       clearTimeout(startId);
     };
   }, []);
+
+  // -------- shared 60 s refresh clock --------
+  // Every 60 s consumer that used to run its own setInterval now hooks into
+  // this single tick, so all background refetches fire in lockstep. Skip the
+  // very first tick (equal to whatever the module-level counter was when
+  // this provider mounted) — the mount-time loaders already ran.
+  const initialTickRef = useRef(tick);
+  useEffect(() => {
+    if (tick === initialTickRef.current) return;
+    loadAlertsRef.current?.();
+    lsrFetchRef.current?.();
+  }, [tick]);
 
   // -------- watchdog --------
   //
