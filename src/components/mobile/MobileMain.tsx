@@ -492,6 +492,103 @@ export default function MobileMain() {
         <div style={{ fontSize: "14px", color: "#fff", fontWeight: 700, marginTop: "2px" }}>{displayName}</div>
       </div>
 
+      {/* 1a. Hometown current conditions */}
+      <div
+        style={{
+          padding: "6px 10px",
+          border: "1px solid rgba(255,255,255,0.12)",
+          background: "rgba(255,255,255,0.04)",
+          borderRadius: "2px",
+        }}
+      >
+        <h3
+          style={{
+            fontSize: "9px",
+            color: "#ff9d00",
+            letterSpacing: "0.15em",
+            fontWeight: 700,
+            margin: 0,
+            marginBottom: "4px",
+            fontFamily: "'JetBrains Mono', monospace",
+            textTransform: "uppercase",
+          }}
+        >
+          Now in {profile?.location ?? "your hometown"}
+        </h3>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "8px 12px",
+            fontSize: "11px",
+            fontFamily: "'JetBrains Mono', monospace",
+            color: "#fff",
+          }}
+        >
+          {(() => {
+            const render = (
+              label: string,
+              display: { value: number; unit: string } | null,
+              raw: number | null,
+            ) => {
+              if (!profile?.location) return null;
+              if (hometownWeather.loading) {
+                return (
+                  <span key={label}>
+                    {label}: <span style={{ color: "#888" }}>...</span>
+                  </span>
+                );
+              }
+              if (display == null || raw == null) {
+                return (
+                  <span key={label}>
+                    {label}: <span style={{ color: "#ff6b6b" }}>ERR</span>
+                  </span>
+                );
+              }
+              return (
+                <span key={label}>
+                  {label}:{" "}
+                  <span style={{ color: "#ff9d00", fontWeight: 600 }}>
+                    {display.value.toFixed(label === "UV" ? 1 : 0)} {display.unit}
+                  </span>
+                </span>
+              );
+            };
+
+            if (!profile?.location) {
+              return (
+                <span style={{ color: "#888" }}>
+                  {user
+                    ? "Please choose a hometown from the account center portal."
+                    : "Sign in and set a hometown to see local conditions."}
+                </span>
+              );
+            }
+
+            return (
+              <>
+                {render("Temp", displayTemp(hometownWeather.temperatureC, unitSystem), hometownWeather.temperatureC)}
+                <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
+                {render("Dew", displayTemp(hometownWeather.dewpointC, unitSystem), hometownWeather.dewpointC)}
+                <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
+                {render("Real Feel", displayTemp(hometownWeather.apparentTemperatureC, unitSystem), hometownWeather.apparentTemperatureC)}
+                <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
+                {render("Wind", displayWindSpeed(hometownWeather.windSpeedKmh, unitSystem), hometownWeather.windSpeedKmh)}
+                <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
+                {render(
+                  "UV",
+                  hometownWeather.uvIndex != null
+                    ? { value: hometownWeather.uvIndex, unit: "" }
+                    : null,
+                  hometownWeather.uvIndex,
+                )}
+              </>
+            );
+          })()}
+        </div>
+      </div>
+
       {/* 2. Hometown news bar — SPC severe risk (CONUS only). */}
       {(!user || !hasLocation || isUS) && (
         <div
