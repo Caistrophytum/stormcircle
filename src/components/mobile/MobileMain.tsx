@@ -622,7 +622,14 @@ export default function MobileMain() {
                     : undefined,
                 )}
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
-                {render("Real Feel", displayTemp(hometownWeather.apparentTemperatureC, unitSystem), hometownWeather.apparentTemperatureC)}
+                {render(
+                  "Real Feel",
+                  displayTemp(hometownWeather.apparentTemperatureC, unitSystem),
+                  hometownWeather.apparentTemperatureC,
+                  hometownWeather.apparentTemperatureC != null
+                    ? realFeelDescriptor(hometownWeather.apparentTemperatureC)
+                    : undefined,
+                )}
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
                 {render("Wind", displayWindSpeed(hometownWeather.windSpeedKmh, unitSystem), hometownWeather.windSpeedKmh)}
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
