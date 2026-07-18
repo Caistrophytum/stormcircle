@@ -45,6 +45,23 @@ const MissionClock = () => {
   return <span className="text-xs font-mono text-card-foreground">{zulu} Z</span>;
 };
 
+/**
+ * Keyframes for the ruler text carousel. The animation only runs when the
+ * content is wider than its container; CSS variables --container-width and
+ * --content-width are injected at runtime to make the bounce distance exact.
+ */
+const RulerCarouselStyles = () => (
+  <style>{`
+    @keyframes ruler-bounce {
+      0%, 100% { transform: translateX(0); }
+      50% { transform: translateX(min(0px, calc(var(--container-width) - var(--content-width)))); }
+    }
+    .ruler-bounce {
+      animation: ruler-bounce 8s ease-in-out infinite;
+    }
+  `}</style>
+);
+
 const StatusBar = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
