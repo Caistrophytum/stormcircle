@@ -418,7 +418,7 @@ export default function CitizenReports() {
       </div>
 
       {/* Stacked reports */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-1.5 min-h-0">
         {stacks.length === 0 ? (
           <p className="text-[10px] font-mono text-muted-foreground italic text-center pt-4">
             No reports yet. Be the first to report an event.
