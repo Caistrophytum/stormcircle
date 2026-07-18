@@ -16,7 +16,9 @@ export type SPCRiskLevel = "NONE" | "TSTM" | "MRGL" | "SLGT" | "ENH" | "MDT" | "
 const SPC_URL =
   "https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/SPC_wx_outlks/MapServer/1/query?where=1%3D1&outFields=LABEL,ISSUE&returnGeometry=true&f=geojson";
 
-const POLL_MS = 5 * 60 * 1000;
+// SPC convective outlook is issued a few times a day; 45 min polling is
+// plenty and roughly 9× cheaper than the previous 5-minute cadence.
+const POLL_MS = 45 * 60 * 1000;
 
 const RISK_RANK: Record<string, number> = {
   TSTM: 0,
