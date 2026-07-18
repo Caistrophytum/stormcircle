@@ -196,7 +196,9 @@ const StatusBar = () => {
   const rulerSeparator = <span className="text-card-foreground/25">\</span>;
 
   return (
-    <header className="h-12 border-b border-border bg-cockpit/95 flex items-center justify-between px-6 z-20 shrink-0">
+    <>
+      <RulerCarouselStyles />
+      <header className="h-12 border-b border-border bg-cockpit/95 flex items-center justify-between px-6 z-20 shrink-0">
       {/* Left: role badge + coords + hometown ruler */}
       <div className="flex items-center gap-6">
         {badge && (
