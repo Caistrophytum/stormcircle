@@ -59,8 +59,6 @@ const StatusBar = () => {
     : null;
   const hometown = useHometownWeather(hometownLoc);
   const unitSystem = useUnitSystem();
-  const tempFallbackUnit = unitSystem === "metric" ? "°C" : "°F";
-  const windFallbackUnit = unitSystem === "metric" ? "km/h" : "mph";
 
   const roleBadge = {
     guest: null,
@@ -80,17 +78,6 @@ const StatusBar = () => {
   const coordText = selectedCity
     ? formatCoord(selectedCity.lat, selectedCity.lon)
     : "— SELECT CITY —";
-
-  const renderMetric = (
-    display: { value: number; unit: string } | null,
-    fallbackUnit: string,
-    digits = 0,
-  ) => {
-    if (!hometownLoc) return `— ${fallbackUnit}`;
-    if (hometown.loading) return "...";
-    if (!display) return "ERR";
-    return `${display.value.toFixed(digits)} ${display.unit}`.trim();
-  };
 
   const tempDisp = displayTemp(hometown.temperatureC, unitSystem);
   const dewDisp = displayTemp(hometown.dewpointC, unitSystem);
