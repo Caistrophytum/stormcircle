@@ -44,26 +44,6 @@ const MissionClock = () => {
   return <span className="text-xs font-mono text-card-foreground">{zulu} Z</span>;
 };
 
-/** Compact metric cell for the "Now in X" ruler. */
-const MetricCell = ({
-  label,
-  value,
-  tone = "default",
-}: {
-  label: string;
-  value: string;
-  tone?: "default" | "accent";
-}) => (
-  <div className="flex flex-col">
-    <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">{label}</span>
-    <span
-      className={`text-xs font-mono ${tone === "accent" ? "text-neon-blue" : "text-card-foreground"}`}
-    >
-      {value}
-    </span>
-  </div>
-);
-
 const StatusBar = () => {
   const navigate = useNavigate();
   const { user, profile, signOut } = useAuth();
