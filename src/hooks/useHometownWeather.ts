@@ -35,6 +35,8 @@ export interface LatLon {
 export function useHometownWeather(location: LatLon | null): HometownWeather {
   const [data, setData] = useState<HometownWeather>(EMPTY);
   const isFetchingRef = useRef(false);
+  const firstRunRef = useRef(true);
+  const tick = useRefreshTick();
 
   useEffect(() => {
     if (!location) {
