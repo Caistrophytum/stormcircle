@@ -69,6 +69,7 @@ export function toggleUnitSystem() {
 const cToF = (c: number) => c * 9 / 5 + 32;
 const mToFt = (m: number) => m * 3.28084;
 const kmToMi = (km: number) => km * 0.621371;
+const kmhToMph = (kmh: number) => kmh * 0.621371;
 const hpaToInHg = (hpa: number) => hpa * 0.02953;
 
 
