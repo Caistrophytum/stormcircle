@@ -436,8 +436,10 @@ export default function CitizenReports() {
             return (
               <div
                 key={stack.id}
-                className={`bg-shroud border ${
-                  stack.approved ? "border-neon-green/40 shadow-[0_0_0_1px_hsl(var(--primary)/0.05)]" : "border-border"
+                className={`rounded-lg border backdrop-blur-sm transition-colors ${
+                  stack.approved
+                    ? "border-neon-green/40 bg-neon-green/[0.04] shadow-[0_0_12px_hsl(var(--neon-green)/0.15)]"
+                    : "border-white/10 bg-white/[0.03] hover:border-white/20"
                 }`}
               >
                 {/* Stack header — clickable to expand */}
