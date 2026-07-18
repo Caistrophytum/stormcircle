@@ -526,10 +526,31 @@ export default function MobileMain() {
           }}
         >
           {(() => {
+            /** Dew point comfort categories (raw °C from Open-Meteo). */
+            const dewPointDescriptor = (c: number) => {
+              if (c < 4.9) return "Very Dry";
+              if (c <= 9.9) return "Dry";
+              if (c <= 14.9) return "Comfortable";
+              if (c <= 19.9) return "Mostly Comfortable";
+              if (c <= 23.9) return "Muggy";
+              return "Oppressive";
+            };
+
+            /** UV index exposure categories. */
+            const uvDescriptor = (uv: number) => {
+              if (uv === 0) return "None";
+              if (uv <= 2) return "Low";
+              if (uv <= 5) return "Medium";
+              if (uv <= 7) return "High";
+              if (uv <= 10) return "Very High";
+              return "Extreme";
+            };
+
             const render = (
               label: string,
               display: { value: number; unit: string } | null,
               raw: number | null,
+              descriptor?: string,
             ) => {
               if (!profile?.location) return null;
               if (hometownWeather.loading) {
@@ -546,12 +567,18 @@ export default function MobileMain() {
                   </span>
                 );
               }
+              const value = label === "UV" ? Math.round(display.value) : display.value.toFixed(0);
               return (
                 <span key={label}>
                   {label}:{" "}
                   <span style={{ color: "#ff9d00", fontWeight: 600 }}>
-                    {display.value.toFixed(label === "UV" ? 1 : 0)} {display.unit}
+                    {value}{display.unit}
                   </span>
+                  {descriptor && (
+                    <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 400 }}>
+                      {" "}({descriptor})
+                    </span>
+                  )}
                 </span>
               );
             };
@@ -570,7 +597,14 @@ export default function MobileMain() {
               <>
                 {render("Temp", displayTemp(hometownWeather.temperatureC, unitSystem), hometownWeather.temperatureC)}
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
-                {render("Dew", displayTemp(hometownWeather.dewpointC, unitSystem), hometownWeather.dewpointC)}
+                {render(
+                  "Dew",
+                  displayTemp(hometownWeather.dewpointC, unitSystem),
+                  hometownWeather.dewpointC,
+                  hometownWeather.dewpointC != null
+                    ? dewPointDescriptor(hometownWeather.dewpointC)
+                    : undefined,
+                )}
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
                 {render("Real Feel", displayTemp(hometownWeather.apparentTemperatureC, unitSystem), hometownWeather.apparentTemperatureC)}
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
@@ -582,6 +616,9 @@ export default function MobileMain() {
                     ? { value: hometownWeather.uvIndex, unit: "" }
                     : null,
                   hometownWeather.uvIndex,
+                  hometownWeather.uvIndex != null
+                    ? uvDescriptor(hometownWeather.uvIndex)
+                    : undefined,
                 )}
               </>
             );
