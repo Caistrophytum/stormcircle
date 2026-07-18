@@ -32,6 +32,8 @@ export interface LatLon {
 export function useCurrentWeather(location: LatLon | null): CurrentWeather {
   const [data, setData] = useState<CurrentWeather>(EMPTY);
   const isFetchingRef = useRef(false);
+  const firstRunRef = useRef(true);
+  const tick = useRefreshTick();
 
   useEffect(() => {
     if (!location) {
