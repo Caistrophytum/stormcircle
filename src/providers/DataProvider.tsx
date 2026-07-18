@@ -60,8 +60,8 @@ import { useRefreshTick } from "@/hooks/useRefreshTick";
 
 const NEW_WINDOW_MS = 5 * 60_000;
 const REALTIME_DEBOUNCE_MS = 300;
-const ALERTS_REFRESH_MS = 60_000;
-const LSR_REFRESH_MS = 60_000;
+// 60 s background refreshes for alerts + LSRs are driven by the shared
+// `useRefreshTick` clock (see the tick-effect below). No local intervals.
 const PROFILE_TIMEOUT_MS = 5_000;
 const ALERTS_TIMEOUT_MS = 8_000;
 const POLYGONS_TIMEOUT_MS = 10_000;
