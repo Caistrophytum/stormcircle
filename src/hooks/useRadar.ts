@@ -67,17 +67,30 @@ export function useRadar() {
     setSelectedStation(station);
     setStationDistanceKm(0);
 
-    // station.name is "City, ST" — strip the state suffix for geocoding.
-    const cityName = station.name.split(",")[0].trim();
+    // station.name is "City, ST" — the second token is the US state abbrev
+    // (e.g. "FL" for KMLB). We MUST constrain the reverse-geocode to US +
+    // that state, otherwise homonyms like Melbourne, AU or Birmingham, UK
+    // silently outrank Melbourne, FL / Birmingham, AL and hijack the map.
+    const parts = station.name.split(",").map((s) => s.trim());
+    const cityName = parts[0];
+    const stateAbbrev = (parts[1] ?? "").split("/")[0].trim().toUpperCase();
     try {
-      const results = await searchGeocode(cityName, 1);
-      const hit = results[0];
+      const results = await searchGeocode(cityName, 8);
+      const usResults = results.filter(
+        (r) => (r.country_code ?? "").toUpperCase() === "US",
+      );
+      const hit =
+        (stateAbbrev &&
+          usResults.find(
+            (r) => US_STATE_ABBREV[(r.admin1 ?? "").toLowerCase()] === stateAbbrev,
+          )) ||
+        usResults[0];
       if (hit) {
         setCtxCity({
           name: hit.name,
           lat: hit.latitude,
           lon: hit.longitude,
-          countryCode: (hit.country_code ?? "US").toUpperCase(),
+          countryCode: "US",
         });
         return;
       }
@@ -87,6 +100,7 @@ export function useRadar() {
     // Fallback: use the station's own coordinates as the "city" (CONUS station).
     setCtxCity({ name: cityName, lat: station.lat, lon: station.lon, countryCode: "US" });
   };
+
 
   const tileUrl = useMemo(() => {
     if (!selectedStation || !selectedProduct) return null;
