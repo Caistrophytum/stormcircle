@@ -225,40 +225,60 @@ const StatusBar = () => {
             {unitSystem === "metric" ? "SI" : "US"}
           </span>
         </button>
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-muted-foreground uppercase leading-none">
+        <div className="flex flex-col w-28 shrink-0">
+          <span
+            className="text-[9px] font-mono text-muted-foreground uppercase leading-none truncate"
+            title={selectedCity ? selectedCity.name : "Coord"}
+          >
             {selectedCity ? selectedCity.name : "Coord"}
           </span>
-          <span className="text-xs font-mono text-card-foreground">{coordText}</span>
+          <span className="text-[10px] font-mono text-card-foreground tracking-tight truncate">
+            {coordText}
+          </span>
         </div>
         <div className="h-5 w-px bg-border" />
-        <div className="flex flex-col">
-          <span className="text-[9px] font-mono text-primary uppercase leading-none tracking-wide">
+        <div className="flex flex-col min-w-0">
+          <span className="text-[9px] font-mono text-primary uppercase leading-none tracking-wide truncate">
             {hometownLabel}
           </span>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5 text-[11px] font-mono text-card-foreground">
-            {!profile?.location ? (
-              <span className="text-muted-foreground">
-                {user ? "Please choose a hometown from the account center portal." : "Sign in and set a hometown to see local conditions."}
-              </span>
-            ) : (
-              <>
-                {renderRulerMetric("Temp", tempDisp, hometown.temperatureC)}
-                {rulerSeparator}
-                {renderRulerMetric("Dew", dewDisp, hometown.dewpointC, hometown.dewpointC != null ? dewPointDescriptor(hometown.dewpointC) : undefined)}
-                {rulerSeparator}
-                {renderRulerMetric("Real Feel", feelDisp, hometown.apparentTemperatureC, hometown.apparentTemperatureC != null ? realFeelDescriptor(hometown.apparentTemperatureC) : undefined)}
-                {rulerSeparator}
-                {renderRulerMetric("Wind", windDisp, hometown.windSpeedKmh)}
-                {rulerSeparator}
-                {renderRulerMetric(
-                  "UV",
-                  hometown.uvIndex != null ? { value: hometown.uvIndex, unit: "" } : null,
-                  hometown.uvIndex,
-                  hometown.uvIndex != null ? uvDescriptor(hometown.uvIndex) : undefined,
-                )}
-              </>
-            )}
+          <div
+            ref={rulerContainerRef}
+            className="relative mt-0.5 overflow-hidden min-w-0"
+          >
+            <div
+              ref={rulerContentRef}
+              className={cn(
+                "flex items-center gap-x-3 text-[11px] font-mono text-card-foreground whitespace-nowrap",
+                rulerOverflows && "ruler-bounce"
+              )}
+              style={{
+                "--container-width": `${rulerContainerRef.current?.clientWidth ?? 0}px`,
+                "--content-width": `${rulerContentRef.current?.scrollWidth ?? 0}px`,
+              } as React.CSSProperties}
+            >
+              {!profile?.location ? (
+                <span className="text-muted-foreground">
+                  {user ? "Please choose a hometown from the account center portal." : "Sign in and set a hometown to see local conditions."}
+                </span>
+              ) : (
+                <>
+                  {renderRulerMetric("Temp", tempDisp, hometown.temperatureC)}
+                  {rulerSeparator}
+                  {renderRulerMetric("Dew", dewDisp, hometown.dewpointC, hometown.dewpointC != null ? dewPointDescriptor(hometown.dewpointC) : undefined)}
+                  {rulerSeparator}
+                  {renderRulerMetric("Real Feel", feelDisp, hometown.apparentTemperatureC, hometown.apparentTemperatureC != null ? realFeelDescriptor(hometown.apparentTemperatureC) : undefined)}
+                  {rulerSeparator}
+                  {renderRulerMetric("Wind", windDisp, hometown.windSpeedKmh)}
+                  {rulerSeparator}
+                  {renderRulerMetric(
+                    "UV",
+                    hometown.uvIndex != null ? { value: hometown.uvIndex, unit: "" } : null,
+                    hometown.uvIndex,
+                    hometown.uvIndex != null ? uvDescriptor(hometown.uvIndex) : undefined,
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
