@@ -439,9 +439,9 @@ export default function CitizenReports() {
             return (
               <div
                 key={stack.id}
-                className={`relative rounded-2xl border backdrop-blur-sm transition-colors ${
+                className={`relative rounded-xl border backdrop-blur-sm transition-colors ${
                   stack.approved
-                    ? "border-neon-green/40 bg-neon-green/[0.05] shadow-[0_0_16px_hsl(var(--neon-green)/0.18)]"
+                    ? "border-neon-green/40 bg-neon-green/[0.05] shadow-[0_0_12px_hsl(var(--neon-green)/0.14)]"
                     : "border-white/10 bg-white/[0.04] hover:border-white/20"
                 }`}
               >
@@ -450,9 +450,9 @@ export default function CitizenReports() {
                   <span
                     aria-label="Verified report"
                     title="Verified"
-                    className="absolute -top-2 -left-2 z-10 flex items-center justify-center size-6 rounded-full bg-neon-green text-background border border-background shadow-[0_0_10px_hsl(var(--neon-green)/0.6)]"
+                    className="absolute -top-1.5 -left-1.5 z-10 flex items-center justify-center size-5 rounded-full bg-neon-green text-background border border-background shadow-[0_0_8px_hsl(var(--neon-green)/0.6)]"
                   >
-                    <svg viewBox="0 0 20 20" fill="none" className="size-3.5" aria-hidden="true">
+                    <svg viewBox="0 0 20 20" fill="none" className="size-3" aria-hidden="true">
                       <path
                         d="M4 10.5l3.5 3.5L16 6"
                         stroke="currentColor"
@@ -475,7 +475,7 @@ export default function CitizenReports() {
                       toggleExpand(stack.id);
                     }
                   }}
-                  className="w-full text-left px-3.5 py-3 space-y-2 hover:bg-background/20 rounded-2xl transition-colors cursor-pointer"
+                  className="w-full text-left px-3 py-2 space-y-1.5 hover:bg-background/20 rounded-xl transition-colors cursor-pointer"
                 >
                   {/* Sentence: [badge] [username] reported a [topic] */}
                   <p className="text-[13px] font-mono text-foreground leading-relaxed break-words whitespace-pre-wrap pr-6">
