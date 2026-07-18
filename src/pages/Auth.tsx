@@ -193,6 +193,22 @@ const Auth = () => {
 
     setSubmitting(true);
     try {
+      // Pre-check username availability so a collision surfaces as a friendly
+      // message rather than a 500 from the profiles trigger's unique-key clash.
+      const { data: existing, error: lookupError } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("username", username.data)
+        .maybeSingle();
+      if (lookupError) {
+        toast.error("Could not verify username availability. Please try again.");
+        return;
+      }
+      if (existing) {
+        toast.error("That username is already taken");
+        return;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: email.data,
         password: password.data,
@@ -202,11 +218,23 @@ const Auth = () => {
         },
       });
       if (error) {
+        // Race: another signup grabbed the username between the pre-check
+        // and the auth insert — the trigger raises 23505 and Supabase Auth
+        // returns a 500 "unexpected_failure". Translate to a friendly msg.
+        const raw = error.message ?? "";
+        if (
+          /profiles_username_key|duplicate key|unexpected_failure|Database error saving new user/i.test(
+            raw,
+          )
+        ) {
+          toast.error("That username is already taken");
+          return;
+        }
         // Supabase returns explicit errors like "User already registered"
         // when anti-enumeration is OFF. Surface a clear message.
-        const msg = /already|registered|exists/i.test(error.message)
+        const msg = /already|registered|exists/i.test(raw)
           ? "An account with this email already exists"
-          : error.message;
+          : raw;
         toast.error(msg);
         return;
       }
@@ -221,6 +249,7 @@ const Auth = () => {
       setSubmitting(false);
     }
   };
+
 
   /** Sends a "reset your password" email via Supabase. */
   const handleForgot = async (e: FormEvent) => {
