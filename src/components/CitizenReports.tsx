@@ -433,15 +433,37 @@ export default function CitizenReports() {
                 const isGeneral = stack.signature === "__general__";
                 const showApprove = isModerator && !stack.approved && !isGeneral;
                 const showUnapprove = isModerator && stack.approved && !isGeneral;
+            const primaryReport = stack.reports[0];
+            const primaryUsername = primaryReport?.username ?? "Unknown";
+            const primaryBadge = stack.badge;
             return (
               <div
                 key={stack.id}
-                className={`rounded-lg border backdrop-blur-sm transition-colors ${
+                className={`relative rounded-2xl border backdrop-blur-sm transition-colors ${
                   stack.approved
-                    ? "border-neon-green/40 bg-neon-green/[0.04] shadow-[0_0_12px_hsl(var(--neon-green)/0.15)]"
-                    : "border-white/10 bg-white/[0.03] hover:border-white/20"
+                    ? "border-neon-green/40 bg-neon-green/[0.05] shadow-[0_0_16px_hsl(var(--neon-green)/0.18)]"
+                    : "border-white/10 bg-white/[0.04] hover:border-white/20"
                 }`}
               >
+                {/* Approved tick — top-left corner */}
+                {stack.approved && (
+                  <span
+                    aria-label="Verified report"
+                    title="Verified"
+                    className="absolute -top-2 -left-2 z-10 flex items-center justify-center size-6 rounded-full bg-neon-green text-background border border-background shadow-[0_0_10px_hsl(var(--neon-green)/0.6)]"
+                  >
+                    <svg viewBox="0 0 20 20" fill="none" className="size-3.5" aria-hidden="true">
+                      <path
+                        d="M4 10.5l3.5 3.5L16 6"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                )}
+
                 {/* Stack header — clickable to expand */}
                 <div
                   role="button"
@@ -453,43 +475,47 @@ export default function CitizenReports() {
                       toggleExpand(stack.id);
                     }
                   }}
-                  className="w-full text-left px-2 py-1.5 space-y-1 hover:bg-background/30 transition-colors cursor-pointer"
+                  className="w-full text-left px-3.5 py-3 space-y-2 hover:bg-background/20 rounded-2xl transition-colors cursor-pointer"
                 >
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span
-                        className={`text-[8px] font-mono px-1 py-0.5 border rounded uppercase shrink-0 ${
-                          stack.badge === "Meteorologist"
-                            ? "border-neon-green/30 text-neon-green bg-neon-green/5"
-                            : "border-border text-muted-foreground"
-                        }`}
-                      >
-                        {stack.badge}
-                      </span>
-                      {stack.approved && (
-                        <span className="text-[8px] font-mono px-1 py-0.5 border border-neon-green/40 bg-neon-green/10 text-neon-green rounded uppercase shrink-0">
-                          ✓ Approved
-                        </span>
-                      )}
-                    </div>
+                  {/* Sentence: [badge] [username] reported a [topic] */}
+                  <p className="text-[13px] font-mono text-foreground leading-relaxed break-words whitespace-pre-wrap pr-6">
+                    <span
+                      className={`inline-flex items-center text-[9px] font-mono px-1.5 py-0.5 border rounded uppercase align-middle mr-1.5 ${
+                        primaryBadge === "Meteorologist"
+                          ? "border-neon-green/40 text-neon-green bg-neon-green/10"
+                          : "border-border text-muted-foreground bg-background/40"
+                      }`}
+                    >
+                      {primaryBadge}
+                    </span>
+                    <span className="font-bold text-primary">{primaryUsername}</span>
+                    <span className="text-foreground/80"> reported </span>
+                    {isGeneral ? (
+                      <span className="text-foreground">{stack.topic}</span>
+                    ) : (
+                      <span className="text-foreground font-semibold">a {stack.topic}</span>
+                    )}
+                    <span className="text-foreground/80">.</span>
+                  </p>
+
+                  {/* Meta row: time + count + expand chevron */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      {new Date(stack.latestTime).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                     <span className="flex items-center gap-1.5 shrink-0">
-                      <span className="text-[9px] font-mono text-muted-foreground">
-                        {new Date(stack.latestTime).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
                       {stack.count > 1 && (
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-primary/15 border border-primary/30 text-primary rounded">
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-primary/15 border border-primary/30 text-primary rounded-full">
                           ×{stack.count}
                         </span>
                       )}
-                      <span className="text-[9px] font-mono text-muted-foreground">{isOpen ? "▾" : "▸"}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground">{isOpen ? "▾" : "▸"}</span>
                     </span>
                   </div>
-                  <p className="text-[11px] font-mono text-foreground/90 leading-snug break-words whitespace-pre-wrap">
-                    {stack.topic}
-                  </p>
+
                   {(() => {
                     const latest = isGeneral
                       ? stack.reports[0]
@@ -498,10 +524,10 @@ export default function CitizenReports() {
                     if (!isGeneral && latest.content === stack.topic) return null;
                     return (
                       <div className="pt-1 pl-2 border-l border-primary/30">
-                        <p className="text-[8px] font-mono text-muted-foreground uppercase tracking-wide mb-0.5">
+                        <p className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide mb-0.5">
                           Latest · {latest.username}
                         </p>
-                        <p className="text-[10px] font-mono text-foreground/70 leading-snug break-words whitespace-pre-wrap line-clamp-2">
+                        <p className="text-[11px] font-mono text-foreground/75 leading-snug break-words whitespace-pre-wrap line-clamp-2">
                           {latest.content}
                         </p>
                       </div>
@@ -517,15 +543,15 @@ export default function CitizenReports() {
                       (r) => r.user_id === user.id && !/has joined the report/i.test(r.content),
                     );
                     return (
-                      <div className="flex justify-center pt-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex justify-center pt-0.5" onClick={(e) => e.stopPropagation()}>
                         {alreadyJoined ? (
-                          <span className="text-[9px] font-mono uppercase tracking-wide px-2 py-0.5 border border-neon-green/30 text-neon-green/80 bg-neon-green/5 rounded">
+                          <span className="text-[9px] font-mono uppercase tracking-wide px-2.5 py-1 border border-neon-green/30 text-neon-green/80 bg-neon-green/5 rounded-full">
                             ✓ Joined
                           </span>
                         ) : isOwnReport ? (
                           <span
                             title="You authored this report"
-                            className="text-[9px] font-mono uppercase tracking-wide px-2 py-0.5 border border-muted-foreground/30 text-muted-foreground/70 bg-muted/5 rounded cursor-not-allowed"
+                            className="text-[9px] font-mono uppercase tracking-wide px-2.5 py-1 border border-muted-foreground/30 text-muted-foreground/70 bg-muted/5 rounded-full cursor-not-allowed"
                           >
                             Your report
                           </span>
@@ -533,7 +559,7 @@ export default function CitizenReports() {
                           <button
                             type="button"
                             onClick={() => joinReport(stack)}
-                            className="text-[9px] font-mono uppercase font-bold px-3 py-0.5 border border-primary/40 text-primary hover:bg-primary/10 rounded transition-colors"
+                            className="text-[9px] font-mono uppercase font-bold px-3 py-1 border border-primary/40 text-primary hover:bg-primary/10 rounded-full transition-colors"
                           >
                             Join Report
                           </button>
@@ -541,72 +567,75 @@ export default function CitizenReports() {
                       </div>
                     );
                   })()}
-
-                  {/* Action row (approve / delete) */}
-                  {(showApprove || showUnapprove || showSoloDelete || showStackDelete) && (
-                    <div className="flex items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
-                      {showApprove && (
-                        <button
-                          type="button"
-                          onClick={() => approveStack(stack)}
-                          className="text-[9px] font-mono uppercase font-bold px-2 py-0.5 border border-neon-green/40 text-neon-green hover:bg-neon-green/10 rounded transition-colors"
-                        >
-                          ✓ Approve
-                        </button>
-                      )}
-                      {showUnapprove && (
-                        <button
-                          type="button"
-                          onClick={() => unapproveStack(stack)}
-                          className="text-[9px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-foreground hover:text-foreground rounded transition-colors"
-                        >
-                          Unapprove
-                        </button>
-                      )}
-                      {showSoloDelete && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPending({
-                              kind: "delete-message",
-                              id: soloReport.id,
-                              preview: soloReport.content,
-                            })
-                          }
-                          aria-label="Remove report"
-                          className="ml-auto text-[10px] font-mono leading-none px-1.5 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded transition-colors"
-                        >
-                          ×
-                        </button>
-                      )}
-                      {showStackDelete && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setPending({
-                              kind: "delete-stack",
-                              ids: stack.reports.map((r) => r.id),
-                              topic: stack.topic,
-                              count: stack.count,
-                            })
-                          }
-                          aria-label="Remove entire stack"
-                          className="ml-auto text-[9px] font-mono uppercase font-bold px-2 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded transition-colors"
-                        >
-                          × Remove all
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </div>
+
+                {/* Moderator action bar — bottom of the card, meteorologists only */}
+                {(showApprove || showUnapprove || showSoloDelete || showStackDelete) && (
+                  <div
+                    className="flex items-center justify-end gap-1.5 px-3.5 py-2 border-t border-white/10 bg-white/[0.02] rounded-b-2xl"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {showApprove && (
+                      <button
+                        type="button"
+                        onClick={() => approveStack(stack)}
+                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-neon-green/40 text-neon-green hover:bg-neon-green/10 rounded-full transition-colors"
+                      >
+                        ✓ Approve
+                      </button>
+                    )}
+                    {showUnapprove && (
+                      <button
+                        type="button"
+                        onClick={() => unapproveStack(stack)}
+                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-border text-muted-foreground hover:border-foreground hover:text-foreground rounded-full transition-colors"
+                      >
+                        Unapprove
+                      </button>
+                    )}
+                    {showSoloDelete && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPending({
+                            kind: "delete-message",
+                            id: soloReport.id,
+                            preview: soloReport.content,
+                          })
+                        }
+                        aria-label="Remove report"
+                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
+                      >
+                        × Remove
+                      </button>
+                    )}
+                    {showStackDelete && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setPending({
+                            kind: "delete-stack",
+                            ids: stack.reports.map((r) => r.id),
+                            topic: stack.topic,
+                            count: stack.count,
+                          })
+                        }
+                        aria-label="Remove entire stack"
+                        className="text-[9px] font-mono uppercase font-bold px-2.5 py-1 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
+                      >
+                        × Remove all
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Expanded individual reports */}
                 {isOpen && stack.reports.length > 1 && (
-                  <ul className="border-t border-white/10 bg-white/[0.02] divide-y divide-white/5">
+                  <ul className="border-t border-white/10 bg-white/[0.02] divide-y divide-white/5 rounded-b-2xl overflow-hidden">
                     {stack.reports.map((r) => (
-                      <li key={r.id} className="px-2 py-1.5 space-y-0.5">
+                      <li key={r.id} className="px-3.5 py-2 space-y-1">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] font-mono font-bold text-card-foreground truncate">
+                          <span className="text-[11px] font-mono font-bold text-primary truncate">
                             {r.username}
                           </span>
                           <span className="flex items-center gap-1.5 shrink-0">
@@ -627,14 +656,14 @@ export default function CitizenReports() {
                                   })
                                 }
                                 aria-label="Remove report"
-                                className="text-[10px] font-mono leading-none px-1 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded transition-colors"
+                                className="text-[10px] font-mono leading-none px-1.5 py-0.5 border border-border text-muted-foreground hover:border-destructive hover:text-destructive rounded-full transition-colors"
                               >
                                 ×
                               </button>
                             )}
                           </span>
                         </div>
-                        <p className="text-[10px] font-mono text-foreground/80 leading-snug break-words whitespace-pre-wrap">
+                        <p className="text-[11px] font-mono text-foreground/85 leading-snug break-words whitespace-pre-wrap">
                           {r.content}
                         </p>
                       </li>
