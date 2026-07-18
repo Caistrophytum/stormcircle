@@ -54,6 +54,7 @@ import { getWarningColor } from "@/hooks/useWarningPolygons";
 import type { LSRReport } from "@/hooks/useLSR";
 import type { Profile } from "@/hooks/useAuth";
 import { IEM_LSR_URL as LSR_URL } from "@/lib/endpoints";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 
 // ---------------- shared constants ----------------
 
