@@ -372,7 +372,7 @@ export default function CitizenReports() {
   }
 
   return (
-    <aside className="w-80 h-full flex flex-col shrink-0 bg-transparent">
+    <aside className="w-72 h-full flex flex-col shrink-0 bg-transparent">
       {/* Header */}
       <div className="p-4 border-b border-white/10 bg-white/[0.02] backdrop-blur-sm">
         <h2 className="text-xs font-mono font-bold text-card-foreground uppercase flex items-center gap-2">
