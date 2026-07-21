@@ -20,6 +20,7 @@ import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolyg
 import { useUnitSystem, displayTemp, displayWindSpeed, displayLengthM } from "@/hooks/useUnitSystem";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import CurrentLocationHazards from "@/components/CurrentLocationHazards";
+import LocateMeButton from "@/components/mobile/LocateMeButton";
 import type { RawMessage } from "@/lib/reportGrouping";
 import { pointInRing } from "@/lib/pointInPolygon";
 
