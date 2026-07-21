@@ -2,18 +2,26 @@
  * LocateMeButton — mobile-only affordance placed in the Welcome rectangle.
  *
  * Uses the browser Geolocation API to grab the device's coordinates, reverse
- * geocodes them via BigDataCloud's free client endpoint (no API key), and
- * writes the resulting "City, Admin1[, CC]" string to profiles.location so
- * the rest of the app (hometown weather, home city risk, radar anchor) picks
- * it up on the next reload.
+ * geocodes them via BigDataCloud's free client endpoint (no API key), then
+ * validates candidate place names against Open-Meteo's geocoder so the saved
+ * label is one the rest of the app can actually resolve back to coordinates
+ * (hometown weather, home city risk, radar anchor all depend on that).
  */
 import { useState } from "react";
 import { Loader2, LocateFixed } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { searchGeocode } from "@/lib/openMeteo";
 
 interface Props {
   userId: string;
+}
+
+interface AdminEntry {
+  name?: string;
+  order?: number;
+  adminLevel?: number;
+  isoName?: string;
 }
 
 interface ReverseGeocodeResult {
@@ -21,6 +29,7 @@ interface ReverseGeocodeResult {
   locality?: string;
   principalSubdivision?: string;
   countryCode?: string;
+  localityInfo?: { administrative?: AdminEntry[] };
 }
 
 /** Match LocationPicker's formatCity so downstream label parsing is consistent. */
@@ -28,6 +37,65 @@ function formatCity(name: string, admin1?: string, countryCode?: string): string
   const cc = (countryCode ?? "").toUpperCase();
   if (cc && cc !== "US") return [name, admin1, cc].filter(Boolean).join(", ");
   return admin1 ? `${name}, ${admin1}` : name;
+}
+
+/** Great-circle distance (km) — used to pick the geocoder hit closest to the
+ * user's actual coordinates so we don't grab a same-named city on another
+ * continent. */
+function haversineKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLon = toRad(bLon - aLon);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+/**
+ * Walk candidate place names (city → locality → admin hierarchy from most
+ * local to least) and return the first one Open-Meteo can geocode within
+ * ~150 km of the user's real coords.
+ */
+async function pickResolvableCity(
+  data: ReverseGeocodeResult,
+  lat: number,
+  lon: number,
+): Promise<{ label: string } | null> {
+  const admins = (data.localityInfo?.administrative ?? [])
+    .filter((a): a is AdminEntry & { name: string } => !!a.name)
+    // Most local (highest adminLevel) first.
+    .sort((a, b) => (b.adminLevel ?? 0) - (a.adminLevel ?? 0))
+    .map((a) => a.name);
+
+  const seen = new Set<string>();
+  const candidates: string[] = [];
+  for (const c of [data.city, data.locality, ...admins]) {
+    if (!c) continue;
+    const key = c.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    candidates.push(c);
+  }
+
+  for (const name of candidates) {
+    try {
+      const results = await searchGeocode(name, 5);
+      if (!results.length) continue;
+      // Prefer the geocoder hit closest to the user (guards against homonyms).
+      const nearest = results
+        .map((r) => ({ r, d: haversineKm(lat, lon, r.latitude, r.longitude) }))
+        .sort((a, b) => a.d - b.d)[0];
+      if (nearest.d > 150) continue;
+      return {
+        label: formatCity(nearest.r.name, nearest.r.admin1, nearest.r.country_code),
+      };
+    } catch {
+      /* try next candidate */
+    }
+  }
+  return null;
 }
 
 export default function LocateMeButton({ userId }: Props) {
@@ -48,21 +116,20 @@ export default function LocateMeButton({ userId }: Props) {
           );
           if (!res.ok) throw new Error(`Reverse geocode failed (${res.status})`);
           const data: ReverseGeocodeResult = await res.json();
-          const cityName = data.city || data.locality;
-          if (!cityName) {
-            toast.error("Could not identify a nearby city.");
+          const picked = await pickResolvableCity(data, latitude, longitude);
+          if (!picked) {
+            toast.error("Could not identify a nearby known city.");
             return;
           }
-          const label = formatCity(cityName, data.principalSubdivision, data.countryCode);
           const { error } = await supabase
             .from("profiles")
-            .update({ location: label })
+            .update({ location: picked.label })
             .eq("id", userId);
           if (error) {
             toast.error(`Could not save location: ${error.message}`);
             return;
           }
-          toast.success(`Home city set to ${label}`);
+          toast.success(`Home city set to ${picked.label}`);
           if (typeof window !== "undefined") window.location.reload();
         } catch (err) {
           toast.error(err instanceof Error ? err.message : "Failed to locate.");
