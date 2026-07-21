@@ -486,10 +486,17 @@ export default function MobileMain() {
           border: "1px solid rgba(255,157,0,0.3)",
           background: "rgba(255,157,0,0.05)",
           borderRadius: "2px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "8px",
         }}
       >
-        <h2 style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>WELCOME</h2>
-        <div style={{ fontSize: "14px", color: "#fff", fontWeight: 700, marginTop: "2px" }}>{displayName}</div>
+        <div style={{ minWidth: 0 }}>
+          <h2 style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>WELCOME</h2>
+          <div style={{ fontSize: "14px", color: "#fff", fontWeight: 700, marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</div>
+        </div>
+        {user && <LocateMeButton userId={user.id} />}
       </div>
 
       {/* 1a. Hometown current conditions */}
