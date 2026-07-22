@@ -224,23 +224,27 @@ const POWER = 3.5;
 function aggregate(
   penalties: Record<keyof Weights, number>,
   weights: Weights,
-): { score: number; limiter: keyof Weights; topWeighted: number } {
+): { score: number; limiters: (keyof Weights)[]; topWeighted: number } {
   let sumPow = 0;
-  let limiter: keyof Weights = "heat";
-  let maxWeighted = -Infinity;
+  const contributions: { key: keyof Weights; weighted: number }[] = [];
   (Object.keys(penalties) as (keyof Weights)[]).forEach((k) => {
     const pen = penalties[k];
     const w = weights[k];
     sumPow += w * Math.pow(pen, POWER);
-    const contribution = w * pen;
-    if (contribution > maxWeighted) {
-      maxWeighted = contribution;
-      limiter = k;
-    }
+    contributions.push({ key: k, weighted: w * pen });
   });
+  contributions.sort((a, b) => b.weighted - a.weighted);
+  const topWeighted = contributions[0]?.weighted ?? 0;
+  // Any factor within 40% of the top contribution AND meaningfully large
+  // is treated as a co-primary limiter, so multiple concurrent hazards
+  // (e.g. heat + wind) surface together instead of one masking the rest.
+  const cutoff = Math.max(3, topWeighted * 0.6);
+  const limiters = contributions
+    .filter((c) => c.weighted >= cutoff)
+    .map((c) => c.key);
   const combined = Math.pow(sumPow, 1 / POWER);
   const score = clamp(100 - combined, 0, 100);
-  return { score, limiter, topWeighted: maxWeighted };
+  return { score, limiters, topWeighted };
 }
 
 // ── Hard gates (trimmed) ────────────────────────────────────────────────
@@ -272,10 +276,13 @@ function scoreHour(
     uv: uvPenalty(h.uvIndex),
   };
 
-  const { score: rawScore, limiter, topWeighted } = aggregate(penalties, w);
+  const { score: rawScore, limiters, topWeighted } = aggregate(penalties, w);
 
   let score = rawScore;
-  let limiterLabel = topWeighted >= 3 ? LABELS[limiter] : "None";
+  let limiterLabel =
+    topWeighted >= 3 && limiters.length > 0
+      ? limiters.map((k) => LABELS[k]).join(" + ")
+      : "None";
 
   const gate = hardGate(ctx.activeWarnings);
   if (gate && gate.cap < score) {
