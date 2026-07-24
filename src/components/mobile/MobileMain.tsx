@@ -318,10 +318,11 @@ export default function MobileMain() {
 
     const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
     const capeScore = sounding.cape != null ? clamp01(sounding.cape / 4000) : 0;
-    const cinScore = sounding.cin != null ? clamp01(1 - Math.abs(sounding.cin) / 200) : 0;
+    const cinMagnitude = sounding.cin != null ? Math.abs(sounding.cin) : 0;
+    const cinScore = sounding.cin != null ? clamp01(1 - cinMagnitude / 200) : 0;
     const liScore = sounding.li != null ? clamp01((6 - sounding.li) / 14) : 0;
-    const blhScore = sounding.blh != null ? clamp01(sounding.blh / 3000) : 0;
     const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
+    const elScore = sounding.el != null ? clamp01((sounding.el - 4000) / 10000) : 0;
 
     // Physical inputs — independent enabling environment (no gust: gusts are
     // a *consequence* of convection and would couple the score to itself).
@@ -333,13 +334,18 @@ export default function MobileMain() {
     const liftScore = sounding.omegaMid != null ? clamp01((sounding.omegaMid - 0.1) / (3 - 0.1)) : 0;
 
 
-    // CAPE-gated log multiplier: ingredients only pay out when CAPE is present.
+    // CAPE gate: log ramp (buoyancy fuel, diminishing returns).
+    // CIN gate: inverted log — cap suppresses everything downstream.
     const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
-    const capeContrib0 = stationActive ? Math.round(capeScore * 35) : 0;
-    const liContribRaw = stationActive ? liScore * 25 * capeGate : 0;
-    const cinContribRaw = stationActive ? cinScore * 15 * capeGate : 0;
-    const lclContribRaw = stationActive ? lclScore * 15 * capeGate : 0;
-    const blhContribRaw = stationActive ? blhScore * 10 * capeGate : 0;
+    const cinGate = sounding.cin == null
+      ? 1
+      : clamp01(1 - Math.log(1 + 9 * clamp01(cinMagnitude / 200)) / Math.log(10));
+    const effectiveGate = capeGate * cinGate;
+
+    const capeContrib0 = stationActive ? Math.round(capeScore * 30) : 0;
+    const liContribRaw  = stationActive ? liScore  * 15 * effectiveGate : 0;
+    const lclContribRaw = stationActive ? lclScore * 15 * effectiveGate : 0;
+    const elContribRaw  = stationActive ? elScore  * 20 * effectiveGate : 0;
 
     // Physical gate on the virtual block's combined output — weighted blend
     // (SFC RH 45%, MID RH 30%, MID LIFT 25%) through the same log shape as
@@ -353,9 +359,9 @@ export default function MobileMain() {
 
     const capeContrib = Math.round(capeContrib0 * physGate);
     const liContrib = Math.round(liContribRaw * physGate);
-    const cinContrib = Math.round(cinContribRaw * physGate);
     const lclContrib = Math.round(lclContribRaw * physGate);
-    const blhContrib = Math.round(blhContribRaw * physGate);
+    const elContrib = Math.round(elContribRaw * physGate);
+    const cinGateBite = stationActive ? Math.round((1 - cinGate) * 20) : 0;
 
     // Unified color scale tied to each parameter's normalized severity score.
     // The redder the value, the more it pushes the WRS score upward.
@@ -369,10 +375,10 @@ export default function MobileMain() {
 
     const nodes = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib, primary: true },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinContrib, primary: false },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinGateBite, primary: false },
       { label: "LI", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li != null), w: liContrib, primary: false },
-      { label: "BLH", value: fmtLenM(sounding.blh), unit: lenUnit, color: colorFromScore(blhScore, sounding.blh != null), w: blhContrib, primary: false },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib, primary: false },
+      { label: "EL", value: fmtLenM(sounding.el), unit: lenUnit, color: colorFromScore(elScore, sounding.el != null), w: elContrib, primary: false },
     ];
 
     // Physical metrics — triangle % is each parameter's weighted contribution
@@ -389,7 +395,7 @@ export default function MobileMain() {
       { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), w: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
     ];
 
-    const threat = Math.min(100, capeContrib + liContrib + cinContrib + lclContrib + blhContrib);
+    const threat = Math.min(100, capeContrib + liContrib + lclContrib + elContrib);
     return { nodes, physicalNodes, threatLevel: threat, physGatePercent: Math.round(physGate * 100) };
   }, [sounding, radar.selectedStation, unitSystem]);
 
