@@ -115,13 +115,25 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         const rhMid = rh700.length ? pick(rh700) : null;
         const omegaMid = omega700.length ? pick(omega700) : null;
 
+        const capeVal = typeof c.cape === "number" ? c.cape : null;
+        const liVal = typeof c.lifted_index === "number" ? c.lifted_index : null;
+        // Approximate Equilibrium Level (m AGL): base cloud + buoyancy depth
+        // (∝ √CAPE) + instability boost (∝ −LI). Clamped 0–16 km.
+        let elVal: number | null = null;
+        if (capeVal != null && lcl != null) {
+          const buoyancyDepth = Math.sqrt(Math.max(0, capeVal)) * 55;
+          const liBoost = liVal != null && liVal < 0 ? Math.min(-liVal, 12) * 700 : 0;
+          elVal = Math.max(0, Math.min(16000, lcl + buoyancyDepth + liBoost));
+        }
+
         if (cancelled) return;
         setData({
-          cape: typeof c.cape === "number" ? c.cape : null,
+          cape: capeVal,
           cin: typeof c.convective_inhibition === "number" ? normalizeCIN(c.convective_inhibition) : null,
-          li: typeof c.lifted_index === "number" ? c.lifted_index : null,
+          li: liVal,
           blh: typeof c.boundary_layer_height === "number" ? c.boundary_layer_height : null,
           lcl,
+          el: elVal,
           rhSurface: typeof c.relative_humidity_2m === "number" ? c.relative_humidity_2m : null,
           rhMid,
           omegaMid,
