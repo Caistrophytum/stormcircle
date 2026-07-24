@@ -8,6 +8,12 @@ export interface SoundingData {
   li: number | null;
   blh: number | null;
   lcl: number | null;
+  /**
+   * Equilibrium Level (m AGL) — approximated from CAPE, LI, and LCL because
+   * Open-Meteo doesn't expose a true parcel EL. Grows with buoyancy depth
+   * (CAPE), instability (−LI), and cloud base (LCL); capped at 16 km.
+   */
+  el: number | null;
   /** Surface (2 m) relative humidity (%) — physical WRS input. */
   rhSurface: number | null;
   /** Mid-level (700 hPa) relative humidity (%) — physical WRS input. */
@@ -24,6 +30,7 @@ const EMPTY: SoundingData = {
   li: null,
   blh: null,
   lcl: null,
+  el: null,
   rhSurface: null,
   rhMid: null,
   omegaMid: null,
