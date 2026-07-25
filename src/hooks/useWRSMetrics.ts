@@ -62,7 +62,7 @@ export function useWRSMetrics(): WRSMetrics {
       if (v === null) return "ERR";
       return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
     };
-    const fmtLI = (v: number | null, digits = 1): string => {
+    const fmtNum = (v: number | null, digits = 1): string => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
       if (v === null) return "ERR";
@@ -79,13 +79,14 @@ export function useWRSMetrics(): WRSMetrics {
     const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
     const capeScore = sounding.cape != null ? clamp01(sounding.cape / 4000) : 0;
-    // CIN is now a *gate* rather than an additive contribution. We keep a
+    // CIN is a *gate* rather than an additive contribution. We keep a
     // display score (higher = weaker cap = healthier) so the visual colour
     // still reflects severity, but the WRS math uses cinGate below.
     const cinMagnitude = sounding.cin != null ? Math.abs(sounding.cin) : 0;
     const cinScore = sounding.cin != null ? clamp01(1 - cinMagnitude / 200) : 0;
-    const liScore = sounding.li != null ? clamp01((6 - sounding.li) / 14) : 0;
-    const blhScore = sounding.blh != null ? clamp01(sounding.blh / 3000) : 0;
+    // Bulk shear (850↔500 hPa, m/s) — storm-organization proxy. 20 m/s ≈
+    // classic supercell / high-end organization ceiling.
+    const shearScore = sounding.shear != null ? clamp01(sounding.shear / 20) : 0;
     const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
     // EL viable 4→14 km AGL (deep convection ceiling).
     const elScore = sounding.el != null ? clamp01((sounding.el - 4000) / 10000) : 0;
@@ -101,15 +102,16 @@ export function useWRSMetrics(): WRSMetrics {
     const cinGate = sounding.cin == null
       ? 1
       : clamp01(1 - Math.log(1 + 9 * clamp01(cinMagnitude / 200)) / Math.log(10));
-    // Both gates must be open for the storm-mode ingredients to pay out.
+    // Both gates must be open for the storm-mode/structure ingredients
+    // (shear, LCL, EL) to pay out.
     const effectiveGate = capeGate * cinGate;
 
-    // Weights: CAPE 30, LI 15, LCL 15, EL 20 (CIN's 20% is embedded in the
-    // multiplicative gate instead of an additive slot).
+    // Weights: CAPE 30, SHEAR 25, EL 15, LCL 10 (CIN's 20% is embedded in
+    // the multiplicative gate). LI removed — redundant with CAPE/CIN.
     const capeContrib = stationActive ? Math.round(capeScore * 30) : 0;
-    const liContribRaw  = stationActive ? liScore  * 15 * effectiveGate : 0;
-    const lclContribRaw = stationActive ? lclScore * 15 * effectiveGate : 0;
-    const elContribRaw  = stationActive ? elScore  * 20 * effectiveGate : 0;
+    const shearContribRaw = stationActive ? shearScore * 25 * effectiveGate : 0;
+    const lclContribRaw   = stationActive ? lclScore   * 10 * effectiveGate : 0;
+    const elContribRaw    = stationActive ? elScore    * 15 * effectiveGate : 0;
 
     const PHYS_W = { sfc: 0.45, mid: 0.3, lift: 0.25 } as const;
     const physScore = clamp01(
@@ -117,7 +119,7 @@ export function useWRSMetrics(): WRSMetrics {
     );
     const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
 
-    const liContrib = Math.round(liContribRaw * physGate);
+    const shearContrib = Math.round(shearContribRaw * physGate);
     const lclContrib = Math.round(lclContribRaw * physGate);
     const elContrib = Math.round(elContribRaw * physGate);
     const capeContribGated = Math.round(capeContrib * physGate);
@@ -128,7 +130,7 @@ export function useWRSMetrics(): WRSMetrics {
     const soundingNodes: MetricNode[] = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", colorHsl: colorFromScore(capeScore, sounding.cape !== null, stationActive), wrsContribution: capeContribGated, primary: true },
       { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", colorHsl: colorFromScore(cinScore, sounding.cin !== null, stationActive), wrsContribution: cinGateBite, primary: false },
-      { label: "LIFTED INDEX", value: fmtLI(sounding.li, 1), unit: "", colorHsl: colorFromScore(liScore, sounding.li !== null, stationActive), wrsContribution: liContrib, primary: false },
+      { label: "SHEAR", value: fmtNum(sounding.shear, 1), unit: "m/s", colorHsl: colorFromScore(shearScore, sounding.shear !== null, stationActive), wrsContribution: shearContrib, primary: true },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, colorHsl: colorFromScore(lclScore, sounding.lcl !== null, stationActive), wrsContribution: lclContrib, primary: false },
       { label: "EL", value: fmtLenM(sounding.el), unit: lenUnit, colorHsl: colorFromScore(elScore, sounding.el !== null, stationActive), wrsContribution: elContrib, primary: false },
     ];
@@ -145,7 +147,7 @@ export function useWRSMetrics(): WRSMetrics {
       { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", colorHsl: colorFromScore(liftScore, sounding.omegaMid != null, stationActive), wrsContribution: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
     ];
 
-    const threat = Math.min(100, capeContribGated + liContrib + lclContrib + elContrib);
+    const threat = Math.min(100, capeContribGated + shearContrib + lclContrib + elContrib);
     const weatherCondition: WeatherCondition =
       threat > 85 ? "stormy" : threat >= 61 ? "rainy" : threat >= 31 ? "cloudy" : "sunny";
 
