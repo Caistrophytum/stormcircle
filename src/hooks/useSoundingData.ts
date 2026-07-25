@@ -20,6 +20,12 @@ export interface SoundingData {
   rhMid: number | null;
   /** Mid-level (700 hPa) vertical velocity from OpenMeteo, in m/s. Positive = ascent (updraft), negative = subsidence. Score ramps 0.1 → 3 m/s. */
   omegaMid: number | null;
+  /**
+   * Bulk shear magnitude (m/s) approximated between 850 hPa (~1.5 km) and
+   * 500 hPa (~5.5 km) — close enough to standard 0–6 km bulk shear for
+   * severe-weather discrimination. Proxies storm organization / longevity.
+   */
+  shear: number | null;
   loading: boolean;
   error: boolean;
 }
@@ -34,6 +40,7 @@ const EMPTY: SoundingData = {
   rhSurface: null,
   rhMid: null,
   omegaMid: null,
+  shear: null,
   loading: false,
   error: false,
 };
