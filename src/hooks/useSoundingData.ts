@@ -20,6 +20,12 @@ export interface SoundingData {
   rhMid: number | null;
   /** Mid-level (700 hPa) vertical velocity from OpenMeteo, in m/s. Positive = ascent (updraft), negative = subsidence. Score ramps 0.1 → 3 m/s. */
   omegaMid: number | null;
+  /**
+   * Bulk shear magnitude (m/s) approximated between 850 hPa (~1.5 km) and
+   * 500 hPa (~5.5 km) — close enough to standard 0–6 km bulk shear for
+   * severe-weather discrimination. Proxies storm organization / longevity.
+   */
+  shear: number | null;
   loading: boolean;
   error: boolean;
 }
@@ -34,6 +40,7 @@ const EMPTY: SoundingData = {
   rhSurface: null,
   rhMid: null,
   omegaMid: null,
+  shear: null,
   loading: false,
   error: false,
 };
@@ -68,15 +75,16 @@ export function useSoundingData(location: LatLon | null): SoundingData {
     const { lat, lon } = location;
 
     // `current` covers everything Open-Meteo exposes at the surface; the
-    // mid-level (700 hPa) RH must come from `hourly` since pressure-level
-    // variables aren't available on `current`. We grab a single forecast day
-    // and pick the index matching the current UTC hour.
+    // mid-level (700 hPa) RH and 850/500 hPa winds must come from `hourly`
+    // since pressure-level variables aren't available on `current`. We grab
+    // a single forecast day and pick the index matching the current UTC hour.
+    // Wind speeds requested in m/s to keep the shear math unit-consistent.
     const url =
       `https://api.open-meteo.com/v1/forecast` +
       `?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,dewpoint_2m,relative_humidity_2m,cape,convective_inhibition,lifted_index,boundary_layer_height` +
-      `&hourly=relative_humidity_700hPa,vertical_velocity_700hPa` +
-      `&forecast_days=1&timezone=UTC`;
+      `&hourly=relative_humidity_700hPa,vertical_velocity_700hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_500hPa,wind_direction_500hPa` +
+      `&wind_speed_unit=ms&forecast_days=1&timezone=UTC`;
 
     const fetchSounding = async (showLoading: boolean) => {
       // In-flight guard prevents overlapping requests when Open-Meteo is slow.
@@ -102,6 +110,10 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         const times: string[] = json?.hourly?.time ?? [];
         const rh700: Array<number | null> = json?.hourly?.relative_humidity_700hPa ?? [];
         const omega700: Array<number | null> = json?.hourly?.vertical_velocity_700hPa ?? [];
+        const ws850: Array<number | null> = json?.hourly?.wind_speed_850hPa ?? [];
+        const wd850: Array<number | null> = json?.hourly?.wind_direction_850hPa ?? [];
+        const ws500: Array<number | null> = json?.hourly?.wind_speed_500hPa ?? [];
+        const wd500: Array<number | null> = json?.hourly?.wind_direction_500hPa ?? [];
         let idx = 0;
         if (times.length) {
           const nowHr = new Date().toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
@@ -114,6 +126,24 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         };
         const rhMid = rh700.length ? pick(rh700) : null;
         const omegaMid = omega700.length ? pick(omega700) : null;
+
+        // Convert speed/direction → u/v components (meteorological "from"
+        // convention: direction is the *source* bearing). Bulk shear is the
+        // magnitude of the vector difference between 500 hPa and 850 hPa.
+        const s850 = ws850.length ? pick(ws850) : null;
+        const d850 = wd850.length ? pick(wd850) : null;
+        const s500 = ws500.length ? pick(ws500) : null;
+        const d500 = wd500.length ? pick(wd500) : null;
+        let shear: number | null = null;
+        if (s850 != null && d850 != null && s500 != null && d500 != null) {
+          const toUV = (speed: number, dir: number) => {
+            const rad = ((dir + 180) * Math.PI) / 180;
+            return { u: speed * Math.sin(rad), v: speed * Math.cos(rad) };
+          };
+          const a = toUV(s850, d850);
+          const b = toUV(s500, d500);
+          shear = Math.hypot(b.u - a.u, b.v - a.v);
+        }
 
         const capeVal = typeof c.cape === "number" ? c.cape : null;
         const liVal = typeof c.lifted_index === "number" ? c.lifted_index : null;
@@ -137,6 +167,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
           rhSurface: typeof c.relative_humidity_2m === "number" ? c.relative_humidity_2m : null,
           rhMid,
           omegaMid,
+          shear,
           loading: false,
           error: false,
         });

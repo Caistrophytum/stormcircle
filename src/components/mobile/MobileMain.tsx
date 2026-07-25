@@ -300,8 +300,8 @@ export default function MobileMain() {
       if (v === null) return "ERR";
       return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
     };
-    // LIFTED INDEX is a dimensionless stability index, never unit-converted.
-    const fmtLI = (v: number | null, digits = 1) => {
+    // Dimensionless / small-magnitude formatter (shear m/s, LI legacy).
+    const fmtNum = (v: number | null, digits = 1) => {
       if (sounding.loading) return "...";
       if (radar.selectedStation === null) return "—";
       if (v === null) return "ERR";
@@ -320,7 +320,8 @@ export default function MobileMain() {
     const capeScore = sounding.cape != null ? clamp01(sounding.cape / 4000) : 0;
     const cinMagnitude = sounding.cin != null ? Math.abs(sounding.cin) : 0;
     const cinScore = sounding.cin != null ? clamp01(1 - cinMagnitude / 200) : 0;
-    const liScore = sounding.li != null ? clamp01((6 - sounding.li) / 14) : 0;
+    // Bulk shear (850↔500 hPa proxy, m/s). 20 m/s ≈ organized-supercell ceiling.
+    const shearScore = sounding.shear != null ? clamp01(sounding.shear / 20) : 0;
     const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
     const elScore = sounding.el != null ? clamp01((sounding.el - 4000) / 10000) : 0;
 
@@ -342,10 +343,12 @@ export default function MobileMain() {
       : clamp01(1 - Math.log(1 + 9 * clamp01(cinMagnitude / 200)) / Math.log(10));
     const effectiveGate = capeGate * cinGate;
 
+    // Weights: CAPE 30, SHEAR 25, EL 15, LCL 10 (CIN 20% embedded in gate).
+    // LI dropped — redundant with CAPE/CIN as instability descriptors.
     const capeContrib0 = stationActive ? Math.round(capeScore * 30) : 0;
-    const liContribRaw  = stationActive ? liScore  * 15 * effectiveGate : 0;
-    const lclContribRaw = stationActive ? lclScore * 15 * effectiveGate : 0;
-    const elContribRaw  = stationActive ? elScore  * 20 * effectiveGate : 0;
+    const shearContribRaw = stationActive ? shearScore * 25 * effectiveGate : 0;
+    const lclContribRaw   = stationActive ? lclScore   * 10 * effectiveGate : 0;
+    const elContribRaw    = stationActive ? elScore    * 15 * effectiveGate : 0;
 
     // Physical gate on the virtual block's combined output — weighted blend
     // (SFC RH 45%, MID RH 30%, MID LIFT 25%) through the same log shape as
@@ -358,7 +361,7 @@ export default function MobileMain() {
 
 
     const capeContrib = Math.round(capeContrib0 * physGate);
-    const liContrib = Math.round(liContribRaw * physGate);
+    const shearContrib = Math.round(shearContribRaw * physGate);
     const lclContrib = Math.round(lclContribRaw * physGate);
     const elContrib = Math.round(elContribRaw * physGate);
     const cinGateBite = stationActive ? Math.round((1 - cinGate) * 20) : 0;
@@ -376,7 +379,7 @@ export default function MobileMain() {
     const nodes = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib, primary: true },
       { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinGateBite, primary: false },
-      { label: "LI", value: fmtLI(sounding.li, 1), unit: "", color: colorFromScore(liScore, sounding.li != null), w: liContrib, primary: false },
+      { label: "SHEAR", value: fmtNum(sounding.shear, 1), unit: "m/s", color: colorFromScore(shearScore, sounding.shear != null), w: shearContrib, primary: true },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib, primary: false },
       { label: "EL", value: fmtLenM(sounding.el), unit: lenUnit, color: colorFromScore(elScore, sounding.el != null), w: elContrib, primary: false },
     ];
@@ -395,7 +398,7 @@ export default function MobileMain() {
       { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), w: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
     ];
 
-    const threat = Math.min(100, capeContrib + liContrib + lclContrib + elContrib);
+    const threat = Math.min(100, capeContrib + shearContrib + lclContrib + elContrib);
     return { nodes, physicalNodes, threatLevel: threat, physGatePercent: Math.round(physGate * 100) };
   }, [sounding, radar.selectedStation, unitSystem]);
 
