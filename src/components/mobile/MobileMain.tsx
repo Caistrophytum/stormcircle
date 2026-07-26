@@ -830,23 +830,27 @@ export default function MobileMain() {
           </span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
-          {nodes.map((n) => (
+          {nodes.map((n, i) => {
+            const lit = n.primary;
+            return (
             <div
               key={n.label}
               style={{
                 position: "relative",
                 padding: "4px 4px 4px 4px",
                 background: "#050505",
-                borderLeft: "2px solid rgba(255,157,0,0.3)",
+                borderLeft: lit
+                  ? "2px solid #ff9d00"
+                  : "2px solid rgba(255,157,0,0.3)",
+                boxShadow: lit
+                  ? "inset 2px 0 8px rgba(255,157,0,0.55), -1px 0 10px rgba(255,157,0,0.7)"
+                  : "none",
                 minWidth: 0,
                 overflow: "hidden",
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
                 <span style={{ fontSize: "7px", color: "#888" }}>{n.label}</span>
-                {n.primary && (
-                  <span style={{ fontSize: "6px", color: "#ff9d00", border: "1px solid rgba(255,157,0,0.6)", padding: "0 2px", fontWeight: 700, letterSpacing: "0.1em" }}>PRIMARY</span>
-                )}
               </div>
               <div
                 style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
