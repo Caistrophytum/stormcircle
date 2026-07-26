@@ -843,7 +843,7 @@ export default function MobileMain() {
                   ? "2px solid #ff9d00"
                   : "2px solid rgba(255,157,0,0.3)",
                 boxShadow: lit
-                  ? "inset 2px 0 8px rgba(255,157,0,0.55), -1px 0 10px rgba(255,157,0,0.7)"
+                  ? "inset 3px 0 6px rgba(255,157,0,0.55)"
                   : "none",
                 minWidth: 0,
                 overflow: "hidden",
