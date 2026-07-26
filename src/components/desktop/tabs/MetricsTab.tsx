@@ -186,9 +186,10 @@ export default function MetricsTab() {
                 className="relative flex flex-col gap-1 rounded-xl p-2"
                 style={{
                   background: "rgba(255,255,255,0.04)",
-                  border: `1px solid ${lit ? "#ff9d00" : accent + "55"}`,
+                  border: `1px solid ${accent}55`,
+                  borderLeft: lit ? "3px solid #ff9d00" : `1px solid ${accent}55`,
                   boxShadow: lit
-                    ? `inset 0 0 14px rgba(255,157,0,0.35), 0 0 14px rgba(255,157,0,0.55)`
+                    ? `inset 2px 0 10px rgba(255,157,0,0.45), -1px 0 12px rgba(255,157,0,0.7), inset 0 0 12px ${accent}18`
                     : `inset 0 0 12px ${accent}18, 0 0 8px ${accent}22`,
                   transition: "border-color 500ms ease, box-shadow 500ms ease",
                 }}
