@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-07-26 12z",
+    tag: "IMPROVED",
+    title: "Metric changes",
+    body: "Changes some metrics, their precentage weight in WRS calculation and value gate behaviour in order to ensure logical and clear WRS numeration.",
+  },
+  {
     date: "2026-07-17 14z",
     tag: "NEW",
     title: "The global update",
