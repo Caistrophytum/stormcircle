@@ -874,7 +874,8 @@ export default function MobileMain() {
                 {n.w}%
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
