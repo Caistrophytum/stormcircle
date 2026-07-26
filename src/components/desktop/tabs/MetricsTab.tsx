@@ -179,14 +179,17 @@ export default function MetricsTab() {
         <div className="grid grid-cols-5 gap-2">
           {soundingNodes.map((n, i) => {
             const accent = VIRTUAL_COLORS[i % VIRTUAL_COLORS.length];
+            const lit = n.primary;
             return (
               <div
                 key={n.label}
                 className="relative flex flex-col gap-1 rounded-xl p-2"
                 style={{
                   background: "rgba(255,255,255,0.04)",
-                  border: `1px solid ${accent}55`,
-                  boxShadow: `inset 0 0 12px ${accent}18, 0 0 8px ${accent}22`,
+                  border: `1px solid ${lit ? "#ff9d00" : accent + "55"}`,
+                  boxShadow: lit
+                    ? `inset 0 0 14px rgba(255,157,0,0.35), 0 0 14px rgba(255,157,0,0.55)`
+                    : `inset 0 0 12px ${accent}18, 0 0 8px ${accent}22`,
                   transition: "border-color 500ms ease, box-shadow 500ms ease",
                 }}
               >
