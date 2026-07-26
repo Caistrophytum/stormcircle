@@ -129,7 +129,7 @@ export function useWRSMetrics(): WRSMetrics {
 
     const soundingNodes: MetricNode[] = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", colorHsl: colorFromScore(capeScore, sounding.cape !== null, stationActive), wrsContribution: capeContribGated, primary: true },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", colorHsl: colorFromScore(cinScore, sounding.cin !== null, stationActive), wrsContribution: cinGateBite, primary: false },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", colorHsl: colorFromScore(cinScore, sounding.cin !== null, stationActive), wrsContribution: cinGateBite, primary: true },
       { label: "SHEAR", value: fmtNum(sounding.shear, 1), unit: "m/s", colorHsl: colorFromScore(shearScore, sounding.shear !== null, stationActive), wrsContribution: shearContrib, primary: true },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, colorHsl: colorFromScore(lclScore, sounding.lcl !== null, stationActive), wrsContribution: lclContrib, primary: false },
       { label: "EL", value: fmtLenM(sounding.el), unit: lenUnit, colorHsl: colorFromScore(elScore, sounding.el !== null, stationActive), wrsContribution: elContrib, primary: false },
