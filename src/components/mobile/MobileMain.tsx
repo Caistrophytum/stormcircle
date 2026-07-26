@@ -378,7 +378,7 @@ export default function MobileMain() {
 
     const nodes = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib, primary: true },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinGateBite, primary: false },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinGateBite, primary: true },
       { label: "SHEAR", value: fmtNum(sounding.shear, 1), unit: "m/s", color: colorFromScore(shearScore, sounding.shear != null), w: shearContrib, primary: true },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib, primary: false },
       { label: "EL", value: fmtLenM(sounding.el), unit: lenUnit, color: colorFromScore(elScore, sounding.el != null), w: elContrib, primary: false },
