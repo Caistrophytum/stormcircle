@@ -72,9 +72,14 @@ const StatusBar = () => {
       : "citizen";
   const { selectedCity } = useSelectedCity();
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
-  const hometownLoc = homeRisk.coords
-    ? { lat: homeRisk.coords.lat, lon: homeRisk.coords.lon }
-    : null;
+  // Prefer the actively selected city (radar search) over the saved hometown,
+  // so the "Now in …" ruler tracks whatever the user is currently viewing.
+  const activeLoc = selectedCity
+    ? { lat: selectedCity.lat, lon: selectedCity.lon }
+    : homeRisk.coords
+      ? { lat: homeRisk.coords.lat, lon: homeRisk.coords.lon }
+      : null;
+  const hometownLoc = activeLoc;
   const hometown = useHometownWeather(hometownLoc);
   const unitSystem = useUnitSystem();
 
@@ -101,8 +106,9 @@ const StatusBar = () => {
   const dewDisp = displayTemp(hometown.dewpointC, unitSystem);
   const feelDisp = displayTemp(hometown.apparentTemperatureC, unitSystem);
   const windDisp = displayWindSpeed(hometown.windSpeedKmh, unitSystem);
-  const hometownLabel = profile?.location
-    ? `Now in ${profile.location.split(",")[0]}`
+  const activeLocName = selectedCity?.name ?? profile?.location ?? null;
+  const hometownLabel = activeLocName
+    ? `Now in ${activeLocName.split(",")[0]}`
     : "Now in —";
 
   const rulerContainerRef = useRef<HTMLDivElement>(null);
@@ -258,7 +264,7 @@ const StatusBar = () => {
                 "--content-width": `${rulerContentRef.current?.scrollWidth ?? 0}px`,
               } as React.CSSProperties}
             >
-              {!profile?.location ? (
+              {!activeLocName ? (
                 <span className="text-muted-foreground">
                   {user ? "Please choose a hometown from the account center portal." : "Sign in and set a hometown to see local conditions."}
                 </span>
