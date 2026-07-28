@@ -68,6 +68,7 @@ const LocationPicker = ({ userId, currentLocation, onSaved }: Props) => {
       }
       toast.success("Home city cleared");
       onSaved();
+      if (typeof window !== "undefined") window.location.reload();
     } finally {
       setSaving(false);
     }
