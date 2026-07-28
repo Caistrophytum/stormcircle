@@ -97,7 +97,6 @@ const RadarControls = ({
                             countryCode: cc || undefined,
                           });
                           setCityOpen(false);
-                          if (typeof window !== "undefined") window.location.reload();
                         }}
                         className="font-mono text-xs"
                       >
