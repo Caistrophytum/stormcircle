@@ -264,7 +264,7 @@ const StatusBar = () => {
                 "--content-width": `${rulerContentRef.current?.scrollWidth ?? 0}px`,
               } as React.CSSProperties}
             >
-              {!profile?.location ? (
+              {!activeLocName ? (
                 <span className="text-muted-foreground">
                   {user ? "Please choose a hometown from the account center portal." : "Sign in and set a hometown to see local conditions."}
                 </span>
