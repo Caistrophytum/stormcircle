@@ -106,12 +106,14 @@ export function useWRSMetrics(): WRSMetrics {
     // (shear, LCL, EL) to pay out.
     const effectiveGate = capeGate * cinGate;
 
-    // Weights: CAPE 30, SHEAR 25, EL 15, LCL 10 (CIN's 20% is embedded in
-    // the multiplicative gate). LI removed — redundant with CAPE/CIN.
-    const capeContrib = stationActive ? Math.round(capeScore * 30) : 0;
-    const shearContribRaw = stationActive ? shearScore * 25 * effectiveGate : 0;
-    const lclContribRaw   = stationActive ? lclScore   * 10 * effectiveGate : 0;
-    const elContribRaw    = stationActive ? elScore    * 15 * effectiveGate : 0;
+    // CIN is not additive — its 20% lives in the multiplicative gate, so the
+    // remaining additive weights (CAPE 30, SHEAR 25, EL 15, LCL 10 = 80) are
+    // renormalized to a full 100-point scale (÷0.8).
+    const W = { cape: 37.5, shear: 31.25, el: 18.75, lcl: 12.5 } as const;
+    const capeContrib = stationActive ? capeScore * W.cape : 0;
+    const shearContribRaw = stationActive ? shearScore * W.shear * effectiveGate : 0;
+    const lclContribRaw   = stationActive ? lclScore   * W.lcl   * effectiveGate : 0;
+    const elContribRaw    = stationActive ? elScore    * W.el    * effectiveGate : 0;
 
     const PHYS_W = { sfc: 0.45, mid: 0.3, lift: 0.25 } as const;
     const physScore = clamp01(
@@ -125,7 +127,7 @@ export function useWRSMetrics(): WRSMetrics {
     const capeContribGated = Math.round(capeContrib * physGate);
     // CIN does not add to WRS — it subtracts by closing the effective gate on
     // the shear/LCL/EL bundle. Show the actual WRS point loss as a negative.
-    const virtualBundle = shearScore * 25 + lclScore * 10 + elScore * 15;
+    const virtualBundle = shearScore * W.shear + lclScore * W.lcl + elScore * W.el;
     const cinLoss = stationActive
       ? Math.round(capeGate * physGate * virtualBundle * (1 - cinGate))
       : 0;
