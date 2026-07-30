@@ -343,12 +343,15 @@ export default function MobileMain() {
       : clamp01(1 - Math.log(1 + 9 * clamp01(cinMagnitude / 200)) / Math.log(10));
     const effectiveGate = capeGate * cinGate;
 
-    // Weights: CAPE 30, SHEAR 25, EL 15, LCL 10 (CIN 20% embedded in gate).
-    // LI dropped — redundant with CAPE/CIN as instability descriptors.
-    const capeContrib0 = stationActive ? Math.round(capeScore * 30) : 0;
-    const shearContribRaw = stationActive ? shearScore * 25 * effectiveGate : 0;
-    const lclContribRaw   = stationActive ? lclScore   * 10 * effectiveGate : 0;
-    const elContribRaw    = stationActive ? elScore    * 15 * effectiveGate : 0;
+    // CIN is not additive — its 20% lives in the multiplicative gate. The
+    // remaining additive weights (CAPE 30, SHEAR 25, EL 15, LCL 10 = 80) are
+    // therefore renormalized to a full 100-point scale (÷0.8):
+    // CAPE 37.5, SHEAR 31.25, EL 18.75, LCL 12.5.
+    const W = { cape: 37.5, shear: 31.25, el: 18.75, lcl: 12.5 } as const;
+    const capeContrib0 = stationActive ? capeScore * W.cape : 0;
+    const shearContribRaw = stationActive ? shearScore * W.shear * effectiveGate : 0;
+    const lclContribRaw   = stationActive ? lclScore   * W.lcl   * effectiveGate : 0;
+    const elContribRaw    = stationActive ? elScore    * W.el    * effectiveGate : 0;
 
     // Physical gate on the virtual block's combined output — weighted blend
     // (SFC RH 45%, MID RH 30%, MID LIFT 25%) through the same log shape as
@@ -366,7 +369,7 @@ export default function MobileMain() {
     const elContrib = Math.round(elContribRaw * physGate);
     // CIN subtracts from WRS by closing the effective gate on the
     // shear/LCL/EL bundle. Show the actual point loss as a negative value.
-    const virtualBundle = shearScore * 25 + lclScore * 10 + elScore * 15;
+    const virtualBundle = shearScore * W.shear + lclScore * W.lcl + elScore * W.el;
     const cinLoss = stationActive
       ? Math.round(capeGate * physGate * virtualBundle * (1 - cinGate))
       : 0;
