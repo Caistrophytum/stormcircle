@@ -123,13 +123,16 @@ export function useWRSMetrics(): WRSMetrics {
     const lclContrib = Math.round(lclContribRaw * physGate);
     const elContrib = Math.round(elContribRaw * physGate);
     const capeContribGated = Math.round(capeContrib * physGate);
-    // CIN's WRS "contribution" is shown as the % of the gate it consumes
-    // (0 when fully open, higher as it clamps the score). Purely display.
-    const cinGateBite = stationActive ? Math.round((1 - cinGate) * 20) : 0;
+    // CIN does not add to WRS — it subtracts by closing the effective gate on
+    // the shear/LCL/EL bundle. Show the actual WRS point loss as a negative.
+    const virtualBundle = shearScore * 25 + lclScore * 10 + elScore * 15;
+    const cinLoss = stationActive
+      ? Math.round(capeGate * physGate * virtualBundle * (1 - cinGate))
+      : 0;
 
     const soundingNodes: MetricNode[] = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", colorHsl: colorFromScore(capeScore, sounding.cape !== null, stationActive), wrsContribution: capeContribGated, primary: true },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", colorHsl: colorFromScore(cinScore, sounding.cin !== null, stationActive), wrsContribution: cinGateBite, primary: true },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", colorHsl: colorFromScore(cinScore, sounding.cin !== null, stationActive), wrsContribution: -cinLoss, primary: true },
       { label: "SHEAR", value: fmtNum(sounding.shear, 1), unit: "m/s", colorHsl: colorFromScore(shearScore, sounding.shear !== null, stationActive), wrsContribution: shearContrib, primary: true },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, colorHsl: colorFromScore(lclScore, sounding.lcl !== null, stationActive), wrsContribution: lclContrib, primary: false },
       { label: "EL", value: fmtLenM(sounding.el), unit: lenUnit, colorHsl: colorFromScore(elScore, sounding.el !== null, stationActive), wrsContribution: elContrib, primary: false },
