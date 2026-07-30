@@ -364,7 +364,12 @@ export default function MobileMain() {
     const shearContrib = Math.round(shearContribRaw * physGate);
     const lclContrib = Math.round(lclContribRaw * physGate);
     const elContrib = Math.round(elContribRaw * physGate);
-    const cinGateBite = stationActive ? Math.round((1 - cinGate) * 20) : 0;
+    // CIN subtracts from WRS by closing the effective gate on the
+    // shear/LCL/EL bundle. Show the actual point loss as a negative value.
+    const virtualBundle = shearScore * 25 + lclScore * 10 + elScore * 15;
+    const cinLoss = stationActive
+      ? Math.round(capeGate * physGate * virtualBundle * (1 - cinGate))
+      : 0;
 
     // Unified color scale tied to each parameter's normalized severity score.
     // The redder the value, the more it pushes the WRS score upward.
@@ -378,7 +383,7 @@ export default function MobileMain() {
 
     const nodes = [
       { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib, primary: true },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: cinGateBite, primary: true },
+      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: -cinLoss, primary: true },
       { label: "SHEAR", value: fmtNum(sounding.shear, 1), unit: "m/s", color: colorFromScore(shearScore, sounding.shear != null), w: shearContrib, primary: true },
       { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib, primary: false },
       { label: "EL", value: fmtLenM(sounding.el), unit: lenUnit, color: colorFromScore(elScore, sounding.el != null), w: elContrib, primary: false },
