@@ -369,7 +369,7 @@ export default function MobileMain() {
     const elContrib = Math.round(elContribRaw * physGate);
     // CIN subtracts from WRS by closing the effective gate on the
     // shear/LCL/EL bundle. Show the actual point loss as a negative value.
-    const virtualBundle = shearScore * 25 + lclScore * 10 + elScore * 15;
+    const virtualBundle = shearScore * W.shear + lclScore * W.lcl + elScore * W.el;
     const cinLoss = stationActive
       ? Math.round(capeGate * physGate * virtualBundle * (1 - cinGate))
       : 0;
