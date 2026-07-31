@@ -62,12 +62,15 @@ export interface LatLon {
 export function useSoundingData(location: LatLon | null): SoundingData {
   const [data, setData] = useState<SoundingData>(EMPTY);
   const isFetchingRef = useRef(false);
-  const firstRunRef = useRef(true);
+  // Tracks the location the current data belongs to. A change means the
+  // cached values are for a different city and must not be shown as-is.
+  const lastKeyRef = useRef<string | null>(null);
   const tick = useRefreshTick();
 
   useEffect(() => {
     if (!location) {
       setData(EMPTY);
+      lastKeyRef.current = null;
       return;
     }
 
@@ -183,9 +186,15 @@ export function useSoundingData(location: LatLon | null): SoundingData {
       }
     };
 
-    const showLoading = firstRunRef.current;
-    firstRunRef.current = false;
-    fetchSounding(showLoading);
+    // Show loading (and drop the previous city's values) whenever the
+    // location changes — never render another city's sounding as current.
+    const key = `${lat},${lon}`;
+    const isNewLocation = lastKeyRef.current !== key;
+    if (isNewLocation) {
+      lastKeyRef.current = key;
+      setData(EMPTY);
+    }
+    fetchSounding(isNewLocation);
 
     return () => {
       cancelled = true;

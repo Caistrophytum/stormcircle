@@ -35,12 +35,14 @@ export interface LatLon {
 export function useHometownWeather(location: LatLon | null): HometownWeather {
   const [data, setData] = useState<HometownWeather>(EMPTY);
   const isFetchingRef = useRef(false);
-  const firstRunRef = useRef(true);
+  // Location the currently-held values belong to; a change invalidates them.
+  const lastKeyRef = useRef<string | null>(null);
   const tick = useRefreshTick();
 
   useEffect(() => {
     if (!location) {
       setData(EMPTY);
+      lastKeyRef.current = null;
       return;
     }
 
@@ -99,9 +101,14 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
       }
     };
 
-    const showLoading = firstRunRef.current;
-    firstRunRef.current = false;
-    fetchNow(showLoading);
+    // New location ⇒ discard the previous city's values and show loading.
+    const key = `${lat},${lon}`;
+    const isNewLocation = lastKeyRef.current !== key;
+    if (isNewLocation) {
+      lastKeyRef.current = key;
+      setData(EMPTY);
+    }
+    fetchNow(isNewLocation);
     return () => {
       cancelled = true;
     };
