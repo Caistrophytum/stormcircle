@@ -70,6 +70,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
   useEffect(() => {
     if (!location) {
       setData(EMPTY);
+      lastKeyRef.current = null;
       return;
     }
 

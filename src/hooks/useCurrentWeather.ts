@@ -39,6 +39,7 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
   useEffect(() => {
     if (!location) {
       setData(EMPTY);
+      lastKeyRef.current = null;
       return;
     }
 

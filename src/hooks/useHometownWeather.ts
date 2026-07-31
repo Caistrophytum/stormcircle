@@ -42,6 +42,7 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
   useEffect(() => {
     if (!location) {
       setData(EMPTY);
+      lastKeyRef.current = null;
       return;
     }
 
