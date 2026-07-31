@@ -32,7 +32,8 @@ export interface LatLon {
 export function useCurrentWeather(location: LatLon | null): CurrentWeather {
   const [data, setData] = useState<CurrentWeather>(EMPTY);
   const isFetchingRef = useRef(false);
-  const firstRunRef = useRef(true);
+  // Location the currently-held values belong to; a change invalidates them.
+  const lastKeyRef = useRef<string | null>(null);
   const tick = useRefreshTick();
 
   useEffect(() => {

@@ -62,7 +62,9 @@ export interface LatLon {
 export function useSoundingData(location: LatLon | null): SoundingData {
   const [data, setData] = useState<SoundingData>(EMPTY);
   const isFetchingRef = useRef(false);
-  const firstRunRef = useRef(true);
+  // Tracks the location the current data belongs to. A change means the
+  // cached values are for a different city and must not be shown as-is.
+  const lastKeyRef = useRef<string | null>(null);
   const tick = useRefreshTick();
 
   useEffect(() => {
