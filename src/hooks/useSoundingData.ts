@@ -185,9 +185,15 @@ export function useSoundingData(location: LatLon | null): SoundingData {
       }
     };
 
-    const showLoading = firstRunRef.current;
-    firstRunRef.current = false;
-    fetchSounding(showLoading);
+    // Show loading (and drop the previous city's values) whenever the
+    // location changes — never render another city's sounding as current.
+    const key = `${lat},${lon}`;
+    const isNewLocation = lastKeyRef.current !== key;
+    if (isNewLocation) {
+      lastKeyRef.current = key;
+      setData(EMPTY);
+    }
+    fetchSounding(isNewLocation);
 
     return () => {
       cancelled = true;

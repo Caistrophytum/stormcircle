@@ -100,9 +100,14 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
       }
     };
 
-    const showLoading = firstRunRef.current;
-    firstRunRef.current = false;
-    fetchNow(showLoading);
+    // New location ⇒ discard the previous city's values and show loading.
+    const key = `${lat},${lon}`;
+    const isNewLocation = lastKeyRef.current !== key;
+    if (isNewLocation) {
+      lastKeyRef.current = key;
+      setData(EMPTY);
+    }
+    fetchNow(isNewLocation);
     return () => {
       cancelled = true;
     };
