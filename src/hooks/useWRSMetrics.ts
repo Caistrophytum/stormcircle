@@ -152,7 +152,7 @@ export function useWRSMetrics(): WRSMetrics {
       { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", colorHsl: colorFromScore(liftScore, sounding.omegaMid != null, stationActive), wrsContribution: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
     ];
 
-    const threat = Math.min(100, capeContribGated + shearContrib + lclContrib + elContrib);
+    const threat = Math.min(100, Math.max(0, capeContribGated + shearContrib + lclContrib + elContrib - cinLoss));
     const weatherCondition: WeatherCondition =
       threat > 85 ? "stormy" : threat >= 61 ? "rainy" : threat >= 31 ? "cloudy" : "sunny";
 
