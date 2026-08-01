@@ -355,10 +355,11 @@ function buildSummary(
   const drivers: string[] = [];
   const rh = hazards.find((h) => h.kind === "rh"); if (rh) drivers.push(`RH ${rh.value}`);
   const w = hazards.find((h) => h.kind === "wind"); if (w) drivers.push(`${w.label.toLowerCase()} ${w.value}`);
-  const f = hazards.find((h) => h.kind === "fuels"); if (f) drivers.push(`fuels ${f.value}`);
+  const f = hazards.find((h) => h.kind === "fuels"); if (f) drivers.push(`fuels ${f.value.toLowerCase()}`);
   const dt = hazards.find((h) => h.kind === "dry_thunder"); if (dt) drivers.push(`${dt.value.toLowerCase()} dry thunder`);
-  const tail = drivers.length ? `, driven by ${joinList(drivers)}.` : ".";
-  return `${leadWithTime}${tail}`;
+  const tail = drivers.length ? `, driven by ${joinList(drivers)}` : "";
+  // Always emit exactly one clean, terminated sentence.
+  return `${leadWithTime}${tail}`.replace(/\s+/g, " ").replace(/[\s,;:]+$/, "").trim() + ".";
 }
 
 function buildMessage(
