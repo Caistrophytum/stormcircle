@@ -406,7 +406,7 @@ export default function MobileMain() {
       { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), w: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
     ];
 
-    const threat = Math.min(100, capeContrib + shearContrib + lclContrib + elContrib);
+    const threat = Math.min(100, Math.max(0, capeContrib + shearContrib + lclContrib + elContrib - cinLoss));
     return { nodes, physicalNodes, threatLevel: threat, physGatePercent: Math.round(physGate * 100) };
   }, [sounding, radar.selectedStation, unitSystem]);
 
