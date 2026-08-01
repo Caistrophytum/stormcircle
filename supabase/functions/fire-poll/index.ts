@@ -123,6 +123,66 @@ interface FireHazard {
   severity: "low" | "med" | "high";
 }
 
+// ─── sentence handling ──────────────────────────────────────────────────────
+// SPC products are terse, abbreviation-heavy prose. Naive splitting on "." and
+// hard character truncation both produce clipped fragments, so sentences are
+// segmented with abbreviation guards and only ever emitted whole.
+
+// Abbreviations that end in "." but do not end a sentence.
+const ABBREV = /(?:\b(?:approx|e\.g|i\.e|vs|no|mt|ft|st|dr|hwy|elev|max|min|temp|sfc|deg|pcpn|nm|mi|kt|mph|am|pm|u\.s|n\.m|w\.d)|\b[A-Z])\.$/i;
+
+function splitSentences(flat: string): string[] {
+  const parts = flat.split(/(?<=[.!?])\s+/);
+  const out: string[] = [];
+  for (const raw of parts) {
+    const piece = raw.trim();
+    if (!piece) continue;
+    // Re-join onto the previous piece when the split happened on an
+    // abbreviation, an initial, or a decimal number.
+    const prev = out[out.length - 1];
+    if (prev && (ABBREV.test(prev) || /\d\.$/.test(prev))) {
+      out[out.length - 1] = `${prev} ${piece}`;
+      continue;
+    }
+    out.push(piece);
+  }
+  return out;
+}
+
+// A usable sentence is a complete one: starts like a sentence, ends with
+// terminal punctuation, has enough words, and is not a product header,
+// coordinate block, or forecaster signature line.
+function isCompleteSentence(s: string): boolean {
+  if (s.length < 40 || s.length > 320) return false;
+  if (!/[.!?]$/.test(s)) return false;
+  if (!/^[A-Za-z]/.test(s)) return false;
+  if (s.split(/\s+/).length < 7) return false;
+  if (/\d{8}|\d{4}Z|^(?:VALID|SPC|NWS|FNUS|ATTN|LAT\.\.\.LON|\.\.\.)/i.test(s)) return false;
+  if (/\.\.\./.test(s)) return false;          // SPC header/section separators
+  if (/^\s*(?:FORECASTER|ATTN)\b/i.test(s)) return false;
+  if (!/[a-z]{3}/.test(s)) return false;        // all-caps header lines
+  return true;
+}
+
+// Build the expanded-view discussion from whole sentences only. The character
+// budget is enforced by dropping trailing sentences, never by slicing one.
+function buildDiscussion(flat: string, maxChars = 1200, maxSentences = 3): string | null {
+  const KEY = /(fire weather|critical|extreme|elevated|dry thunder|fuels|relative humidity|\bRH\b|gust|wind|cured|low humidity)/i;
+  const picked: string[] = [];
+  let used = 0;
+  for (const s of splitSentences(flat)) {
+    if (!isCompleteSentence(s) || !KEY.test(s)) continue;
+    if (picked.includes(s)) continue;
+    const cost = used === 0 ? s.length : s.length + 1;
+    if (used + cost > maxChars) break;
+    picked.push(s);
+    used += cost;
+    if (picked.length === maxSentences) break;
+  }
+  return picked.length ? picked.join(" ") : null;
+}
+
+
 function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): { hazards: FireHazard[]; discussion: string | null; validWindow: { startZ: string; endZ: string } | null } {
   const flat = text
     .replace(/\r/g, "")
@@ -169,7 +229,10 @@ function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): {
     hazards.push({ kind: "wind", label, value: wind[2] ? `${wind[1]}-${wind[2]} mph` : `${wind[1]} mph`, severity: sev });
   }
 
-  // Fuels: ERC / KBDI / "fuels critically dry" / "fuel moisture"
+  // Fuels: ERC / KBDI / "fuels critically dry" / "fuel moisture".
+  // The chip value is mapped to a fixed canonical phrase instead of echoing a
+  // slice of raw product prose — that is what produced clipped fragments like
+  // "ERC values near the 95th percenti…".
   const fuels = flat.match(/(?:ERC|KBDI)[^.]{0,60}?(?:90th|95th|99th|record|near record|critically|very dry|dry)/i)
             ?? flat.match(/fuels?\s+(?:are|remain|continue to be)?\s*(critically dry|very dry|receptive|cured|dry)/i)
             ?? flat.match(/(?:cured|dormant)\s+(?:fine\s+)?fuels?/i);
@@ -177,12 +240,14 @@ function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): {
     const raw = fuels[0].replace(/\s+/g, " ").trim();
     const sev: FireHazard["severity"] = /critic|record|99th|95th/i.test(raw) ? "high"
                                      : /very dry|90th/i.test(raw) ? "med" : "low";
-    // Strip a leading "fuels (are|remain|continue to be)" so the chip doesn't
-    // render as "Fuels Fuels remain dry" — the label already says "Fuels".
-    let trimmed = raw.replace(/^fuels?\s+(?:are|remain|continue to be)?\s*/i, "").trim();
-    if (!trimmed) trimmed = raw;
-    trimmed = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-    const value = trimmed.length > 40 ? trimmed.slice(0, 38) + "…" : trimmed;
+    const value = /critic/i.test(raw) ? "Critically dry"
+                : /record/i.test(raw) ? "Near-record dry"
+                : /99th|95th/i.test(raw) ? "Very dry"
+                : /very dry/i.test(raw) ? "Very dry"
+                : /90th/i.test(raw) ? "Dry"
+                : /cured|dormant/i.test(raw) ? "Cured"
+                : /receptive/i.test(raw) ? "Receptive"
+                : "Dry";
     hazards.push({ kind: "fuels", label: "Fuels", value, severity: sev });
   }
 
@@ -195,17 +260,7 @@ function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): {
     });
   }
 
-  // Discussion: pull a few hazardous-sounding sentences for the expanded view.
-  const sentences = flat.split(/(?<=\.)\s+/).map((s) => s.trim()).filter((s) => s.length > 30 && s.length < 400);
-  const KEY = /(fire weather|critical|extreme|elevated|dry thunder|fuels|RH|gust|wind|cured|low humidity)/i;
-  const picked: string[] = [];
-  for (const s of sentences) {
-    if (!KEY.test(s)) continue;
-    if (picked.includes(s)) continue;
-    picked.push(s);
-    if (picked.length === 3) break;
-  }
-  const discussion = picked.length ? (picked.join(" ").slice(0, 1200)) : null;
+  const discussion = buildDiscussion(flat);
 
   return { hazards, discussion, validWindow };
 }
@@ -300,10 +355,11 @@ function buildSummary(
   const drivers: string[] = [];
   const rh = hazards.find((h) => h.kind === "rh"); if (rh) drivers.push(`RH ${rh.value}`);
   const w = hazards.find((h) => h.kind === "wind"); if (w) drivers.push(`${w.label.toLowerCase()} ${w.value}`);
-  const f = hazards.find((h) => h.kind === "fuels"); if (f) drivers.push(`fuels ${f.value}`);
+  const f = hazards.find((h) => h.kind === "fuels"); if (f) drivers.push(`fuels ${f.value.toLowerCase()}`);
   const dt = hazards.find((h) => h.kind === "dry_thunder"); if (dt) drivers.push(`${dt.value.toLowerCase()} dry thunder`);
-  const tail = drivers.length ? `, driven by ${joinList(drivers)}.` : ".";
-  return `${leadWithTime}${tail}`;
+  const tail = drivers.length ? `, driven by ${joinList(drivers)}` : "";
+  // Always emit exactly one clean, terminated sentence.
+  return `${leadWithTime}${tail}`.replace(/\s+/g, " ").replace(/[\s,;:]+$/, "").trim() + ".";
 }
 
 function buildMessage(
