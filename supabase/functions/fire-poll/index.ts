@@ -123,6 +123,66 @@ interface FireHazard {
   severity: "low" | "med" | "high";
 }
 
+// ─── sentence handling ──────────────────────────────────────────────────────
+// SPC products are terse, abbreviation-heavy prose. Naive splitting on "." and
+// hard character truncation both produce clipped fragments, so sentences are
+// segmented with abbreviation guards and only ever emitted whole.
+
+// Abbreviations that end in "." but do not end a sentence.
+const ABBREV = /(?:\b(?:approx|e\.g|i\.e|vs|no|mt|ft|st|dr|hwy|elev|max|min|temp|sfc|deg|pcpn|nm|mi|kt|mph|am|pm|u\.s|n\.m|w\.d)|\b[A-Z])\.$/i;
+
+function splitSentences(flat: string): string[] {
+  const parts = flat.split(/(?<=[.!?])\s+/);
+  const out: string[] = [];
+  for (const raw of parts) {
+    const piece = raw.trim();
+    if (!piece) continue;
+    // Re-join onto the previous piece when the split happened on an
+    // abbreviation, an initial, or a decimal number.
+    const prev = out[out.length - 1];
+    if (prev && (ABBREV.test(prev) || /\d\.$/.test(prev))) {
+      out[out.length - 1] = `${prev} ${piece}`;
+      continue;
+    }
+    out.push(piece);
+  }
+  return out;
+}
+
+// A usable sentence is a complete one: starts like a sentence, ends with
+// terminal punctuation, has enough words, and is not a product header,
+// coordinate block, or forecaster signature line.
+function isCompleteSentence(s: string): boolean {
+  if (s.length < 40 || s.length > 320) return false;
+  if (!/[.!?]$/.test(s)) return false;
+  if (!/^[A-Za-z]/.test(s)) return false;
+  if (s.split(/\s+/).length < 7) return false;
+  if (/\d{8}|\d{4}Z|^(?:VALID|SPC|NWS|FNUS|ATTN|LAT\.\.\.LON|\.\.\.)/i.test(s)) return false;
+  if (/\.\.\./.test(s)) return false;          // SPC header/section separators
+  if (/^\s*(?:FORECASTER|ATTN)\b/i.test(s)) return false;
+  if (!/[a-z]{3}/.test(s)) return false;        // all-caps header lines
+  return true;
+}
+
+// Build the expanded-view discussion from whole sentences only. The character
+// budget is enforced by dropping trailing sentences, never by slicing one.
+function buildDiscussion(flat: string, maxChars = 1200, maxSentences = 3): string | null {
+  const KEY = /(fire weather|critical|extreme|elevated|dry thunder|fuels|relative humidity|\bRH\b|gust|wind|cured|low humidity)/i;
+  const picked: string[] = [];
+  let used = 0;
+  for (const s of splitSentences(flat)) {
+    if (!isCompleteSentence(s) || !KEY.test(s)) continue;
+    if (picked.includes(s)) continue;
+    const cost = used === 0 ? s.length : s.length + 1;
+    if (used + cost > maxChars) break;
+    picked.push(s);
+    used += cost;
+    if (picked.length === maxSentences) break;
+  }
+  return picked.length ? picked.join(" ") : null;
+}
+
+
 function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): { hazards: FireHazard[]; discussion: string | null; validWindow: { startZ: string; endZ: string } | null } {
   const flat = text
     .replace(/\r/g, "")
