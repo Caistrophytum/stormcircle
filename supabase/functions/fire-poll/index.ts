@@ -169,7 +169,10 @@ function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): {
     hazards.push({ kind: "wind", label, value: wind[2] ? `${wind[1]}-${wind[2]} mph` : `${wind[1]} mph`, severity: sev });
   }
 
-  // Fuels: ERC / KBDI / "fuels critically dry" / "fuel moisture"
+  // Fuels: ERC / KBDI / "fuels critically dry" / "fuel moisture".
+  // The chip value is mapped to a fixed canonical phrase instead of echoing a
+  // slice of raw product prose — that is what produced clipped fragments like
+  // "ERC values near the 95th percenti…".
   const fuels = flat.match(/(?:ERC|KBDI)[^.]{0,60}?(?:90th|95th|99th|record|near record|critically|very dry|dry)/i)
             ?? flat.match(/fuels?\s+(?:are|remain|continue to be)?\s*(critically dry|very dry|receptive|cured|dry)/i)
             ?? flat.match(/(?:cured|dormant)\s+(?:fine\s+)?fuels?/i);
@@ -177,12 +180,14 @@ function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): {
     const raw = fuels[0].replace(/\s+/g, " ").trim();
     const sev: FireHazard["severity"] = /critic|record|99th|95th/i.test(raw) ? "high"
                                      : /very dry|90th/i.test(raw) ? "med" : "low";
-    // Strip a leading "fuels (are|remain|continue to be)" so the chip doesn't
-    // render as "Fuels Fuels remain dry" — the label already says "Fuels".
-    let trimmed = raw.replace(/^fuels?\s+(?:are|remain|continue to be)?\s*/i, "").trim();
-    if (!trimmed) trimmed = raw;
-    trimmed = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-    const value = trimmed.length > 40 ? trimmed.slice(0, 38) + "…" : trimmed;
+    const value = /critic/i.test(raw) ? "Critically dry"
+                : /record/i.test(raw) ? "Near-record dry"
+                : /99th|95th/i.test(raw) ? "Very dry"
+                : /very dry/i.test(raw) ? "Very dry"
+                : /90th/i.test(raw) ? "Dry"
+                : /cured|dormant/i.test(raw) ? "Cured"
+                : /receptive/i.test(raw) ? "Receptive"
+                : "Dry";
     hazards.push({ kind: "fuels", label: "Fuels", value, severity: sev });
   }
 
@@ -195,17 +200,7 @@ function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): {
     });
   }
 
-  // Discussion: pull a few hazardous-sounding sentences for the expanded view.
-  const sentences = flat.split(/(?<=\.)\s+/).map((s) => s.trim()).filter((s) => s.length > 30 && s.length < 400);
-  const KEY = /(fire weather|critical|extreme|elevated|dry thunder|fuels|RH|gust|wind|cured|low humidity)/i;
-  const picked: string[] = [];
-  for (const s of sentences) {
-    if (!KEY.test(s)) continue;
-    if (picked.includes(s)) continue;
-    picked.push(s);
-    if (picked.length === 3) break;
-  }
-  const discussion = picked.length ? (picked.join(" ").slice(0, 1200)) : null;
+  const discussion = buildDiscussion(flat);
 
   return { hazards, discussion, validWindow };
 }
