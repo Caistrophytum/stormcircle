@@ -85,7 +85,8 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
         setData((prev) => ({ ...prev, loading: false, error: true }));
       } finally {
         // Always release: timeouts/errors must not wedge the cycle.
-        isFetchingRef.current = false;
+        // A superseded request must not clear the flag for the newer one.
+        if (!cancelled) isFetchingRef.current = false;
       }
     };
 
@@ -94,7 +95,7 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
     const isNewLocation = lastKeyRef.current !== key;
     if (isNewLocation) {
       lastKeyRef.current = key;
-      setData(EMPTY);
+      setData({ ...EMPTY, loading: true });
     }
     fetchNow(isNewLocation);
     return () => {
