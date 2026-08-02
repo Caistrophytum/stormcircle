@@ -91,7 +91,9 @@ export function useSoundingData(location: LatLon | null): SoundingData {
 
     const fetchSounding = async (showLoading: boolean) => {
       // In-flight guard prevents overlapping requests when Open-Meteo is slow.
-      if (isFetchingRef.current) return;
+      // A location change (showLoading) always wins: the superseded request is
+      // already `cancelled` and will never write state.
+      if (isFetchingRef.current && !showLoading) return;
       isFetchingRef.current = true;
       if (showLoading) {
         // Only blank on the very first fetch. Background refreshes preserve
@@ -182,7 +184,8 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         setData((prev) => ({ ...prev, loading: false, error: true }));
       } finally {
         // Always release so a timeout/abort doesn't wedge future ticks.
-        isFetchingRef.current = false;
+        // A superseded request must not clear the flag for the newer one.
+        if (!cancelled) isFetchingRef.current = false;
       }
     };
 
@@ -192,7 +195,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
     const isNewLocation = lastKeyRef.current !== key;
     if (isNewLocation) {
       lastKeyRef.current = key;
-      setData(EMPTY);
+      setData({ ...EMPTY, loading: true });
     }
     fetchSounding(isNewLocation);
 

@@ -54,7 +54,9 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
 
     const fetchNow = async (showLoading: boolean) => {
       // In-flight guard so slow Open-Meteo responses don't pile up.
-      if (isFetchingRef.current) return;
+      // A location change (showLoading) always wins: the superseded request is
+      // already flagged `cancelled`, so we must not skip the new city's fetch.
+      if (isFetchingRef.current && !showLoading) return;
       isFetchingRef.current = true;
       if (showLoading) {
         // First load only: show a real "loading" so the UI can render a
@@ -83,7 +85,8 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
         setData((prev) => ({ ...prev, loading: false, error: true }));
       } finally {
         // Always release: timeouts/errors must not wedge the cycle.
-        isFetchingRef.current = false;
+        // A superseded request must not clear the flag for the newer one.
+        if (!cancelled) isFetchingRef.current = false;
       }
     };
 
@@ -92,7 +95,7 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
     const isNewLocation = lastKeyRef.current !== key;
     if (isNewLocation) {
       lastKeyRef.current = key;
-      setData(EMPTY);
+      setData({ ...EMPTY, loading: true });
     }
     fetchNow(isNewLocation);
     return () => {

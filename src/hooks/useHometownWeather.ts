@@ -63,7 +63,9 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
     };
 
     const fetchNow = async (showLoading: boolean) => {
-      if (isFetchingRef.current) return;
+      // A location change (showLoading) always wins over the in-flight guard:
+      // the superseded request is already `cancelled` and will not write state.
+      if (isFetchingRef.current && !showLoading) return;
       isFetchingRef.current = true;
       if (showLoading) {
         setData((prev) => ({ ...prev, loading: true, error: false }));
@@ -97,7 +99,8 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
         if (cancelled) return;
         setData((prev) => ({ ...prev, loading: false, error: true }));
       } finally {
-        isFetchingRef.current = false;
+        // A superseded request must not clear the flag for the newer one.
+        if (!cancelled) isFetchingRef.current = false;
       }
     };
 
@@ -106,7 +109,7 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
     const isNewLocation = lastKeyRef.current !== key;
     if (isNewLocation) {
       lastKeyRef.current = key;
-      setData(EMPTY);
+      setData({ ...EMPTY, loading: true });
     }
     fetchNow(isNewLocation);
     return () => {
