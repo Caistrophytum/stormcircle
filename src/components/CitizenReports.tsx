@@ -889,6 +889,33 @@ function ComposerDropdowns({
               </div>
             </div>
             <ul>
+              <li>
+                <button
+                  type="button"
+                  disabled={locating}
+                  onClick={async () => {
+                    setLocating(true);
+                    try {
+                      const label = await resolveDeviceCity();
+                      onPickPlace(label);
+                      setOpen(null);
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : "Failed to locate.");
+                    } finally {
+                      setLocating(false);
+                    }
+                  }}
+                  className="w-full text-left px-2 py-1.5 text-[11px] font-mono text-primary hover:bg-primary/10 transition-colors flex items-center gap-2 border-b border-border disabled:opacity-50"
+                >
+                  {locating ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    <LocateFixed className="size-3" />
+                  )}
+                  {locating ? "Locating…" : "My location"}
+                </button>
+              </li>
+
               {placeQuery.trim().length < 2 ? (
                 <li className="px-2 py-2 text-[10px] font-mono text-muted-foreground italic">
                   Type at least 2 characters…
