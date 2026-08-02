@@ -790,6 +790,7 @@ function ComposerDropdowns({
   onReset,
 }: ComposerProps) {
   const [open, setOpen] = useState<MenuKey>(null);
+  const [locating, setLocating] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
