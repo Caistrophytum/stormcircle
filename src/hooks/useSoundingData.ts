@@ -91,7 +91,9 @@ export function useSoundingData(location: LatLon | null): SoundingData {
 
     const fetchSounding = async (showLoading: boolean) => {
       // In-flight guard prevents overlapping requests when Open-Meteo is slow.
-      if (isFetchingRef.current) return;
+      // A location change (showLoading) always wins: the superseded request is
+      // already `cancelled` and will never write state.
+      if (isFetchingRef.current && !showLoading) return;
       isFetchingRef.current = true;
       if (showLoading) {
         // Only blank on the very first fetch. Background refreshes preserve
