@@ -185,7 +185,9 @@ export function parseWarning(
   let onset: Date | null = null;
   let expires: Date | null = null;
 
-  const onFrom = timing.match(/^on\s+(\d{1,2})\/(\d{1,2})\s+from\s+(\d{1,2})(?::\d{2})?\s+until\s+(\d{1,2})(?::\d{2})?/i);
+  // The leading "on"/"from" keyword is consumed by the sentence regex above,
+  // so `timing` starts at the first date.
+  const onFrom = timing.match(/^(\d{1,2})\/(\d{1,2})\s+from\s+(\d{1,2})(?::\d{2})?\s+until\s+(\d{1,2})(?::\d{2})?/i);
   const fromTo = timing.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2})(?::\d{2})?\s+until\s+(\d{1,2})\/(\d{1,2})\s+(\d{1,2})(?::\d{2})?/i);
   const fromSameDay = timing.match(/^(\d{1,2})\/(\d{1,2})\s+(\d{1,2})(?::\d{2})?\s+until\s+(\d{1,2})(?::\d{2})?/i);
 
