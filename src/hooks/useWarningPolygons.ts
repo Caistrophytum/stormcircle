@@ -227,7 +227,22 @@ function resolveByKeyword(event: string): string | null {
   return null;
 }
 
+/**
+ * Israel Meteorological Service warnings carry an official colour tier
+ * (green → red) instead of an NWS product name, so they resolve first.
+ */
+const IMS_COLORS: Record<string, string> = {
+  red: "#FF0000",
+  orange: "#FF8C00",
+  yellow: "#FFD700",
+  green: "#32CD32",
+};
+
 export function getWarningColor(properties: any): string {
+  const imsColor = properties?.parameters?.imsColor;
+  if (typeof imsColor === "string" && IMS_COLORS[imsColor.toLowerCase()]) {
+    return IMS_COLORS[imsColor.toLowerCase()];
+  }
   const event = properties?.event as string;
   const haystack = buildHaystack(properties);
   const pds = hasPDS(haystack);
