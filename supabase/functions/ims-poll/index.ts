@@ -118,7 +118,9 @@ function titleCase(s: string): string {
 /** Split "A, in B, in C and in D" (or "A and B") into region phrases. */
 function splitAreas(raw: string): string[] {
   return raw
-    .split(/,?\s*\band\s+in\b|\bin\b\s*,|,\s*in\s+|,\s*|\s+and\s+/i)
+    // NOTE: never split on a bare " and " — several IMS region names contain
+    // it ("North Judea Desert and Dead Sea", "Centeral and South Coast").
+    .split(/,?\s*\band\s+in\s+|,\s*in\s+|\s*;\s*/i)
     .map((s) => s.replace(/^\s*in\s+/i, "").trim())
     .filter(Boolean);
 }
