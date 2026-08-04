@@ -49,10 +49,17 @@ export interface AQPoint {
   usAqi: number | null;
 }
 
+/**
+ * A warning covering the home point. Accepts a bare event name (legacy) or an
+ * object carrying the issuing severity — IMS colour tiers map onto the same
+ * Moderate / Severe / Extreme scale NWS uses, so both feeds score identically.
+ */
+export type ActiveWarning = string | { event: string; severity?: string | null };
+
 export interface ComfortContext {
   hourly: HourlyPoint[];       // 7 hours: index 0 = current, 1..6 next 6
   airQuality: AQPoint[];       // aligned by time (best effort)
-  activeWarnings: string[];    // NWS event names covering the home point
+  activeWarnings: ActiveWarning[]; // NWS/IMS events covering the home point
   spcRisk: SPCRiskLevel;
   fireRisk: FireRiskLevel;
   wrs: number;                 // 0–100 WRS threat from sounding panel
@@ -145,16 +152,77 @@ function precipPenalty(prob: number | null, mm: number | null): number {
   return rateSeverity * (0.4 + 0.6 * p);
 }
 
+// ── Warning normalisation (NWS + IMS) ───────────────────────────────────
+/** 1 = advisory/moderate, 2 = severe, 3 = extreme. */
+const SEV_RANK: Record<string, number> = {
+  minor: 1,
+  moderate: 1,
+  severe: 2,
+  extreme: 3,
+};
+
+interface NormWarning {
+  event: string;
+  /** 1..3 */
+  sev: number;
+}
+
+function normalizeWarnings(list: ActiveWarning[]): NormWarning[] {
+  return list.map((w) => {
+    const event = typeof w === "string" ? w : w.event;
+    const raw = typeof w === "string" ? null : w.severity;
+    const fromFeed = raw ? SEV_RANK[raw.toLowerCase()] : undefined;
+    // No feed severity (legacy string): infer from the product wording.
+    const inferred = /emergency/i.test(event) ? 3 : /warning/i.test(event) ? 2 : 1;
+    return { event, sev: fromFeed ?? inferred };
+  });
+}
+
+function warningText(list: NormWarning[]): string {
+  return list.map((w) => w.event).join(" | ").toLowerCase();
+}
+
+/**
+ * Category floors — a warning covering the home point forces its matching
+ * hazard category to at least this penalty, regardless of what the raw model
+ * data says. Works for any feed: NWS product names and IMS titles
+ * ("Heat Stress Warning", "Extreme Temperatures Warning", …) both match here,
+ * and the floor scales with the issuing severity (IMS colour tier).
+ */
+const WARNING_CATEGORIES: { re: RegExp; key: keyof Weights }[] = [
+  { re: /heat|hot weather|high temperature|extreme temperature|sharav|warm/i, key: "heat" },
+  { re: /cold|freeze|frost|wind chill|snow|ice|blizzard|winter/i, key: "cold" },
+  { re: /wind|gale|gust|storm force|squall/i, key: "wind" },
+  { re: /flood|rain|shower|hail/i, key: "precip" },
+  { re: /thunder|lightning|tornado/i, key: "storm" },
+  { re: /dust|air quality|smoke|haze|sandstorm/i, key: "aq" },
+];
+
+/** Floor applied per severity rank. */
+const SEV_FLOOR: Record<number, number> = { 1: 45, 2: 70, 3: 90 };
+
+function warningFloors(list: NormWarning[]): Partial<Record<keyof Weights, number>> {
+  const out: Partial<Record<keyof Weights, number>> = {};
+  for (const w of list) {
+    for (const c of WARNING_CATEGORIES) {
+      if (!c.re.test(w.event)) continue;
+      const floor = SEV_FLOOR[w.sev] ?? 45;
+      if ((out[c.key] ?? 0) < floor) out[c.key] = floor;
+    }
+  }
+  return out;
+}
+
 /**
  * Storm/lightning — tiered on purpose. Warnings & SPC categories are
  * discrete regimes, not continuous severity.
  */
 function stormPenalty(
-  activeWarnings: string[],
+  warnings: NormWarning[],
   spc: SPCRiskLevel,
   wrs: number,
 ): number {
-  const warnStr = activeWarnings.join(" | ").toLowerCase();
+  const warnStr = warningText(warnings);
   if (
     /tornado warning|severe thunderstorm warning|tornado emergency/.test(warnStr) ||
     spc === "MDT" || spc === "HIGH"
@@ -248,12 +316,15 @@ function aggregate(
 }
 
 // ── Hard gates (trimmed) ────────────────────────────────────────────────
-// Only truly binary/life-safety events remain as caps.
-function hardGate(activeWarnings: string[]): { cap: number; label: string } | null {
-  const evac = activeWarnings.find((e) => /evacuation|shelter in place/i.test(e));
-  if (evac) return { cap: 0, label: `Alert: ${evac}` };
-  const tor = activeWarnings.find((e) => /tornado (warning|emergency)/i.test(e));
-  if (tor) return { cap: 0, label: `Alert: ${tor}` };
+// Only truly binary/life-safety events remain as caps. Extreme-severity
+// warnings from any feed (NWS "Extreme", IMS red tier) also cap the score.
+function hardGate(warnings: NormWarning[]): { cap: number; label: string } | null {
+  const evac = warnings.find((w) => /evacuation|shelter in place/i.test(w.event));
+  if (evac) return { cap: 0, label: `Alert: ${evac.event}` };
+  const tor = warnings.find((w) => /tornado (warning|emergency)/i.test(w.event));
+  if (tor) return { cap: 0, label: `Alert: ${tor.event}` };
+  const extreme = warnings.find((w) => w.sev >= 3);
+  if (extreme) return { cap: 15, label: `Alert: ${extreme.event}` };
   return null;
 }
 
@@ -265,16 +336,23 @@ function scoreHour(
   ctx: Pick<ComfortContext, "activeWarnings" | "spcRisk" | "fireRisk" | "wrs">,
 ): HourResult {
   const w = WEIGHTS[activity];
+  const warnings = normalizeWarnings(ctx.activeWarnings);
 
   const penalties: Record<keyof Weights, number> = {
     heat: heatPenalty(h.temperature, h.humidity),
     cold: coldPenalty(h.temperature, h.windSpeed),
     wind: windPenalty(h.windSpeed, h.windGusts),
     precip: precipPenalty(h.precipProbability, h.precipMm),
-    storm: stormPenalty(ctx.activeWarnings, ctx.spcRisk, ctx.wrs),
+    storm: stormPenalty(warnings, ctx.spcRisk, ctx.wrs),
     aq: aqPenalty(aqi),
     uv: uvPenalty(h.uvIndex),
   };
+
+  // Any active warning lifts its hazard category to a severity-scaled floor.
+  const floors = warningFloors(warnings);
+  (Object.keys(floors) as (keyof Weights)[]).forEach((k) => {
+    penalties[k] = Math.max(penalties[k], floors[k] ?? 0);
+  });
 
   const { score: rawScore, limiters, topWeighted } = aggregate(penalties, w);
 
@@ -284,7 +362,7 @@ function scoreHour(
       ? limiters.map((k) => LABELS[k]).join(" + ")
       : "None";
 
-  const gate = hardGate(ctx.activeWarnings);
+  const gate = hardGate(warnings);
   if (gate && gate.cap < score) {
     score = gate.cap;
     limiterLabel = gate.label;

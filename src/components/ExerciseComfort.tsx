@@ -136,16 +136,24 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const polygons = useWarningPolygons();
   const data = useExerciseComfortData(home.coords);
 
-  // Dedupe warnings by event, only those whose polygon covers the home point.
+  // Dedupe warnings by event (keeping the highest severity), only those whose
+  // polygon covers the home point. Works for any feed in `active_alerts` —
+  // NWS products and IMS colour-tier warnings alike.
   const activeWarnings = useMemo(() => {
-    if (!home.coords) return [] as string[];
+    if (!home.coords) return [] as { event: string; severity?: string | null }[];
     const { lat, lon } = home.coords;
-    const set = new Set<string>();
+    const RANK: Record<string, number> = { minor: 1, moderate: 2, severe: 3, extreme: 4 };
+    const map = new Map<string, { event: string; severity?: string | null }>();
     for (const p of polygons.polygons) {
       if (!p.geometry) continue;
-      if (pointInPolygon(lon, lat, p.geometry)) set.add(p.event);
+      if (!pointInPolygon(lon, lat, p.geometry)) continue;
+      const prev = map.get(p.event);
+      const rank = (s?: string | null) => (s ? RANK[s.toLowerCase()] ?? 0 : 0);
+      if (!prev || rank(p.severity) > rank(prev.severity)) {
+        map.set(p.event, { event: p.event, severity: p.severity });
+      }
     }
-    return Array.from(set);
+    return Array.from(map.values());
   }, [polygons.polygons, home.coords]);
 
   const results = useMemo(() => {
@@ -200,7 +208,11 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
           <div>
             <div style={{ fontWeight: 700, color: "#ff9d9d" }}>Active alerts at your location</div>
-            <div style={{ marginTop: 2 }}>{activeWarnings.join(" • ")}</div>
+            <div style={{ marginTop: 2 }}>
+              {activeWarnings
+                .map((w) => (w.severity ? `${w.event} (${w.severity})` : w.event))
+                .join(" • ")}
+            </div>
           </div>
         </div>
       )}
