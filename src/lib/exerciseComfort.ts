@@ -316,12 +316,15 @@ function aggregate(
 }
 
 // ── Hard gates (trimmed) ────────────────────────────────────────────────
-// Only truly binary/life-safety events remain as caps.
-function hardGate(activeWarnings: string[]): { cap: number; label: string } | null {
-  const evac = activeWarnings.find((e) => /evacuation|shelter in place/i.test(e));
-  if (evac) return { cap: 0, label: `Alert: ${evac}` };
-  const tor = activeWarnings.find((e) => /tornado (warning|emergency)/i.test(e));
-  if (tor) return { cap: 0, label: `Alert: ${tor}` };
+// Only truly binary/life-safety events remain as caps. Extreme-severity
+// warnings from any feed (NWS "Extreme", IMS red tier) also cap the score.
+function hardGate(warnings: NormWarning[]): { cap: number; label: string } | null {
+  const evac = warnings.find((w) => /evacuation|shelter in place/i.test(w.event));
+  if (evac) return { cap: 0, label: `Alert: ${evac.event}` };
+  const tor = warnings.find((w) => /tornado (warning|emergency)/i.test(w.event));
+  if (tor) return { cap: 0, label: `Alert: ${tor.event}` };
+  const extreme = warnings.find((w) => w.sev >= 3);
+  if (extreme) return { cap: 15, label: `Alert: ${extreme.event}` };
   return null;
 }
 
@@ -333,16 +336,23 @@ function scoreHour(
   ctx: Pick<ComfortContext, "activeWarnings" | "spcRisk" | "fireRisk" | "wrs">,
 ): HourResult {
   const w = WEIGHTS[activity];
+  const warnings = normalizeWarnings(ctx.activeWarnings);
 
   const penalties: Record<keyof Weights, number> = {
     heat: heatPenalty(h.temperature, h.humidity),
     cold: coldPenalty(h.temperature, h.windSpeed),
     wind: windPenalty(h.windSpeed, h.windGusts),
     precip: precipPenalty(h.precipProbability, h.precipMm),
-    storm: stormPenalty(ctx.activeWarnings, ctx.spcRisk, ctx.wrs),
+    storm: stormPenalty(warnings, ctx.spcRisk, ctx.wrs),
     aq: aqPenalty(aqi),
     uv: uvPenalty(h.uvIndex),
   };
+
+  // Any active warning lifts its hazard category to a severity-scaled floor.
+  const floors = warningFloors(warnings);
+  (Object.keys(floors) as (keyof Weights)[]).forEach((k) => {
+    penalties[k] = Math.max(penalties[k], floors[k] ?? 0);
+  });
 
   const { score: rawScore, limiters, topWeighted } = aggregate(penalties, w);
 
@@ -352,7 +362,7 @@ function scoreHour(
       ? limiters.map((k) => LABELS[k]).join(" + ")
       : "None";
 
-  const gate = hardGate(ctx.activeWarnings);
+  const gate = hardGate(warnings);
   if (gate && gate.cap < score) {
     score = gate.cap;
     limiterLabel = gate.label;
