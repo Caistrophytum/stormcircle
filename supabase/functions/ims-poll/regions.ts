@@ -109,15 +109,103 @@ export function isWholeCountry(phrase: string): boolean {
   return /^(all of israel|israel|the whole country|country wide|countrywide|all over the country)$/.test(n);
 }
 
+/**
+ * National outline (lon/lat), traced from the Mediterranean coast, the
+ * Lebanon/Syria border, the Jordan Valley + Dead Sea rift and the Egyptian
+ * frontier. Region footprints are clipped against this ring so no warning
+ * polygon ever spills into the sea or a neighbouring country.
+ */
+export const ISRAEL_OUTLINE: number[][] = [
+  [35.57, 33.28], // Metula
+  [35.78, 33.24],
+  [35.90, 33.02],
+  [35.68, 32.95],
+  [35.62, 32.72], // Yarmouk
+  [35.57, 32.70],
+  [35.55, 32.42],
+  [35.53, 32.10],
+  [35.57, 31.85], // Jordan river / north Dead Sea
+  [35.48, 31.78],
+  [35.56, 31.55],
+  [35.48, 31.24],
+  [35.43, 30.95], // south Dead Sea
+  [35.30, 30.60],
+  [35.15, 30.25],
+  [35.00, 29.90],
+  [34.95, 29.55],
+  [34.90, 29.48], // Eilat / Taba
+  [34.55, 30.10],
+  [34.40, 30.40],
+  [34.25, 30.85],
+  [34.23, 31.22], // Rafah
+  [34.33, 31.35],
+  [34.47, 31.55],
+  [34.55, 31.70],
+  [34.67, 31.95],
+  [34.75, 32.20],
+  [34.85, 32.40],
+  [34.90, 32.55],
+  [34.96, 32.72],
+  [35.06, 32.90],
+  [35.10, 33.09], // Rosh HaNikra
+  [35.30, 33.09],
+  [35.50, 33.10],
+  [35.55, 33.24],
+  [35.57, 33.28],
+];
+
+/** Sutherland–Hodgman clip of a ring against one half-plane of the box. */
+function clipEdge(
+  ring: number[][],
+  inside: (p: number[]) => boolean,
+  intersect: (a: number[], b: number[]) => number[],
+): number[][] {
+  const out: number[][] = [];
+  for (let i = 0; i < ring.length; i++) {
+    const cur = ring[i];
+    const prev = ring[(i + ring.length - 1) % ring.length];
+    const curIn = inside(cur);
+    const prevIn = inside(prev);
+    if (curIn) {
+      if (!prevIn) out.push(intersect(prev, cur));
+      out.push(cur);
+    } else if (prevIn) {
+      out.push(intersect(prev, cur));
+    }
+  }
+  return out;
+}
+
+function lerp(a: number[], b: number[], t: number): number[] {
+  return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+}
+
+/**
+ * Intersect the national outline with a region's bounding box. The box is
+ * convex, so clipping the (concave) country ring against its four
+ * half-planes is exact — the result follows the real coastline / border
+ * wherever the region touches one, and the box edges inland.
+ */
 function boxToRing(box: [number, number, number, number]): number[][] {
   const [minLon, minLat, maxLon, maxLat] = box;
-  return [
-    [minLon, minLat],
-    [maxLon, minLat],
-    [maxLon, maxLat],
-    [minLon, maxLat],
-    [minLon, minLat],
-  ];
+  let ring = ISRAEL_OUTLINE.slice(0, -1); // open ring for clipping
+
+  ring = clipEdge(ring, (p) => p[0] >= minLon, (a, b) => lerp(a, b, (minLon - a[0]) / (b[0] - a[0])));
+  ring = clipEdge(ring, (p) => p[0] <= maxLon, (a, b) => lerp(a, b, (maxLon - a[0]) / (b[0] - a[0])));
+  ring = clipEdge(ring, (p) => p[1] >= minLat, (a, b) => lerp(a, b, (minLat - a[1]) / (b[1] - a[1])));
+  ring = clipEdge(ring, (p) => p[1] <= maxLat, (a, b) => lerp(a, b, (maxLat - a[1]) / (b[1] - a[1])));
+
+  if (ring.length < 3) {
+    // Degenerate clip (box fully outside the outline) — fall back to the box.
+    return [
+      [minLon, minLat],
+      [maxLon, minLat],
+      [maxLon, maxLat],
+      [minLon, maxLat],
+      [minLon, minLat],
+    ];
+  }
+  return [...ring, ring[0]];
 }
 
 /** Build a Polygon/MultiPolygon covering every resolved region. */
@@ -127,3 +215,4 @@ export function regionsToGeometry(boxes: Array<[number, number, number, number]>
   if (polys.length === 1) return { type: "Polygon", coordinates: polys[0] };
   return { type: "MultiPolygon", coordinates: polys };
 }
+

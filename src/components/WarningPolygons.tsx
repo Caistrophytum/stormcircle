@@ -43,7 +43,25 @@ function buildTooltipHtml(p: WarningPolygon): string {
   `;
 }
 
-// pointInPolygon imported from "@/lib/pointInPolygon"
+/** Rough bbox area (deg²) of a polygon, used only for stacking order. */
+function geometryArea(geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): number {
+  const rings: number[][][] =
+    geom.type === "Polygon"
+      ? (geom.coordinates as number[][][])
+      : (geom.coordinates as number[][][][]).flat();
+  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+  for (const ring of rings) {
+    for (const [lon, lat] of ring) {
+      if (lon < minLon) minLon = lon;
+      if (lon > maxLon) maxLon = lon;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    }
+  }
+  if (!Number.isFinite(minLon)) return 0;
+  return (maxLon - minLon) * (maxLat - minLat);
+}
+
 
 function polygonCenter(geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): [number, number] {
   const coords =
@@ -256,7 +274,17 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
           tooltipsRef.current.set(p.id, tip);
         }
       });
+
+      // Stacking: big area-wide polygons (e.g. an "All of Israel" IMS
+      // warning) must sit behind the smaller, more specific ones so the
+      // local hazard stays readable and clickable. Bringing layers to the
+      // front from largest to smallest leaves the largest at the back.
+      [...polygons]
+        .filter((p) => p.geometry)
+        .sort((a, b) => geometryArea(b.geometry) - geometryArea(a.geometry))
+        .forEach((p) => layersRef.current.get(p.id)?.bringToFront());
     }, [polygons, map]);
+
 
     // Cleanup-on-unmount: drop every layer + tooltip we own.
     useEffect(() => {
