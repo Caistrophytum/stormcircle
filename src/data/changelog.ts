@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-08-04 08z",
+    tag: "NEW",
+    title: "IMS warning coverage",
+    body: "Added IMS warnings to the map and to clients whom home-town falls within the warning's area of effect.",
+  },
+  {
     date: "2026-07-26 12z",
     tag: "IMPROVED",
     title: "Metric changes",
