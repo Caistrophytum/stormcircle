@@ -37,6 +37,8 @@ export const IMS_REGIONS: RegionBox[] = [
 
   // --- Coast & central plain ---
   { name: "North Coast", box: [34.88, 32.68, 35.16, 33.1] },
+  { name: "Carmel", box: [34.9, 32.5, 35.15, 32.83], aliases: ["mount carmel", "carmel mountains"] },
+
   { name: "Centeral and South Coast", box: [34.45, 31.42, 34.95, 32.7], aliases: ["central and south coast", "coastal plain", "center and south coast"] },
   { name: "Plain of Manasseh", box: [34.92, 32.36, 35.22, 32.63], aliases: ["menashe plain", "manasseh plain"] },
   { name: "Sharon", box: [34.78, 32.08, 35.02, 32.5] },
