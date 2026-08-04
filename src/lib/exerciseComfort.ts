@@ -49,10 +49,17 @@ export interface AQPoint {
   usAqi: number | null;
 }
 
+/**
+ * A warning covering the home point. Accepts a bare event name (legacy) or an
+ * object carrying the issuing severity — IMS colour tiers map onto the same
+ * Moderate / Severe / Extreme scale NWS uses, so both feeds score identically.
+ */
+export type ActiveWarning = string | { event: string; severity?: string | null };
+
 export interface ComfortContext {
   hourly: HourlyPoint[];       // 7 hours: index 0 = current, 1..6 next 6
   airQuality: AQPoint[];       // aligned by time (best effort)
-  activeWarnings: string[];    // NWS event names covering the home point
+  activeWarnings: ActiveWarning[]; // NWS/IMS events covering the home point
   spcRisk: SPCRiskLevel;
   fireRisk: FireRiskLevel;
   wrs: number;                 // 0–100 WRS threat from sounding panel
