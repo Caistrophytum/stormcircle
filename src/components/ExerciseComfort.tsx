@@ -24,6 +24,8 @@ import { pointInPolygon } from "@/lib/pointInPolygon";
 import { useExerciseComfortData } from "@/hooks/useExerciseComfortData";
 import {
   computeAllActivities,
+  describeWarningRestrictions,
+
   type Activity,
   type ActivityResult,
   type ComfortTier,
