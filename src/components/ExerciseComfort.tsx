@@ -53,7 +53,12 @@ const ACTIVITY_META: Record<Activity, { label: string; Icon: typeof Bike }> = {
   hike: { label: "Hike", Icon: Mountain },
 };
 
+// Palette for the single-line contribution bar (mirrors the desktop WRS
+// "Physical Parameters" strip).
+const FACTOR_COLORS = ["#ff4d4d", "#ff9d00", "#facc15", "#00e5ff", "#00ff88", "#a78bfa", "#f472b6"];
+
 function ScoreRow({ r }: { r: ActivityResult }) {
+  const [open, setOpen] = useState(false);
   const meta = ACTIVITY_META[r.activity];
   const Icon = meta.Icon;
   const color = TIER_COLOR[r.now.tier];
@@ -64,71 +69,187 @@ function ScoreRow({ r }: { r: ActivityResult }) {
     return r.best.time.slice(11, 16) + "Z";
   })();
 
+  // Only factors that actually drag the score down are worth showing.
+  const factors = r.now.factors.filter((f) => f.share >= 1 && f.penalty >= 1);
+
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "auto 1fr auto",
-        gap: "12px",
-        alignItems: "center",
-        padding: "12px 14px",
-        borderTop: "1px solid rgba(255,157,0,0.15)",
-      }}
-    >
-      <div
+    <div style={{ borderTop: "1px solid rgba(255,157,0,0.15)" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         style={{
-          width: 40,
-          height: 40,
-          borderRadius: 8,
-          border: `1px solid ${color}66`,
-          background: `${color}12`,
-          display: "flex",
+          width: "100%",
+          display: "grid",
+          gridTemplateColumns: "auto 1fr auto auto",
+          gap: "12px",
           alignItems: "center",
-          justifyContent: "center",
-          color,
-          flexShrink: 0,
+          padding: "12px 14px",
+          background: open ? "rgba(255,157,0,0.05)" : "transparent",
+          border: "none",
+          textAlign: "left",
+          color: "inherit",
+          font: "inherit",
+          cursor: "pointer",
         }}
       >
-        <Icon size={22} />
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-          <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.03em" }}>
-            {meta.label.toUpperCase()}
-          </span>
-          <span style={{ fontSize: 11, color: "#a1a1aa" }}>
-            best next 6 h:{" "}
-            <span style={{ color: bestColor, fontWeight: 700 }}>
-              {r.best.score} {r.best.tier}
-            </span>{" "}
-            @ {bestTimeLabel}
-          </span>
-        </div>
         <div
           style={{
-            fontSize: 10.5,
-            color: "#d4d4d8",
-            marginTop: 3,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            width: 40,
+            height: 40,
+            borderRadius: 8,
+            border: `1px solid ${color}66`,
+            background: `${color}12`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color,
+            flexShrink: 0,
           }}
-          title={r.now.limiter}
         >
-          Limiter: <span style={{ color }}>{r.now.limiter}</span>
+          <Icon size={22} />
         </div>
-      </div>
-      <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>
-          {r.now.score}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.03em" }}>
+              {meta.label.toUpperCase()}
+            </span>
+            <span style={{ fontSize: 11, color: "#a1a1aa" }}>
+              best next 6 h:{" "}
+              <span style={{ color: bestColor, fontWeight: 700 }}>
+                {r.best.score} {r.best.tier}
+              </span>{" "}
+              @ {bestTimeLabel}
+            </span>
+          </div>
+          <div
+            style={{
+              fontSize: 10.5,
+              color: "#d4d4d8",
+              marginTop: 3,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={r.now.limiter}
+          >
+            Limiter: <span style={{ color }}>{r.now.limiter}</span>
+          </div>
         </div>
-        <div style={{ fontSize: 10, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>
-          {r.now.tier}
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{r.now.score}</div>
+          <div
+            style={{ fontSize: 10, color, textTransform: "uppercase", letterSpacing: "0.08em" }}
+          >
+            {r.now.tier}
+          </div>
         </div>
-      </div>
+        <ChevronDown
+          size={16}
+          style={{
+            color: "#a1a1aa",
+            flexShrink: 0,
+            transform: open ? "rotate(180deg)" : "none",
+            transition: "transform 200ms ease",
+          }}
+        />
+      </button>
+
+      {open && (
+        <div style={{ padding: "0 14px 12px 66px" }}>
+          <div
+            style={{
+              fontSize: 9,
+              textTransform: "uppercase",
+              letterSpacing: "0.14em",
+              color: "#71717a",
+              marginBottom: 6,
+            }}
+          >
+            Score drivers — share of total penalty
+          </div>
+          {factors.length === 0 ? (
+            <div style={{ fontSize: 10.5, color: "#a1a1aa" }}>
+              No meaningful limiters right now — conditions are clean for {meta.label.toLowerCase()}
+              ing.
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  height: 10,
+                  borderRadius: 999,
+                  overflow: "hidden",
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                {factors.map((f, i) => {
+                  const col = FACTOR_COLORS[i % FACTOR_COLORS.length];
+                  return (
+                    <div
+                      key={f.key}
+                      title={`${f.label}: ${Math.round(f.share)}% of penalty (raw ${f.penalty}/100)`}
+                      style={{
+                        width: `${f.share}%`,
+                        background: col,
+                        boxShadow: `inset 0 0 10px ${col}, 0 0 5px ${col}`,
+                        transition: "width 600ms ease",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "6px 14px",
+                  marginTop: 8,
+                }}
+              >
+                {factors.map((f, i) => {
+                  const col = FACTOR_COLORS[i % FACTOR_COLORS.length];
+                  return (
+                    <div
+                      key={f.key}
+                      style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10 }}
+                    >
+                      <span
+                        style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: 999,
+                          background: col,
+                          boxShadow: `0 0 6px ${col}`,
+                        }}
+                      />
+                      <span style={{ color: "#d4d4d8", textTransform: "uppercase" }}>
+                        {f.label}
+                      </span>
+                      <span style={{ color: col, fontWeight: 700 }}>{Math.round(f.share)}%</span>
+                      <span style={{ color: "#71717a" }}>
+                        ({f.penalty}/100 × w{Math.round(f.weight * 100)}%)
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ marginTop: 7, fontSize: 9.5, color: "#71717a", lineHeight: 1.5 }}>
+                Biggest drag:{" "}
+                <span style={{ color: FACTOR_COLORS[0], fontWeight: 700 }}>{factors[0].label}</span>{" "}
+                — raw penalty {factors[0].penalty}/100 at weight{" "}
+                {Math.round(factors[0].weight * 100)}% for {meta.label.toLowerCase()}.
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
+
 
 export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const { profile } = useAuth();
