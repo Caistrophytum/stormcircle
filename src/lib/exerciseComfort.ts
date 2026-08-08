@@ -387,3 +387,39 @@ export function computeAllActivities(ctx: ComfortContext): ActivityResult[] {
   const activities: Activity[] = ["walk", "run", "bike", "hike"];
   return activities.map((a) => computeComfort(a, ctx));
 }
+
+// ── Warning → restriction explainer (UI) ────────────────────────────────
+// Mirrors exactly what `scoreHour` applies, so the red alert header can show
+// the concrete restriction each active warning imposes on the score.
+export interface WarningRestriction {
+  event: string;
+  /** "Moderate" | "Severe" | "Extreme" — normalised severity label. */
+  severityLabel: string;
+  /** Human-readable effects, e.g. "Heat penalty ≥ 90/100". */
+  effects: string[];
+}
+
+const SEV_LABEL: Record<number, string> = { 1: "Moderate", 2: "Severe", 3: "Extreme" };
+
+export function describeWarningRestrictions(list: ActiveWarning[]): WarningRestriction[] {
+  return normalizeWarnings(list).map((w) => {
+    const effects: string[] = [];
+
+    // Hard gates first — they override everything else.
+    if (/evacuation|shelter in place|tornado (warning|emergency)/i.test(w.event)) {
+      effects.push("Score forced to 0 (do not exercise outdoors)");
+    } else if (w.sev >= 3) {
+      effects.push("Score capped at 15 (Dangerous)");
+    }
+
+    // Category floors.
+    const floor = SEV_FLOOR[w.sev] ?? 45;
+    for (const c of WARNING_CATEGORIES) {
+      if (c.re.test(w.event)) effects.push(`${LABELS[c.key]} penalty ≥ ${floor}/100`);
+    }
+
+    if (!effects.length) effects.push("No direct score restriction — advisory only");
+    return { event: w.event, severityLabel: SEV_LABEL[w.sev] ?? "Moderate", effects };
+  });
+}
+
