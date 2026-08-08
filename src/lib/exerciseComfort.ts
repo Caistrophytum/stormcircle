@@ -65,12 +65,24 @@ export interface ComfortContext {
   wrs: number;                 // 0–100 WRS threat from sounding panel
 }
 
+/** Per-factor breakdown of a single hour's score (drives the UI drill-down). */
+export interface ComfortFactor {
+  key: string;                 // "heat" | "cold" | ...
+  label: string;               // "Heat"
+  penalty: number;             // 0..100 raw hazard penalty
+  weight: number;              // activity weight (0..1)
+  weighted: number;            // weight × penalty
+  share: number;               // % of total weighted penalty (0..100)
+}
+
 export interface HourResult {
   time: string;
   score: number;               // 0..100
   tier: ComfortTier;
   limiter: string;             // human-readable top limiting factor
+  factors: ComfortFactor[];    // sorted, highest contribution first
 }
+
 
 export interface ActivityResult {
   activity: Activity;
@@ -292,7 +304,12 @@ const POWER = 3.5;
 function aggregate(
   penalties: Record<keyof Weights, number>,
   weights: Weights,
-): { score: number; limiters: (keyof Weights)[]; topWeighted: number } {
+): {
+  score: number;
+  limiters: (keyof Weights)[];
+  topWeighted: number;
+  contributions: { key: keyof Weights; weighted: number }[];
+} {
   let sumPow = 0;
   const contributions: { key: keyof Weights; weighted: number }[] = [];
   (Object.keys(penalties) as (keyof Weights)[]).forEach((k) => {
@@ -312,8 +329,9 @@ function aggregate(
     .map((c) => c.key);
   const combined = Math.pow(sumPow, 1 / POWER);
   const score = clamp(100 - combined, 0, 100);
-  return { score, limiters, topWeighted };
+  return { score, limiters, topWeighted, contributions };
 }
+
 
 // ── Hard gates (trimmed) ────────────────────────────────────────────────
 // Only truly binary/life-safety events remain as caps. Extreme-severity
@@ -354,7 +372,7 @@ function scoreHour(
     penalties[k] = Math.max(penalties[k], floors[k] ?? 0);
   });
 
-  const { score: rawScore, limiters, topWeighted } = aggregate(penalties, w);
+  const { score: rawScore, limiters, topWeighted, contributions } = aggregate(penalties, w);
 
   let score = rawScore;
   let limiterLabel =
@@ -368,7 +386,24 @@ function scoreHour(
     limiterLabel = gate.label;
   }
 
-  return { time: h.time, score: Math.round(score), tier: tierFor(score), limiter: limiterLabel };
+  // Breakdown for the UI drill-down: share of the total weighted penalty.
+  const totalWeighted = contributions.reduce((s, c) => s + c.weighted, 0);
+  const factors: ComfortFactor[] = contributions.map((c) => ({
+    key: c.key,
+    label: LABELS[c.key],
+    penalty: Math.round(penalties[c.key]),
+    weight: w[c.key],
+    weighted: c.weighted,
+    share: totalWeighted > 0 ? (c.weighted / totalWeighted) * 100 : 0,
+  }));
+
+  return {
+    time: h.time,
+    score: Math.round(score),
+    tier: tierFor(score),
+    limiter: limiterLabel,
+    factors,
+  };
 }
 
 // ── Public entry ────────────────────────────────────────────────────────
@@ -378,7 +413,14 @@ function computeComfort(activity: Activity, ctx: ComfortContext): ActivityResult
     const aq = idx >= 0 ? ctx.airQuality[idx].usAqi : (ctx.airQuality[0]?.usAqi ?? null);
     return scoreHour(h, aq, activity, ctx);
   });
-  const now = series[0] ?? { time: "", score: 0, tier: "Dangerous" as const, limiter: "No data" };
+  const now: HourResult = series[0] ?? {
+    time: "",
+    score: 0,
+    tier: "Dangerous",
+    limiter: "No data",
+    factors: [],
+  };
+
   const best = series.reduce((a, b) => (b.score > a.score ? b : a), now);
   return { activity, now, best, series };
 }
