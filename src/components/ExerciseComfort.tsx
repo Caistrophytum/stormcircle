@@ -206,14 +206,25 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           }}
         >
           <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, color: "#ff9d9d" }}>Active alerts at your location</div>
-            <div style={{ marginTop: 2 }}>
-              {activeWarnings
-                .map((w) => (w.severity ? `${w.event} (${w.severity})` : w.event))
-                .join(" • ")}
+            <div style={{ marginTop: 5, display: "flex", flexDirection: "column", gap: 5 }}>
+              {restrictions.map((r) => (
+                <div key={r.event}>
+                  <div style={{ color: "#ffd0d0", fontWeight: 600 }}>
+                    {r.event}
+                    <span style={{ color: "#ff8a8a", fontWeight: 400 }}> · {r.severityLabel}</span>
+                  </div>
+                  <ul style={{ margin: "2px 0 0", paddingLeft: 14, color: "#ffb4b4", fontSize: 10 }}>
+                    {r.effects.map((e) => (
+                      <li key={e}>{e}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
             </div>
           </div>
+
         </div>
       )}
       {results.map((r) => (
