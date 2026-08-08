@@ -12,8 +12,9 @@
  *     (deduped by event, mirroring `CurrentLocationHazards`).
  *   • SPC categorical, SPC fire outlook, and WRS threat via existing hooks.
  */
-import { useMemo } from "react";
-import { AlertTriangle, Bike, Footprints, Mountain, PersonStanding, X } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertTriangle, Bike, ChevronDown, Footprints, Mountain, PersonStanding, X } from "lucide-react";
+
 import FloatingWindow from "@/components/desktop/FloatingWindow";
 import { useAuth } from "@/hooks/useAuth";
 import { useMobile } from "@/hooks/useMobile";
