@@ -158,6 +158,13 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
     return Array.from(map.values());
   }, [polygons.polygons, home.coords]);
 
+  // What each active warning concretely does to the score (shown in header).
+  const restrictions = useMemo(
+    () => describeWarningRestrictions(activeWarnings),
+    [activeWarnings],
+  );
+
+
   const results = useMemo(() => {
     if (!data.hourly.length) return [] as ActivityResult[];
     return computeAllActivities({
