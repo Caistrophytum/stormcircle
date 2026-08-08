@@ -65,12 +65,24 @@ export interface ComfortContext {
   wrs: number;                 // 0–100 WRS threat from sounding panel
 }
 
+/** Per-factor breakdown of a single hour's score (drives the UI drill-down). */
+export interface ComfortFactor {
+  key: string;                 // "heat" | "cold" | ...
+  label: string;               // "Heat"
+  penalty: number;             // 0..100 raw hazard penalty
+  weight: number;              // activity weight (0..1)
+  weighted: number;            // weight × penalty
+  share: number;               // % of total weighted penalty (0..100)
+}
+
 export interface HourResult {
   time: string;
   score: number;               // 0..100
   tier: ComfortTier;
   limiter: string;             // human-readable top limiting factor
+  factors: ComfortFactor[];    // sorted, highest contribution first
 }
+
 
 export interface ActivityResult {
   activity: Activity;
