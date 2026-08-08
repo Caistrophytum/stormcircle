@@ -304,7 +304,12 @@ const POWER = 3.5;
 function aggregate(
   penalties: Record<keyof Weights, number>,
   weights: Weights,
-): { score: number; limiters: (keyof Weights)[]; topWeighted: number } {
+): {
+  score: number;
+  limiters: (keyof Weights)[];
+  topWeighted: number;
+  contributions: { key: keyof Weights; weighted: number }[];
+} {
   let sumPow = 0;
   const contributions: { key: keyof Weights; weighted: number }[] = [];
   (Object.keys(penalties) as (keyof Weights)[]).forEach((k) => {
@@ -324,8 +329,9 @@ function aggregate(
     .map((c) => c.key);
   const combined = Math.pow(sumPow, 1 / POWER);
   const score = clamp(100 - combined, 0, 100);
-  return { score, limiters, topWeighted };
+  return { score, limiters, topWeighted, contributions };
 }
+
 
 // ── Hard gates (trimmed) ────────────────────────────────────────────────
 // Only truly binary/life-safety events remain as caps. Extreme-severity
