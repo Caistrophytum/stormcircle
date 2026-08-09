@@ -113,32 +113,21 @@ function logisticPenalty(value: number, midpoint: number, k: number, invert = fa
 // ── Penalty functions ───────────────────────────────────────────────────
 
 /**
- * Heat — WBGT (BoM outdoor approximation).
- *   e = (RH/100) * 6.112 * exp(17.62T / (243.12+T))         [Tetens, hPa]
- *   WBGT ≈ 0.567T + 0.393e + 3.94
- * Logistic midpoint 27°C ≈ ACSM moderate-risk boundary; saturates ~34–35°C.
- * apparentTemperature intentionally NOT fed in — e already encodes humidity.
+ * Thermal comfort — both heat and cold are scored from the same real-feel
+ * (apparent temperature) curve. 15°C real feel is the centre of the
+ * comfortable range, so the penalty is 0 there.
+ *   • Above 15°C → heat penalty rises as it gets hotter (midpoint 28°C).
+ *   • Below 15°C → cold penalty rises as it gets colder (midpoint 5°C).
+ * Apparent temperature already folds in humidity and wind, so no extra inputs.
  */
-function heatPenalty(tempC: number | null, rh: number | null): number {
-  if (tempC == null || rh == null) return 0;
-  const es = 6.112 * Math.exp((17.62 * tempC) / (243.12 + tempC));
-  const e = es * (clamp(rh, 0, 100) / 100);
-  const wbgt = 0.567 * tempC + 0.393 * e + 3.94;
-  return logisticPenalty(wbgt, 27, 0.35);
+function heatPenalty(apparentTempC: number | null): number {
+  if (apparentTempC == null || apparentTempC <= 15) return 0;
+  return logisticPenalty(apparentTempC, 28, 0.3);
 }
 
-/**
- * Cold — NWS 2001 wind chill; only valid T ≤ 50°F & V ≥ 3mph.
- * Logistic midpoint −10°F ≈ NWS "frostbite in 30min"; invert (colder=worse).
- */
-function coldPenalty(tempC: number | null, windMs: number | null): number {
-  if (tempC == null) return 0;
-  const tF = tempC * 9 / 5 + 32;
-  const vMph = (windMs ?? 0) * 2.23694;
-  if (tF > 50 || vMph < 3) return 0;
-  const v16 = Math.pow(vMph, 0.16);
-  const wct = 35.74 + 0.6215 * tF - 35.75 * v16 + 0.4275 * tF * v16;
-  return logisticPenalty(wct, -10, 0.09, true);
+function coldPenalty(apparentTempC: number | null): number {
+  if (apparentTempC == null || apparentTempC >= 15) return 0;
+  return logisticPenalty(apparentTempC, 5, 0.3, true);
 }
 
 /**
