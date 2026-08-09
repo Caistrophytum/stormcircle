@@ -441,17 +441,25 @@ export function computeAllActivities(ctx: ComfortContext): ActivityResult[] {
 }
 
 // ── Warning → restriction explainer (UI) ────────────────────────────────
-// Mirrors exactly what `scoreHour` applies, so the red alert header can show
-// the concrete restriction each active warning imposes on the score.
+// Mirrors exactly what `scoreHour` applies, but translates the math into
+// plain language so users understand why an alert changes their score.
 export interface WarningRestriction {
   event: string;
   /** "Moderate" | "Severe" | "Extreme" — normalised severity label. */
   severityLabel: string;
-  /** Human-readable effects, e.g. "Heat penalty ≥ 90/100". */
+  /** Plain-language effects, e.g. "Heat is counted as a major hazard". */
   effects: string[];
 }
 
 const SEV_LABEL: Record<number, string> = { 1: "Moderate", 2: "Severe", 3: "Extreme" };
+
+/** Convert a numeric floor into a qualitative hazard level. */
+function floorLabel(v: number): string {
+  if (v >= 90) return "major hazard";
+  if (v >= 70) return "significant hazard";
+  if (v >= 45) return "moderate hazard";
+  return "elevated hazard";
+}
 
 export function describeWarningRestrictions(list: ActiveWarning[]): WarningRestriction[] {
   return normalizeWarnings(list).map((w) => {
@@ -459,18 +467,28 @@ export function describeWarningRestrictions(list: ActiveWarning[]): WarningRestr
 
     // Hard gates first — they override everything else.
     if (/evacuation|shelter in place|tornado (warning|emergency)/i.test(w.event)) {
-      effects.push("Score forced to 0 (do not exercise outdoors)");
-    } else if (w.sev >= 3) {
-      effects.push("Score capped at 15 (Dangerous)");
+      effects.push("Outdoor exercise is not recommended — this alert overrides the score.");
+      return { event: w.event, severityLabel: "Extreme", effects };
     }
 
-    // Category floors.
+    if (w.sev >= 3) {
+      effects.push("Maximum possible comfort score is 15/100 — exercise is dangerous right now.");
+    }
+
+    // Category floors — explain what gets bumped up and why.
     const floor = SEV_FLOOR[w.sev] ?? 45;
-    for (const c of WARNING_CATEGORIES) {
-      if (c.re.test(w.event)) effects.push(`${LABELS[c.key]} penalty ≥ ${floor}/100`);
+    const matched = WARNING_CATEGORIES.filter((c) => c.re.test(w.event));
+    if (matched.length) {
+      const categories = matched.map((c) => LABELS[c.key].toLowerCase());
+      const list = categories.join(" + ");
+      const level = floorLabel(floor);
+      effects.push(
+        `This alert treats ${list} as at least a ${level} (${floor}/100), ` +
+          `so the matching part of the score cannot stay high even if the weather reading itself looks mild.`,
+      );
     }
 
-    if (!effects.length) effects.push("No direct score restriction — advisory only");
+    if (!effects.length) effects.push("Advisory only — no automatic score restriction.");
     return { event: w.event, severityLabel: SEV_LABEL[w.sev] ?? "Moderate", effects };
   });
 }
