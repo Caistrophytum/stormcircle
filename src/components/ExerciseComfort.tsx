@@ -339,14 +339,18 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, color: "#ff9d9d" }}>Active alerts at your location</div>
-            <div style={{ marginTop: 5, display: "flex", flexDirection: "column", gap: 5 }}>
+            <div style={{ marginTop: 3, color: "#ffcdcd", lineHeight: 1.45 }}>
+              Alerts raise the minimum hazard level for the weather factors they cover.
+              Even if the live reading looks okay, the score is pulled down to reflect the warning.
+            </div>
+            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 7 }}>
               {restrictions.map((r) => (
                 <div key={r.event}>
                   <div style={{ color: "#ffd0d0", fontWeight: 600 }}>
                     {r.event}
                     <span style={{ color: "#ff8a8a", fontWeight: 400 }}> · {r.severityLabel}</span>
                   </div>
-                  <ul style={{ margin: "2px 0 0", paddingLeft: 14, color: "#ffb4b4", fontSize: 10 }}>
+                  <ul style={{ margin: "3px 0 0", paddingLeft: 14, color: "#ffb4b4", fontSize: 10, lineHeight: 1.4 }}>
                     {r.effects.map((e) => (
                       <li key={e}>{e}</li>
                     ))}
