@@ -257,16 +257,28 @@ function aqPenalty(aqi: number | null): number {
 }
 
 /**
- * UV — tiered per WHO. Kept discrete: bands are already conservative and
- * UV shouldn't single-handedly dominate a score.
+ * UV — continuous piecewise-linear curve through the WHO band boundaries.
+ * Previously tiered, which made a UV of 7.9 score the same as 6.0 (25) and
+ * jump to 45 at exactly 8 — the raw hourly value is fractional, so a UI
+ * showing "8" was often really 7.6 and got the "High" band penalty.
+ * Anchors: 3→0 (Moderate starts), 6→25 (High), 8→45 (Very high),
+ * 11→65 (Extreme), 13+→80.
  */
+const UV_ANCHORS: [number, number][] = [
+  [3, 0], [6, 25], [8, 45], [11, 65], [13, 80],
+];
+
 function uvPenalty(uv: number | null): number {
-  if (uv == null || uv < 3) return 0;
-  if (uv < 6) return 10;
-  if (uv < 8) return 25;
-  if (uv < 11) return 45;
-  return 65;
+  if (uv == null || uv <= 3) return 0;
+  if (uv >= 13) return 80;
+  for (let i = 0; i < UV_ANCHORS.length - 1; i++) {
+    const [x0, y0] = UV_ANCHORS[i];
+    const [x1, y1] = UV_ANCHORS[i + 1];
+    if (uv <= x1) return y0 + ((uv - x0) / (x1 - x0)) * (y1 - y0);
+  }
+  return 80;
 }
+
 
 // ── Per-activity weights (must sum to 1.0) ──────────────────────────────
 interface Weights {
