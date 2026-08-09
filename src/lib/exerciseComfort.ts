@@ -261,22 +261,25 @@ function aqPenalty(aqi: number | null): number {
  * Previously tiered, which made a UV of 7.9 score the same as 6.0 (25) and
  * jump to 45 at exactly 8 — the raw hourly value is fractional, so a UI
  * showing "8" was often really 7.6 and got the "High" band penalty.
- * Anchors: 3→0 (Moderate starts), 6→25 (High), 8→45 (Very high),
- * 11→65 (Extreme), 13+→80.
+ *
+ * WHO: 0–2 Low, 3–5 Moderate, 6–7 High, 8–10 Very High, 11+ Extreme.
+ * For outdoor exercise, 11+ is a genuine "avoid prolonged exposure" regime,
+ * so the curve reaches a high penalty there and maxes out at 13.
+ * Anchors: 3→0, 6→25, 8→45, 10→65, 11→80, 13+→100.
  */
 const UV_ANCHORS: [number, number][] = [
-  [3, 0], [6, 25], [8, 45], [11, 65], [13, 80],
+  [3, 0], [6, 25], [8, 45], [10, 65], [11, 80], [13, 100],
 ];
 
 function uvPenalty(uv: number | null): number {
   if (uv == null || uv <= 3) return 0;
-  if (uv >= 13) return 80;
+  if (uv >= 13) return 100;
   for (let i = 0; i < UV_ANCHORS.length - 1; i++) {
     const [x0, y0] = UV_ANCHORS[i];
     const [x1, y1] = UV_ANCHORS[i + 1];
     if (uv <= x1) return y0 + ((uv - x0) / (x1 - x0)) * (y1 - y0);
   }
-  return 80;
+  return 100;
 }
 
 
