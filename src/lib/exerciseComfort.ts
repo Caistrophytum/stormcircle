@@ -356,8 +356,8 @@ function scoreHour(
   const warnings = normalizeWarnings(ctx.activeWarnings);
 
   const penalties: Record<keyof Weights, number> = {
-    heat: heatPenalty(h.temperature, h.humidity),
-    cold: coldPenalty(h.temperature, h.windSpeed),
+    heat: heatPenalty(h.apparentTemperature),
+    cold: coldPenalty(h.apparentTemperature),
     wind: windPenalty(h.windSpeed, h.windGusts),
     precip: precipPenalty(h.precipProbability, h.precipMm),
     storm: stormPenalty(warnings, ctx.spcRisk, ctx.wrs),
