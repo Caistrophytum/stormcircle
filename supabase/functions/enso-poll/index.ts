@@ -96,8 +96,12 @@ Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
   try {
     let payload;
-    try { payload = await fetchMonthlyN34(); }
-    catch (e) { console.warn("[enso-poll] monthly failed, falling back to ONI:", e); payload = await fetchONI(); }
+    try { payload = await fetchWeeklyN34(); }
+    catch (e1) {
+      console.warn("[enso-poll] weekly failed, falling back to monthly:", e1);
+      try { payload = await fetchMonthlyN34(); }
+      catch (e2) { console.warn("[enso-poll] monthly failed, falling back to ONI:", e2); payload = await fetchONI(); }
+    }
     await supabase.from("enso_state").update({
       ...payload, last_run_at: new Date().toISOString(), last_error: null,
       updated_at: new Date().toISOString(),
