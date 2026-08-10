@@ -18,6 +18,7 @@ import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import { useUnitSystem, displayTemp, displayWindSpeed, displayLengthM } from "@/hooks/useUnitSystem";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import LocateMeButton from "@/components/mobile/LocateMeButton";
@@ -218,8 +219,21 @@ interface ChatMessage {
   user_id: string;
 }
 
+/**
+ * Recent (non-bot) chat messages for the "LATEST CHAT" box.
+ *
+ * Realtime alone is not enough on mobile: browsers suspend the websocket
+ * when the tab/app is backgrounded, so DELETE events broadcast while the
+ * phone is asleep are simply never delivered and removed messages linger
+ * on screen. We therefore (a) drop rows immediately on a DELETE payload,
+ * and (b) re-sync from the DB on the shared refresh tick, on tab focus
+ * and on reconnect.
+ */
 function useRecentChatMessages(limit = 30) {
   const [msgs, setMsgs] = useState<ChatMessage[]>([]);
+  const tick = useRefreshTick();
+  const loadRef = useRef<() => void>(() => {});
+
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -233,16 +247,41 @@ function useRecentChatMessages(limit = 30) {
         setMsgs(filtered);
       }
     };
+    loadRef.current = () => void load();
     void load();
     const ch = supabase
       .channel(`mobile-main-chat_${Math.random().toString(36).slice(2)}_${Date.now()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => void load())
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload: any) => {
+        // Prune deleted rows right away so the box never shows a message
+        // that no longer exists, then re-sync in the background.
+        const deletedId = payload?.eventType === "DELETE" ? (payload?.old?.id as string | undefined) : undefined;
+        if (deletedId) setMsgs((prev) => prev.filter((m) => m.id !== deletedId));
+        void load();
+      })
       .subscribe();
+
+    // Re-sync whenever the page comes back to the foreground / network returns.
+    const onWake = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("focus", onWake);
+    window.addEventListener("online", onWake);
+
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("focus", onWake);
+      window.removeEventListener("online", onWake);
       void supabase.removeChannel(ch);
     };
   }, [limit]);
+
+  // Shared 60 s clock: periodic re-sync catches anything realtime missed.
+  useEffect(() => {
+    loadRef.current();
+  }, [tick]);
+
   return msgs;
 }
 
