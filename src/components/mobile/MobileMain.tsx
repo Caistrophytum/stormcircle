@@ -18,6 +18,7 @@ import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import { useUnitSystem, displayTemp, displayWindSpeed, displayLengthM } from "@/hooks/useUnitSystem";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import LocateMeButton from "@/components/mobile/LocateMeButton";
