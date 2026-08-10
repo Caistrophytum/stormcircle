@@ -21,7 +21,32 @@ function classify(v: number) {
   if (v > 0) return { phase: "Neutral", lean: "warm-leaning" };
   if (v < 0) return { phase: "Neutral", lean: "cool-leaning" };
   return { phase: "Neutral", lean: "neutral" };
+
+// Weekly rows can print values without separating spaces when negative
+// (e.g. "29.4-0.2"), so pull numbers with a regex rather than splitting.
+async function fetchWeeklyN34() {
+  const res = await fetch(WEEKLY_URL, { headers: { "User-Agent": "StratoOps/1.0" } });
+  if (!res.ok) throw new Error(`weekly ${res.status}`);
+  const lines = (await res.text()).split("\n").map((l) => l.trim()).filter(Boolean);
+  const dataLines = lines.filter((l) => /^\d{2}[A-Z]{3}\d{4}/.test(l));
+  const last = dataLines[dataLines.length - 1];
+  if (!last) throw new Error("weekly: no data row");
+  const week = last.slice(0, 9);
+  const nums = (last.slice(9).match(/-?\d+\.\d+/g) ?? []).map(Number);
+  if (nums.length < 8) throw new Error("weekly: short row");
+  const anom = nums[5]; // Niño 3.4 anomaly (4th SST/ANOM pair is Niño 4)
+  if (!isFinite(anom)) throw new Error("weekly: bad anom");
+  const { phase, lean } = classify(anom);
+  const day = week.slice(0, 2);
+  const mon = week.slice(2, 5);
+  const year = week.slice(5);
+  const pretty = `week ending ${day} ${mon.charAt(0)}${mon.slice(1).toLowerCase()} ${year}`;
+  return {
+    source: "weekly", region: "Niño 3.4", oni: anom, phase, lean,
+    season: pretty, year,
+  };
 }
+
 
 async function fetchMonthlyN34() {
   const res = await fetch(MONTHLY_URL, { headers: { "User-Agent": "StratoOps/1.0" } });
