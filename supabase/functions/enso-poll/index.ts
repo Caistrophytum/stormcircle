@@ -21,6 +21,8 @@ function classify(v: number) {
   if (v > 0) return { phase: "Neutral", lean: "warm-leaning" };
   if (v < 0) return { phase: "Neutral", lean: "cool-leaning" };
   return { phase: "Neutral", lean: "neutral" };
+}
+
 
 // Weekly rows can print values without separating spaces when negative
 // (e.g. "29.4-0.2"), so pull numbers with a regex rather than splitting.
