@@ -3,16 +3,14 @@
 const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type" };
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-// Primary: ERSSTv5 monthly Niño-region SSTs (NOAA CPC's official monthly
-// product, baseline 1991-2020). Columns:
+// Primary: CPC weekly OISSTv2 Niño-region SSTs (baseline 1991-2020). Rows:
+//   DDMMMYYYY  N1+2 SST ANOM  N3 SST ANOM  N3.4 SST ANOM  N4 SST ANOM
+// This is the most recent ENSO observation CPC publishes (updated Mondays).
+const WEEKLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for";
+// Fallback 1: ERSSTv5 monthly Niño-region SSTs (official monthly product).
 //   YR MON  N1+2 ANOM  N3 ANOM  N4 ANOM  N3.4 ANOM
-// The Niño 3.4 anomaly here is what CPC quotes in its monthly ENSO
-// diagnostic discussions. The OISST weekly file (wksst9120.for) is a
-// different product whose single-week values often diverge by >1 °C from
-// the monthly ERSSTv5 number, so we no longer use it as the primary source.
 const MONTHLY_URL = "https://www.cpc.ncep.noaa.gov/data/indices/ersst5.nino.mth.91-20.ascii";
-// Fallback: 3-month running ONI (also ERSSTv5, smoother — used only if the
-// monthly file is unavailable).
+// Fallback 2: 3-month running ONI (also ERSSTv5, smoother).
 const ONI_URL = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt";
 
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
