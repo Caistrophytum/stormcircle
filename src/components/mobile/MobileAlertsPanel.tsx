@@ -16,8 +16,9 @@
  *
  * The whole panel scrolls vertically when content exceeds the viewport.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useHomeCountry } from "@/hooks/useHomeCountry";
 import { useAlerts, type Alert, type Severity, type AlertKind } from "@/hooks/useAlerts";
 import { useLSR, getLSRColor, getSourceColor } from "@/hooks/useLSR";
 import { formatRelativeTime } from "@/lib/timeFormat";
