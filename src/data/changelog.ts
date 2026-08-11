@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-08-11 07z",
+    tag: "IMPROVED",
+    title: "Minor but significant changes",
+    body: "mid-lift > 700hpa lapse rate, added an international/local toggle on the top 10 hazards list.",
+  },
+  {
     date: "2026-08-04 08z",
     tag: "NEW",
     title: "IMS warning coverage",
