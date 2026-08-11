@@ -51,7 +51,8 @@ const RISK_BG: Record<SPCRiskLevel, string> = {
 
 function rankWarning(p: WarningPolygon): number | null {
   const ev = p.event;
-  const text = `${p.description} ${p.headline} ${p.parameters?.spcWatchTitle ?? ""} ${p.parameters?.spcPds ?? ""}`.toLowerCase();
+  const text =
+    `${p.description} ${p.headline} ${p.parameters?.spcWatchTitle ?? ""} ${p.parameters?.spcPds ?? ""}`.toLowerCase();
   const pds = /particularly dangerous situation|\bpds\b/.test(text);
 
   // Warnings (active hazard)
@@ -77,9 +78,7 @@ function rankWarning(p: WarningPolygon): number | null {
   return null;
 }
 
-
 // pointInRing imported from "@/lib/pointInPolygon"
-
 
 // Approximate great-circle distance from a point to a segment by projecting
 // into a local equirectangular plane (km). Accurate to <1% for segments
@@ -107,10 +106,7 @@ function pointToSegmentKm(
   return Math.hypot(px, py);
 }
 
-function nearestPolygonKm(
-  origin: { lat: number; lon: number },
-  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
-): number {
+function nearestPolygonKm(origin: { lat: number; lon: number }, geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): number {
   const polys: number[][][][] =
     geom.type === "Polygon" ? [geom.coordinates as number[][][]] : (geom.coordinates as number[][][][]);
   let best = Infinity;
@@ -121,7 +117,10 @@ function nearestPolygonKm(
     if (pointInRing(origin.lon, origin.lat, outer)) {
       let inHole = false;
       for (let h = 1; h < poly.length; h++) {
-        if (pointInRing(origin.lon, origin.lat, poly[h])) { inHole = true; break; }
+        if (pointInRing(origin.lon, origin.lat, poly[h])) {
+          inHole = true;
+          break;
+        }
       }
       if (!inHole) return 0;
     }
@@ -207,8 +206,6 @@ function useBotMessagesLatest(botIds: string[]): Record<string, BotMessage | nul
   }, [idsKey]);
   return byId;
 }
-
-
 
 interface ChatMessage {
   id: string;
@@ -375,13 +372,11 @@ export default function MobileMain() {
     // contribution), 8.5 °C/km ≈ steep/dry-adiabatic ceiling.
     const lapseScore = sounding.lapseMid != null ? clamp01((sounding.lapseMid - 5.5) / (8.5 - 5.5)) : 0;
 
-
     // CAPE gate: log ramp (buoyancy fuel, diminishing returns).
     // CIN gate: inverted log — cap suppresses everything downstream.
     const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
-    const cinGate = sounding.cin == null
-      ? 1
-      : clamp01(1 - Math.log(1 + 9 * clamp01(cinMagnitude / 200)) / Math.log(10));
+    const cinGate =
+      sounding.cin == null ? 1 : clamp01(1 - Math.log(1 + 9 * clamp01(cinMagnitude / 200)) / Math.log(10));
     const effectiveGate = capeGate * cinGate;
 
     // CIN is not additive — its 20% lives in the multiplicative gate. The
@@ -391,18 +386,15 @@ export default function MobileMain() {
     const W = { cape: 37.5, shear: 31.25, el: 18.75, lcl: 12.5 } as const;
     const capeContrib0 = stationActive ? capeScore * W.cape : 0;
     const shearContribRaw = stationActive ? shearScore * W.shear * effectiveGate : 0;
-    const lclContribRaw   = stationActive ? lclScore   * W.lcl   * effectiveGate : 0;
-    const elContribRaw    = stationActive ? elScore    * W.el    * effectiveGate : 0;
+    const lclContribRaw = stationActive ? lclScore * W.lcl * effectiveGate : 0;
+    const elContribRaw = stationActive ? elScore * W.el * effectiveGate : 0;
 
     // Physical gate on the virtual block's combined output — weighted blend
     // (SFC RH 45%, MID RH 30%, MID LAPSE 25%) through the same log shape as
     // the CAPE gate.
-    const PHYS_W = { sfc: 0.45, mid: 0.30, lapse: 0.25 } as const;
-    const physScore = clamp01(
-      PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lapse * lapseScore,
-    );
+    const PHYS_W = { sfc: 0.5, mid: 0.35, lapse: 0.15 } as const;
+    const physScore = clamp01(PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lapse * lapseScore);
     const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
-
 
     const capeContrib = Math.round(capeContrib0 * physGate);
     const shearContrib = Math.round(shearContribRaw * physGate);
@@ -411,9 +403,7 @@ export default function MobileMain() {
     // CIN subtracts from WRS by closing the effective gate on the
     // shear/LCL/EL bundle. Show the actual point loss as a negative value.
     const virtualBundle = shearScore * W.shear + lclScore * W.lcl + elScore * W.el;
-    const cinLoss = stationActive
-      ? Math.round(capeGate * physGate * virtualBundle * (1 - cinGate))
-      : 0;
+    const cinLoss = stationActive ? Math.round(capeGate * physGate * virtualBundle * (1 - cinGate)) : 0;
 
     // Unified color scale tied to each parameter's normalized severity score.
     // The redder the value, the more it pushes the WRS score upward.
@@ -426,11 +416,46 @@ export default function MobileMain() {
     };
 
     const nodes = [
-      { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: colorFromScore(capeScore, sounding.cape != null), w: capeContrib, primary: true },
-      { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: colorFromScore(cinScore, sounding.cin != null), w: -cinLoss, primary: true },
-      { label: "SHEAR", value: fmtNum(sounding.shear, 1), unit: "m/s", color: colorFromScore(shearScore, sounding.shear != null), w: shearContrib, primary: true },
-      { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: colorFromScore(lclScore, sounding.lcl != null), w: lclContrib, primary: false },
-      { label: "EL", value: fmtLenM(sounding.el), unit: lenUnit, color: colorFromScore(elScore, sounding.el != null), w: elContrib, primary: false },
+      {
+        label: "CAPE",
+        value: fmt(sounding.cape),
+        unit: "J/kg",
+        color: colorFromScore(capeScore, sounding.cape != null),
+        w: capeContrib,
+        primary: true,
+      },
+      {
+        label: "CIN",
+        value: fmt(sounding.cin),
+        unit: "J/kg",
+        color: colorFromScore(cinScore, sounding.cin != null),
+        w: -cinLoss,
+        primary: true,
+      },
+      {
+        label: "SHEAR",
+        value: fmtNum(sounding.shear, 1),
+        unit: "m/s",
+        color: colorFromScore(shearScore, sounding.shear != null),
+        w: shearContrib,
+        primary: true,
+      },
+      {
+        label: "LCL",
+        value: fmtLenM(sounding.lcl),
+        unit: lenUnit,
+        color: colorFromScore(lclScore, sounding.lcl != null),
+        w: lclContrib,
+        primary: false,
+      },
+      {
+        label: "EL",
+        value: fmtLenM(sounding.el),
+        unit: lenUnit,
+        color: colorFromScore(elScore, sounding.el != null),
+        w: elContrib,
+        primary: false,
+      },
     ];
 
     // Physical metrics — triangle % is each parameter's weighted contribution
@@ -442,9 +467,30 @@ export default function MobileMain() {
       return v.toFixed(digits);
     };
     const physicalNodes = [
-      { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0, primary: true },
-      { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0, primary: true },
-      { label: "MID LAPSE", value: fmtPhys(sounding.lapseMid, 1), unit: "°C/km", color: colorFromScore(lapseScore, sounding.lapseMid != null), w: stationActive ? Math.round(lapseScore * PHYS_W.lapse * 100) : 0, primary: true },
+      {
+        label: "SFC RH",
+        value: fmtPhys(sounding.rhSurface, 0),
+        unit: "%",
+        color: colorFromScore(rhSfcScore, sounding.rhSurface != null),
+        w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0,
+        primary: true,
+      },
+      {
+        label: "MID RH",
+        value: fmtPhys(sounding.rhMid, 0),
+        unit: "%",
+        color: colorFromScore(rhMidScore, sounding.rhMid != null),
+        w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0,
+        primary: true,
+      },
+      {
+        label: "MID LAPSE",
+        value: fmtPhys(sounding.lapseMid, 1),
+        unit: "°C/km",
+        color: colorFromScore(lapseScore, sounding.lapseMid != null),
+        w: stationActive ? Math.round(lapseScore * PHYS_W.lapse * 100) : 0,
+        primary: true,
+      },
     ];
 
     const threat = Math.min(100, Math.max(0, capeContrib + shearContrib + lclContrib + elContrib - cinLoss));
@@ -465,7 +511,8 @@ export default function MobileMain() {
       if (r > bestRank || d < bestDist) {
         bestRank = r;
         bestDist = d;
-        const text = `${p.description} ${p.headline} ${p.parameters?.spcWatchTitle ?? ""} ${p.parameters?.spcPds ?? ""}`.toLowerCase();
+        const text =
+          `${p.description} ${p.headline} ${p.parameters?.spcWatchTitle ?? ""} ${p.parameters?.spcPds ?? ""}`.toLowerCase();
         if (p.event === "Tornado Warning" && text.includes("tornado emergency")) bestEvent = "Tornado Emergency";
         else if (p.event === "Flash Flood Warning" && text.includes("flash flood emergency"))
           bestEvent = "Flash Flood Emergency";
@@ -552,8 +599,32 @@ export default function MobileMain() {
         }}
       >
         <div style={{ minWidth: 0 }}>
-          <h2 style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>WELCOME</h2>
-          <div style={{ fontSize: "14px", color: "#fff", fontWeight: 700, marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{displayName}</div>
+          <h2
+            style={{
+              fontSize: "9px",
+              color: "#ff9d00",
+              letterSpacing: "0.15em",
+              fontWeight: 700,
+              margin: 0,
+              fontFamily: "'JetBrains Mono', monospace",
+              textTransform: "uppercase",
+            }}
+          >
+            WELCOME
+          </h2>
+          <div
+            style={{
+              fontSize: "14px",
+              color: "#fff",
+              fontWeight: 700,
+              marginTop: "2px",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {displayName}
+          </div>
         </div>
         {user && <LocateMeButton userId={user.id} />}
       </div>
@@ -654,12 +725,11 @@ export default function MobileMain() {
                 <span key={label}>
                   {label}:{" "}
                   <span style={{ color: "#ff9d00", fontWeight: 600 }}>
-                    {value}{display.unit}
+                    {value}
+                    {display.unit}
                   </span>
                   {descriptor && (
-                    <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 400 }}>
-                      {" "}({descriptor})
-                    </span>
+                    <span style={{ color: "rgba(255,255,255,0.55)", fontWeight: 400 }}> ({descriptor})</span>
                   )}
                 </span>
               );
@@ -683,9 +753,7 @@ export default function MobileMain() {
                   "Dew",
                   displayTemp(hometownWeather.dewpointC, unitSystem),
                   hometownWeather.dewpointC,
-                  hometownWeather.dewpointC != null
-                    ? dewPointDescriptor(hometownWeather.dewpointC)
-                    : undefined,
+                  hometownWeather.dewpointC != null ? dewPointDescriptor(hometownWeather.dewpointC) : undefined,
                 )}
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
                 {render(
@@ -697,17 +765,17 @@ export default function MobileMain() {
                     : undefined,
                 )}
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
-                {render("Wind", displayWindSpeed(hometownWeather.windSpeedKmh, unitSystem), hometownWeather.windSpeedKmh)}
+                {render(
+                  "Wind",
+                  displayWindSpeed(hometownWeather.windSpeedKmh, unitSystem),
+                  hometownWeather.windSpeedKmh,
+                )}
                 <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
                 {render(
                   "UV",
-                  hometownWeather.uvIndex != null
-                    ? { value: hometownWeather.uvIndex, unit: "" }
-                    : null,
+                  hometownWeather.uvIndex != null ? { value: hometownWeather.uvIndex, unit: "" } : null,
                   hometownWeather.uvIndex,
-                  hometownWeather.uvIndex != null
-                    ? uvDescriptor(hometownWeather.uvIndex)
-                    : undefined,
+                  hometownWeather.uvIndex != null ? uvDescriptor(hometownWeather.uvIndex) : undefined,
                 )}
               </>
             );
@@ -737,40 +805,42 @@ export default function MobileMain() {
       )}
 
       {/* 2a. Fire weather news bar — appears only when home city is under an SPC fire weather risk. */}
-      {isUS && hasLocation && homeFireRisk.risk !== "NONE" && (() => {
-        const FIRE_TEXT: Record<FireRiskLevel, string> = {
-          NONE: "No Fire Weather Risk",
-          ELEV: "Elevated Fire Weather",
-          CRIT: "Critical Fire Weather",
-          EXTM: "Extreme Fire Weather",
-        };
-        const FIRE_BG: Record<FireRiskLevel, string> = {
-          NONE: "hsl(120 45% 70%)",
-          ELEV: "hsl(50 95% 55%)",
-          CRIT: "hsl(20 95% 50%)",
-          EXTM: "hsl(0 80% 50%)",
-        };
-        const bg = FIRE_BG[homeFireRisk.risk];
-        return (
-          <div
-            style={{
-              padding: "6px 10px",
-              background: bg,
-              borderLeft: `3px solid ${bg}`,
-              color: "#050505",
-              fontSize: "10px",
-              fontWeight: 700,
-              lineHeight: 1.4,
-              textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              borderRadius: "2px",
-            }}
-          >
-            Fire weather in {profile!.location}: {FIRE_TEXT[homeFireRisk.risk]}.
-          </div>
-        );
-      })()}
-
+      {isUS &&
+        hasLocation &&
+        homeFireRisk.risk !== "NONE" &&
+        (() => {
+          const FIRE_TEXT: Record<FireRiskLevel, string> = {
+            NONE: "No Fire Weather Risk",
+            ELEV: "Elevated Fire Weather",
+            CRIT: "Critical Fire Weather",
+            EXTM: "Extreme Fire Weather",
+          };
+          const FIRE_BG: Record<FireRiskLevel, string> = {
+            NONE: "hsl(120 45% 70%)",
+            ELEV: "hsl(50 95% 55%)",
+            CRIT: "hsl(20 95% 50%)",
+            EXTM: "hsl(0 80% 50%)",
+          };
+          const bg = FIRE_BG[homeFireRisk.risk];
+          return (
+            <div
+              style={{
+                padding: "6px 10px",
+                background: bg,
+                borderLeft: `3px solid ${bg}`,
+                color: "#050505",
+                fontSize: "10px",
+                fontWeight: 700,
+                lineHeight: 1.4,
+                textTransform: "uppercase",
+                letterSpacing: "0.04em",
+                borderRadius: "2px",
+              }}
+            >
+              Fire weather in {profile!.location}: {FIRE_TEXT[homeFireRisk.risk]}.
+            </div>
+          );
+        })()}
 
       {/* 2b. Current-location hazards — transparent, outlined per polygon color. */}
       <CurrentLocationHazards
@@ -778,8 +848,6 @@ export default function MobileMain() {
         coords={homeRisk.coords}
         cityLabel={profile?.location ?? null}
       />
-
-
 
       {/* 3. SPC bot message — interactive (expandable per-risk dropdowns) */}
       {botMsg ? (
@@ -858,7 +926,15 @@ export default function MobileMain() {
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
           <h2
-            style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
+            style={{
+              fontSize: "9px",
+              color: "#ff9d00",
+              letterSpacing: "0.15em",
+              fontWeight: 700,
+              margin: 0,
+              fontFamily: "'JetBrains Mono', monospace",
+              textTransform: "uppercase",
+            }}
           >
             VIRTUAL METRICS
           </h2>
@@ -882,47 +958,43 @@ export default function MobileMain() {
           {nodes.map((n, i) => {
             const lit = n.primary;
             return (
-            <div
-              key={n.label}
-              style={{
-                position: "relative",
-                padding: "4px 4px 4px 4px",
-                background: "#050505",
-                borderLeft: lit
-                  ? "2px solid #ff9d00"
-                  : "2px solid rgba(255,157,0,0.3)",
-                boxShadow: lit
-                  ? "inset 3px 0 6px rgba(255,157,0,0.55)"
-                  : "none",
-                minWidth: 0,
-                overflow: "hidden",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
-                <span style={{ fontSize: "7px", color: "#888" }}>{n.label}</span>
-              </div>
               <div
-                style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
-              >
-                {n.value}
-              </div>
-              <div style={{ fontSize: "7px", color: "#666", marginTop: "1px" }}>{n.unit}</div>
-              <div
+                key={n.label}
                 style={{
-                  position: "absolute",
-                  top: 1,
-                  right: 1,
-                  fontSize: "8px",
-                  color: "#050505",
-                  background: "#eaeaea",
-                  fontWeight: 700,
-                  padding: "0 3px",
-                  borderRadius: "1px",
+                  position: "relative",
+                  padding: "4px 4px 4px 4px",
+                  background: "#050505",
+                  borderLeft: lit ? "2px solid #ff9d00" : "2px solid rgba(255,157,0,0.3)",
+                  boxShadow: lit ? "inset 3px 0 6px rgba(255,157,0,0.55)" : "none",
+                  minWidth: 0,
+                  overflow: "hidden",
                 }}
               >
-                {n.w}%
+                <div style={{ display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
+                  <span style={{ fontSize: "7px", color: "#888" }}>{n.label}</span>
+                </div>
+                <div
+                  style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
+                >
+                  {n.value}
+                </div>
+                <div style={{ fontSize: "7px", color: "#666", marginTop: "1px" }}>{n.unit}</div>
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 1,
+                    right: 1,
+                    fontSize: "8px",
+                    color: "#050505",
+                    background: "#eaeaea",
+                    fontWeight: 700,
+                    padding: "0 3px",
+                    borderRadius: "1px",
+                  }}
+                >
+                  {n.w}%
+                </div>
               </div>
-            </div>
             );
           })}
         </div>
@@ -938,7 +1010,16 @@ export default function MobileMain() {
         }}
       >
         <h2
-          style={{ fontSize: "9px", color: "#ff9d00", letterSpacing: "0.15em", fontWeight: 700, marginBottom: "6px", margin: "0 0 6px 0", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}
+          style={{
+            fontSize: "9px",
+            color: "#ff9d00",
+            letterSpacing: "0.15em",
+            fontWeight: 700,
+            marginBottom: "6px",
+            margin: "0 0 6px 0",
+            fontFamily: "'JetBrains Mono', monospace",
+            textTransform: "uppercase",
+          }}
         >
           PHYSICAL METRICS
         </h2>
@@ -958,7 +1039,18 @@ export default function MobileMain() {
               <div style={{ display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
                 <span style={{ fontSize: "7px", color: "#888" }}>{n.label}</span>
                 {n.primary && (
-                  <span style={{ fontSize: "6px", color: "#ff9d00", border: "1px solid rgba(255,157,0,0.6)", padding: "0 2px", fontWeight: 700, letterSpacing: "0.1em" }}>PRIMARY</span>
+                  <span
+                    style={{
+                      fontSize: "6px",
+                      color: "#ff9d00",
+                      border: "1px solid rgba(255,157,0,0.6)",
+                      padding: "0 2px",
+                      fontWeight: 700,
+                      letterSpacing: "0.1em",
+                    }}
+                  >
+                    PRIMARY
+                  </span>
                 )}
               </div>
               <div
@@ -999,7 +1091,19 @@ export default function MobileMain() {
           gap: "10px",
         }}
       >
-        <h2 style={{ fontSize: "10px", color: "#888", letterSpacing: "0.15em", fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>WRS</h2>
+        <h2
+          style={{
+            fontSize: "10px",
+            color: "#888",
+            letterSpacing: "0.15em",
+            fontWeight: 700,
+            margin: 0,
+            fontFamily: "'JetBrains Mono', monospace",
+            textTransform: "uppercase",
+          }}
+        >
+          WRS
+        </h2>
         <div
           style={{
             flex: 1,
