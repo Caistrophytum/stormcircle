@@ -93,7 +93,9 @@ export function useWRSMetrics(): WRSMetrics {
 
     const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 70) : 0;
     const rhMidScore = sounding.rhMid != null ? clamp01((sounding.rhMid - 20) / 60) : 0;
-    const liftScore = sounding.omegaMid != null ? clamp01((sounding.omegaMid - 0.1) / (3 - 0.1)) : 0;
+    // Mid-level lapse rate (700→500 hPa): 5.5 °C/km ≈ moist-neutral (no
+    // contribution), 8.5 °C/km ≈ steep/dry-adiabatic ceiling.
+    const lapseScore = sounding.lapseMid != null ? clamp01((sounding.lapseMid - 5.5) / (8.5 - 5.5)) : 0;
 
     // CAPE gate: log ramp — buoyancy fuel with diminishing returns.
     const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
@@ -115,9 +117,9 @@ export function useWRSMetrics(): WRSMetrics {
     const lclContribRaw   = stationActive ? lclScore   * W.lcl   * effectiveGate : 0;
     const elContribRaw    = stationActive ? elScore    * W.el    * effectiveGate : 0;
 
-    const PHYS_W = { sfc: 0.45, mid: 0.3, lift: 0.25 } as const;
+    const PHYS_W = { sfc: 0.45, mid: 0.3, lapse: 0.25 } as const;
     const physScore = clamp01(
-      PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lift * liftScore,
+      PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lapse * lapseScore,
     );
     const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
 
@@ -149,7 +151,7 @@ export function useWRSMetrics(): WRSMetrics {
     const physicalNodes: MetricNode[] = [
       { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", colorHsl: colorFromScore(rhSfcScore, sounding.rhSurface != null, stationActive), wrsContribution: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0, primary: true },
       { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", colorHsl: colorFromScore(rhMidScore, sounding.rhMid != null, stationActive), wrsContribution: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0, primary: true },
-      { label: "VERT VEL", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", colorHsl: colorFromScore(liftScore, sounding.omegaMid != null, stationActive), wrsContribution: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
+      { label: "MID LAPSE", value: fmtPhys(sounding.lapseMid, 1), unit: "°C/km", colorHsl: colorFromScore(lapseScore, sounding.lapseMid != null, stationActive), wrsContribution: stationActive ? Math.round(lapseScore * PHYS_W.lapse * 100) : 0, primary: true },
     ];
 
     const threat = Math.min(100, Math.max(0, capeContribGated + shearContrib + lclContrib + elContrib - cinLoss));
