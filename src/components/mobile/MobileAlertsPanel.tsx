@@ -16,8 +16,9 @@
  *
  * The whole panel scrolls vertically when content exceeds the viewport.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { useHomeCountry } from "@/hooks/useHomeCountry";
 import { useAlerts, type Alert, type Severity, type AlertKind } from "@/hooks/useAlerts";
 import { useLSR, getLSRColor, getSourceColor } from "@/hooks/useLSR";
 import { formatRelativeTime } from "@/lib/timeFormat";
@@ -248,7 +249,14 @@ function CountRow({
 
 // ── Main panel ─────────────────────────────────────────────────────────────
 export default function MobileAlertsPanel() {
-  const { mostDangerous, topHazards, newWarnings, loading, error, lastUpdated } = useAlerts();
+  const { mostDangerous, dangerousRanked, topHazards, newWarnings, loading, error, lastUpdated } = useAlerts();
+  // Local = hazards from the user's hometown country only; Intl = worldwide.
+  const homeCountry = useHomeCountry();
+  const [scope, setScope] = useState<"international" | "local">("international");
+  const dangerousList = useMemo(() => {
+    if (scope === "international" || !homeCountry) return mostDangerous;
+    return dangerousRanked.filter((a) => a.country === homeCountry).slice(0, 10);
+  }, [scope, homeCountry, mostDangerous, dangerousRanked]);
   const { reports: lsrReports, loading: lsrLoading, lastUpdated: lsrUpdated } = useLSR();
 
   // Independent open/closed state per section. All start expanded.
@@ -280,14 +288,44 @@ export default function MobileAlertsPanel() {
         onToggle={() => setOpenDangerous((v) => !v)}
         footer={lastUpdated ? `Last updated ${formatRelativeTime(lastUpdated, now)}` : undefined}
       >
-        {loading && mostDangerous.length === 0 && (
+        <div style={{ display: "flex", gap: "4px", marginBottom: "6px" }}>
+          {(["international", "local"] as const).map((sc) => {
+            const active = scope === sc;
+            const disabled = sc === "local" && !homeCountry;
+            return (
+              <button
+                key={sc}
+                type="button"
+                disabled={disabled}
+                onClick={() => setScope(sc)}
+                style={{
+                  fontSize: "9px",
+                  fontWeight: 700,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  padding: "3px 8px",
+                  borderRadius: "3px",
+                  border: active ? "1px solid rgba(255,157,0,0.6)" : "1px solid rgba(255,255,255,0.15)",
+                  background: active ? "rgba(255,157,0,0.18)" : "transparent",
+                  color: active ? "#ff9d00" : "#888",
+                  opacity: disabled ? 0.4 : 1,
+                }}
+              >
+                {sc === "local" ? `Local${homeCountry ? ` (${homeCountry})` : ""}` : "Intl"}
+              </button>
+            );
+          })}
+        </div>
+        {loading && dangerousList.length === 0 && (
           <span style={{ color: "#888", fontSize: "11px" }}>Loading…</span>
         )}
         {error && <span style={{ color: "#f87171", fontSize: "11px" }}>Error: {error}</span>}
-        {!loading && !error && mostDangerous.length === 0 && (
-          <span style={{ color: "#888", fontSize: "11px" }}>No active alerts</span>
+        {!loading && !error && dangerousList.length === 0 && (
+          <span style={{ color: "#888", fontSize: "11px" }}>
+            {scope === "local" ? "No active alerts in your country" : "No active alerts"}
+          </span>
         )}
-        {mostDangerous.map((a, i) => (
+        {dangerousList.map((a, i) => (
           <DangerousRow key={`${a.event}-${i}`} alert={a} index={i} />
         ))}
       </Section>

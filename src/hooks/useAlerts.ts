@@ -22,6 +22,8 @@ export interface Alert {
   certainty: Certainty;
   urgency: Urgency;
   tags: string[];
+  /** ISO country the alert originates from ("US" = NWS, "IL" = IMS). */
+  country: string;
 }
 
 export interface TopHazard { event: string; count: number; }
@@ -29,6 +31,8 @@ export interface NewWarning { event: string; count: number; }
 
 export interface AlertsData {
   mostDangerous: Alert[];
+  /** Full danger-sorted list (capped at 200) for client-side country filters. */
+  dangerousRanked: Alert[];
   topHazards: TopHazard[];
   newWarnings: NewWarning[];
   recentAlerts: Alert[];

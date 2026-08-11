@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAlerts, type AlertKind, type Severity } from "@/hooks/useAlerts";
+import { useHomeCountry } from "@/hooks/useHomeCountry";
 import { formatRelativeTime } from "@/lib/timeFormat";
 
 const severityBadge: Record<Severity, string> = {
@@ -57,8 +58,16 @@ const EventInfoPanel = ({
   dangerousStyle,
   stackGapPx,
 }: EventInfoPanelProps) => {
-  const { mostDangerous, topHazards, newWarnings, loading, error, lastUpdated } = useAlerts();
+  const { mostDangerous, dangerousRanked, topHazards, newWarnings, loading, error, lastUpdated } = useAlerts();
   const [now, setNow] = useState(() => new Date());
+  // Local = only hazards from the user's hometown country; International =
+  // every hazard we track, regardless of origin.
+  const homeCountry = useHomeCountry();
+  const [scope, setScope] = useState<"international" | "local">("international");
+  const dangerousList = useMemo(() => {
+    if (scope === "international" || !homeCountry) return mostDangerous;
+    return dangerousRanked.filter((a) => a.country === homeCountry).slice(0, 10);
+  }, [scope, homeCountry, mostDangerous, dangerousRanked]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 5_000);
@@ -173,9 +182,33 @@ const EventInfoPanel = ({
         style={dangerousStyle}
         className="glass-panel p-2.5 whitespace-nowrap min-w-[260px]"
       >
-        <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase mb-2">
-          Top 10 Most Dangerous
-        </h3>
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <h3 className="text-[15px] font-mono text-primary tracking-[0.2em] uppercase">
+            Top 10 Most Dangerous
+          </h3>
+          <div className="flex overflow-hidden rounded-sm border border-primary/30">
+            {(["international", "local"] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setScope(s)}
+                disabled={s === "local" && !homeCountry}
+                title={
+                  s === "local" && !homeCountry
+                    ? "Set a hometown to filter by country"
+                    : undefined
+                }
+                className={`px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-widest transition-colors disabled:opacity-40 ${
+                  scope === s
+                    ? "bg-primary/20 text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {s === "local" ? `Local${homeCountry ? ` (${homeCountry})` : ""}` : "Intl"}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="flex flex-col gap-1.5">
           {loading && (
             <span className="text-[13px] font-mono text-muted-foreground">Loading…</span>
@@ -183,10 +216,12 @@ const EventInfoPanel = ({
           {error && !loading && (
             <span className="text-[13px] font-mono text-destructive">Error: {error}</span>
           )}
-          {!loading && !error && mostDangerous.length === 0 && (
-            <span className="text-[13px] font-mono text-muted-foreground">No active alerts</span>
+          {!loading && !error && dangerousList.length === 0 && (
+            <span className="text-[13px] font-mono text-muted-foreground">
+              {scope === "local" ? "No active alerts in your country" : "No active alerts"}
+            </span>
           )}
-          {mostDangerous.map((a, i) => (
+          {dangerousList.map((a, i) => (
             <div key={`${a.event}-${i}`} className="flex flex-col gap-0.5">
               <div className="flex items-center gap-1.5">
                 <span className="text-[15px] font-mono text-muted-foreground w-4">

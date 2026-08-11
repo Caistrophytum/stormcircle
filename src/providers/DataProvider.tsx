@@ -322,6 +322,9 @@ interface AlertRow {
 
 function rowToAlert(r: AlertRow): Alert {
   const event = r.event ?? "Unknown";
+  // Country provenance: IMS rows are prefixed "IMS-" by the Israeli poller,
+  // everything else in `active_alerts` comes from the NWS (United States).
+  const country = r.alert_id?.startsWith("IMS-") ? "IL" : "US";
   const params = r.properties?.parameters ?? {};
   return {
     event,
@@ -329,6 +332,7 @@ function rowToAlert(r: AlertRow): Alert {
     headline: r.headline ?? "",
     areaDesc: r.area_desc ?? "",
     kind: deriveKind(event),
+    country,
     certainty: normalizeCertainty(r.certainty),
     urgency: normalizeUrgency(r.urgency),
     tags: extractTags({
@@ -410,7 +414,7 @@ interface DataContextValue {
 }
 
 const EMPTY_ALERTS: AlertsData = {
-  mostDangerous: [], topHazards: [], newWarnings: [], recentAlerts: [],
+  mostDangerous: [], dangerousRanked: [], topHazards: [], newWarnings: [], recentAlerts: [],
   loading: true, error: null, lastUpdated: null,
 };
 const EMPTY_POLYS: WarningPolygonsData = {
@@ -509,7 +513,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        const mostDangerous = [...list].sort((a, b) => dangerScore(a) - dangerScore(b)).slice(0, 10);
+        // Full ranked list (capped) so the UI can filter by country without
+        // a second query; `mostDangerous` stays the global top 10.
+        const ranked = [...list].sort((a, b) => dangerScore(a) - dangerScore(b));
+        const dangerousRanked = ranked.slice(0, 200);
+        const mostDangerous = ranked.slice(0, 10);
         const counts = new Map<string, number>();
         for (const a of list) counts.set(a.event, (counts.get(a.event) ?? 0) + 1);
         const topHazards: TopHazard[] = Array.from(counts.entries())
@@ -521,7 +529,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const recentAlerts = recent.sort((a, b) => b.ts - a.ts).map((e) => e.alert).slice(0, 10);
 
         setAlerts({
-          mostDangerous, topHazards, newWarnings, recentAlerts,
+          mostDangerous, dangerousRanked, topHazards, newWarnings, recentAlerts,
           loading: false, error: null, lastUpdated: new Date(),
         });
       } catch (err) {
