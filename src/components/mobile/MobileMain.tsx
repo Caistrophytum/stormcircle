@@ -366,12 +366,14 @@ export default function MobileMain() {
 
     // Physical inputs — independent enabling environment (no gust: gusts are
     // a *consequence* of convection and would couple the score to itself).
-    //   SFC RH viable 30→100%, MID RH 20→80%, MID LIFT 0.1→3 m/s (Open-Meteo
+    //   SFC RH viable 30→100%, MID RH 20→80%, MID LAPSE 5.5→8.5 °C/km (Open-Meteo
     //   m/s, +up). Below 0.1 m/s → 0% (no representation); ≥3 m/s → 100%
     //   (very strong ascent).
     const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 70) : 0;
     const rhMidScore = sounding.rhMid != null ? clamp01((sounding.rhMid - 20) / 60) : 0;
-    const liftScore = sounding.omegaMid != null ? clamp01((sounding.omegaMid - 0.1) / (3 - 0.1)) : 0;
+    // Mid-level lapse rate (700→500 hPa): 5.5 °C/km ≈ moist-neutral (no
+    // contribution), 8.5 °C/km ≈ steep/dry-adiabatic ceiling.
+    const lapseScore = sounding.lapseMid != null ? clamp01((sounding.lapseMid - 5.5) / (8.5 - 5.5)) : 0;
 
 
     // CAPE gate: log ramp (buoyancy fuel, diminishing returns).
@@ -393,11 +395,11 @@ export default function MobileMain() {
     const elContribRaw    = stationActive ? elScore    * W.el    * effectiveGate : 0;
 
     // Physical gate on the virtual block's combined output — weighted blend
-    // (SFC RH 45%, MID RH 30%, MID LIFT 25%) through the same log shape as
+    // (SFC RH 45%, MID RH 30%, MID LAPSE 25%) through the same log shape as
     // the CAPE gate.
-    const PHYS_W = { sfc: 0.45, mid: 0.30, lift: 0.25 } as const;
+    const PHYS_W = { sfc: 0.45, mid: 0.30, lapse: 0.25 } as const;
     const physScore = clamp01(
-      PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lift * liftScore,
+      PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lapse * lapseScore,
     );
     const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
 
@@ -442,7 +444,7 @@ export default function MobileMain() {
     const physicalNodes = [
       { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", color: colorFromScore(rhSfcScore, sounding.rhSurface != null), w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0, primary: true },
       { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", color: colorFromScore(rhMidScore, sounding.rhMid != null), w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0, primary: true },
-      { label: "VERT VEL", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", color: colorFromScore(liftScore, sounding.omegaMid != null), w: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
+      { label: "MID LAPSE", value: fmtPhys(sounding.lapseMid, 1), unit: "°C/km", color: colorFromScore(lapseScore, sounding.lapseMid != null), w: stationActive ? Math.round(lapseScore * PHYS_W.lapse * 100) : 0, primary: true },
     ];
 
     const threat = Math.min(100, Math.max(0, capeContrib + shearContrib + lclContrib + elContrib - cinLoss));

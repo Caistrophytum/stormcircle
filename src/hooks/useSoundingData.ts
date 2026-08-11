@@ -18,8 +18,15 @@ export interface SoundingData {
   rhSurface: number | null;
   /** Mid-level (700 hPa) relative humidity (%) — physical WRS input. */
   rhMid: number | null;
-  /** Mid-level (700 hPa) vertical velocity from OpenMeteo, in m/s. Positive = ascent (updraft), negative = subsidence. Score ramps 0.1 → 3 m/s. */
+  /** Mid-level (700 hPa) vertical velocity from OpenMeteo, in m/s. Positive = ascent (updraft), negative = subsidence. Kept for reference; no longer scored. */
   omegaMid: number | null;
+  /**
+   * Mid-level lapse rate (°C/km) between 700 and 500 hPa. Computed from the
+   * temperatures at both levels divided by their geopotential-height
+   * separation (falls back to the standard ~2.56 km when heights are absent).
+   * Steep rates (≥ 7.5 °C/km) strongly favour deep convection.
+   */
+  lapseMid: number | null;
   /**
    * Bulk shear magnitude (m/s) approximated between 850 hPa (~1.5 km) and
    * 500 hPa (~5.5 km) — close enough to standard 0–6 km bulk shear for
@@ -40,6 +47,7 @@ const EMPTY: SoundingData = {
   rhSurface: null,
   rhMid: null,
   omegaMid: null,
+  lapseMid: null,
   shear: null,
   loading: false,
   error: false,
@@ -86,7 +94,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
       `https://api.open-meteo.com/v1/forecast` +
       `?latitude=${lat}&longitude=${lon}` +
       `&current=temperature_2m,dewpoint_2m,relative_humidity_2m,cape,convective_inhibition,lifted_index,boundary_layer_height` +
-      `&hourly=relative_humidity_700hPa,vertical_velocity_700hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_500hPa,wind_direction_500hPa` +
+      `&hourly=relative_humidity_700hPa,vertical_velocity_700hPa,temperature_700hPa,temperature_500hPa,geopotential_height_700hPa,geopotential_height_500hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_500hPa,wind_direction_500hPa` +
       `&wind_speed_unit=ms&forecast_days=1&timezone=UTC`;
 
     const fetchSounding = async (showLoading: boolean) => {
@@ -132,6 +140,24 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         const rhMid = rh700.length ? pick(rh700) : null;
         const omegaMid = omega700.length ? pick(omega700) : null;
 
+        // Mid-level lapse rate (700→500 hPa, °C/km). Smoother and better
+        // resolved than a single-level omega sample, and a genuine
+        // thermodynamic ingredient for deep convection.
+        const t700arr: Array<number | null> = json?.hourly?.temperature_700hPa ?? [];
+        const t500arr: Array<number | null> = json?.hourly?.temperature_500hPa ?? [];
+        const z700arr: Array<number | null> = json?.hourly?.geopotential_height_700hPa ?? [];
+        const z500arr: Array<number | null> = json?.hourly?.geopotential_height_500hPa ?? [];
+        const t700 = t700arr.length ? pick(t700arr) : null;
+        const t500 = t500arr.length ? pick(t500arr) : null;
+        const z700 = z700arr.length ? pick(z700arr) : null;
+        const z500 = z500arr.length ? pick(z500arr) : null;
+        let lapseMid: number | null = null;
+        if (t700 != null && t500 != null) {
+          // Standard-atmosphere separation fallback: 5574 m − 3012 m ≈ 2.562 km.
+          const dzKm = z700 != null && z500 != null && z500 > z700 ? (z500 - z700) / 1000 : 2.562;
+          lapseMid = (t700 - t500) / dzKm;
+        }
+
         // Convert speed/direction → u/v components (meteorological "from"
         // convention: direction is the *source* bearing). Bulk shear is the
         // magnitude of the vector difference between 500 hPa and 850 hPa.
@@ -172,6 +198,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
           rhSurface: typeof c.relative_humidity_2m === "number" ? c.relative_humidity_2m : null,
           rhMid,
           omegaMid,
+          lapseMid,
           shear,
           loading: false,
           error: false,
