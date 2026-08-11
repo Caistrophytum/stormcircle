@@ -18,8 +18,15 @@ export interface SoundingData {
   rhSurface: number | null;
   /** Mid-level (700 hPa) relative humidity (%) — physical WRS input. */
   rhMid: number | null;
-  /** Mid-level (700 hPa) vertical velocity from OpenMeteo, in m/s. Positive = ascent (updraft), negative = subsidence. Score ramps 0.1 → 3 m/s. */
+  /** Mid-level (700 hPa) vertical velocity from OpenMeteo, in m/s. Positive = ascent (updraft), negative = subsidence. Kept for reference; no longer scored. */
   omegaMid: number | null;
+  /**
+   * Mid-level lapse rate (°C/km) between 700 and 500 hPa. Computed from the
+   * temperatures at both levels divided by their geopotential-height
+   * separation (falls back to the standard ~2.56 km when heights are absent).
+   * Steep rates (≥ 7.5 °C/km) strongly favour deep convection.
+   */
+  lapseMid: number | null;
   /**
    * Bulk shear magnitude (m/s) approximated between 850 hPa (~1.5 km) and
    * 500 hPa (~5.5 km) — close enough to standard 0–6 km bulk shear for
