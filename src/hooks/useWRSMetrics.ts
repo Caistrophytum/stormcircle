@@ -149,7 +149,7 @@ export function useWRSMetrics(): WRSMetrics {
     const physicalNodes: MetricNode[] = [
       { label: "SFC RH", value: fmtPhys(sounding.rhSurface, 0), unit: "%", colorHsl: colorFromScore(rhSfcScore, sounding.rhSurface != null, stationActive), wrsContribution: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0, primary: true },
       { label: "MID RH", value: fmtPhys(sounding.rhMid, 0), unit: "%", colorHsl: colorFromScore(rhMidScore, sounding.rhMid != null, stationActive), wrsContribution: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0, primary: true },
-      { label: "MID LIFT", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", colorHsl: colorFromScore(liftScore, sounding.omegaMid != null, stationActive), wrsContribution: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
+      { label: "VERT VEL", value: fmtPhys(sounding.omegaMid, 2), unit: "m/s", colorHsl: colorFromScore(liftScore, sounding.omegaMid != null, stationActive), wrsContribution: stationActive ? Math.round(liftScore * PHYS_W.lift * 100) : 0, primary: true },
     ];
 
     const threat = Math.min(100, Math.max(0, capeContribGated + shearContrib + lclContrib + elContrib - cinLoss));
