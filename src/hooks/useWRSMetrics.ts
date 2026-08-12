@@ -117,7 +117,7 @@ export function useWRSMetrics(): WRSMetrics {
     const lclContribRaw   = stationActive ? lclScore   * W.lcl   * effectiveGate : 0;
     const elContribRaw    = stationActive ? elScore    * W.el    * effectiveGate : 0;
 
-    const PHYS_W = { sfc: 0.45, mid: 0.3, lapse: 0.25 } as const;
+    const PHYS_W = { sfc: 0.5, mid: 0.35, lapse: 0.15 } as const;
     const physScore = clamp01(
       PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lapse * lapseScore,
     );
