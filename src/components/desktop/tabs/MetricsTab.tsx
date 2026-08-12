@@ -6,6 +6,8 @@
 import { motion } from "framer-motion";
 import { useWRSMetrics } from "@/hooks/useWRSMetrics";
 import { useAuth } from "@/hooks/useAuth";
+import { useRadarContext } from "@/contexts/RadarContext";
+
 
 function wrsColor(v: number) {
   // Linear HSL interpolation green→amber→red
@@ -40,7 +42,9 @@ const VIRTUAL_COLORS = [
 export default function MetricsTab() {
   const { threatLevel, physicalNodes, soundingNodes, stationActive, physGatePercent } = useWRSMetrics();
   const { profile } = useAuth();
-  const cityName = profile?.location ?? null;
+  const radar = useRadarContext();
+  const cityName = radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? null;
+
   const size = 140;
   const stroke = 12;
   const r = (size - stroke) / 2;

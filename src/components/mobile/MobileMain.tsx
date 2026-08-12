@@ -945,6 +945,24 @@ export default function MobileMain() {
               fontFamily: "'JetBrains Mono', monospace",
               fontWeight: 700,
               textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              flex: 1,
+              textAlign: "center",
+            }}
+          >
+            In {radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? "your area"}
+          </span>
+          <span
+
+            style={{
+              fontSize: "8px",
+              color: "#ff9d00",
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: 700,
+              textTransform: "uppercase",
               border: "1px solid rgba(255,157,0,0.35)",
               background: "rgba(255,157,0,0.08)",
               padding: "1px 4px",
