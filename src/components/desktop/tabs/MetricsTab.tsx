@@ -63,12 +63,19 @@ export default function MetricsTab() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div
-        className="font-mono text-[11px] font-bold uppercase tracking-widest"
-        style={{ color, textShadow: `0 0 8px ${color}`, transition: "color 800ms ease" }}
-      >
-        In {cityName ?? "your area"}
+      <div className="flex items-center gap-2">
+        <div
+          className="font-mono text-[11px] font-bold uppercase tracking-widest"
+          style={{ color, textShadow: `0 0 8px ${color}`, transition: "color 800ms ease" }}
+        >
+          In {cityName ?? "your area"}
+        </div>
+        <CitySearchButton
+          onPick={(city) => radar.setSelectedCity(city)}
+          accent={color}
+        />
       </div>
+
       {/* WRS circle + physical line */}
       <div className="flex items-center gap-4">
         <div className="relative shrink-0" style={{ width: size, height: size, overflow: "visible" }}>
