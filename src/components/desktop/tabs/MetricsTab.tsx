@@ -3,10 +3,16 @@
  * parameter cards. Colors shift gradually as values change (CSS transitions
  * on stroke / background).
  */
+import { useState } from "react";
 import { motion } from "framer-motion";
+import { Search, Loader2 } from "lucide-react";
 import { useWRSMetrics } from "@/hooks/useWRSMetrics";
 import { useAuth } from "@/hooks/useAuth";
 import { useRadarContext } from "@/contexts/RadarContext";
+import { useCitySearch } from "@/hooks/useCitySearch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
+
 
 
 function wrsColor(v: number) {
@@ -39,7 +45,95 @@ const VIRTUAL_COLORS = [
   "hsl(280 90% 65%)",
 ];
 
+/** Compact magnifier button → floating city search console. */
+function CitySearchButton({
+  onPick,
+  accent,
+}: {
+  onPick: (city: { name: string; lat: number; lon: number; countryCode?: string }) => void;
+  accent: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const { results, loading, error } = useCitySearch(query);
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Search city"
+          className="flex h-5 w-5 items-center justify-center rounded transition-colors hover:bg-white/10"
+          style={{ border: `1px solid ${accent}55`, color: accent }}
+        >
+          <Search className="h-3 w-3" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-2 z-[1300] glass-panel">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search any city…"
+            className="h-8 pl-7 font-mono text-xs"
+          />
+          {loading && (
+            <Loader2 className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 animate-spin text-muted-foreground" />
+          )}
+        </div>
+        <div className="mt-2 max-h-56 overflow-y-auto">
+          {results.length === 0 ? (
+            <p className="px-1 py-2 text-center font-mono text-[10px] text-muted-foreground">
+              {error
+                ? "Search error."
+                : query.trim().length < 2
+                  ? "Type at least 2 characters."
+                  : loading
+                    ? "Searching…"
+                    : "No city found."}
+            </p>
+          ) : (
+            results.map((city) => {
+              const cc = (city.country_code ?? "").toUpperCase();
+              const label =
+                cc && cc !== "US"
+                  ? [city.name, city.admin1, cc].filter(Boolean).join(", ")
+                  : city.admin1
+                    ? `${city.name}, ${city.admin1}`
+                    : city.name;
+              return (
+                <button
+                  key={city.id}
+                  type="button"
+                  onClick={() => {
+                    onPick({
+                      name: label,
+                      lat: city.latitude,
+                      lon: city.longitude,
+                      countryCode: cc || undefined,
+                    });
+                    setOpen(false);
+                    setQuery("");
+                  }}
+                  className="flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-left font-mono text-[11px] hover:bg-white/10"
+                >
+                  <span className="font-bold text-primary">{city.name}</span>
+                  {city.admin1 && <span className="text-muted-foreground">/ {city.admin1}</span>}
+                  {cc && <span className="ml-auto text-[9px] text-muted-foreground">{cc}</span>}
+                </button>
+              );
+            })
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function MetricsTab() {
+
   const { threatLevel, physicalNodes, soundingNodes, stationActive, physGatePercent } = useWRSMetrics();
   const { profile } = useAuth();
   const radar = useRadarContext();
@@ -57,12 +151,19 @@ export default function MetricsTab() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div
-        className="font-mono text-[11px] font-bold uppercase tracking-widest"
-        style={{ color, textShadow: `0 0 8px ${color}`, transition: "color 800ms ease" }}
-      >
-        In {cityName ?? "your area"}
+      <div className="flex items-center gap-2">
+        <div
+          className="font-mono text-[11px] font-bold uppercase tracking-widest"
+          style={{ color, textShadow: `0 0 8px ${color}`, transition: "color 800ms ease" }}
+        >
+          In {cityName ?? "your area"}
+        </div>
+        <CitySearchButton
+          onPick={(city) => radar.setSelectedCity(city)}
+          accent={color}
+        />
       </div>
+
       {/* WRS circle + physical line */}
       <div className="flex items-center gap-4">
         <div className="relative shrink-0" style={{ width: size, height: size, overflow: "visible" }}>
