@@ -581,6 +581,7 @@ function regionRing(
   ring = clipHalfPlane(ring, (p) => minLat - p[1]);
   ring = clipHalfPlane(ring, (p) => p[1] - maxLat);
 
+  const clippedToBorder = ring;
   const c = center(box);
   for (const nb of neighbours) {
     if (nb === box) continue;
@@ -595,8 +596,12 @@ function regionRing(
     if (ring.length < 3) break;
   }
 
+  // Voronoi trimming collapsed the cell — keep the border-clipped box.
+  if (ring.length < 3) ring = clippedToBorder;
+
   if (ring.length < 3) {
     // Degenerate clip — fall back to the raw box.
+
     return [
       [minLon, minLat],
       [maxLon, minLat],
