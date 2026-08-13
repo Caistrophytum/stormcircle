@@ -176,14 +176,27 @@ export default function CitizenReports() {
   // outlooks stay visible until replaced by a newer issuance.
   useEffect(() => {
     void reloadMessages();
+  }, [reloadMessages]);
 
+  // Approval badges are readable only by authenticated users (RLS + grants),
+  // so skip the query entirely when signed out to avoid permission errors.
+  useEffect(() => {
+    if (!user) {
+      setApprovedSigs(new Set());
+      return;
+    }
+    let cancelled = false;
     supabase
       .from("report_approvals")
       .select("signature")
       .then(({ data }) => {
-        if (data) setApprovedSigs(new Set(data.map((r) => r.signature)));
+        if (!cancelled && data) setApprovedSigs(new Set(data.map((r) => r.signature)));
       });
-  }, [reloadMessages]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
 
   // ── Realtime: messages + approvals ────────────────────────────────────
   useEffect(() => {
