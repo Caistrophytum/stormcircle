@@ -176,14 +176,27 @@ export default function CitizenReports() {
   // outlooks stay visible until replaced by a newer issuance.
   useEffect(() => {
     void reloadMessages();
+  }, [reloadMessages]);
 
+  // Approval badges are readable only by authenticated users (RLS + grants),
+  // so skip the query entirely when signed out to avoid permission errors.
+  useEffect(() => {
+    if (!user) {
+      setApprovedSigs(new Set());
+      return;
+    }
+    let cancelled = false;
     supabase
       .from("report_approvals")
       .select("signature")
       .then(({ data }) => {
-        if (data) setApprovedSigs(new Set(data.map((r) => r.signature)));
+        if (!cancelled && data) setApprovedSigs(new Set(data.map((r) => r.signature)));
       });
-  }, [reloadMessages]);
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
 
   // ── Realtime: messages + approvals ────────────────────────────────────
   useEffect(() => {
@@ -191,7 +204,7 @@ export default function CitizenReports() {
     // previously-subscribed channel alive across remounts (StrictMode, fast
     // nav), making the next .on() throw "cannot add postgres_changes callbacks
     // after subscribe()" and blank the React tree.
-    const channel = supabase
+    let channel = supabase
       .channel(`citizen-reports_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const next = payload.new as Message;
@@ -210,31 +223,38 @@ export default function CitizenReports() {
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (payload) => {
         setMessages((prev) => prev.filter((m) => m.id !== (payload.old as { id: string }).id));
-      })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_approvals" }, (payload) => {
-        const sig = (payload.new as { signature: string }).signature;
-        setApprovedSigs((prev) => {
-          if (prev.has(sig)) return prev;
-          const next = new Set(prev);
-          next.add(sig);
-          return next;
+      });
+
+    // Approvals are auth-only — subscribing while signed out is rejected.
+    if (user) {
+      channel = channel
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_approvals" }, (payload) => {
+          const sig = (payload.new as { signature: string }).signature;
+          setApprovedSigs((prev) => {
+            if (prev.has(sig)) return prev;
+            const next = new Set(prev);
+            next.add(sig);
+            return next;
+          });
+        })
+        .on("postgres_changes", { event: "DELETE", schema: "public", table: "report_approvals" }, (payload) => {
+          const sig = (payload.old as { signature: string }).signature;
+          setApprovedSigs((prev) => {
+            if (!prev.has(sig)) return prev;
+            const next = new Set(prev);
+            next.delete(sig);
+            return next;
+          });
         });
-      })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "report_approvals" }, (payload) => {
-        const sig = (payload.old as { signature: string }).signature;
-        setApprovedSigs((prev) => {
-          if (!prev.has(sig)) return prev;
-          const next = new Set(prev);
-          next.delete(sig);
-          return next;
-        });
-      })
-      .subscribe();
+    }
+
+    channel.subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
+
 
   // ── Client-side expiry sweep (defense-in-depth vs server pg_cron) ─────
   // System (bot) messages are exempt — they persist until replaced by a
