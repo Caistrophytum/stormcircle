@@ -19,6 +19,7 @@ import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import { useUnitSystem, displayTemp, displayWindSpeed, displayLengthM } from "@/hooks/useUnitSystem";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
+import { useLocalClock } from "@/hooks/useLocalClock";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import LocateMeButton from "@/components/mobile/LocateMeButton";
@@ -290,6 +291,11 @@ export default function MobileMain() {
     homeRisk.coords ? { lat: homeRisk.coords.lat, lon: homeRisk.coords.lon } : null,
   );
   const radar = useRadar();
+  const { time: localTime, timezone: localTz } = useLocalClock(
+    radar.selectedCity?.lat ?? null,
+    radar.selectedCity?.lon ?? null,
+  );
+
   const sounding = useSoundingData(
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
   );
@@ -955,6 +961,25 @@ export default function MobileMain() {
           >
             In {radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? "your area"}
           </span>
+          <span
+            title={`Local time — ${localTz}`}
+            style={{
+              fontSize: "8px",
+              color: "#ff9d00",
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              whiteSpace: "nowrap",
+              border: "1px solid rgba(255,157,0,0.35)",
+              background: "rgba(255,157,0,0.08)",
+              padding: "1px 4px",
+              borderRadius: "1px",
+              marginRight: "4px",
+            }}
+          >
+            {localTime}
+          </span>
+
           <span
 
             style={{

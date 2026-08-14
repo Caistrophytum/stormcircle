@@ -10,6 +10,7 @@ import { useWRSMetrics } from "@/hooks/useWRSMetrics";
 import { useAuth } from "@/hooks/useAuth";
 import { useRadarContext } from "@/contexts/RadarContext";
 import { useCitySearch } from "@/hooks/useCitySearch";
+import { useLocalClock } from "@/hooks/useLocalClock";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
@@ -138,6 +139,11 @@ export default function MetricsTab() {
   const { profile } = useAuth();
   const radar = useRadarContext();
   const cityName = radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? null;
+  const { time: localTime, timezone } = useLocalClock(
+    radar.selectedCity?.lat ?? null,
+    radar.selectedCity?.lon ?? null,
+  );
+
 
   const size = 140;
   const stroke = 12;
@@ -162,7 +168,22 @@ export default function MetricsTab() {
           onPick={(city) => radar.setSelectedCity(city)}
           accent={color}
         />
+        <div
+          className="ml-auto rounded px-1.5 py-0.5 font-mono text-[11px] font-bold tabular-nums"
+          title={`Local time — ${timezone}`}
+          style={{
+            color,
+            border: `1px solid ${color}55`,
+            background: "rgba(255,255,255,0.04)",
+            textShadow: `0 0 8px ${color}`,
+            transition: "color 800ms ease",
+          }}
+        >
+          {localTime}
+          <span className="ml-1 text-[8px] text-muted-foreground">LOCAL</span>
+        </div>
       </div>
+
 
       {/* WRS circle + physical line */}
       <div className="flex items-center gap-4">
