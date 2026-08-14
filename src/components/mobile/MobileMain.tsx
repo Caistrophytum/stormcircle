@@ -962,6 +962,25 @@ export default function MobileMain() {
             In {radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? "your area"}
           </span>
           <span
+            title={`Local time — ${localTz}`}
+            style={{
+              fontSize: "8px",
+              color: "#ff9d00",
+              fontFamily: "'JetBrains Mono', monospace",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              whiteSpace: "nowrap",
+              border: "1px solid rgba(255,157,0,0.35)",
+              background: "rgba(255,157,0,0.08)",
+              padding: "1px 4px",
+              borderRadius: "1px",
+              marginRight: "4px",
+            }}
+          >
+            {localTime}
+          </span>
+
+          <span
 
             style={{
               fontSize: "8px",
