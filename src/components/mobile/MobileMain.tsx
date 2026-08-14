@@ -291,6 +291,11 @@ export default function MobileMain() {
     homeRisk.coords ? { lat: homeRisk.coords.lat, lon: homeRisk.coords.lon } : null,
   );
   const radar = useRadar();
+  const { time: localTime, timezone: localTz } = useLocalClock(
+    radar.selectedCity?.lat ?? null,
+    radar.selectedCity?.lon ?? null,
+  );
+
   const sounding = useSoundingData(
     radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
   );
