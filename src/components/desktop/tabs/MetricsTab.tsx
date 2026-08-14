@@ -138,6 +138,11 @@ export default function MetricsTab() {
   const { profile } = useAuth();
   const radar = useRadarContext();
   const cityName = radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? null;
+  const { time: localTime, timezone } = useLocalClock(
+    radar.selectedCity?.lat ?? null,
+    radar.selectedCity?.lon ?? null,
+  );
+
 
   const size = 140;
   const stroke = 12;
