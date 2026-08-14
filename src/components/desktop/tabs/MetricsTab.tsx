@@ -10,6 +10,7 @@ import { useWRSMetrics } from "@/hooks/useWRSMetrics";
 import { useAuth } from "@/hooks/useAuth";
 import { useRadarContext } from "@/contexts/RadarContext";
 import { useCitySearch } from "@/hooks/useCitySearch";
+import { useLocalClock } from "@/hooks/useLocalClock";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
