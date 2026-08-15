@@ -523,35 +523,17 @@ function clipHalfPlane(ring: number[][], f: (p: number[]) => number): number[][]
   );
 }
 
-function center(box: [number, number, number, number]): number[] {
-  return [(box[0] + box[2]) / 2, (box[1] + box[3]) / 2];
-}
-
-function boxesOverlap(
-  a: [number, number, number, number],
-  b: [number, number, number, number],
-): boolean {
-  return a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
-}
-
 /**
  * Build the footprint of one IMS region:
- *   real national border  ∩  region bounding box  ∩  seam trims against every
- *   overlapping neighbouring region.
+ *   real national border ∩ the full bounding footprint for that named region.
  *
- * The seam trim is deliberately gap-free: for each overlapping neighbour we
- * split the *overlap band* along its midline on the axis where the overlap is
- * thinnest, keeping the half nearer to us. The union of two adjacent regions
- * therefore stays exactly the union of their boxes — no point that used to be
- * covered can fall through the cracks.
- *
- * (An earlier version clipped against the perpendicular bisector of the region
- * centres. Those diagonal cuts removed box corners that no neighbour covered,
- * which left holes in the map and made real cities stop matching warnings.)
+ * IMS warning wording is authoritative. A region must not be reduced merely
+ * because its footprint overlaps another region that is not named in the same
+ * warning. Overlap between selected areas is harmless in a MultiPolygon and is
+ * preferable to excluding a warned location.
  */
 function regionRing(
   box: [number, number, number, number],
-  neighbours: Array<[number, number, number, number]>,
 ): number[][] {
   const [minLon, minLat, maxLon, maxLat] = box;
   let ring = ISRAEL_OUTLINE.slice(0, -1); // open ring for clipping
@@ -560,35 +542,6 @@ function regionRing(
   ring = clipHalfPlane(ring, (p) => p[0] - maxLon);
   ring = clipHalfPlane(ring, (p) => minLat - p[1]);
   ring = clipHalfPlane(ring, (p) => p[1] - maxLat);
-
-  const clippedToBorder = ring;
-  const c = center(box);
-  for (const nb of neighbours) {
-    if (nb === box) continue;
-    const o = center(nb);
-    const ovLon = Math.min(maxLon, nb[2]) - Math.max(minLon, nb[0]);
-    const ovLat = Math.min(maxLat, nb[3]) - Math.max(minLat, nb[1]);
-    if (ovLon <= 0 || ovLat <= 0) continue;
-
-    // Seam on the axis with the thinnest overlap; skip near-containment cases
-    // where trimming would swallow most of the region.
-    const useLon = ovLon <= ovLat;
-    const span = useLon ? maxLon - minLon : maxLat - minLat;
-    const overlap = useLon ? ovLon : ovLat;
-    if (span <= 0 || overlap / span > 0.7) continue;
-
-    const mid = useLon
-      ? (Math.max(minLon, nb[0]) + Math.min(maxLon, nb[2])) / 2
-      : (Math.max(minLat, nb[1]) + Math.min(maxLat, nb[3])) / 2;
-    const idx = useLon ? 0 : 1;
-    const neighbourAbove = (useLon ? o[0] : o[1]) > (useLon ? c[0] : c[1]);
-    const next = clipHalfPlane(ring, (p) =>
-      neighbourAbove ? p[idx] - mid : mid - p[idx],
-    );
-    if (next.length >= 3) ring = next;
-  }
-
-  if (ring.length < 3) ring = clippedToBorder;
 
   if (ring.length < 3) {
     // Degenerate clip — fall back to the raw box.
@@ -603,16 +556,11 @@ function regionRing(
   return [...ring, ring[0]];
 }
 
-
-const ALL_BOXES = IMS_REGIONS.map((r) => r.box);
-
 /** Build a Polygon/MultiPolygon covering every resolved region. */
 export function regionsToGeometry(boxes: Array<[number, number, number, number]>) {
   if (boxes.length === 0) return null;
   const polys = boxes.map((b) => {
-    const isCountry = b[0] <= ISRAEL_BOX[0] && b[1] <= ISRAEL_BOX[1] && b[2] >= ISRAEL_BOX[2] && b[3] >= ISRAEL_BOX[3];
-    const neighbours = isCountry ? [] : ALL_BOXES.filter((o) => o !== b && boxesOverlap(o, b));
-    return [regionRing(b, neighbours)];
+    return [regionRing(b)];
   });
   if (polys.length === 1) return { type: "Polygon", coordinates: polys[0] };
   return { type: "MultiPolygon", coordinates: polys };
