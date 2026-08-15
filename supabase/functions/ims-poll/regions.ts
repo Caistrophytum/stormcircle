@@ -536,13 +536,18 @@ function boxesOverlap(
 
 /**
  * Build the footprint of one IMS region:
- *   real national border  ∩  region bounding box  ∩  Voronoi cell of the
- *   region centre against every overlapping neighbouring region.
+ *   real national border  ∩  region bounding box  ∩  seam trims against every
+ *   overlapping neighbouring region.
  *
- * The border ring is concave but each clip is a convex half-plane, so
- * Sutherland-Hodgman is exact. The Voronoi step removes the overlap between
- * neighbouring boxes, so adjacent IMS districts share a single border line
- * instead of smearing over each other.
+ * The seam trim is deliberately gap-free: for each overlapping neighbour we
+ * split the *overlap band* along its midline on the axis where the overlap is
+ * thinnest, keeping the half nearer to us. The union of two adjacent regions
+ * therefore stays exactly the union of their boxes — no point that used to be
+ * covered can fall through the cracks.
+ *
+ * (An earlier version clipped against the perpendicular bisector of the region
+ * centres. Those diagonal cuts removed box corners that no neighbour covered,
+ * which left holes in the map and made real cities stop matching warnings.)
  */
 function regionRing(
   box: [number, number, number, number],
@@ -561,22 +566,32 @@ function regionRing(
   for (const nb of neighbours) {
     if (nb === box) continue;
     const o = center(nb);
-    const dx = o[0] - c[0];
-    const dy = o[1] - c[1];
-    if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) continue;
-    const mx = (c[0] + o[0]) / 2;
-    const my = (c[1] + o[1]) / 2;
-    // Keep the side of the perpendicular bisector closest to this region.
-    ring = clipHalfPlane(ring, (p) => (p[0] - mx) * dx + (p[1] - my) * dy);
-    if (ring.length < 3) break;
+    const ovLon = Math.min(maxLon, nb[2]) - Math.max(minLon, nb[0]);
+    const ovLat = Math.min(maxLat, nb[3]) - Math.max(minLat, nb[1]);
+    if (ovLon <= 0 || ovLat <= 0) continue;
+
+    // Seam on the axis with the thinnest overlap; skip near-containment cases
+    // where trimming would swallow most of the region.
+    const useLon = ovLon <= ovLat;
+    const span = useLon ? maxLon - minLon : maxLat - minLat;
+    const overlap = useLon ? ovLon : ovLat;
+    if (span <= 0 || overlap / span > 0.7) continue;
+
+    const mid = useLon
+      ? (Math.max(minLon, nb[0]) + Math.min(maxLon, nb[2])) / 2
+      : (Math.max(minLat, nb[1]) + Math.min(maxLat, nb[3])) / 2;
+    const idx = useLon ? 0 : 1;
+    const neighbourAbove = (useLon ? o[0] : o[1]) > (useLon ? c[0] : c[1]);
+    const next = clipHalfPlane(ring, (p) =>
+      neighbourAbove ? p[idx] - mid : mid - p[idx],
+    );
+    if (next.length >= 3) ring = next;
   }
 
-  // Voronoi trimming collapsed the cell — keep the border-clipped box.
   if (ring.length < 3) ring = clippedToBorder;
 
   if (ring.length < 3) {
     // Degenerate clip — fall back to the raw box.
-
     return [
       [minLon, minLat],
       [maxLon, minLat],
@@ -587,6 +602,7 @@ function regionRing(
   }
   return [...ring, ring[0]];
 }
+
 
 const ALL_BOXES = IMS_REGIONS.map((r) => r.box);
 
