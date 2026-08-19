@@ -25,6 +25,8 @@ import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import LocateMeButton from "@/components/mobile/LocateMeButton";
 import type { RawMessage } from "@/lib/reportGrouping";
 import { pointInRing } from "@/lib/pointInPolygon";
+import { computeWRS } from "@/lib/wrs";
+
 
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
 const HURRICANE_BOT_ID = "00000000-0000-0000-0000-000000000001";
@@ -334,174 +336,18 @@ export default function MobileMain() {
   const displayName = profile?.username ?? user?.email?.split("@")[0] ?? "Guest";
 
   // ── Sounding / WRS ───────────────────────────────────────────────
-  const { nodes, physicalNodes, threatLevel, physGatePercent } = useMemo(() => {
-    const stationActive = radar.selectedStation !== null && !sounding.loading;
-    const fmt = (v: number | null, digits = 0) => {
-      if (sounding.loading) return "...";
-      if (radar.selectedStation === null) return "—";
-      if (v === null) return "ERR";
-      return digits > 0 ? v.toFixed(digits) : Math.round(v).toLocaleString();
-    };
-    // Dimensionless / small-magnitude formatter (shear m/s, LI legacy).
-    const fmtNum = (v: number | null, digits = 1) => {
-      if (sounding.loading) return "...";
-      if (radar.selectedStation === null) return "—";
-      if (v === null) return "ERR";
-      return v.toFixed(digits);
-    };
-    const fmtLenM = (v: number | null) => {
-      if (sounding.loading) return "...";
-      if (radar.selectedStation === null) return "—";
-      if (v === null) return "ERR";
-      const d = displayLengthM(v, unitSystem);
-      return d ? Math.round(d.value).toLocaleString() : "ERR";
-    };
-    const lenUnit = unitSystem === "metric" ? "m" : "ft";
+  // Math lives in src/lib/wrs.ts so mobile and desktop can never drift.
+  const { nodes, physicalNodes, threatLevel, physGatePercent } = useMemo(
+    () =>
+      computeWRS({
+        sounding,
+        hasStation: radar.selectedStation !== null,
+        unitSystem,
+        palette: "hex",
+      }),
+    [sounding, radar.selectedStation, unitSystem],
+  );
 
-    const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
-    const capeScore = sounding.cape != null ? clamp01(sounding.cape / 4000) : 0;
-    const cinMagnitude = sounding.cin != null ? Math.abs(sounding.cin) : 0;
-    const cinScore = sounding.cin != null ? clamp01(1 - cinMagnitude / 200) : 0;
-    // Bulk shear (850↔500 hPa proxy, m/s). 20 m/s ≈ organized-supercell ceiling.
-    const shearScore = sounding.shear != null ? clamp01(sounding.shear / 20) : 0;
-    const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
-    const elScore = sounding.el != null ? clamp01((sounding.el - 4000) / 10000) : 0;
-
-    // Physical inputs — independent enabling environment (no gust: gusts are
-    // a *consequence* of convection and would couple the score to itself).
-    //   SFC RH viable 30→100%, MID RH 20→80%, MID LAPSE 5.5→8.5 °C/km (Open-Meteo
-    //   m/s, +up). Below 0.1 m/s → 0% (no representation); ≥3 m/s → 100%
-    //   (very strong ascent).
-    const rhSfcScore = sounding.rhSurface != null ? clamp01((sounding.rhSurface - 30) / 70) : 0;
-    const rhMidScore = sounding.rhMid != null ? clamp01((sounding.rhMid - 20) / 60) : 0;
-    // Mid-level lapse rate (700→500 hPa): 5.5 °C/km ≈ moist-neutral (no
-    // contribution), 8.5 °C/km ≈ steep/dry-adiabatic ceiling.
-    const lapseScore = sounding.lapseMid != null ? clamp01((sounding.lapseMid - 5.5) / (8.5 - 5.5)) : 0;
-
-    // CAPE gate: log ramp (buoyancy fuel, diminishing returns).
-    // CIN gate: inverted log — cap suppresses everything downstream.
-    const capeGate = Math.log(1 + 9 * capeScore) / Math.log(10);
-    const cinGate =
-      sounding.cin == null ? 1 : clamp01(1 - Math.log(1 + 9 * clamp01(cinMagnitude / 200)) / Math.log(10));
-    const effectiveGate = capeGate * cinGate;
-
-    // CIN is not additive — its 20% lives in the multiplicative gate. The
-    // remaining additive weights (CAPE 30, SHEAR 25, EL 15, LCL 10 = 80) are
-    // therefore renormalized to a full 100-point scale (÷0.8):
-    // CAPE 37.5, SHEAR 31.25, EL 18.75, LCL 12.5.
-    const W = { cape: 37.5, shear: 31.25, el: 18.75, lcl: 12.5 } as const;
-    const capeContrib0 = stationActive ? capeScore * W.cape : 0;
-    const shearContribRaw = stationActive ? shearScore * W.shear * effectiveGate : 0;
-    const lclContribRaw = stationActive ? lclScore * W.lcl * effectiveGate : 0;
-    const elContribRaw = stationActive ? elScore * W.el * effectiveGate : 0;
-
-    // Physical gate on the virtual block's combined output — weighted blend
-    // (SFC RH 45%, MID RH 30%, MID LAPSE 25%) through the same log shape as
-    // the CAPE gate.
-    const PHYS_W = { sfc: 0.5, mid: 0.35, lapse: 0.15 } as const;
-    const physScore = clamp01(PHYS_W.sfc * rhSfcScore + PHYS_W.mid * rhMidScore + PHYS_W.lapse * lapseScore);
-    const physGate = Math.log(1 + 9 * physScore) / Math.log(10);
-
-    const capeContrib = Math.round(capeContrib0 * physGate);
-    const shearContrib = Math.round(shearContribRaw * physGate);
-    const lclContrib = Math.round(lclContribRaw * physGate);
-    const elContrib = Math.round(elContribRaw * physGate);
-    // CIN subtracts from WRS by closing the effective gate on the
-    // shear/LCL/EL bundle. Show the actual point loss as a negative value.
-    const virtualBundle = shearScore * W.shear + lclScore * W.lcl + elScore * W.el;
-    const cinLoss = stationActive ? Math.round(capeGate * physGate * virtualBundle * (1 - cinGate)) : 0;
-
-    // Unified color scale tied to each parameter's normalized severity score.
-    // The redder the value, the more it pushes the WRS score upward.
-    const colorFromScore = (score: number, hasValue: boolean): string => {
-      if (!stationActive || !hasValue) return "#7CFC00";
-      if (score >= 0.75) return "#ff3b3b";
-      if (score >= 0.5) return "#ff8c00";
-      if (score >= 0.25) return "#ffd700";
-      return "#7CFC00";
-    };
-
-    const nodes = [
-      {
-        label: "CAPE",
-        value: fmt(sounding.cape),
-        unit: "J/kg",
-        color: colorFromScore(capeScore, sounding.cape != null),
-        w: capeContrib,
-        primary: true,
-      },
-      {
-        label: "CIN",
-        value: fmt(sounding.cin),
-        unit: "J/kg",
-        color: colorFromScore(cinScore, sounding.cin != null),
-        w: -cinLoss,
-        primary: true,
-      },
-      {
-        label: "SHEAR",
-        value: fmtNum(sounding.shear, 1),
-        unit: "m/s",
-        color: colorFromScore(shearScore, sounding.shear != null),
-        w: shearContrib,
-        primary: true,
-      },
-      {
-        label: "LCL",
-        value: fmtLenM(sounding.lcl),
-        unit: lenUnit,
-        color: colorFromScore(lclScore, sounding.lcl != null),
-        w: lclContrib,
-        primary: false,
-      },
-      {
-        label: "EL",
-        value: fmtLenM(sounding.el),
-        unit: lenUnit,
-        color: colorFromScore(elScore, sounding.el != null),
-        w: elContrib,
-        primary: false,
-      },
-    ];
-
-    // Physical metrics — triangle % is each parameter's weighted contribution
-    // to physScore (sums to ≤100).
-    const fmtPhys = (v: number | null, digits = 1) => {
-      if (sounding.loading) return "...";
-      if (radar.selectedStation === null) return "—";
-      if (v == null) return "ERR";
-      return v.toFixed(digits);
-    };
-    const physicalNodes = [
-      {
-        label: "SFC RH",
-        value: fmtPhys(sounding.rhSurface, 0),
-        unit: "%",
-        color: colorFromScore(rhSfcScore, sounding.rhSurface != null),
-        w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0,
-        primary: true,
-      },
-      {
-        label: "MID RH",
-        value: fmtPhys(sounding.rhMid, 0),
-        unit: "%",
-        color: colorFromScore(rhMidScore, sounding.rhMid != null),
-        w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0,
-        primary: true,
-      },
-      {
-        label: "MID LAPSE",
-        value: fmtPhys(sounding.lapseMid, 1),
-        unit: "°C/km",
-        color: colorFromScore(lapseScore, sounding.lapseMid != null),
-        w: stationActive ? Math.round(lapseScore * PHYS_W.lapse * 100) : 0,
-        primary: true,
-      },
-    ];
-
-    const threat = Math.min(100, Math.max(0, capeContrib + shearContrib + lclContrib + elContrib - cinLoss));
-    return { nodes, physicalNodes, threatLevel: threat, physGatePercent: Math.round(physGate * 100) };
-  }, [sounding, radar.selectedStation, unitSystem]);
 
   // ── Hometown bar text ────────────────────────────────────────────
   const nearestDanger = useMemo(() => {
