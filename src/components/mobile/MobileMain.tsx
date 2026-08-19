@@ -25,6 +25,8 @@ import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import LocateMeButton from "@/components/mobile/LocateMeButton";
 import type { RawMessage } from "@/lib/reportGrouping";
 import { pointInRing } from "@/lib/pointInPolygon";
+import { computeWRS } from "@/lib/wrs";
+
 
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
 const HURRICANE_BOT_ID = "00000000-0000-0000-0000-000000000001";
