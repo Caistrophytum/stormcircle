@@ -70,7 +70,6 @@ const cToF = (c: number) => c * 9 / 5 + 32;
 const mToFt = (m: number) => m * 3.28084;
 const kmToMi = (km: number) => km * 0.621371;
 const kmhToMph = (kmh: number) => kmh * 0.621371;
-const hpaToInHg = (hpa: number) => hpa * 0.02953;
 
 
 export interface DisplayValue {
@@ -93,12 +92,6 @@ export function displayLengthKm(km: number | null, system: UnitSystem): DisplayV
   return system === "metric" ? { value: km, unit: "km" } : { value: kmToMi(km), unit: "mi" };
 }
 
-export function displayPressure(hpa: number | null, system: UnitSystem): DisplayValue | null {
-  if (hpa == null) return null;
-  return system === "metric"
-    ? { value: hpa, unit: "hPa" }
-    : { value: hpaToInHg(hpa), unit: "inHg" };
-}
 
 export function displayWindSpeed(kmh: number | null, system: UnitSystem): DisplayValue | null {
   if (kmh == null) return null;
