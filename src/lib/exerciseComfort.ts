@@ -300,6 +300,20 @@ const LABELS: Record<keyof Weights, string> = {
 // very strongly dominate. limiter = highest weight×penalty contribution.
 const POWER = 3.5;
 
+// Severity-scaled weighting: while a factor sits in its "normal" band
+// (penalty ≤ ESCALATION_START) it keeps its baseline activity weight. Past
+// that point its weight grows toward 1.0, so a single extreme condition
+// (e.g. Antarctic cold) can dominate the score instead of being diluted by
+// the other, benign factors.
+const ESCALATION_START = 45;
+const ESCALATION_CURVE = 1.6;
+
+function effectiveWeight(base: number, penalty: number): number {
+  if (penalty <= ESCALATION_START) return base;
+  const t = clamp((penalty - ESCALATION_START) / (100 - ESCALATION_START), 0, 1);
+  return base + (1 - base) * Math.pow(t, ESCALATION_CURVE);
+}
+
 function aggregate(
   penalties: Record<keyof Weights, number>,
   weights: Weights,
@@ -307,15 +321,25 @@ function aggregate(
   score: number;
   limiters: (keyof Weights)[];
   topWeighted: number;
-  contributions: { key: keyof Weights; weighted: number }[];
+  contributions: { key: keyof Weights; weighted: number; weight: number }[];
 } {
+  const keys = Object.keys(penalties) as (keyof Weights)[];
+  const eff: Record<string, number> = {};
+  keys.forEach((k) => {
+    eff[k] = effectiveWeight(weights[k], penalties[k]);
+  });
+  // Keep the aggregate a true weighted mean: only normalize when escalation
+  // has pushed the total above 1 (never scale weights up).
+  const sumW = keys.reduce((s, k) => s + eff[k], 0);
+  const norm = sumW > 1 ? sumW : 1;
+
   let sumPow = 0;
-  const contributions: { key: keyof Weights; weighted: number }[] = [];
-  (Object.keys(penalties) as (keyof Weights)[]).forEach((k) => {
+  const contributions: { key: keyof Weights; weighted: number; weight: number }[] = [];
+  keys.forEach((k) => {
     const pen = penalties[k];
-    const w = weights[k];
+    const w = eff[k] / norm;
     sumPow += w * Math.pow(pen, POWER);
-    contributions.push({ key: k, weighted: w * pen });
+    contributions.push({ key: k, weighted: w * pen, weight: w });
   });
   contributions.sort((a, b) => b.weighted - a.weighted);
   const topWeighted = contributions[0]?.weighted ?? 0;
@@ -330,6 +354,7 @@ function aggregate(
   const score = clamp(100 - combined, 0, 100);
   return { score, limiters, topWeighted, contributions };
 }
+
 
 
 // ── Hard gates (trimmed) ────────────────────────────────────────────────
@@ -391,7 +416,7 @@ function scoreHour(
     key: c.key,
     label: LABELS[c.key],
     penalty: Math.round(penalties[c.key]),
-    weight: w[c.key],
+    weight: c.weight,
     weighted: c.weighted,
     share: totalWeighted > 0 ? (c.weighted / totalWeighted) * 100 : 0,
   }));
