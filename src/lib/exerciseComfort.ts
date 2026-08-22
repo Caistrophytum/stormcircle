@@ -416,7 +416,7 @@ function scoreHour(
     key: c.key,
     label: LABELS[c.key],
     penalty: Math.round(penalties[c.key]),
-    weight: w[c.key],
+    weight: c.weight,
     weighted: c.weighted,
     share: totalWeighted > 0 ? (c.weighted / totalWeighted) * 100 : 0,
   }));
