@@ -123,7 +123,7 @@ function ramp(v: number, lo: number, hi: number): number {
   return clamp(((v - lo) / (hi - lo)) * 100, 0, 100);
 }
 
-// ── Hazard severity curves (temperature is logarithmic; the rest linear) ──
+// ── Hazard severity curves (temp, wind, UV, rain logarithmic; AQI linear) ──
 
 /** Comfortable real-feel band — 0 severity inside it. */
 const COMFORT_LO = 12;   // °C
@@ -150,17 +150,19 @@ function tempSeverity(realFeelC: number | null): number {
   return logRamp(HEAT_EXTREME - realFeelC, HEAT_EXTREME - COMFORT_HI);
 }
 
-/** Wind — max(sustained, gust), 0–110 km/h → 0–100. */
+/** Wind — max(sustained, gust), 0–110 km/h, logarithmic (gentle at low speeds,
+ *  steep near the 110 km/h extreme). */
 function windSeverity(sustainedMs: number | null, gustsMs: number | null): number {
   const s = sustainedMs ?? 0;
   const g = gustsMs ?? s;
-  return ramp(Math.max(s, g) * 3.6, 0, 110);
+  const kph = clamp(Math.max(s, g) * 3.6, 0, 110);
+  return logRamp(110 - kph, 110);
 }
 
-/** UV — index 0–11 → 0–100 severity (budget caps it at 60 points). */
+/** UV — index 0–11, logarithmic (budget caps it at 60 points). */
 function uvSeverity(uv: number | null): number {
   if (uv == null) return 0;
-  return ramp(uv, 0, 11);
+  return logRamp(11 - clamp(uv, 0, 11), 11);
 }
 
 /** Air quality — US AQI Good (50) → Hazardous (300+) → 0–100 severity. */
@@ -169,10 +171,12 @@ function aqSeverity(aqi: number | null): number {
   return ramp(aqi, 50, 300);
 }
 
-/** Rain — 0–20 mm/h → 0–100 severity. */
+/** Rain — 0–20 mm/h, logarithmic. */
 function rainSeverity(mm: number | null): number {
-  return ramp(mm ?? 0, 0, 20);
+  const v = clamp(mm ?? 0, 0, 20);
+  return logRamp(20 - v, 20);
 }
+
 
 // ── Hazard budgets and per-activity multipliers ─────────────────────────
 const MAX_POINTS: Record<HazardKey, number> = {
