@@ -26,7 +26,6 @@ import { useExerciseComfortData } from "@/hooks/useExerciseComfortData";
 import {
   computeAllActivities,
   describeWarningRestrictions,
-
   type Activity,
   type ActivityResult,
   type ComfortTier,
@@ -74,7 +73,6 @@ function ScoreRow({ r }: { r: ActivityResult }) {
   const factors = r.now.factors;
   const totalPoints = factors.reduce((s, f) => s + f.points, 0);
 
-
   return (
     <div style={{ borderTop: "1px solid rgba(255,157,0,0.15)" }}>
       <button
@@ -114,9 +112,7 @@ function ScoreRow({ r }: { r: ActivityResult }) {
         </div>
         <div style={{ minWidth: 0 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-            <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.03em" }}>
-              {meta.label.toUpperCase()}
-            </span>
+            <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.03em" }}>{meta.label.toUpperCase()}</span>
             <span style={{ fontSize: 11, color: "#a1a1aa" }}>
               best next 6 h:{" "}
               <span style={{ color: bestColor, fontWeight: 700 }}>
@@ -141,11 +137,7 @@ function ScoreRow({ r }: { r: ActivityResult }) {
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
           <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{r.now.score}</div>
-          <div
-            style={{ fontSize: 10, color, textTransform: "uppercase", letterSpacing: "0.08em" }}
-          >
-            {r.now.tier}
-          </div>
+          <div style={{ fontSize: 10, color, textTransform: "uppercase", letterSpacing: "0.08em" }}>{r.now.tier}</div>
         </div>
         <ChevronDown
           size={16}
@@ -169,7 +161,7 @@ function ScoreRow({ r }: { r: ActivityResult }) {
               marginBottom: 6,
             }}
           >
-            Hazard points deducted — 100 − {totalPoints.toFixed(1)} = {r.now.score}
+            Hazard points deducted: 100 − {totalPoints.toFixed(1)} = {r.now.score}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {factors.map((f, i) => {
@@ -188,10 +180,7 @@ function ScoreRow({ r }: { r: ActivityResult }) {
                   >
                     <span style={{ color: "#d4d4d8", textTransform: "uppercase" }}>
                       {f.label}
-                      <span style={{ color: "#71717a", textTransform: "none" }}>
-                        {" "}
-                        · {f.detail}
-                      </span>
+                      <span style={{ color: "#71717a", textTransform: "none" }}> · {f.detail}</span>
                     </span>
                     <span style={{ color: f.points > 0 ? col : "#52525b", fontWeight: 700 }}>
                       −{f.points.toFixed(1)}
@@ -228,10 +217,8 @@ function ScoreRow({ r }: { r: ActivityResult }) {
           <div style={{ marginTop: 8, fontSize: 9.5, color: "#71717a", lineHeight: 1.5 }}>
             {factors[0] && factors[0].points >= 1 ? (
               <>
-                Biggest drag:{" "}
-                <span style={{ color: FACTOR_COLORS[0], fontWeight: 700 }}>{factors[0].label}</span>{" "}
-                — {factors[0].penalty}/100 severity × {factors[0].maxPoints} pt budget for{" "}
-                {meta.label.toLowerCase()}.
+                Biggest drag: <span style={{ color: FACTOR_COLORS[0], fontWeight: 700 }}>{factors[0].label}</span> —{" "}
+                {factors[0].penalty}/100 severity × {factors[0].maxPoints} pt budget for {meta.label.toLowerCase()}.
               </>
             ) : (
               <>No meaningful hazards right now — conditions are clean.</>
@@ -242,7 +229,6 @@ function ScoreRow({ r }: { r: ActivityResult }) {
     </div>
   );
 }
-
 
 export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const { profile } = useAuth();
@@ -264,7 +250,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
       if (!p.geometry) continue;
       if (!pointInPolygon(lon, lat, p.geometry)) continue;
       const prev = map.get(p.event);
-      const rank = (s?: string | null) => (s ? RANK[s.toLowerCase()] ?? 0 : 0);
+      const rank = (s?: string | null) => (s ? (RANK[s.toLowerCase()] ?? 0) : 0);
       if (!prev || rank(p.severity) > rank(prev.severity)) {
         map.set(p.event, { event: p.event, severity: p.severity });
       }
@@ -273,11 +259,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   }, [polygons.polygons, home.coords]);
 
   // What each active warning concretely does to the score (shown in header).
-  const restrictions = useMemo(
-    () => describeWarningRestrictions(activeWarnings),
-    [activeWarnings],
-  );
-
+  const restrictions = useMemo(() => describeWarningRestrictions(activeWarnings), [activeWarnings]);
 
   const results = useMemo(() => {
     if (!data.hourly.length) return [] as ActivityResult[];
@@ -295,21 +277,17 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const loading = data.loading && !data.hourly.length;
   const isMobile = useMobile();
 
-  const subtitle = hasLocation
-    ? `${location} — now + next 6 h`
-    : "Set a hometown to compute local comfort";
+  const subtitle = hasLocation ? `${location} — now + next 6 h` : "Set a hometown to compute local comfort";
 
   const body = (
     <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8e8e8" }}>
       {!hasLocation && (
         <div style={{ padding: 20, fontSize: 12, color: "#d4d4d8" }}>
-          Open your Account Center and set a hometown. Exercise comfort scores use your
-          home coordinates for weather, air quality, and local hazard checks.
+          Open your Account Center and set a hometown. Exercise comfort scores use your home coordinates for weather,
+          air quality, and local hazard checks.
         </div>
       )}
-      {hasLocation && loading && (
-        <div style={{ padding: 20, fontSize: 12, color: "#a1a1aa" }}>Loading forecast…</div>
-      )}
+      {hasLocation && loading && <div style={{ padding: 20, fontSize: 12, color: "#a1a1aa" }}>Loading forecast…</div>}
       {hasLocation && !loading && !results.length && (
         <div style={{ padding: 20, fontSize: 12, color: "#ff6b6b" }}>
           Couldn't load the forecast — try again in a minute.
@@ -332,8 +310,8 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           <div style={{ minWidth: 0 }}>
             <div style={{ fontWeight: 700, color: "#ff9d9d" }}>Active alerts at your location</div>
             <div style={{ marginTop: 3, color: "#ffcdcd", lineHeight: 1.45 }}>
-              Alerts raise the minimum hazard level for the weather factors they cover.
-              Even if the live reading looks okay, the score is pulled down to reflect the warning.
+              Alerts raise the minimum hazard level for the weather factors they cover. Even if the live reading looks
+              okay, the score is pulled down to reflect the warning.
             </div>
             <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 7 }}>
               {restrictions.map((r) => (
@@ -351,7 +329,6 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
               ))}
             </div>
           </div>
-
         </div>
       )}
       {results.map((r) => (
@@ -366,10 +343,10 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           lineHeight: 1.5,
         }}
       >
-        Score = 100 − the sum of hazard points (Ideal ≥ 80, Good ≥ 60, Fair ≥ 40, Poor ≥ 20,
-        Dangerous &lt; 20). Budgets: real-feel temperature 100, wind 100 (0–110 km/h), rain 80
-        (0–20 mm/h), US AQI 100, UV 60 (0–11) — each scaled by an activity multiplier. Active
-        alerts raise their hazard's severity floor; life-safety alerts cap the score.
+        Score = 100 − the sum of hazard points (Ideal ≥ 80, Good ≥ 60, Fair ≥ 40, Poor ≥ 20, Dangerous &lt; 20).
+        Budgets: real-feel temperature 100, wind 100 (0–110 km/h), rain 80 (0–20 mm/h), US AQI 100, UV 60 (0–11) — each
+        scaled by an activity multiplier. Active alerts raise their hazard's severity floor; life-safety alerts cap the
+        score.
       </div>
     </div>
   );
@@ -396,10 +373,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           style={{ borderBottom: "1px solid rgba(255,157,0,0.25)" }}
         >
           <div className="min-w-0">
-            <div
-              className="truncate text-xs font-bold uppercase tracking-widest"
-              style={{ color: "rgb(255,157,0)" }}
-            >
+            <div className="truncate text-xs font-bold uppercase tracking-widest" style={{ color: "rgb(255,157,0)" }}>
               Exercise Comfort
             </div>
             <div className="mt-0.5 truncate text-[10px] text-muted-foreground">{subtitle}</div>
@@ -424,15 +398,8 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   }
 
   return (
-    <FloatingWindow
-      open={open}
-      onClose={onClose}
-      title="Exercise Comfort"
-      subtitle={subtitle}
-      accent="255,157,0"
-    >
+    <FloatingWindow open={open} onClose={onClose} title="Exercise Comfort" subtitle={subtitle} accent="255,157,0">
       {body}
     </FloatingWindow>
   );
-
 }
