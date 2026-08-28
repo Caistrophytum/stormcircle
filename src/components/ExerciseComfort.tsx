@@ -159,7 +159,7 @@ function ScoreRow({ r }: { r: ActivityResult }) {
       </button>
 
       {open && (
-        <div style={{ padding: "0 14px 12px 66px" }}>
+        <div style={{ padding: "0 12px 12px 12px" }}>
           <div
             style={{
               fontSize: 9,
