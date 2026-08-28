@@ -270,12 +270,7 @@ function scoreHour(
   h: HourlyPoint,
   aqi: number | null,
   activity: Activity,
-): HourResult & { warnings?: never };
-function scoreHour(
-  h: HourlyPoint,
-  aqi: number | null,
-  activity: Activity,
-  ctx?: Pick<ComfortContext, "activeWarnings">,
+  ctx: Pick<ComfortContext, "activeWarnings">,
 ): HourResult {
   const mult = MULTIPLIERS[activity];
   const warnings = normalizeWarnings(ctx?.activeWarnings ?? []);
