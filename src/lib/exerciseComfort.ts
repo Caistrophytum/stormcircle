@@ -123,7 +123,7 @@ function ramp(v: number, lo: number, hi: number): number {
   return clamp(((v - lo) / (hi - lo)) * 100, 0, 100);
 }
 
-// ── Hazard severity curves (temperature is logarithmic; the rest linear) ──
+// ── Hazard severity curves (temp, wind, UV, rain logarithmic; AQI linear) ──
 
 /** Comfortable real-feel band — 0 severity inside it. */
 const COMFORT_LO = 12;   // °C
