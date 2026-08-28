@@ -217,7 +217,7 @@ function ScoreRow({ r }: { r: ActivityResult }) {
           <div style={{ marginTop: 8, fontSize: 9.5, color: "#71717a", lineHeight: 1.5 }}>
             {factors[0] && factors[0].points >= 1 ? (
               <>
-                Biggest drag: <span style={{ color: FACTOR_COLORS[0], fontWeight: 700 }}>{factors[0].label}</span> —{" "}
+                Biggest drag: <span style={{ color: FACTOR_COLORS[0], fontWeight: 700 }}>{factors[0].label}</span> ...{" "}
                 {factors[0].penalty}/100 severity × {factors[0].maxPoints} pt budget for {meta.label.toLowerCase()}.
               </>
             ) : (
