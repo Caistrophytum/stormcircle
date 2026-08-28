@@ -123,7 +123,7 @@ function ramp(v: number, lo: number, hi: number): number {
   return clamp(((v - lo) / (hi - lo)) * 100, 0, 100);
 }
 
-// ── Hazard severity curves (all 0..100, all linear) ─────────────────────
+// ── Hazard severity curves (temperature is logarithmic; the rest linear) ──
 
 /** Comfortable real-feel band — 0 severity inside it. */
 const COMFORT_LO = 12;   // °C
@@ -131,12 +131,23 @@ const COMFORT_HI = 24;   // °C
 const COLD_EXTREME = -25; // °C → 100
 const HEAT_EXTREME = 45;  // °C → 100
 
-/** Temperature — real feel; 100 at the coldest end, 0 in comfort, 100 hottest. */
+/** Logarithmic distance-from-extreme curve. Stays gentle near the comfort
+ *  boundary and accelerates as it approaches the extreme. */
+function logRamp(distanceFromExtreme: number, span: number, k = 2): number {
+  if (span <= 0) return 0;
+  const d = clamp(distanceFromExtreme, 0, span);
+  return 100 * (1 - Math.log(1 + k * d) / Math.log(1 + k * span));
+}
+
+/** Temperature — real feel; 100 at the coldest end, 0 in comfort, 100 hottest.
+ *  Uses a log curve so 30 °C is treated much more gently than 35 °C. */
 function tempSeverity(realFeelC: number | null): number {
   if (realFeelC == null) return 0;
   if (realFeelC >= COMFORT_LO && realFeelC <= COMFORT_HI) return 0;
-  if (realFeelC < COMFORT_LO) return ramp(realFeelC, COMFORT_LO, COLD_EXTREME);
-  return ramp(realFeelC, COMFORT_HI, HEAT_EXTREME);
+  if (realFeelC < COMFORT_LO) {
+    return logRamp(realFeelC - COLD_EXTREME, COMFORT_LO - COLD_EXTREME);
+  }
+  return logRamp(HEAT_EXTREME - realFeelC, HEAT_EXTREME - COMFORT_HI);
 }
 
 /** Wind — max(sustained, gust), 0–110 km/h → 0–100. */
