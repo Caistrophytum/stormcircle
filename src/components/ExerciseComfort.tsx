@@ -366,9 +366,10 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
           lineHeight: 1.5,
         }}
       >
-        0–100 (Ideal ≥ 80, Good ≥ 60, Fair ≥ 40, Poor ≥ 20, Dangerous &lt; 20). Model blends
-        apparent temperature, wind, precip, UV, US AQI, active NWS alerts (hard downgrade), and
-        SPC / Fire / WRS outlooks (soft downgrade).
+        Score = 100 − the sum of hazard points (Ideal ≥ 80, Good ≥ 60, Fair ≥ 40, Poor ≥ 20,
+        Dangerous &lt; 20). Budgets: real-feel temperature 100, wind 100 (0–110 km/h), rain 80
+        (0–20 mm/h), US AQI 100, UV 60 (0–11) — each scaled by an activity multiplier. Active
+        alerts raise their hazard's severity floor; life-safety alerts cap the score.
       </div>
     </div>
   );
