@@ -169,84 +169,74 @@ function ScoreRow({ r }: { r: ActivityResult }) {
               marginBottom: 6,
             }}
           >
-            Score drivers — share of total penalty
+            Hazard points deducted — 100 − {totalPoints.toFixed(1)} = {r.now.score}
           </div>
-          {factors.length === 0 ? (
-            <div style={{ fontSize: 10.5, color: "#a1a1aa" }}>
-              No meaningful limiters right now — conditions are clean for {meta.label.toLowerCase()}
-              ing.
-            </div>
-          ) : (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                  height: 10,
-                  borderRadius: 999,
-                  overflow: "hidden",
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                {factors.map((f, i) => {
-                  const col = FACTOR_COLORS[i % FACTOR_COLORS.length];
-                  return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {factors.map((f, i) => {
+              const col = FACTOR_COLORS[i % FACTOR_COLORS.length];
+              const fill = f.maxPoints > 0 ? (f.points / f.maxPoints) * 100 : 0;
+              return (
+                <div key={f.key}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "baseline",
+                      justifyContent: "space-between",
+                      gap: 8,
+                      fontSize: 10,
+                    }}
+                  >
+                    <span style={{ color: "#d4d4d8", textTransform: "uppercase" }}>
+                      {f.label}
+                      <span style={{ color: "#71717a", textTransform: "none" }}>
+                        {" "}
+                        · {f.detail}
+                      </span>
+                    </span>
+                    <span style={{ color: f.points > 0 ? col : "#52525b", fontWeight: 700 }}>
+                      −{f.points.toFixed(1)}
+                      <span style={{ color: "#71717a", fontWeight: 400 }}>
+                        {" "}
+                        / {f.maxPoints} max (×{f.weight})
+                      </span>
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 3,
+                      height: 6,
+                      borderRadius: 999,
+                      overflow: "hidden",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
                     <div
-                      key={f.key}
-                      title={`${f.label}: ${Math.round(f.share)}% of penalty (raw ${f.penalty}/100)`}
                       style={{
-                        width: `${f.share}%`,
+                        width: `${fill}%`,
+                        height: "100%",
                         background: col,
                         boxShadow: `inset 0 0 10px ${col}, 0 0 5px ${col}`,
                         transition: "width 600ms ease",
                       }}
                     />
-                  );
-                })}
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "6px 14px",
-                  marginTop: 8,
-                }}
-              >
-                {factors.map((f, i) => {
-                  const col = FACTOR_COLORS[i % FACTOR_COLORS.length];
-                  return (
-                    <div
-                      key={f.key}
-                      style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10 }}
-                    >
-                      <span
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: 999,
-                          background: col,
-                          boxShadow: `0 0 6px ${col}`,
-                        }}
-                      />
-                      <span style={{ color: "#d4d4d8", textTransform: "uppercase" }}>
-                        {f.label}
-                      </span>
-                      <span style={{ color: col, fontWeight: 700 }}>{Math.round(f.share)}%</span>
-                      <span style={{ color: "#71717a" }}>
-                        ({f.penalty}/100 × w{Math.round(f.weight * 100)}%)
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ marginTop: 7, fontSize: 9.5, color: "#71717a", lineHeight: 1.5 }}>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ marginTop: 8, fontSize: 9.5, color: "#71717a", lineHeight: 1.5 }}>
+            {factors[0] && factors[0].points >= 1 ? (
+              <>
                 Biggest drag:{" "}
                 <span style={{ color: FACTOR_COLORS[0], fontWeight: 700 }}>{factors[0].label}</span>{" "}
-                — raw penalty {factors[0].penalty}/100 at weight{" "}
-                {Math.round(factors[0].weight * 100)}% for {meta.label.toLowerCase()}.
-              </div>
-            </>
-          )}
+                — {factors[0].penalty}/100 severity × {factors[0].maxPoints} pt budget for{" "}
+                {meta.label.toLowerCase()}.
+              </>
+            ) : (
+              <>No meaningful hazards right now — conditions are clean.</>
+            )}
+          </div>
         </div>
       )}
     </div>
