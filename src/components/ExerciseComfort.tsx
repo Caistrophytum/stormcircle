@@ -70,8 +70,10 @@ function ScoreRow({ r }: { r: ActivityResult }) {
     return r.best.time.slice(11, 16) + "Z";
   })();
 
-  // Only factors that actually drag the score down are worth showing.
-  const factors = r.now.factors.filter((f) => f.share >= 1 && f.penalty >= 1);
+  // Every hazard is shown — even at 0 points — so the additive maths is legible.
+  const factors = r.now.factors;
+  const totalPoints = factors.reduce((s, f) => s + f.points, 0);
+
 
   return (
     <div style={{ borderTop: "1px solid rgba(255,157,0,0.15)" }}>
