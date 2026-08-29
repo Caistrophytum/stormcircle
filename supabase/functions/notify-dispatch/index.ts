@@ -38,6 +38,10 @@ const SEV_RANK: Record<string, number> = {
 
 // Rate limits (per user).
 const MAX_PER_HOUR = 10;
+// Chat reports: how far back a first-time user is caught up on, and the
+// radius that counts as "local" for scope = local.
+const CHAT_LOOKBACK_MS = 15 * 60 * 1000;
+const CHAT_LOCAL_RADIUS_KM = 150;
 const WRS_COOLDOWN_MS = 60 * 60 * 1000;
 const WRS_WINDOW_MS = 30 * 60 * 1000;
 
@@ -67,6 +71,17 @@ async function geocode(label: string): Promise<{ lat: number; lon: number } | nu
   const match =
     (admin && results.find((r) => String(r.admin1 ?? "").toLowerCase() === admin)) || results[0];
   return { lat: Number(match.latitude), lon: Number(match.longitude) };
+}
+
+/** Great-circle distance in km. */
+function haversineKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const R = 6371;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLon = toRad(bLon - aLon);
+  const h = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
 }
 
 /** True when the user's local hour falls inside their quiet-hours window. */
@@ -125,13 +140,22 @@ Deno.serve(async (req) => {
     }
 
     const userIds = prefs.map((p) => p.user_id);
-    const [{ data: profiles }, { data: states }, { data: alerts }] = await Promise.all([
-      supabase.from("profiles").select("id, username, location").in("id", userIds),
-      supabase.from("notification_state").select("*").in("user_id", userIds),
-      supabase
-        .from("active_alerts")
-        .select("alert_id, event, severity, headline, area_desc, expires_at, geometry"),
-    ]);
+    const chatSince = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const [{ data: profiles }, { data: states }, { data: alerts }, { data: chatRows }] =
+      await Promise.all([
+        supabase.from("profiles").select("id, username, location").in("id", userIds),
+        supabase.from("notification_state").select("*").in("user_id", userIds),
+        supabase
+          .from("active_alerts")
+          .select("alert_id, event, severity, headline, area_desc, expires_at, geometry"),
+        supabase
+          .from("messages")
+          .select("id, user_id, username, content, created_at, place_lat, place_lon")
+          .neq("badge", "System")
+          .gte("created_at", chatSince)
+          .order("created_at", { ascending: true }),
+      ]);
+    const chatMessages = chatRows ?? [];
 
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
     const stateById = new Map((states ?? []).map((s) => [s.user_id, s]));
@@ -271,6 +295,38 @@ Deno.serve(async (req) => {
         });
       }
 
+      // ── 2e. Chat reports (all / local) ─────────────────────────
+      const chatCutoff = state?.last_chat_at
+        ? new Date(state.last_chat_at).getTime()
+        : now - CHAT_LOOKBACK_MS;
+      let freshChat: typeof chatMessages = [];
+      if (pref.chat_messages) {
+        freshChat = chatMessages.filter((m) => {
+          if (m.user_id === pref.user_id) return false;
+          if (new Date(m.created_at as string).getTime() <= chatCutoff) return false;
+          if (pref.chat_scope !== "local") return true;
+          if (m.place_lat == null || m.place_lon == null) return false;
+          return haversineKm(pt.lat, pt.lon, Number(m.place_lat), Number(m.place_lon)) <=
+            CHAT_LOCAL_RADIUS_KM;
+        });
+        if (freshChat.length) {
+          const latest = freshChat[freshChat.length - 1];
+          const extra = freshChat.length - 1;
+          pending.push({
+            title: freshChat.length === 1
+              ? `New chat report from ${latest.username}`
+              : `${freshChat.length} new chat reports`,
+            body: extra > 0
+              ? `${latest.username}: ${latest.content} (+${extra} more)`
+              : `${latest.username}: ${latest.content}`,
+            category: "chat_message",
+            severity: null,
+            dedupe: `chat:${pref.user_id}:${latest.id}`,
+            payload: { messageId: latest.id, count: freshChat.length, scope: pref.chat_scope },
+          });
+        }
+      }
+
       // ── 3. Persist the new snapshot regardless of delivery ──────────────
       const wrsChanged = wrs != null;
       const notifiedWrs = pending.some((p) => p.category === "wrs_swing");
@@ -284,6 +340,9 @@ Deno.serve(async (req) => {
         last_spc: spcLevel,
         last_fire: fireLevel,
         active_alerts: nextAlerts,
+        last_chat_at: freshChat.length
+          ? freshChat[freshChat.length - 1].created_at
+          : state?.last_chat_at ?? new Date(now - CHAT_LOOKBACK_MS).toISOString(),
         updated_at: new Date().toISOString(),
       });
 
