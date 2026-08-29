@@ -114,6 +114,9 @@ export default function CitizenReports() {
   const [relation, setRelation] = useState<Relation | null>(null);
   const [placeQuery, setPlaceQuery] = useState("");
   const [placeLabel, setPlaceLabel] = useState<string | null>(null);
+  // Coordinates of the chosen place - used for "local" chat notifications.
+  const [placeCoords, setPlaceCoords] = useState<{ lat: number; lon: number } | null>(null);
+
   
   const { results: placeResults, loading: placeLoading } = useCitySearch(placeQuery);
 
