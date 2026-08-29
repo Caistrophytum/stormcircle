@@ -99,3 +99,10 @@ export function displayWindSpeed(kmh: number | null, system: UnitSystem): Displa
     ? { value: kmh, unit: "km/h" }
     : { value: kmhToMph(kmh), unit: "mph" };
 }
+
+export function displayPressure(hpa: number | null, system: UnitSystem): DisplayValue | null {
+  if (hpa == null) return null;
+  return system === "metric"
+    ? { value: hpa, unit: " mb" }
+    : { value: hpa * 0.0295299830714, unit: " inHg" };
+}
