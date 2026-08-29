@@ -354,9 +354,15 @@ export default function CitizenReports() {
       next.add(stack.signature);
       return next;
     });
+    // NOTE: use ON CONFLICT DO NOTHING (ignoreDuplicates). A DO UPDATE upsert
+    // needs table-wide SELECT on report_approvals, which authenticated users
+    // deliberately do not have (they can only read the `signature` column).
     const { error } = await supabase
       .from("report_approvals")
-      .upsert({ signature: stack.signature, approved_by: user.id }, { onConflict: "signature" });
+      .upsert({ signature: stack.signature, approved_by: user.id }, {
+        onConflict: "signature",
+        ignoreDuplicates: true,
+      });
     if (error) {
       toast.error("Failed to approve");
       setApprovedSigs((prev) => {
