@@ -1,5 +1,5 @@
 /**
- * useExerciseComfortData — fetches the hourly weather forecast + air-quality
+ * useExerciseComfortData - fetches the hourly weather forecast + air-quality
  * series needed by `computeComfort`. Same shape (7-hour window: current +
  * next 6) for both feeds so downstream scoring is trivial.
  *

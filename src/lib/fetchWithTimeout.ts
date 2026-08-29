@@ -1,5 +1,5 @@
 /**
- * fetchWithTimeout — wraps fetch with an AbortController-based timeout.
+ * fetchWithTimeout - wraps fetch with an AbortController-based timeout.
  *
  * Default 10s is tuned for NWS / IEM / open-meteo endpoints, which can be
  * slow but never legitimately exceed 10 seconds. If the request aborts, the

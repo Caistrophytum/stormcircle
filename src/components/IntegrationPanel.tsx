@@ -77,7 +77,7 @@ const IntegrationPanel = () => {
               </div>
 
               <span className="border-t border-border pt-2 text-[9px] font-mono text-muted-foreground">
-                Last updated: {lastUpdated ? getTimeAgo(lastUpdated.toISOString()) : "—"}
+                Last updated: {lastUpdated ? getTimeAgo(lastUpdated.toISOString()) : "-"}
               </span>
             </motion.div>
       </div>

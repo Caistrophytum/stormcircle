@@ -72,8 +72,8 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
 
   // Create the radar layer once tileUrl becomes available, then keep it
   // alive across URL/cacheBust changes (those flow through the setUrl
-  // effect below). We depend on `hasTileUrl` (boolean) — not `tileUrl`
-  // itself — so swapping product/station doesn't tear the layer down.
+  // effect below). We depend on `hasTileUrl` (boolean) - not `tileUrl`
+  // itself - so swapping product/station doesn't tear the layer down.
   const hasTileUrl = !!tileUrl;
   useEffect(() => {
     if (!hasTileUrl) return;
@@ -353,7 +353,7 @@ const RadarMiniMap = ({
             <span className="text-[13px] font-mono text-muted-foreground uppercase tracking-wider">NEXRAD</span>
             {selectedStation && (
               <span className="text-[11px] font-mono text-primary/80 bg-primary/10 px-2 py-0.5 rounded-sm">
-                {selectedStation.id} — {selectedStation.name}
+                {selectedStation.id} - {selectedStation.name}
               </span>
             )}
           </div>

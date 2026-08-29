@@ -1,5 +1,5 @@
 /**
- * App.tsx — top-level providers + routing.
+ * App.tsx - top-level providers + routing.
  *
  * Routes are split with React.lazy so opening /auth doesn't have to download
  * Leaflet / the radar / the tactical map first. This was the dominant cause

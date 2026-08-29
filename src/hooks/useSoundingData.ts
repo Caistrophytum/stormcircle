@@ -9,14 +9,14 @@ export interface SoundingData {
   blh: number | null;
   lcl: number | null;
   /**
-   * Equilibrium Level (m AGL) — approximated from CAPE, LI, and LCL because
+   * Equilibrium Level (m AGL) - approximated from CAPE, LI, and LCL because
    * Open-Meteo doesn't expose a true parcel EL. Grows with buoyancy depth
    * (CAPE), instability (−LI), and cloud base (LCL); capped at 16 km.
    */
   el: number | null;
-  /** Surface (2 m) relative humidity (%) — physical WRS input. */
+  /** Surface (2 m) relative humidity (%) - physical WRS input. */
   rhSurface: number | null;
-  /** Mid-level (700 hPa) relative humidity (%) — physical WRS input. */
+  /** Mid-level (700 hPa) relative humidity (%) - physical WRS input. */
   rhMid: number | null;
   /** Mid-level (700 hPa) vertical velocity from OpenMeteo, in m/s. Positive = ascent (updraft), negative = subsidence. Kept for reference; no longer scored. */
   omegaMid: number | null;
@@ -29,7 +29,7 @@ export interface SoundingData {
   lapseMid: number | null;
   /**
    * Bulk shear magnitude (m/s) approximated between 850 hPa (~1.5 km) and
-   * 500 hPa (~5.5 km) — close enough to standard 0–6 km bulk shear for
+   * 500 hPa (~5.5 km) - close enough to standard 0–6 km bulk shear for
    * severe-weather discrimination. Proxies storm organization / longevity.
    */
   shear: number | null;
@@ -217,7 +217,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
     };
 
     // Show loading (and drop the previous city's values) whenever the
-    // location changes — never render another city's sounding as current.
+    // location changes - never render another city's sounding as current.
     const key = `${lat},${lon}`;
     const isNewLocation = lastKeyRef.current !== key;
     if (isNewLocation) {

@@ -35,7 +35,7 @@ export default function MobileRadar() {
 
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>
-      {/* Top 83% — radar map */}
+      {/* Top 83% - radar map */}
       <div style={{ height: "83%", position: "relative", background: "#1a1a2e" }}>
         <LeafletRadar
           station={selectedStation}
@@ -48,7 +48,7 @@ export default function MobileRadar() {
         />
       </div>
 
-      {/* Bottom 17% — controls */}
+      {/* Bottom 17% - controls */}
       <div
         style={{
           height: "17%",
@@ -166,7 +166,7 @@ export default function MobileRadar() {
               >
                 <span className="truncate">
                   <span className="text-primary font-bold mr-1.5">
-                    {selectedProduct ?? "—"}
+                    {selectedProduct ?? "-"}
                   </span>
                   <span className="text-muted-foreground">
                     {selectedProductLabel}

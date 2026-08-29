@@ -1,5 +1,5 @@
 /**
- * LocateMeButton — mobile-only affordance placed in the Welcome rectangle.
+ * LocateMeButton - mobile-only affordance placed in the Welcome rectangle.
  *
  * Uses the browser Geolocation API to grab the device's coordinates, reverse
  * geocodes them via BigDataCloud's free client endpoint (no API key), then
@@ -39,7 +39,7 @@ function formatCity(name: string, admin1?: string, countryCode?: string): string
   return admin1 ? `${name}, ${admin1}` : name;
 }
 
-/** Great-circle distance (km) — used to pick the geocoder hit closest to the
+/** Great-circle distance (km) - used to pick the geocoder hit closest to the
  * user's actual coordinates so we don't grab a same-named city on another
  * continent. */
 function haversineKm(aLat: number, aLon: number, bLat: number, bLon: number): number {

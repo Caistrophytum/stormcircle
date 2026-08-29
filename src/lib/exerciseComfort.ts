@@ -1,5 +1,5 @@
 /**
- * exerciseComfort — pure scoring for outdoor activity comfort. v3 model.
+ * exerciseComfort - pure scoring for outdoor activity comfort. v3 model.
  *
  * v3 is a transparent ADDITIVE model:
  *   score = 100 − Σ hazard points   (clamped 0..100)
@@ -30,7 +30,7 @@ export interface HourlyPoint {
   time: string;
   /** °C */
   temperature: number | null;
-  /** °C — Open-Meteo apparent temperature ("real feel") */
+  /** °C - Open-Meteo apparent temperature ("real feel") */
   apparentTemperature: number | null;
   /** % */
   humidity: number | null;
@@ -55,7 +55,7 @@ export interface AQPoint {
 
 /**
  * A warning covering the home point. Accepts a bare event name (legacy) or an
- * object carrying the issuing severity — IMS colour tiers map onto the same
+ * object carrying the issuing severity - IMS colour tiers map onto the same
  * Moderate / Severe / Extreme scale NWS uses, so both feeds score identically.
  */
 export type ActiveWarning = string | { event: string; severity?: string | null };
@@ -83,7 +83,7 @@ export interface ComfortFactor {
   points: number;
   /** Maximum points this hazard could deduct for this activity */
   maxPoints: number;
-  /** Alias kept for older UI code — same as `points` */
+  /** Alias kept for older UI code - same as `points` */
   weighted: number;
   /** % of the total deducted points */
   share: number;
@@ -125,7 +125,7 @@ function ramp(v: number, lo: number, hi: number): number {
 
 // ── Hazard severity curves (temp, wind, UV, rain logarithmic; AQI linear) ──
 
-/** Comfortable real-feel band — 0 severity inside it. */
+/** Comfortable real-feel band - 0 severity inside it. */
 const COMFORT_LO = 12;   // °C
 const COMFORT_HI = 24;   // °C
 const COLD_EXTREME = -25; // °C → 100
@@ -139,7 +139,7 @@ function logRamp(distanceFromExtreme: number, span: number, k = 2): number {
   return 100 * (1 - Math.log(1 + k * d) / Math.log(1 + k * span));
 }
 
-/** Temperature — real feel; 100 at the coldest end, 0 in comfort, 100 hottest.
+/** Temperature - real feel; 100 at the coldest end, 0 in comfort, 100 hottest.
  *  Uses a log curve so 30 °C is treated much more gently than 35 °C. */
 function tempSeverity(realFeelC: number | null): number {
   if (realFeelC == null) return 0;
@@ -150,7 +150,7 @@ function tempSeverity(realFeelC: number | null): number {
   return logRamp(HEAT_EXTREME - realFeelC, HEAT_EXTREME - COMFORT_HI);
 }
 
-/** Wind — max(sustained, gust), 0–110 km/h, logarithmic (gentle at low speeds,
+/** Wind - max(sustained, gust), 0–110 km/h, logarithmic (gentle at low speeds,
  *  steep near the 110 km/h extreme). */
 function windSeverity(sustainedMs: number | null, gustsMs: number | null): number {
   const s = sustainedMs ?? 0;
@@ -159,19 +159,19 @@ function windSeverity(sustainedMs: number | null, gustsMs: number | null): numbe
   return logRamp(110 - kph, 110);
 }
 
-/** UV — index 0–11, logarithmic (budget caps it at 60 points). */
+/** UV - index 0–11, logarithmic (budget caps it at 60 points). */
 function uvSeverity(uv: number | null): number {
   if (uv == null) return 0;
   return logRamp(11 - clamp(uv, 0, 11), 11);
 }
 
-/** Air quality — US AQI Good (50) → Hazardous (300+) → 0–100 severity. */
+/** Air quality - US AQI Good (50) → Hazardous (300+) → 0–100 severity. */
 function aqSeverity(aqi: number | null): number {
   if (aqi == null) return 0;
   return ramp(aqi, 50, 300);
 }
 
-/** Rain — 0–20 mm/h, logarithmic. */
+/** Rain - 0–20 mm/h, logarithmic. */
 function rainSeverity(mm: number | null): number {
   const v = clamp(mm ?? 0, 0, 20);
   return logRamp(20 - v, 20);
@@ -229,7 +229,7 @@ function normalizeWarnings(list: ActiveWarning[]): NormWarning[] {
 }
 
 /**
- * Category floors — a warning covering the home point forces its matching
+ * Category floors - a warning covering the home point forces its matching
  * hazard to at least this severity, regardless of the raw model data.
  */
 const WARNING_CATEGORIES: { re: RegExp; key: HazardKey }[] = [
@@ -266,7 +266,7 @@ function scoreHour(
 ): HourResult {
   const mult = MULTIPLIERS[activity];
 
-  // NOTE: active warnings deliberately do NOT affect the score — they are
+  // NOTE: active warnings deliberately do NOT affect the score - they are
   // surfaced separately in the UI header only.
   const severity: Record<HazardKey, number> = {
     temp: tempSeverity(h.apparentTemperature),
@@ -349,7 +349,7 @@ export function computeAllActivities(ctx: ComfortContext): ActivityResult[] {
 // ── Warning → restriction explainer (UI) ────────────────────────────────
 export interface WarningRestriction {
   event: string;
-  /** "Moderate" | "Severe" | "Extreme" — normalised severity label. */
+  /** "Moderate" | "Severe" | "Extreme" - normalised severity label. */
   severityLabel: string;
   /** Plain-language effects, e.g. "Wind is counted as a major hazard". */
   effects: string[];
@@ -364,24 +364,24 @@ export function describeWarningRestrictions(list: ActiveWarning[]): WarningRestr
 
     // Life-safety products first.
     if (/evacuation|shelter in place|tornado (warning|emergency)/i.test(w.event)) {
-      effects.push("Outdoor exercise is not recommended — follow official instructions.");
+      effects.push("Outdoor exercise is not recommended - follow official instructions.");
       return { event: w.event, severityLabel: "Extreme", effects };
     }
 
     if (w.sev >= 3) {
-      effects.push("Extreme alert in effect — conditions can be dangerous regardless of the score.");
+      effects.push("Extreme alert in effect - conditions can be dangerous regardless of the score.");
     }
 
     const matched = WARNING_CATEGORIES.filter((c) => c.re.test(w.event));
     if (matched.length) {
       const categories = Array.from(new Set(matched.map((c) => LABELS[c.key].toLowerCase())));
       effects.push(
-        `Take extra care with ${categories.join(" + ")} — readings may worsen quickly. ` +
+        `Take extra care with ${categories.join(" + ")} - readings may worsen quickly. ` +
           `The comfort score is based on measured conditions only and is not adjusted by this alert.`,
       );
     }
 
-    if (!effects.length) effects.push("Advisory only — the comfort score is unaffected.");
+    if (!effects.length) effects.push("Advisory only - the comfort score is unaffected.");
 
     return { event: w.event, severityLabel: SEV_LABEL[w.sev] ?? "Moderate", effects };
   });

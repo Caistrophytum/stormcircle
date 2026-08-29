@@ -1,5 +1,5 @@
 /**
- * CurrentLocationHazards — lists every active hazard (warning, watch,
+ * CurrentLocationHazards - lists every active hazard (warning, watch,
  * advisory, statement) whose polygon contains the user's home city.
  *
  * Transparent background; each row is outlined and texted in the hazard's
@@ -102,7 +102,7 @@ export default function CurrentLocationHazards({
           textTransform: "uppercase",
         }}
       >
-        Current Hazards{cityLabel ? ` — ${cityLabel}` : ""}
+        Current Hazards{cityLabel ? ` - ${cityLabel}` : ""}
       </div>
       {hits.map((p) => {
         const color = getWarningColor({

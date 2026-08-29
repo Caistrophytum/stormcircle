@@ -1,5 +1,5 @@
 /**
- * DesktopDock — the 4-tab glassy panel that sits at the bottom-right of the
+ * DesktopDock - the 4-tab glassy panel that sits at the bottom-right of the
  * screen (left of FloatingChat). Handles tab switching with smooth motion.
  */
 import { useState } from "react";
@@ -70,7 +70,7 @@ export default function DesktopDock() {
         })}
       </div>
 
-      {/* Tab content — keep all tabs mounted so floating windows opened from a
+      {/* Tab content - keep all tabs mounted so floating windows opened from a
           tab survive switching to another tab. Inactive tabs are hidden but
           preserve their state. */}
       <div className="relative min-h-0 flex-1 overflow-hidden">

@@ -1,5 +1,5 @@
 /**
- * useAuth — thin selector over the shared DataProvider.
+ * useAuth - thin selector over the shared DataProvider.
  *
  * One auth subscription per page (in DataProvider) instead of one per
  * consuming component. The provider also catches "refresh_token_not_found"

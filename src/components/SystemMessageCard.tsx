@@ -1,12 +1,12 @@
 /**
- * SystemMessageCard — renders an automated bot message (badge "System").
+ * SystemMessageCard - renders an automated bot message (badge "System").
  *
  * The bot embeds a structured payload inside an HTML-comment marker:
  *   <!--data:{"v":2,"issue":"...","groups":[...],"summary":"...","hazards":[...]}-->
  *
  * As of payload v2, the SPC summary text and per-hazard probabilities are
  * built server-side in `spc-poll`, derived from SPC's official categorical
- * + per-hazard probability layers. This component renders them directly —
+ * + per-hazard probability layers. This component renders them directly -
  * no prose scanning, no client-side fetches to spc.noaa.gov.
  *
  * Legacy rows (payload v1, no `hazards`) still render: we fall back to the
@@ -266,7 +266,7 @@ export function SystemMessageCard({
     );
   }
 
-  // Prefer the server-built summary. For legacy rows it may be absent — in
+  // Prefer the server-built summary. For legacy rows it may be absent - in
   // that case we just show the second line of the bot's text body, which
   // already contains a usable one-liner.
   const summary = payload?.summary
@@ -311,7 +311,7 @@ export function SystemMessageCard({
                 key={h.hazard}
                 className="px-1.5 py-0.5 rounded border text-[9px] uppercase tracking-wide font-bold"
                 style={{ color: s.fg, background: s.bg, borderColor: s.border }}
-                title={h.significant ? "Hatched — significant severe risk" : undefined}
+                title={h.significant ? "Hatched - significant severe risk" : undefined}
               >
                 {HAZARD_LABEL[h.hazard]} {h.maxProb > 0 ? `${h.maxProb}%` : ""}
                 {h.significant ? " · SIG" : ""}

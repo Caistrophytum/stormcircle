@@ -1,5 +1,5 @@
 /**
- * deviceLocation — resolve the device's GPS position into a city label that
+ * deviceLocation - resolve the device's GPS position into a city label that
  * Open-Meteo can geocode back to coordinates.
  *
  * Shared by the mobile "Locate Me" button and the chat composer's
@@ -25,7 +25,7 @@ export function formatCity(name: string, admin1?: string, countryCode?: string):
   return admin1 ? `${name}, ${admin1}` : name;
 }
 
-/** Great-circle distance (km) — guards against same-named cities elsewhere. */
+/** Great-circle distance (km) - guards against same-named cities elsewhere. */
 export function haversineKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
   const R = 6371;
   const toRad = (d: number) => (d * Math.PI) / 180;

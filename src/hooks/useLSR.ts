@@ -1,5 +1,5 @@
 /**
- * useLSR — thin selector over the shared DataProvider, plus pure styling
+ * useLSR - thin selector over the shared DataProvider, plus pure styling
  * helpers used to color local storm reports on maps and in lists.
  */
 import { useDataContext } from "@/providers/DataProvider";

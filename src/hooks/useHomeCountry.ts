@@ -1,5 +1,5 @@
 /**
- * useHomeCountry — resolves the ISO country code of the signed-in user's saved
+ * useHomeCountry - resolves the ISO country code of the signed-in user's saved
  * hometown (profile.location). Geocoding is cached in localStorage so the
  * lookup runs at most once per label per browser.
  */
@@ -45,7 +45,7 @@ export function useHomeCountry(): string | null {
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify(next));
         } catch {
-          /* quota — ignore */
+          /* quota - ignore */
         }
       }
     })();

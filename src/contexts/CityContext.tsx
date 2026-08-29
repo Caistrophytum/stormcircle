@@ -1,12 +1,12 @@
 /**
- * CityContext — global "currently focused city" state.
+ * CityContext - global "currently focused city" state.
  *
  * The user can pick a city via the search box in StatusBar; the map and
  * weather panels then re-center / re-fetch around that city's lat/lon.
  * Storing it in context (rather than passing props) keeps the components
  * decoupled and lets any descendant subscribe.
  *
- * `null` means "no city picked" — components fall back to a default
+ * `null` means "no city picked" - components fall back to a default
  * (e.g. user's geolocation or a hardcoded center).
  */
 import { createContext, useContext, useMemo, useState, ReactNode } from "react";

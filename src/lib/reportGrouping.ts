@@ -1,5 +1,5 @@
 /**
- * reportGrouping — client-side stacking logic for Citizen Reports.
+ * reportGrouping - client-side stacking logic for Citizen Reports.
  *
  * Reports are stored individually in Supabase (one row per submission), but
  * the UI groups visually-equivalent reports into a single "stack" so users
@@ -11,7 +11,7 @@
  *   3. Two reports match when their specific tokens overlap AND their
  *      generic tokens overlap (via the SYNONYMS dictionary).
  *   4. Specific overlap is weighted 3× generic overlap, so location is the
- *      dominant signal — "Funnel cloud in Manhattan" won't merge with
+ *      dominant signal - "Funnel cloud in Manhattan" won't merge with
  *      "Funnel Cloud near Baker Field".
  */
 
@@ -27,7 +27,7 @@ export interface RawMessage {
 export interface StackedReport {
   id: string;            // id of the first (oldest) message in the stack
   signature: string;     // stable topic signature (matches SQL message_signature)
-  topic: string;         // display title — content of the first message
+  topic: string;         // display title - content of the first message
   count: number;
   latestTime: string;    // created_at of the most recent message
   badge: string;         // badge of the first reporter
@@ -36,7 +36,7 @@ export interface StackedReport {
 }
 
 /**
- * Build a stable signature for a message — must match the SQL function
+ * Build a stable signature for a message - must match the SQL function
  * `public.message_signature`: lowercase, strip non-alphanumerics, dedupe,
  * sort, and join with "|".
  */
@@ -51,7 +51,7 @@ function messageSignature(content: string): string {
 
 /* ── Vocabulary ────────────────────────────────────────────────────────── */
 
-// Pure structural / filler words — not meteorological signal, not a location.
+// Pure structural / filler words - not meteorological signal, not a location.
 // Their presence (alone) does NOT mark a message as weather-related.
 const FILLER_WORDS = new Set<string>([
   "the", "a", "an", "and", "or", "of", "in", "on", "at", "to", "near",
@@ -61,7 +61,7 @@ const FILLER_WORDS = new Set<string>([
   "spotted", "seen", "observed", "happening", "occurring", "currently",
 ]);
 
-// Meteorological generic vocabulary — weather phenomena, impact terms,
+// Meteorological generic vocabulary - weather phenomena, impact terms,
 // intensity descriptors, and action verbs that describe weather events.
 // A message containing ANY of these (or any place / synonym-group word)
 // is classified as meteorological. Everything else falls through to the
@@ -114,7 +114,7 @@ const MULTIWORD_PHRASES: string[] = [
   "salt lake city", "kansas city", "las vegas", "new orleans",
 ].sort((a, b) => b.length - a.length);
 
-// Synonym groups — every word in a group is treated as the same token.
+// Synonym groups - every word in a group is treated as the same token.
 // Add new aliases here when you notice the chat splitting equivalent
 // place names (e.g. "NJ" vs "New Jersey", "St. Louis" vs "Saint Louis").
 const SYNONYMS: string[][] = [
@@ -138,7 +138,7 @@ const SYNONYMS: string[][] = [
   ["ia", "iowa"],
   ["ks", "kansas", "kan"],
   ["ky", "kentucky"],
-  ["la", "louisiana"], // NB: also matches "LA" the city — see city group below.
+  ["la", "louisiana"], // NB: also matches "LA" the city - see city group below.
   ["me", "maine"],
   ["md", "maryland"],
   ["ma", "massachusetts", "mass"],
@@ -190,7 +190,7 @@ const SYNONYMS: string[][] = [
   ["mia", "miami"],
   ["hou", "houston"],
   ["sa", "sanantonio"],
-  ["sd", "sandiego"], // overlaps SD/South Dakota — context (other tokens) disambiguates
+  ["sd", "sandiego"], // overlaps SD/South Dakota - context (other tokens) disambiguates
   ["sj", "sanjose"],
   ["det", "detroit"],
   ["msp", "minneapolis", "stpaul", "saintpaul", "twincities"],
@@ -288,7 +288,7 @@ const GENERAL_CHAT_EXACT_WORDS = new Set<string>(["hi"]);
 const tokenCache = new Map<string, TokenAnalysis>();
 const TOKEN_CACHE_MAX = 2000;
 
-/** True if `word` is part of the meteorological vocabulary — any
+/** True if `word` is part of the meteorological vocabulary - any
  *  weather-related generic OR any word in a synonym group (places +
  *  weather families). */
 function isMeteoToken(word: string): boolean {
@@ -411,7 +411,7 @@ function isMatchAnalyzed(a: TokenAnalysis, b: TokenAnalysis): boolean {
  *   2. Approved (any count)        (count desc)
  *   3. Unapproved + many reports   (count desc)
  *   4. Unapproved                  (count desc)
- *   — within ties: most-recent activity first.
+ *   - within ties: most-recent activity first.
  *
  * "Many reports" threshold = 3 (a stack with 3+ submissions is considered
  * trending and outranks single approved messages only when also approved).

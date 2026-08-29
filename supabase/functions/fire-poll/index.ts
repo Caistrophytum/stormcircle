@@ -231,7 +231,7 @@ function extractHazards(text: string, hasDry: { iso: boolean; sct: boolean }): {
 
   // Fuels: ERC / KBDI / "fuels critically dry" / "fuel moisture".
   // The chip value is mapped to a fixed canonical phrase instead of echoing a
-  // slice of raw product prose — that is what produced clipped fragments like
+  // slice of raw product prose - that is what produced clipped fragments like
   // "ERC values near the 95th percenti…".
   const fuels = flat.match(/(?:ERC|KBDI)[^.]{0,60}?(?:90th|95th|99th|record|near record|critically|very dry|dry)/i)
             ?? flat.match(/fuels?\s+(?:are|remain|continue to be)?\s*(critically dry|very dry|receptive|cured|dry)/i)
@@ -383,7 +383,7 @@ function buildMessage(
     validWindow,
   });
   return [
-    `🔥 SPC Fire Weather Outlook — ${formatIssueTime(issue)}`,
+    `🔥 SPC Fire Weather Outlook - ${formatIssueTime(issue)}`,
     ``,
     summary,
     `<!--issue:${issue}-->`,
@@ -427,7 +427,7 @@ Deno.serve(async (req) => {
     const force = new URL(req.url).searchParams.get("force") === "1";
     const { data: stored } = await supabase.from("fire_outlook_state").select("issue").eq("id", 1).maybeSingle();
     // Also re-post if the currently stored bot message is on an older payload
-    // version (v<2) — earlier payloads embedded `discussion` which sometimes
+    // version (v<2) - earlier payloads embedded `discussion` which sometimes
     // contained '-->' and broke client-side parsing.
     const { data: existingBotMsg } = await supabase
       .from("messages")

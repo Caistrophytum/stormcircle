@@ -3,8 +3,8 @@
 //
 // The IMS warning RSS feed names regions in prose ("in Eastern Upper Galilee,
 // in Hula Valley and in Judea Mountains") and ships NO geometry. To render
-// the warnings on the map — and to answer "does this warning cover my
-// hometown?" — we attach a bounding footprint to each named region.
+// the warnings on the map - and to answer "does this warning cover my
+// hometown?" - we attach a bounding footprint to each named region.
 //
 // These are deliberately coarse rectangles that follow the IMS regional map.
 // They are accurate enough for point-in-region testing at city scale, which
@@ -112,7 +112,7 @@ export function isWholeCountry(phrase: string): boolean {
 }
 
 /**
- * National outline (lon/lat) — real Israeli border geometry (geoBoundaries
+ * National outline (lon/lat) - real Israeli border geometry (geoBoundaries
  * gbOpen ADM0 for Israel unioned with the West Bank/Gaza outline, i.e. the
  * full IMS forecast domain, simplified to ~0.004 deg). Region footprints
  * are clipped against this ring so no warning polygon ever spills into the
@@ -544,7 +544,7 @@ function regionRing(
   ring = clipHalfPlane(ring, (p) => p[1] - maxLat);
 
   if (ring.length < 3) {
-    // Degenerate clip — fall back to the raw box.
+    // Degenerate clip - fall back to the raw box.
     return [
       [minLon, minLat],
       [maxLon, minLat],

@@ -1,5 +1,5 @@
 /**
- * miniWindowStore — global singleton enforcing that only one "mini" floating
+ * miniWindowStore - global singleton enforcing that only one "mini" floating
  * window (Live Radar, Live Reports, Bot messages, …) is open at a time.
  *
  * The expanded/full-view radar window is NOT a mini window and bypasses this

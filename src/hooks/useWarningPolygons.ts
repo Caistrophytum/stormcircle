@@ -1,5 +1,5 @@
 /**
- * useWarningPolygons — thin selector over the shared DataProvider plus the
+ * useWarningPolygons - thin selector over the shared DataProvider plus the
  * pure styling/tag helpers used by map and list components.
  *
  * Polygons are derived from the same single `active_alerts` subscription as
@@ -79,7 +79,7 @@ const WARNING_COLORS: Record<string, string> = {
   "Frost Advisory": "#6495ED",
   "Heavy Freezing Spray Warning": "#00BFFF",
   "Freezing Fog Advisory": "#008080",
-  // Heat — NWS renamed "Excessive Heat" → "Extreme Heat" in the 2024/2025
+  // Heat - NWS renamed "Excessive Heat" → "Extreme Heat" in the 2024/2025
   // Hazard Simplification rollout. Keep both names mapped to the same color
   // so historical and current products render identically.
   "Excessive Heat Warning": "#C71585",
@@ -88,7 +88,7 @@ const WARNING_COLORS: Record<string, string> = {
   "Extreme Heat Watch": "#800000",
   "Heat Advisory": "#FF7F50",
   "Extreme Heat Advisory": "#FF7F50",
-  // Cold — NWS renamed Wind Chill → Extreme Cold (Warning/Watch) and
+  // Cold - NWS renamed Wind Chill → Extreme Cold (Warning/Watch) and
   // Wind Chill Advisory → Cold Weather Advisory in the same rollout.
   "Extreme Cold Warning": "#B0C4DE",
   "Extreme Cold Watch": "#5F9EA0",

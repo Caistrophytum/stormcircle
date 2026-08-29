@@ -1,5 +1,5 @@
 /**
- * DataProvider — the single source of truth for cross-component server state.
+ * DataProvider - the single source of truth for cross-component server state.
  *
  * Before this provider existed, every component that needed alerts, polygons,
  * the current user, LSRs, or the online-count opened its OWN supabase
@@ -97,7 +97,7 @@ function deriveKind(event: string): AlertKind {
   const e = event.toLowerCase();
   // NWS evacuation/shelter products carry life-safety urgency equivalent to
   // a civil emergency even though the event name doesn't contain the word
-  // "emergency" — classify them as Emergency so they surface at the top of
+  // "emergency" - classify them as Emergency so they surface at the top of
   // hazard lists and pick up the emergency styling/tag.
   if (e.includes("emergency")) return "Emergency";
   if (e.includes("evacuation")) return "Emergency";
@@ -227,7 +227,7 @@ function scheduleLsFlush() {
         serialized = JSON.stringify(out);
       }
       window.localStorage.setItem(LS_KEY, serialized);
-    } catch { /* ignore — quota or parse error */ }
+    } catch { /* ignore - quota or parse error */ }
   };
   if ((window as any).requestIdleCallback) {
     (window as any).requestIdleCallback(flush, { timeout: 2000 });
@@ -402,7 +402,7 @@ interface DataContextValue {
   onlineCount: number;
   /**
    * True once the first alerts load has completed (success or error).
-   * Watched by the watchdog below — if this never flips within 15 s of
+   * Watched by the watchdog below - if this never flips within 15 s of
    * mount or a recovery attempt, the provider force-re-initializes.
    */
   appReady: boolean;
@@ -448,7 +448,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   //
   // The absolute worst-case stuck state should be 15 s, not "forever until
   // the user reloads". `appReady` flips true when the very first alerts
-  // load resolves (success OR error — KEEP-LAST-GOOD still counts as ready
+  // load resolves (success OR error - KEEP-LAST-GOOD still counts as ready
   // for the boot purpose). If it never flips, the watchdog increments
   // `recoveryAttempt`, which releases every in-flight guard, reconnects
   // realtime, and re-fires the loaders.
@@ -467,8 +467,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // open a while.
   //
   // Order on each load cycle:
-  //   1. lightweight summary (NO geometry) — drives alert lists everywhere
-  //   2. geometry-only fetch — drives the map polygons, slightly staggered
+  //   1. lightweight summary (NO geometry) - drives alert lists everywhere
+  //   2. geometry-only fetch - drives the map polygons, slightly staggered
   //
   // Route-aware: when the user is on /account, the polygon fetch is
   // skipped entirely (Account Center never renders the map).
@@ -644,7 +644,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
 
     // Re-fetch polygons when the user navigates back from /account to the
-    // map — summary is still fresh, but geometry was intentionally skipped.
+    // map - summary is still fresh, but geometry was intentionally skipped.
     const onRouteChange = () => {
       if (typeof window === "undefined") return;
       if (!window.location.pathname.startsWith("/account")) {
@@ -665,7 +665,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         scheduleLoad)
       .subscribe();
 
-    // NOTE: 60 s refresh is driven by the shared `useRefreshTick` clock —
+    // NOTE: 60 s refresh is driven by the shared `useRefreshTick` clock -
     // see the tick-effect further down. This effect only handles startup +
     // realtime + route change; no independent interval here.
 
@@ -703,7 +703,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
 
       const promise = (async () => {
-        // Hard timeout — profile fetch must never hang indefinitely
+        // Hard timeout - profile fetch must never hang indefinitely
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), PROFILE_TIMEOUT_MS);
         try {
@@ -889,7 +889,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     lsrFetchRef.current = () => { void fetchReports(); };
 
     // Stagger LSR ~800ms after mount: non-critical, can lag a beat.
-    // 60 s refresh is driven by the shared `useRefreshTick` clock — see the
+    // 60 s refresh is driven by the shared `useRefreshTick` clock - see the
     // tick-effect further down. No independent interval here.
     const startId = window.setTimeout(() => { void fetchReports(); }, 800);
     return () => {
@@ -902,7 +902,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // Every 60 s consumer that used to run its own setInterval now hooks into
   // this single tick, so all background refetches fire in lockstep. Skip the
   // very first tick (equal to whatever the module-level counter was when
-  // this provider mounted) — the mount-time loaders already ran.
+  // this provider mounted) - the mount-time loaders already ran.
   const initialTickRef = useRef(tick);
   useEffect(() => {
     if (tick === initialTickRef.current) return;
@@ -913,7 +913,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   // -------- watchdog --------
   //
   // Flip appReady the moment the first alerts load resolves. KEEP-LAST-GOOD
-  // means an error still counts as "ready" — we just stop showing the boot
+  // means an error still counts as "ready" - we just stop showing the boot
   // skeleton and let the existing per-section error states handle it.
   useEffect(() => {
     if (!alerts.loading && !appReady) setAppReady(true);
@@ -931,7 +931,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
     if (watchdogRef.current) clearTimeout(watchdogRef.current);
     watchdogRef.current = setTimeout(() => {
-      console.warn("[StormCircle] Watchdog triggered — app appears stuck, forcing recovery");
+      console.warn("[StormCircle] Watchdog triggered - app appears stuck, forcing recovery");
       setRecoveryAttempt((n) => n + 1);
     }, 15_000);
     return () => {

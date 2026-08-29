@@ -1,5 +1,5 @@
 /**
- * useLocalClock — resolves the IANA timezone for a lat/lon via Open-Meteo
+ * useLocalClock - resolves the IANA timezone for a lat/lon via Open-Meteo
  * (cached per rounded coordinate) and returns a ticking HH:MM local time
  * string for that location. Falls back to UTC while resolving / on error.
  */

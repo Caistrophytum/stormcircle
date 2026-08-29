@@ -7,13 +7,13 @@ import { useEffect, useState } from "react";
  * bursts, easier debugging, better background-tab throttling).
  *
  * Current consumers:
- *   • RadarMiniMap                 — cache-buster for tile URLs
- *   • useCurrentWeather            — Open-Meteo current (T/Td/RH/MSLP)
- *   • useHometownWeather           — hometown banner metrics
- *   • useSoundingData              — CAPE/CIN/LI + moisture/lift
- *   • DataProvider alerts loader   — NWS active_alerts summary + polygons
- *   • DataProvider LSR loader      — IEM local storm reports
- *   • CitizenReports expiry sweep  — prune >2h-old messages locally
+ *   • RadarMiniMap                 - cache-buster for tile URLs
+ *   • useCurrentWeather            - Open-Meteo current (T/Td/RH/MSLP)
+ *   • useHometownWeather           - hometown banner metrics
+ *   • useSoundingData              - CAPE/CIN/LI + moisture/lift
+ *   • DataProvider alerts loader   - NWS active_alerts summary + polygons
+ *   • DataProvider LSR loader      - IEM local storm reports
+ *   • CitizenReports expiry sweep  - prune >2h-old messages locally
  *
  * The tick is a monotonically increasing integer; consumers can use it as a
  * cache-buster, dependency in `useEffect`, or React `key`.

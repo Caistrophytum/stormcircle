@@ -1,11 +1,11 @@
 /**
- * ResetPassword — destination page for password-recovery email links.
+ * ResetPassword - destination page for password-recovery email links.
  *
  * Supabase appends `#access_token=...&type=recovery` to the URL. The auth
  * client picks that up automatically and fires a `PASSWORD_RECOVERY` event,
  * after which `supabase.auth.updateUser({ password })` will succeed.
  *
- * Must be a public route (no auth gate) — the user is technically signed in
+ * Must be a public route (no auth gate) - the user is technically signed in
  * via the recovery token but hasn't chosen a new password yet.
  */
 import { FormEvent, useEffect, useState } from "react";
@@ -73,10 +73,10 @@ const ResetPassword = () => {
   return (
     <>
       <Helmet>
-        <title>Reset Password — StormCircle</title>
+        <title>Reset Password - StormCircle</title>
         <meta name="description" content="Reset your StormCircle account password to regain access to real-time storm reporting and weather alerts." />
         <link rel="canonical" href="https://stormcircle.net/reset-password" />
-        <meta property="og:title" content="Reset Password — StormCircle" />
+        <meta property="og:title" content="Reset Password - StormCircle" />
         <meta property="og:description" content="Reset your StormCircle account password to regain access to real-time storm reporting and weather alerts." />
         <meta property="og:url" content="https://stormcircle.net/reset-password" />
       </Helmet>

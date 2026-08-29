@@ -3,8 +3,8 @@
  * useReportDistances, useCitySearch, useRadar) were each rebuilding the
  * same URL and parsing pattern.
  *
- *   • searchGeocode(name, count) — raw API call, returns the results array
- *   • pickByStateLabel(label, results) — picks the result whose admin1
+ *   • searchGeocode(name, count) - raw API call, returns the results array
+ *   • pickByStateLabel(label, results) - picks the result whose admin1
  *     matches the second comma-separated token of `label` (state), else
  *     falls back to the first result.
  */
@@ -26,7 +26,7 @@ export async function searchGeocode(
 ): Promise<GeocodeResult[]> {
   const trimmed = name.trim();
   if (!trimmed) return [];
-  // Global search — Open-Meteo geocoder covers every city worldwide.
+  // Global search - Open-Meteo geocoder covers every city worldwide.
   // The radar module handles US-only NEXRAD by falling back to Washington DC
   // when a non-US city is selected.
   const url =

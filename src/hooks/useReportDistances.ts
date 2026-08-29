@@ -1,5 +1,5 @@
 /**
- * useReportDistances — given a list of stacked reports and the user's home
+ * useReportDistances - given a list of stacked reports and the user's home
  * city string, geocodes the place mentioned in each report and returns a
  * Map<stackId, distanceKm>. Stacks whose place can't be parsed/geocoded
  * get `Infinity` so they sink to the bottom of a "nearest" sort.

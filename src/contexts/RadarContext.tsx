@@ -1,5 +1,5 @@
 /**
- * RadarContext — shares a single useRadar() instance across the app.
+ * RadarContext - shares a single useRadar() instance across the app.
  * Also handles the "on first load, pan to nearest station of user's home city"
  * side effect that used to live inside TacticalMap.
  */

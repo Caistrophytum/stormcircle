@@ -3,7 +3,7 @@
 --    The existing UPDATE policy already pins these columns to their prior
 --    values via a subquery, and the prevent_meteorologist_reapply trigger
 --    blocks user changes. Add column-level revokes so the columns can't be
---    written from the Data API at all — the request is rejected before RLS
+--    written from the Data API at all - the request is rejected before RLS
 --    or trigger evaluation, closing any theoretical policy-evaluation edge
 --    case flagged by the scanner.
 REVOKE UPDATE (badge, meteorologist_applied) ON public.profiles FROM authenticated;

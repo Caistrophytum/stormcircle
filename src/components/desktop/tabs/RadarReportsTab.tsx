@@ -1,5 +1,5 @@
 /**
- * RadarReportsTab — two full-width buttons stacked vertically:
+ * RadarReportsTab - two full-width buttons stacked vertically:
  *   • Live Radar   → opens NEXRAD floating window
  *   • Live Reports → opens weather-reports feed in a floating window
  */
@@ -54,7 +54,7 @@ export default function RadarReportsTab() {
         title="NEXRAD Radar"
         subtitle={
           radar.selectedStation
-            ? `${radar.selectedStation.id} — ${radar.selectedStation.name}`
+            ? `${radar.selectedStation.id} - ${radar.selectedStation.name}`
             : "Select a station on the map"
         }
         accent="125,211,252"
@@ -97,10 +97,10 @@ export default function RadarReportsTab() {
       <FloatingWindow
         open={radarFullOpen}
         onClose={() => setRadarFullOpen(false)}
-        title="NEXRAD Radar — Full View"
+        title="NEXRAD Radar - Full View"
         subtitle={
           radar.selectedStation
-            ? `${radar.selectedStation.id} — ${radar.selectedStation.name}`
+            ? `${radar.selectedStation.id} - ${radar.selectedStation.name}`
             : "Select a station on the map"
         }
         accent="125,211,252"

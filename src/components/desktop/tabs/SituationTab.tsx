@@ -1,5 +1,5 @@
 /**
- * SituationTab — convective outlook → fire risk → current hazards (in that order).
+ * SituationTab - convective outlook → fire risk → current hazards (in that order).
  * Empty sections collapse; if all empty, show "Situation's Calm Here."
  * Includes the Exercise button up top.
  */
@@ -118,7 +118,7 @@ export default function SituationTab() {
     return best;
   }, [polygons, homeRisk.coords]);
 
-  // SPC + SPC Fire outlooks only cover the CONUS — hide the at-location risk
+  // SPC + SPC Fire outlooks only cover the CONUS - hide the at-location risk
   // rectangles for international hometowns.
   const isUS = homeRisk.coords?.countryCode === "US";
   const nothing =
@@ -171,7 +171,7 @@ export default function SituationTab() {
                   Nearest Warning:{" "}
                   {nearestConvective ? (
                     <span style={{ color: SPC_COLOR[homeRisk.risk] }}>
-                      {nearestConvective.event} — {(() => {
+                      {nearestConvective.event} - {(() => {
                         if (nearestConvective.km < 1) return "at your location";
                         const d = displayLengthKm(nearestConvective.km, unitSystem)!;
                         return `${d.value.toFixed(0)} ${d.unit}`;

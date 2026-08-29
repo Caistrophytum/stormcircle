@@ -1,5 +1,5 @@
 /**
- * MetricsTab — WRS filling circle + physical parameters filling line + virtual
+ * MetricsTab - WRS filling circle + physical parameters filling line + virtual
  * parameter cards. Colors shift gradually as values change (CSS transitions
  * on stroke / background).
  */
@@ -170,7 +170,7 @@ export default function MetricsTab() {
         />
         <div
           className="ml-auto rounded px-1.5 py-0.5 font-mono text-[11px] font-bold tabular-nums"
-          title={`Local time — ${timezone}`}
+          title={`Local time - ${timezone}`}
           style={{
             color,
             border: `1px solid ${color}55`,
@@ -285,7 +285,7 @@ export default function MetricsTab() {
 
       </div>
 
-      {/* Virtual parameters — rounded boxes */}
+      {/* Virtual parameters - rounded boxes */}
       <div>
         <div className="mb-2 flex items-center justify-between">
           <span className="text-[9px] font-mono uppercase tracking-widest text-muted-foreground">

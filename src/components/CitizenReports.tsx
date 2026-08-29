@@ -1,5 +1,5 @@
 /**
- * CitizenReports — global citizen report stream with a 2-hour rolling history.
+ * CitizenReports - global citizen report stream with a 2-hour rolling history.
  *
  * Data flow:
  *   1. On mount, hydrate with the last 2 hours of messages AND the current
@@ -22,7 +22,7 @@
  *     (lowercase, dedup tokens, sorted, "|"-joined). The same signature is
  *     computed in JS (`messageSignature`) and SQL (`public.message_signature`),
  *     so an approval persisted in `report_approvals` matches every report
- *     that produces the same signature — present and future.
+ *     that produces the same signature - present and future.
  *
  * Sort priority (top → bottom):
  *   approved+trending → approved → unapproved+trending → unapproved
@@ -83,14 +83,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 // System (bot) messages are rendered in the desktop left panel and on
-// mobile main — not here. CitizenReports is user-chat only.
+// mobile main - not here. CitizenReports is user-chat only.
 
 type Message = RawMessage;
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 const MAX_MESSAGE_LENGTH = 500;
 // Bound on how many messages we hold in client state at once. The oldest
-// 2-hour window holds whatever fits — older rows fall off as new ones arrive.
+// 2-hour window holds whatever fits - older rows fall off as new ones arrive.
 const MAX_INITIAL_MESSAGES = 500;
 
 // Action queued behind the confirmation dialog.
@@ -200,7 +200,7 @@ export default function CitizenReports() {
 
   // ── Realtime: messages + approvals ────────────────────────────────────
   useEffect(() => {
-    // Unique channel name per mount — reusing a static name can leave a
+    // Unique channel name per mount - reusing a static name can leave a
     // previously-subscribed channel alive across remounts (StrictMode, fast
     // nav), making the next .on() throw "cannot add postgres_changes callbacks
     // after subscribe()" and blank the React tree.
@@ -208,7 +208,7 @@ export default function CitizenReports() {
       .channel(`citizen-reports_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
         const next = payload.new as Message;
-        // Bot/system messages are shown in their dedicated Bots tab — never
+        // Bot/system messages are shown in their dedicated Bots tab - never
         // in the citizen chat feed. Mirror the server-side .neq filter used
         // by the initial load so realtime inserts don't leak them through.
         if (next.badge === "System") return;
@@ -225,7 +225,7 @@ export default function CitizenReports() {
         setMessages((prev) => prev.filter((m) => m.id !== (payload.old as { id: string }).id));
       });
 
-    // Approvals are auth-only — subscribing while signed out is rejected.
+    // Approvals are auth-only - subscribing while signed out is rejected.
     if (user) {
       channel = channel
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "report_approvals" }, (payload) => {
@@ -257,7 +257,7 @@ export default function CitizenReports() {
 
 
   // ── Client-side expiry sweep (defense-in-depth vs server pg_cron) ─────
-  // System (bot) messages are exempt — they persist until replaced by a
+  // System (bot) messages are exempt - they persist until replaced by a
   // newer issuance. Driven by the shared 60 s clock so all in-app refreshes
   // fire in lockstep.
   const sweepTick = useRefreshTick();
@@ -296,7 +296,7 @@ export default function CitizenReports() {
   }
 
   // ── Permission helpers ────────────────────────────────────────────────
-  // (RLS enforces these server-side too — UI just hides disallowed buttons.)
+  // (RLS enforces these server-side too - UI just hides disallowed buttons.)
   // Only Meteorologists can delete (any message or whole stacks). Citizens
   // and guests can read but cannot moderate.
   function canDelete(_msg: Message) {
@@ -325,7 +325,7 @@ export default function CitizenReports() {
     if (!user || !profile) return;
     // Embed the topic so the message groups into this stack via the
     // overlap-based matcher in reportGrouping.ts.
-    const content = `${stack.topic} — ${profile.username} has joined the report.`.slice(
+    const content = `${stack.topic} - ${profile.username} has joined the report.`.slice(
       0,
       MAX_MESSAGE_LENGTH,
     );
@@ -466,7 +466,7 @@ export default function CitizenReports() {
                     : "border-white/10 bg-white/[0.04] hover:border-white/20"
                 }`}
               >
-                {/* Approved tick — top-left corner */}
+                {/* Approved tick - top-left corner */}
                 {stack.approved && (
                   <span
                     aria-label="Verified report"
@@ -485,7 +485,7 @@ export default function CitizenReports() {
                   </span>
                 )}
 
-                {/* Stack header — clickable to expand */}
+                {/* Stack header - clickable to expand */}
                 <div
                   role="button"
                   tabIndex={0}
@@ -555,7 +555,7 @@ export default function CitizenReports() {
                     );
                   })()}
 
-                  {/* Join Report — signed-in users only, once per stack */}
+                  {/* Join Report - signed-in users only, once per stack */}
                   {user && !isGeneral && (() => {
                     const alreadyJoined = stack.reports.some(
                       (r) => r.user_id === user.id && /has joined the report/i.test(r.content),
@@ -590,7 +590,7 @@ export default function CitizenReports() {
                   })()}
                 </div>
 
-                {/* Moderator action bar — bottom of the card, meteorologists only */}
+                {/* Moderator action bar - bottom of the card, meteorologists only */}
                 {(showApprove || showUnapprove || showSoloDelete || showStackDelete) && (
                   <div
                     className="flex items-center justify-end gap-1.5 px-3 py-1.5 border-t border-white/10 bg-white/[0.02] rounded-b-xl"
@@ -697,7 +697,7 @@ export default function CitizenReports() {
         )}
       </div>
 
-      {/* Structured composer — three upward dropdowns */}
+      {/* Structured composer - three upward dropdowns */}
       <div className="p-3 border-t border-white/10 bg-white/[0.02] backdrop-blur-sm">
         {user && profile ? (
           <ComposerDropdowns
@@ -846,7 +846,7 @@ function ComposerDropdowns({
 
   return (
     <div ref={rootRef} className="space-y-2">
-      {/* Button row wrapper — panels are absolutely positioned above this */}
+      {/* Button row wrapper - panels are absolutely positioned above this */}
       <div className="relative">
         {/* ── Full-width upward panels ── */}
         {open === "phenom" && (
@@ -1032,8 +1032,8 @@ function ComposerDropdowns({
           <p className="text-[10px] font-mono text-muted-foreground truncate">
             {(() => {
               const p = PHENOMENA.find((x) => x.value === phenomenon);
-              return p ? `${p.emoji} ${p.label}` : "—";
-            })()} {relation ?? "—"} {placeLabel ?? "—"}
+              return p ? `${p.emoji} ${p.label}` : "-";
+            })()} {relation ?? "-"} {placeLabel ?? "-"}
           </p>
           <button
             type="button"

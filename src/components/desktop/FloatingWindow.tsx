@@ -1,5 +1,5 @@
 /**
- * FloatingWindow — reusable modal panel styled to match the existing
+ * FloatingWindow - reusable modal panel styled to match the existing
  * ExerciseComfort overlay (dark, neon amber border, backdrop-blur backdrop).
  */
 import { X } from "lucide-react";

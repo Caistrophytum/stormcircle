@@ -30,7 +30,7 @@ const formatCoord = (lat: number, lon: number) => {
 };
 
 /**
- * MissionClock — isolated 1 Hz UTC ticker.
+ * MissionClock - isolated 1 Hz UTC ticker.
  *
  * Extracted so the 1-second `setInterval` only re-renders this ~20-char
  * span instead of the entire StatusBar (which owns weather, unit toggle,
@@ -100,7 +100,7 @@ const StatusBar = () => {
   const badge = roleBadge[userRole];
   const coordText = selectedCity
     ? formatCoord(selectedCity.lat, selectedCity.lon)
-    : "— SELECT CITY —";
+    : "- SELECT CITY -";
 
   const tempDisp = displayTemp(hometown.temperatureC, unitSystem);
   const dewDisp = displayTemp(hometown.dewpointC, unitSystem);
@@ -109,7 +109,7 @@ const StatusBar = () => {
   const activeLocName = selectedCity?.name ?? profile?.location ?? null;
   const hometownLabel = activeLocName
     ? `Now in ${activeLocName.split(",")[0]}`
-    : "Now in —";
+    : "Now in -";
 
   const rulerContainerRef = useRef<HTMLDivElement>(null);
   const rulerContentRef = useRef<HTMLDivElement>(null);
@@ -170,7 +170,7 @@ const StatusBar = () => {
     if (!hometownLoc) {
       return (
         <span key={label}>
-          {label}: <span className="text-muted-foreground">—</span>
+          {label}: <span className="text-muted-foreground">-</span>
         </span>
       );
     }
@@ -205,7 +205,7 @@ const StatusBar = () => {
     <>
       <RulerCarouselStyles />
       <header className="h-12 border-b border-border bg-cockpit/95 flex items-center justify-between px-6 z-20 shrink-0 gap-4">
-      {/* Left: role badge + coords + hometown ruler — shrinks to make room for the right cluster */}
+      {/* Left: role badge + coords + hometown ruler - shrinks to make room for the right cluster */}
       <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
         {badge && (
           <div className={`shrink-0 flex items-center gap-1.5 px-2 py-1 border rounded-sm ${badge.className}`}>
@@ -293,7 +293,7 @@ const StatusBar = () => {
 
 
 
-      {/* Right: time + auth — pinned to the right edge so it never gets squished */}
+      {/* Right: time + auth - pinned to the right edge so it never gets squished */}
       <div className="flex items-center gap-4 shrink-0 pl-2">
         <div className="shrink-0 h-5 w-px bg-border" />
         <div className="text-right shrink-0 whitespace-nowrap">

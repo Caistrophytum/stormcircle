@@ -1,5 +1,5 @@
 /**
- * useHomeCityRisk — given the user's saved home city string (e.g. "Norman,
+ * useHomeCityRisk - given the user's saved home city string (e.g. "Norman,
  * Oklahoma"), geocodes it via Open-Meteo and resolves the current SPC Day 1
  * categorical risk level by point-in-polygon against the live SPC outlook.
  *

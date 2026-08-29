@@ -54,7 +54,7 @@ async function fetchMonthlyN34() {
   const res = await fetch(MONTHLY_URL, { headers: { "User-Agent": "StratoOps/1.0" } });
   if (!res.ok) throw new Error(`monthly ${res.status}`);
   const lines = (await res.text()).split("\n").map((l) => l.trim()).filter(Boolean);
-  // Last row that begins with a 4-digit year — last column pair is Niño 3.4.
+  // Last row that begins with a 4-digit year - last column pair is Niño 3.4.
   const dataLines = lines.filter((l) => /^\d{4}\s/.test(l));
   const last = dataLines[dataLines.length - 1];
   if (!last) throw new Error("monthly: no data row");

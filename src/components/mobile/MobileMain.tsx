@@ -1,5 +1,5 @@
 /**
- * MobileMain — the mobile main-screen content stack.
+ * MobileMain - the mobile main-screen content stack.
  *
  * Top → bottom:
  *   1. Welcome [user] (or "Guest" when signed out)
@@ -71,7 +71,7 @@ function rankWarning(p: WarningPolygon): number | null {
   if (ev === "Severe Thunderstorm Warning") return pds ? 6 : 4;
   if (ev.endsWith("Warning")) return 2;
 
-  // Watches (conditions favorable) — always rank below the matching Warning,
+  // Watches (conditions favorable) - always rank below the matching Warning,
   // but PDS Watches outrank generic Warnings since SPC reserves them for
   // exceptionally dangerous setups.
   if (ev === "Tornado Watch") return pds ? 5 : 1;
@@ -85,7 +85,7 @@ function rankWarning(p: WarningPolygon): number | null {
 
 // Approximate great-circle distance from a point to a segment by projecting
 // into a local equirectangular plane (km). Accurate to <1% for segments
-// shorter than a few hundred km — well within warning polygon scale.
+// shorter than a few hundred km - well within warning polygon scale.
 function pointToSegmentKm(
   origin: { lat: number; lon: number },
   a: { lat: number; lon: number },
@@ -152,7 +152,7 @@ interface BotMessage {
  * Subscribe to the latest message per bot in a single query + single
  * realtime channel. Previously we had 3 hooks (SPC / Hurricane / Fire)
  * each opening its own Postgres CDC subscription and its own reload
- * fetch — 3× the DB round-trips and 3× the realtime channels per mobile
+ * fetch - 3× the DB round-trips and 3× the realtime channels per mobile
  * page. This collapses them into one shared subscription that filters
  * `user_id IN (…)` server-side (indexed) and dispatches by user_id
  * client-side.
@@ -166,7 +166,7 @@ function useBotMessagesLatest(botIds: string[]): Record<string, BotMessage | nul
     const ids = idsKey.split(",");
     const load = async () => {
       // Pull the latest N per bot in one shot. `limit(ids.length * 4)` is a
-      // small safety buffer if multiple bots posted around the same time —
+      // small safety buffer if multiple bots posted around the same time -
       // we still only keep the newest per bot in JS.
       const { data, error } = await supabase
         .from("messages")
@@ -191,7 +191,7 @@ function useBotMessagesLatest(botIds: string[]): Record<string, BotMessage | nul
       .channel(`mobile-bots_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on(
         "postgres_changes",
-        // No filter clause needed — we scope to bot ids in the reload query
+        // No filter clause needed - we scope to bot ids in the reload query
         // and only refetch when a row appears; volume on `messages` for these
         // ids is tiny (a handful/day) so a broad channel is cheaper than
         // maintaining N separate CDC filters.
@@ -377,7 +377,7 @@ export default function MobileMain() {
   }, [warningPolygons.polygons, homeRisk.coords]);
 
   const hasLocation = !!profile?.location;
-  // SPC + SPC Fire outlooks only cover the CONUS — hide the at-location risk
+  // SPC + SPC Fire outlooks only cover the CONUS - hide the at-location risk
   // rectangles for international hometowns.
   const isUS = homeRisk.coords?.countryCode === "US";
   const hometownBg = hasLocation ? RISK_BG[homeRisk.risk] : "hsl(0 80% 45%)";
@@ -418,7 +418,7 @@ export default function MobileMain() {
         gap: "10px",
       }}
     >
-      {/* Visually-hidden H1 — gives the mobile homepage a proper document
+      {/* Visually-hidden H1 - gives the mobile homepage a proper document
           outline for search engines and screen readers without altering the
           existing visual design. */}
       <h1
@@ -434,7 +434,7 @@ export default function MobileMain() {
           border: 0,
         }}
       >
-        StormCircle — Real-time Meteorological Network
+        StormCircle - Real-time Meteorological Network
       </h1>
 
       {/* 1. Welcome */}
@@ -635,7 +635,7 @@ export default function MobileMain() {
         </div>
       </div>
 
-      {/* 2. Hometown news bar — SPC severe risk (CONUS only). */}
+      {/* 2. Hometown news bar - SPC severe risk (CONUS only). */}
       {(!user || !hasLocation || isUS) && (
         <div
           style={{
@@ -656,7 +656,7 @@ export default function MobileMain() {
         </div>
       )}
 
-      {/* 2a. Fire weather news bar — appears only when home city is under an SPC fire weather risk. */}
+      {/* 2a. Fire weather news bar - appears only when home city is under an SPC fire weather risk. */}
       {isUS &&
         hasLocation &&
         homeFireRisk.risk !== "NONE" &&
@@ -694,14 +694,14 @@ export default function MobileMain() {
           );
         })()}
 
-      {/* 2b. Current-location hazards — transparent, outlined per polygon color. */}
+      {/* 2b. Current-location hazards - transparent, outlined per polygon color. */}
       <CurrentLocationHazards
         polygons={warningPolygons.polygons}
         coords={homeRisk.coords}
         cityLabel={profile?.location ?? null}
       />
 
-      {/* 3. SPC bot message — interactive (expandable per-risk dropdowns) */}
+      {/* 3. SPC bot message - interactive (expandable per-risk dropdowns) */}
       {botMsg ? (
         <SystemMessageCard
           message={
@@ -808,7 +808,7 @@ export default function MobileMain() {
             In {radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? "your area"}
           </span>
           <span
-            title={`Local time — ${localTz}`}
+            title={`Local time - ${localTz}`}
             style={{
               fontSize: "8px",
               color: "#ff9d00",
@@ -889,7 +889,7 @@ export default function MobileMain() {
         </div>
       </div>
 
-      {/* 4b. Physical metrics — surface-felt parameters that gate the virtual block */}
+      {/* 4b. Physical metrics - surface-felt parameters that gate the virtual block */}
       <div
         style={{
           padding: "8px 10px",
@@ -1018,7 +1018,7 @@ export default function MobileMain() {
         </span>
       </div>
 
-      {/* 6. Latest chat messages — fills remaining space up to floating buttons */}
+      {/* 6. Latest chat messages - fills remaining space up to floating buttons */}
       <div
         style={{
           flex: "1 0 150px",

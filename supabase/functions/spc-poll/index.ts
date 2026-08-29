@@ -11,7 +11,7 @@ import {
 
 // MapServer layer indices for the SPC Day 1 outlooks.
 //   1 = Categorical, 3 = Probabilistic Tornado, 5 = Probabilistic Hail,
-//   7 = Probabilistic Wind. (Layers 2/4/6 are Conditional Intensity — they
+//   7 = Probabilistic Wind. (Layers 2/4/6 are Conditional Intensity - they
 //   contain CIG categories, not probabilities, and using them produces
 //   nonsense like "2% hail" from a CIG1 polygon.)
 const SPC_LAYER_URL = (layer: number) =>
@@ -22,7 +22,7 @@ const SPC_TXT = "https://www.spc.noaa.gov/products/outlook/day1otlk.txt";
 const BOT_USER_ID = "00000000-0000-0000-0000-000000000000";
 // Per-polygon reverse-geocode cap. SPC risk polygons routinely span dozens
 // of counties across multiple states, so a tiny cap (we used to use 4) is
-// misleading — the bot would claim "Enhanced risk across 4 counties" for an
+// misleading - the bot would claim "Enhanced risk across 4 counties" for an
 // area covering several states. We sample densely and let the dedupe step
 // trim duplicates. Large outbreaks may push us close to the 60s wall clock;
 // `samplesForPolygon` scales further down for tiny marginal polygons.
@@ -242,7 +242,7 @@ function buildMessage(
     issue, groups, timing, validWindow, discussion, summary, hazards,
   });
   return [
-    `⚡ SPC Day 1 Outlook Update — ${formatIssueTime(issue)}`,
+    `⚡ SPC Day 1 Outlook Update - ${formatIssueTime(issue)}`,
     ``,
     summary,
     `<!--issue:${issue}-->`,
@@ -275,7 +275,7 @@ Deno.serve(async (req) => {
     if (!issues.length) throw new Error("no issue timestamps");
     const latestIssue = issues.sort().reverse()[0];
 
-    // Check stored state — skip when issue hasn't changed unless caller
+    // Check stored state - skip when issue hasn't changed unless caller
     // explicitly asks for a re-post via ?force=1 (used when the visible
     // message template changes and we need to refresh the existing row).
     const force = new URL(req.url).searchParams.get("force") === "1";
@@ -293,7 +293,7 @@ Deno.serve(async (req) => {
     });
 
     if (!relevant.length) {
-      // Quiet day at new issuance — record so we don't reprocess.
+      // Quiet day at new issuance - record so we don't reprocess.
       await supabase.from("spc_outlook_state").update({
         issue: latestIssue, groups: [], timing: null, valid_window: null,
         last_run_at: new Date().toISOString(), last_error: null, updated_at: new Date().toISOString(),
@@ -339,7 +339,7 @@ Deno.serve(async (req) => {
     ]);
     const content = buildMessage(latestIssue, groups, timing, validWindow, discussion, hazards);
 
-    // Persist state. `hazards` is a newly added column — wrap in a fallback
+    // Persist state. `hazards` is a newly added column - wrap in a fallback
     // so we don't break the run on environments where the migration hasn't
     // landed yet.
     const baseUpdate = {

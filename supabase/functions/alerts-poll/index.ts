@@ -5,7 +5,7 @@
 //   2. Enrich any Tornado/Severe Watch with the matching SPC product page so
 //      we can detect "PDS" markers the JSON feed leaves out.
 //   3. For every alert WITHOUT inline polygon geometry, resolve its
-//      `affectedZones` URLs SERVER-SIDE — using a persistent `zone_geom_cache`
+//      `affectedZones` URLs SERVER-SIDE - using a persistent `zone_geom_cache`
 //      table so we don't re-hammer api.weather.gov every minute. The result
 //      is stored directly in `active_alerts.geometry`, which means the front
 //      end never has to perform hundreds of cross-origin round trips just to
@@ -16,11 +16,11 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const NWS_URL = "https://api.weather.gov/alerts/active?status=actual";
 const UA = "StormCircle/1.0 (bot@stormcircle.net)";
-// Re-fetch a cached zone if it's older than this — zones do change shape
+// Re-fetch a cached zone if it's older than this - zones do change shape
 // occasionally (re-districting, WFO realignments). A day is plenty.
 const ZONE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 // Hard caps to keep a single invocation inside the edge-runtime CPU/wall
-// budget. Anything above these limits is left for the next cycle — the
+// budget. Anything above these limits is left for the next cycle - the
 // zone cache means each subsequent run fills in more, and we never run out
 // of time to write the alerts themselves.
 const MAX_MISSING_ZONES_PER_RUN = 250;
@@ -176,7 +176,7 @@ Deno.serve(async (req) => {
     const zoneGeom = new Map<string, GeomT>();
 
     if (zoneList.length > 0) {
-      // Pull whatever the cache already has — Postgres handles `.in()` up
+      // Pull whatever the cache already has - Postgres handles `.in()` up
       // to a generous size; chunk just in case there's a national outbreak.
       const CHUNK = 500;
       const cutoff = new Date(Date.now() - ZONE_CACHE_TTL_MS).toISOString();
@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
       // back to the cache for everyone (including all clients) to benefit.
       // Cap per-run work so we don't exceed the edge-runtime CPU budget.
       // Anything we skip will be picked up on subsequent cycles as the cache
-      // fills in — the alerts themselves are still written this cycle.
+      // fills in - the alerts themselves are still written this cycle.
       const missingAll = zoneList.filter((z) => !zoneGeom.has(z));
       const missing = missingAll.slice(0, MAX_MISSING_ZONES_PER_RUN);
       if (missingAll.length > missing.length) {
