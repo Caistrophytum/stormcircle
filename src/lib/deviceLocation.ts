@@ -74,8 +74,12 @@ async function pickResolvableCity(
   return null;
 }
 
-/** Browser geolocation → reverse geocode → validated city label. Throws on failure. */
-export async function resolveDeviceCity(): Promise<string> {
+/** Browser geolocation -> reverse geocode -> validated city label plus coords. */
+export async function resolveDeviceCityDetailed(): Promise<{
+  label: string;
+  lat: number;
+  lon: number;
+}> {
   if (!("geolocation" in navigator)) throw new Error("Geolocation is not available on this device.");
 
   const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -99,5 +103,11 @@ export async function resolveDeviceCity(): Promise<string> {
   if (!res.ok) throw new Error(`Reverse geocode failed (${res.status})`);
   const label = await pickResolvableCity((await res.json()) as ReverseGeocodeResult, latitude, longitude);
   if (!label) throw new Error("Could not identify a nearby known city.");
-  return label;
+  return { label, lat: latitude, lon: longitude };
 }
+
+/** Label-only variant kept for callers that do not need coordinates. */
+export async function resolveDeviceCity(): Promise<string> {
+  return (await resolveDeviceCityDetailed()).label;
+}
+
