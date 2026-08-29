@@ -33,6 +33,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import LocationPicker from "@/components/LocationPicker";
+import NotificationSettings from "@/components/NotificationSettings";
 import { sendEmail, TEMPLATE_IDS, isEmailJsConfigured } from "@/lib/emailjs";
 import { changelog } from "@/data/changelog";
 import {
@@ -400,6 +401,10 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
             </div>
           </div>
         </section>
+
+
+        {/* SECTION 1b - Notification preferences */}
+        <NotificationSettings />
 
 
         {/* SECTION 2 - Meteorologist application */}

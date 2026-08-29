@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
 import { useUnitSystem, toggleUnitSystem } from "@/hooks/useUnitSystem";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function MobileHeader() {
   const onlineCount = useOnlineCount();
@@ -89,6 +90,8 @@ export default function MobileHeader() {
         />
         {onlineCount} ONLINE
       </div>
+
+      <NotificationBell compact />
     </div>
   );
 }

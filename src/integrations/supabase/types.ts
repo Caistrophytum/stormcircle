@@ -350,6 +350,126 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_prefs: {
+        Row: {
+          alerts_new: boolean
+          alerts_upgrade: boolean
+          created_at: string
+          enabled: boolean
+          fire_outlook: boolean
+          quiet_end: number | null
+          quiet_start: number | null
+          spc_outlook: boolean
+          timezone: string | null
+          updated_at: string
+          user_id: string
+          wrs_delta: number
+          wrs_swings: boolean
+        }
+        Insert: {
+          alerts_new?: boolean
+          alerts_upgrade?: boolean
+          created_at?: string
+          enabled?: boolean
+          fire_outlook?: boolean
+          quiet_end?: number | null
+          quiet_start?: number | null
+          spc_outlook?: boolean
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+          wrs_delta?: number
+          wrs_swings?: boolean
+        }
+        Update: {
+          alerts_new?: boolean
+          alerts_upgrade?: boolean
+          created_at?: string
+          enabled?: boolean
+          fire_outlook?: boolean
+          quiet_end?: number | null
+          quiet_start?: number | null
+          spc_outlook?: boolean
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+          wrs_delta?: number
+          wrs_swings?: boolean
+        }
+        Relationships: []
+      }
+      notification_state: {
+        Row: {
+          active_alerts: Json
+          last_fire: string | null
+          last_spc: string | null
+          last_wrs: number | null
+          last_wrs_at: string | null
+          last_wrs_notified_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_alerts?: Json
+          last_fire?: string | null
+          last_spc?: string | null
+          last_wrs?: number | null
+          last_wrs_at?: string | null
+          last_wrs_notified_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_alerts?: Json
+          last_fire?: string | null
+          last_spc?: string | null
+          last_wrs?: number | null
+          last_wrs_at?: string | null
+          last_wrs_notified_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string
+          category: string
+          created_at: string
+          dedupe_key: string
+          id: string
+          payload: Json | null
+          read: boolean
+          severity: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          category: string
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          payload?: Json | null
+          read?: boolean
+          severity?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          payload?: Json | null
+          read?: boolean
+          severity?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           badge: string
@@ -377,6 +497,42 @@ export type Database = {
           location?: string | null
           meteorologist_applied?: boolean
           username?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_seen_at: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }

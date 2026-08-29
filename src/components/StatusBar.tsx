@@ -15,6 +15,7 @@ import {
 } from "@/hooks/useUnitSystem";
 import { useAuth } from "@/hooks/useAuth";
 import OnlineCounter from "@/components/OnlineCounter";
+import NotificationBell from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -316,6 +317,10 @@ const StatusBar = () => {
 
         <div className="shrink-0">
           <OnlineCounter />
+        </div>
+
+        <div className="shrink-0">
+          <NotificationBell />
         </div>
 
         {userRole === "guest" ? (
