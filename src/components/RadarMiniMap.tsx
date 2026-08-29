@@ -249,13 +249,17 @@ export const LeafletRadar = ({
       preferCanvas
       style={{ background: "#1a1a2e" }}
     >
+      {/* Basemap: Esri dark gray canvas. CARTO basemaps now require an API key
+          and stamp "API KEY REQUIRED" over the tiles, so we use Esri's
+          key-free service instead. */}
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-        subdomains="abcd"
+        attribution='&copy; <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, &copy; OpenStreetMap contributors'
+        url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
         maxZoom={20}
+        maxNativeZoom={16}
         {...tileOpts}
       />
+
       {interactive && !mobile && (
         <TileLayer
           url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
@@ -275,14 +279,16 @@ export const LeafletRadar = ({
       {interactive && <WarningPolygons ref={warningsRef} polygons={polygons} />}
       {interactive && (
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
-          subdomains="abcd"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
           opacity={0.9}
           attribution=""
           zIndex={1000}
+          maxZoom={20}
+          maxNativeZoom={16}
           {...tileOpts}
         />
       )}
+
       <Recenter station={station} />
       {onMap && <MapRefCapture onMap={onMap} />}
     </MapContainer>
