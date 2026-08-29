@@ -224,8 +224,68 @@ function ScoreRow({ r }: { r: ActivityResult }) {
               <>No meaningful hazards right now - conditions are clean.</>
             )}
           </div>
+
+          {/* Next 6 hours - one score chip per forecast hour. */}
+          {r.series.length > 1 && (
+            <div style={{ marginTop: 12 }}>
+              <div
+                style={{
+                  fontSize: 9,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.14em",
+                  color: "#71717a",
+                  marginBottom: 6,
+                }}
+              >
+                Next 6 hours
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(64px, 1fr))",
+                  gap: 6,
+                }}
+              >
+                {r.series.slice(1, 7).map((h, i) => {
+                  const c = TIER_COLOR[h.tier];
+                  return (
+                    <div
+                      key={h.time || i}
+                      title={`${h.time.slice(11, 16)}Z · ${h.tier} · Limiter: ${h.limiter}`}
+                      style={{
+                        borderRadius: 8,
+                        border: `1px solid ${c}55`,
+                        background: `${c}10`,
+                        padding: "6px 4px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <div style={{ fontSize: 9, color: "#a1a1aa", letterSpacing: "0.06em" }}>
+                        +{i + 1} h
+                      </div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: c, lineHeight: 1.15 }}>{h.score}</div>
+                      <div
+                        style={{
+                          fontSize: 8,
+                          color: c,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.06em",
+                        }}
+                      >
+                        {h.tier}
+                      </div>
+                      <div style={{ fontSize: 8, color: "#71717a", marginTop: 2 }}>
+                        {h.time ? `${h.time.slice(11, 16)}Z` : ""}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
+
     </div>
   );
 }
