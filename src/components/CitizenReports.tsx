@@ -928,9 +928,10 @@ function ComposerDropdowns({
                   onClick={async () => {
                     setLocating(true);
                     try {
-                      const label = await resolveDeviceCity();
-                      onPickPlace(label);
+                      const here = await resolveDeviceCityDetailed();
+                      onPickPlace(here.label, { lat: here.lat, lon: here.lon });
                       setOpen(null);
+
                     } catch (err) {
                       toast.error(err instanceof Error ? err.message : "Failed to locate.");
                     } finally {
