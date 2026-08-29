@@ -510,6 +510,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      run_maintenance: { Args: never; Returns: undefined }
       upsert_cron_secret: { Args: { _val: string }; Returns: undefined }
     }
     Enums: {
