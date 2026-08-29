@@ -243,6 +243,7 @@ const WARNING_CATEGORIES: { re: RegExp; key: HazardKey }[] = [
 /** Severity floor applied per warning rank. */
 const SEV_FLOOR: Record<number, number> = { 1: 45, 2: 70, 3: 90 };
 
+// Retained for the UI explainer only — no longer applied to the score.
 function warningFloors(list: NormWarning[]): Partial<Record<HazardKey, number>> {
   const out: Partial<Record<HazardKey, number>> = {};
   for (const w of list) {
@@ -253,18 +254,6 @@ function warningFloors(list: NormWarning[]): Partial<Record<HazardKey, number>> 
     }
   }
   return out;
-}
-
-// ── Hard gates ──────────────────────────────────────────────────────────
-// Only truly binary/life-safety events cap the score outright.
-function hardGate(warnings: NormWarning[]): { cap: number; label: string } | null {
-  const evac = warnings.find((w) => /evacuation|shelter in place/i.test(w.event));
-  if (evac) return { cap: 0, label: `Alert: ${evac.event}` };
-  const tor = warnings.find((w) => /tornado (warning|emergency)/i.test(w.event));
-  if (tor) return { cap: 0, label: `Alert: ${tor.event}` };
-  const extreme = warnings.find((w) => w.sev >= 3);
-  if (extreme) return { cap: 15, label: `Alert: ${extreme.event}` };
-  return null;
 }
 
 // ── Readable current-value strings for the UI ───────────────────────────
@@ -316,7 +305,7 @@ function scoreHour(
   });
 
   const totalPoints = raw.reduce((s, f) => s + f.points, 0);
-  let score = clamp(100 - totalPoints, 0, 100);
+  const score = clamp(100 - totalPoints, 0, 100);
 
   const factors: ComfortFactor[] = raw
     .map((f) => ({
