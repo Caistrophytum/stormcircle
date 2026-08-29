@@ -243,18 +243,8 @@ const WARNING_CATEGORIES: { re: RegExp; key: HazardKey }[] = [
 /** Severity floor applied per warning rank. */
 const SEV_FLOOR: Record<number, number> = { 1: 45, 2: 70, 3: 90 };
 
-// Retained for the UI explainer only — no longer applied to the score.
-function warningFloors(list: NormWarning[]): Partial<Record<HazardKey, number>> {
-  const out: Partial<Record<HazardKey, number>> = {};
-  for (const w of list) {
-    for (const c of WARNING_CATEGORIES) {
-      if (!c.re.test(w.event)) continue;
-      const floor = SEV_FLOOR[w.sev] ?? 45;
-      if ((out[c.key] ?? 0) < floor) out[c.key] = floor;
-    }
-  }
-  return out;
-}
+
+
 
 // ── Readable current-value strings for the UI ───────────────────────────
 function details(h: HourlyPoint, aqi: number | null): Record<HazardKey, string> {
