@@ -1,5 +1,5 @@
 /**
- * FAQ.tsx — Frequently Asked Questions page.
+ * FAQ.tsx - Frequently Asked Questions page.
  * Matches the site's Avionics Command Deck aesthetic: dark obsidian bg,
  * neon amber primary, JetBrains Mono for labels/headings, Inter for body.
  * Uses collapsible accordion items so each answer stays compact.
@@ -76,20 +76,20 @@ export default function FAQ({ hideBackButton = false }: { hideBackButton?: boole
   return (
     <>
       <Helmet>
-        <title>FAQ — StormCircle Weather Social Network</title>
+        <title>FAQ - StormCircle Weather Social Network</title>
         <meta
           name="description"
           content="Answers to common questions about StormCircle: what it is, who it's for, how to report storms, and how meteorologists use the platform."
         />
         <link rel="canonical" href="https://stormcircle.net/faq" />
-        <meta property="og:title" content="StormCircle FAQ — Your Questions Answered" />
+        <meta property="og:title" content="StormCircle FAQ - Your Questions Answered" />
         <meta
           property="og:description"
           content="Everything you need to know about StormCircle, the real-time weather social network."
         />
         <meta property="og:url" content="https://stormcircle.net/faq" />
         <meta property="og:type" content="website" />
-        {/* FAQPage structured data — enables rich results in Google search. */}
+        {/* FAQPage structured data - enables rich results in Google search. */}
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
@@ -105,7 +105,7 @@ export default function FAQ({ hideBackButton = false }: { hideBackButton?: boole
 
       <main className="min-h-[100dvh] bg-background text-foreground overflow-y-auto">
         <div className="max-w-3xl mx-auto px-6 py-12">
-          {/* Back button — hidden on mobile overlay where a close button already exists */}
+          {/* Back button - hidden on mobile overlay where a close button already exists */}
           {!hideBackButton && (
             <button
               onClick={() => navigate("/")}
@@ -126,7 +126,7 @@ export default function FAQ({ hideBackButton = false }: { hideBackButton?: boole
               Frequently Asked Questions
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
-              Everything you need to know about StormCircle — the weather social network connecting meteorologists and
+              Everything you need to know about StormCircle - the weather social network connecting meteorologists and
               the public in real time.
             </p>
           </div>

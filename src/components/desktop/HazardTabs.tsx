@@ -1,8 +1,8 @@
 /**
  * Top-left hazard stack.
  *
- * DangerousPanel — standalone panel showing the 10 most dangerous alerts.
- * HazardTabs     — two-tab panel (Common, New) beneath it.
+ * DangerousPanel - standalone panel showing the 10 most dangerous alerts.
+ * HazardTabs     - two-tab panel (Common, New) beneath it.
  *
  * Both share the DesktopDock aesthetic. Width matches the chatbox
  * (calc((100vw - 56px) / 3)). Each panel has its own collapse toggle and

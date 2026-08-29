@@ -1,5 +1,5 @@
 /**
- * useHomeCityFireRisk — resolves the SPC Day 1 Fire Weather categorical risk
+ * useHomeCityFireRisk - resolves the SPC Day 1 Fire Weather categorical risk
  * for the user's saved home city via point-in-polygon against SPC's Fire
  * Weather MapServer (layer 1, categorical).
  *

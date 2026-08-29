@@ -1,9 +1,9 @@
 /**
- * Auth.tsx — single page that hosts four auth flows behind a tabbed UI:
- *   • login   — sign in with email OR username + password
- *   • signup  — create account (with honeypot anti-bot field)
- *   • forgot  — request a password reset email
- *   • resend  — re-request the signup confirmation email
+ * Auth.tsx - single page that hosts four auth flows behind a tabbed UI:
+ *   • login   - sign in with email OR username + password
+ *   • signup  - create account (with honeypot anti-bot field)
+ *   • forgot  - request a password reset email
+ *   • resend  - re-request the signup confirmation email
  *
  * Security hardening already applied here:
  *   • Honeypot field on signup silently rejects bots
@@ -58,7 +58,7 @@ const usernameSchema = z
   .min(3, { message: "Username must be at least 3 characters" })
   .max(32, { message: "Username must be 32 characters or less" })
   // Restricting the alphabet here means usernames can never contain HTML
-  // tags, quotes, semicolons, etc. — a free input-sanitization layer.
+  // tags, quotes, semicolons, etc. - a free input-sanitization layer.
   .regex(/^[a-zA-Z0-9_]+$/, { message: "Username may only contain letters, numbers, and underscores" });
 const passwordSchema = z
   .string()
@@ -83,7 +83,7 @@ const Auth = () => {
   const [suEmail, setSuEmail] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suConfirm, setSuConfirm] = useState("");
-  // Honeypot — real users never fill this; bots typically auto-fill all fields
+  // Honeypot - real users never fill this; bots typically auto-fill all fields
   const [suHoneypot, setSuHoneypot] = useState("");
 
   // Forgot state
@@ -101,7 +101,7 @@ const Auth = () => {
    *   2. If username, look up the matching email in `profiles`
    *   3. Call signInWithPassword with that email
    *
-   * Every failure path returns the SAME generic error message — never tell
+   * Every failure path returns the SAME generic error message - never tell
    * the attacker whether the username/email exists vs the password is wrong.
    */
   const handleLogin = async (e: FormEvent) => {
@@ -141,7 +141,7 @@ const Auth = () => {
         password: loginPassword,
       });
       if (error) {
-        // Always return the same generic message — never reveal whether
+        // Always return the same generic message - never reveal whether
         // the email exists or whether only the password was wrong
         toast.error(GENERIC_AUTH_ERROR);
         return;
@@ -155,10 +155,10 @@ const Auth = () => {
 
   /**
    * Signup flow:
-   *   1. Honeypot check — bots fill every input including the hidden one
+   *   1. Honeypot check - bots fill every input including the hidden one
    *   2. Confirm password matches
    *   3. Validate username/email/password against the schemas above
-   *   4. Hand off to Supabase signUp() — the database trigger
+   *   4. Hand off to Supabase signUp() - the database trigger
    *      `handle_new_user` will auto-create the matching profiles row
    *
    * The username is sent in `options.data` so the trigger can pick it up
@@ -166,7 +166,7 @@ const Auth = () => {
    */
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
-    // Honeypot check — silently reject bots without telling them why
+    // Honeypot check - silently reject bots without telling them why
     if (suHoneypot.trim() !== "") {
       toast.success("Check your email to confirm your account");
       return;
@@ -219,7 +219,7 @@ const Auth = () => {
       });
       if (error) {
         // Race: another signup grabbed the username between the pre-check
-        // and the auth insert — the trigger raises 23505 and Supabase Auth
+        // and the auth insert - the trigger raises 23505 and Supabase Auth
         // returns a 500 "unexpected_failure". Translate to a friendly msg.
         const raw = error.message ?? "";
         if (
@@ -318,13 +318,13 @@ const Auth = () => {
   return (
     <>
       <Helmet>
-        <title>Sign In — StormCircle</title>
+        <title>Sign In - StormCircle</title>
         <meta
           name="description"
           content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city."
         />
         <link rel="canonical" href="https://stormcircle.net/auth" />
-        <meta property="og:title" content="Sign In — StormCircle" />
+        <meta property="og:title" content="Sign In - StormCircle" />
         <meta
           property="og:description"
           content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city."
@@ -446,7 +446,7 @@ const Auth = () => {
 
               {view === "signup" && (
                 <form onSubmit={handleSignUp} className="space-y-4">
-                  {/* Honeypot — hidden from real users; bots will auto-fill it */}
+                  {/* Honeypot - hidden from real users; bots will auto-fill it */}
                   <div
                     aria-hidden="true"
                     style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}

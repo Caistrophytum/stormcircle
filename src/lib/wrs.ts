@@ -1,14 +1,14 @@
 /**
- * wrs.ts — single source of truth for the Weather Risk Score (WRS) math.
+ * wrs.ts - single source of truth for the Weather Risk Score (WRS) math.
  *
  * Both the desktop hook (`useWRSMetrics`) and the mobile dashboard
  * (`MobileMain`) call `computeWRS()` so the weights, gates and colour
  * thresholds can never drift apart.
  *
  * Model (see comments inline):
- *   • Virtual block  — CAPE (37.5), SHEAR (31.25), EL (18.75), LCL (12.5).
+ *   • Virtual block  - CAPE (37.5), SHEAR (31.25), EL (18.75), LCL (12.5).
  *     CIN is NOT additive: it is a multiplicative gate that subtracts points.
- *   • Physical block — SFC RH 50%, MID RH 35%, MID LAPSE 15% → `physGate`,
+ *   • Physical block - SFC RH 50%, MID RH 35%, MID LAPSE 15% → `physGate`,
  *     a log-shaped multiplier applied to the whole virtual block.
  */
 import { displayLengthM, type UnitSystem } from "@/hooks/useUnitSystem";
@@ -79,7 +79,7 @@ export function computeWRS(opts: {
   // ── Formatters ────────────────────────────────────────────────────
   const guard = (v: number | null): string | null => {
     if (sounding.loading) return "...";
-    if (!hasStation) return "—";
+    if (!hasStation) return "-";
     if (v == null) return "ERR";
     return null;
   };
@@ -106,7 +106,7 @@ export function computeWRS(opts: {
   const capeScore = sounding.cape != null ? clamp01(sounding.cape / 4000) : 0;
   const cinMagnitude = sounding.cin != null ? Math.abs(sounding.cin) : 0;
   const cinScore = sounding.cin != null ? clamp01(1 - cinMagnitude / 200) : 0;
-  // Bulk shear (850↔500 hPa, m/s) — 20 m/s ≈ supercell-organization ceiling.
+  // Bulk shear (850↔500 hPa, m/s) - 20 m/s ≈ supercell-organization ceiling.
   const shearScore = sounding.shear != null ? clamp01(sounding.shear / 20) : 0;
   const lclScore = sounding.lcl != null ? clamp01(1 - sounding.lcl / 2000) : 0;
   // EL viable 4→14 km AGL (deep convection ceiling).

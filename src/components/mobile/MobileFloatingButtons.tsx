@@ -1,12 +1,12 @@
 /**
- * MobileFloatingButtons — the bottom-right action row on mobile.
+ * MobileFloatingButtons - the bottom-right action row on mobile.
  *
  * Buttons (left → right):
- *   • FAQ      — opens the FAQ page overlay (mirrors the desktop StatusBar FAQ link)
- *   • Account  — opens AccountCenter (sign in / profile / hometown / settings)
- *   • Chat     — opens CitizenReports (the public chat / report feed)
- *   • Alerts   — opens the latest Professional Weather Reports / LSR report list
- *   • Radar    — opens the full-screen radar mini-map
+ *   • FAQ      - opens the FAQ page overlay (mirrors the desktop StatusBar FAQ link)
+ *   • Account  - opens AccountCenter (sign in / profile / hometown / settings)
+ *   • Chat     - opens CitizenReports (the public chat / report feed)
+ *   • Alerts   - opens the latest Professional Weather Reports / LSR report list
+ *   • Radar    - opens the full-screen radar mini-map
  *
  * A trailing chevron toggles the whole row so the user can hide the buttons
  * when they obscure underlying content. The chevron itself stays visible.
@@ -21,7 +21,7 @@ interface Props {
 }
 
 export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen }: Props) {
-  // Order matters — FAQ is placed first (leftmost) per spec, immediately
+  // Order matters - FAQ is placed first (leftmost) per spec, immediately
   // followed by Account so the help affordance sits next to the user's hub.
   // Exercise sits between Account and Chat so wellness features cluster with
   // personal (Account) rather than tactical (Radar/Alerts).
@@ -47,7 +47,7 @@ export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen
         zIndex: 500,
       }}
     >
-      {/* The action button group — fades out (pointer-events disabled) when hidden. */}
+      {/* The action button group - fades out (pointer-events disabled) when hidden. */}
       <div
         style={{
           display: "flex",
@@ -83,7 +83,7 @@ export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen
         ))}
       </div>
 
-      {/* Persistent toggle chevron — always interactive so users can re-show the row. */}
+      {/* Persistent toggle chevron - always interactive so users can re-show the row. */}
       <button
         aria-label={buttonsVisible ? "Hide actions" : "Show actions"}
         onClick={onToggle}

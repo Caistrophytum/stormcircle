@@ -1,5 +1,5 @@
 /**
- * StormCircle changelog — shown in Account Center → Recent Updates.
+ * StormCircle changelog - shown in Account Center → Recent Updates.
  *
  * To add a new entry, prepend it to the top of the array (newest first).
  * `tag` controls the colored badge:

@@ -1,5 +1,5 @@
 /**
- * useWRSMetrics — desktop-side wiring for the WRS model.
+ * useWRSMetrics - desktop-side wiring for the WRS model.
  *
  * All scoring math lives in `src/lib/wrs.ts` (shared with mobile); this hook
  * only feeds it the selected city's sounding + unit system and adapts the

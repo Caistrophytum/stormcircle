@@ -1,12 +1,12 @@
 /**
- * MobileLayout — root container for the mobile (<1024px) experience.
+ * MobileLayout - root container for the mobile (<1024px) experience.
  *
  * Structure (top → bottom):
- *   • MobileHeader   — fixed 10dvh strip with logo, UTC clock, online count
- *   • MobileMain     — scrollable content (welcome, hometown risk, SPC bot,
+ *   • MobileHeader   - fixed 10dvh strip with logo, UTC clock, online count
+ *   • MobileMain     - scrollable content (welcome, hometown risk, SPC bot,
  *                       environmental metrics, WRS bar, latest chat)
  *   • Floating action buttons (bottom-right): FAQ, Account, Chat, Alerts, Radar
- *   • MobileScreen   — full-screen overlay rendered when a floating button
+ *   • MobileScreen   - full-screen overlay rendered when a floating button
  *                       is activated. Hosts FAQ / AccountCenter / CitizenReports
  *                       / Professional Weather Reports list / MobileRadar.
  *
@@ -22,7 +22,7 @@ import MobileScreen from "./MobileScreen";
 
 // Identifiers for every overlay screen reachable from the floating button row.
 // "faq" was added to surface the FAQ page on mobile (desktop links to /faq
-// from the StatusBar — mobile has no status bar, so we use an overlay instead).
+// from the StatusBar - mobile has no status bar, so we use an overlay instead).
 export type MobileScreenId = "faq" | "account" | "chat" | "alerts" | "radar" | "exercise";
 
 export default function MobileLayout() {
@@ -46,12 +46,12 @@ export default function MobileLayout() {
           position: "relative",
         }}
       >
-        {/* Top strip — fixed height so it never collapses under content. */}
+        {/* Top strip - fixed height so it never collapses under content. */}
         <div style={{ height: "10dvh", flexShrink: 0 }}>
           <MobileHeader />
         </div>
 
-        {/* Main scrollable area — wrapped in a <main> landmark so screen
+        {/* Main scrollable area - wrapped in a <main> landmark so screen
             readers can jump to primary content (a11y). */}
         <main style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
           <MobileMain />
@@ -64,7 +64,7 @@ export default function MobileLayout() {
           onOpen={setActiveScreen}
         />
 
-        {/* Full-screen overlay — only mounted when a screen is active so
+        {/* Full-screen overlay - only mounted when a screen is active so
             hidden screens don't run their data subscriptions. */}
         {activeScreen && (
           <MobileScreen screen={activeScreen} onClose={() => setActiveScreen(null)} />

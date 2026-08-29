@@ -1,5 +1,5 @@
 /**
- * useOnlineCount — thin selector over the shared DataProvider. The presence
+ * useOnlineCount - thin selector over the shared DataProvider. The presence
  * channel is opened ONCE for the whole page instead of once per consumer.
  */
 import { useDataContext } from "@/providers/DataProvider";

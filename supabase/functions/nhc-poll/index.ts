@@ -99,7 +99,7 @@ async function fetchWithTimeout(url: string, ms: number, init: RequestInit = {})
 
 // Fetch the NHC Public Advisory and pull out its one-line headline
 // (the "...HEADLINE GOES HERE..." line that sits right above the SUMMARY).
-// Kept defensive — returns null on any failure so the bot still posts.
+// Kept defensive - returns null on any failure so the bot still posts.
 async function fetchAdvisoryHeadline(url: string): Promise<string | null> {
   if (!url) return null;
   try {
@@ -118,7 +118,7 @@ async function fetchAdvisoryHeadline(url: string): Promise<string | null> {
 }
 
 function advisoryMsg(s: NormStorm, isNew: boolean, headline: string | null): string {
-  const header = isNew ? `🌀 NEW STORM: ${s.name} — ${s.classification_label}` : `🌀 ADVISORY UPDATE: ${s.name}`;
+  const header = isNew ? `🌀 NEW STORM: ${s.name} - ${s.classification_label}` : `🌀 ADVISORY UPDATE: ${s.name}`;
   return [header,
     headline ? `📢 ${headline}` : ``,
     ``,
@@ -129,7 +129,7 @@ function advisoryMsg(s: NormStorm, isNew: boolean, headline: string | null): str
     `Movement: ${s.movement_dir_compass} at ${Math.round(s.movement_speed * 1.151)} mph`,
     ``,
     s.is_dangerous && s.forecast_graphics_url
-      ? `⚠️ DANGEROUS STORM — See forecast: ${s.forecast_graphics_url}`
+      ? `⚠️ DANGEROUS STORM - See forecast: ${s.forecast_graphics_url}`
       : ``,
     `<!--hadv:${s.storm_id}:${s.last_update}-->`,
   ].filter(Boolean).join("\n");
@@ -138,7 +138,7 @@ function dangerMsg(s: NormStorm, headline: string | null): string {
   return [`🔴 ${s.danger_level}: ${s.name.toUpperCase()}`,
     headline ? `📢 ${headline}` : ``,
     ``,
-    `Winds: ${s.intensity_mph} mph — Pressure: ${s.pressure} mb`,
+    `Winds: ${s.intensity_mph} mph - Pressure: ${s.pressure} mb`,
     `Current position: ${s.lat_str}, ${s.lon_str}`,
     `Moving: ${s.movement_dir_compass} at ${Math.round(s.movement_speed * 1.151)} mph`, ``,
     s.discussion_url ? `📊 Forecast discussion: ${s.discussion_url}` : ``,
@@ -242,7 +242,7 @@ Deno.serve(async (req) => {
       if (insErr) console.warn("[nhc-poll] bot insert failed:", insErr);
     }
 
-    // Remove storms NHC dropped — single .in() delete instead of N deletes.
+    // Remove storms NHC dropped - single .in() delete instead of N deletes.
     const currentIds = new Set(storms.map((s) => s.storm_id));
     const removedIds = Array.from(existingMap.keys()).filter((id) => !currentIds.has(id));
     if (removedIds.length > 0) {
@@ -277,7 +277,7 @@ Deno.serve(async (req) => {
         body = [`🌀 HURRICANE SEASON STATUS`, ``,
           `${season.basin} season is ${season.active ? "ACTIVE" : "INACTIVE"}.`,
           `Current active storms: ${storms.length}`,
-          lastAdvisory ? `Last advisory: ${fmtAdv(lastAdvisory)}` : `Last advisory: —`,
+          lastAdvisory ? `Last advisory: ${fmtAdv(lastAdvisory)}` : `Last advisory: -`,
           ensoLine ?? ``, STATUS_MARKER].filter(Boolean).join("\n");
       }
       await postBot(supabase, body);

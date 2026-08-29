@@ -2,7 +2,7 @@
 //
 // Source: https://ims.gov.il/.../rssAlert_general_country_en.xml
 //
-// The feed is prose-only — no geometry, no structured fields:
+// The feed is prose-only - no geometry, no structured fields:
 //   "Orange Warning of HEAT STRESS in Bet Shean Valley, in Jordan Valley and
 //    in Arava on 03/08 from 10 until 21 LT."
 //
@@ -118,7 +118,7 @@ function titleCase(s: string): string {
 /** Split "A, in B, in C and in D" (or "A and B") into region phrases. */
 function splitAreas(raw: string): string[] {
   return raw
-    // NOTE: never split on a bare " and " — several IMS region names contain
+    // NOTE: never split on a bare " and " - several IMS region names contain
     // it ("North Judea Desert and Dead Sea", "Centeral and South Coast").
     .split(/,?\s*\band\s+in\s+|,\s*in\s+|\s*;\s*/i)
     .map((s) => s.replace(/^\s*in\s+/i, "").trim())
@@ -174,7 +174,7 @@ export function parseWarning(
     ? regionsToGeometry([ISRAEL_BOX])
     : regionsToGeometry(boxes);
   // Unmatched region names would leave the warning invisible on the map and
-  // undetectable for a hometown — skip rather than publish a ghost row.
+  // undetectable for a hometown - skip rather than publish a ghost row.
   if (!geometry) return null;
 
   // ----- validity window -----

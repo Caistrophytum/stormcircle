@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
 /**
- * useViewportScaling — proportionally scales the app's root font size based
+ * useViewportScaling - proportionally scales the app's root font size based
  * on viewport width relative to a 1440px base design. Only active on
  * desktop/landscape (>=1024px). Scale is clamped to [0.6, 1.4] to prevent
  * extreme distortion. Borders, border-radius, and box-shadows defined in px

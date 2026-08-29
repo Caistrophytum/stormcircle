@@ -1,5 +1,5 @@
 /**
- * main.tsx — application entry point.
+ * main.tsx - application entry point.
  *
  * Mounts <App /> inside a single <DataProvider> so every component that needs
  * alerts, polygons, the current user, LSRs, or the online count shares ONE

@@ -1,10 +1,10 @@
 /**
- * AccountCenter.tsx — the signed-in user's "settings" page. Three sections:
+ * AccountCenter.tsx - the signed-in user's "settings" page. Three sections:
  *
- *   1. Operator Profile — username/email/badge readout + Logout / Delete
- *   2. Meteorologist Badge — application form (only shown to Citizens who
+ *   1. Operator Profile - username/email/badge readout + Logout / Delete
+ *   2. Meteorologist Badge - application form (only shown to Citizens who
  *      haven't applied yet) or "under review" status (after applying)
- *   3. Contact / Feedback — generic message form to stormcirclecontact@gmail.com
+ *   3. Contact / Feedback - generic message form to stormcirclecontact@gmail.com
  *
  * Both forms (badge application and contact) share a 60-second cooldown so
  * a single user can't drain the EmailJS free-tier quota by spamming submits.
@@ -123,7 +123,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
     if (profile?.email && !appEmail) setAppEmail(profile.email);
   }, [profile, appEmail]);
 
-  // Gate only on auth loading — render page immediately once auth resolves.
+  // Gate only on auth loading - render page immediately once auth resolves.
   // Profile-dependent sections handle their own loading/error state inline.
   if (loading) {
     return (
@@ -182,7 +182,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
    *   1. Validate inputs (length limits enforced both here AND via maxLength
    *      on the inputs themselves)
    *   2. Respect the shared 60s email cooldown
-   *   3. Try to send the EmailJS notification (best effort — we still mark
+   *   3. Try to send the EmailJS notification (best effort - we still mark
    *      the application as submitted even if email fails)
    *   4. Flip `meteorologist_applied` to true on the profile row. The
    *      database trigger `prevent_meteorologist_reapply` makes sure the
@@ -214,7 +214,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
       if (isEmailJsConfigured()) {
         try {
           await sendEmail(TEMPLATE_IDS.meteorologistApplication, {
-            subject: `Meteorologist Badge Application — ${profile.username}`,
+            subject: `Meteorologist Badge Application - ${profile.username}`,
             from_email: email,
             reply_to: email,
             name: `${first} ${last}`,
@@ -238,7 +238,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
 
       if (emailSent) {
         startCooldown();
-        toast.success("Application submitted — we'll be in touch");
+        toast.success("Application submitted - we'll be in touch");
       } else if (emailError) {
         toast.warning(`Application saved, but email failed: ${emailError}`);
       } else {
@@ -263,7 +263,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
     if (!subjectParsed.success) return toast.error("Invalid subject");
 
     if (!isEmailJsConfigured()) {
-      toast.error("Email is not configured yet — message could not be sent.");
+      toast.error("Email is not configured yet - message could not be sent.");
       return;
     }
 
@@ -299,10 +299,10 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
   return (
     <>
       <Helmet>
-        <title>Account Center — StormCircle</title>
+        <title>Account Center - StormCircle</title>
         <meta name="description" content="Manage your StormCircle operator profile, meteorologist badge application, home city, and account settings." />
         <link rel="canonical" href="https://stormcircle.net/account" />
-        <meta property="og:title" content="Account Center — StormCircle" />
+        <meta property="og:title" content="Account Center - StormCircle" />
         <meta property="og:description" content="Manage your StormCircle operator profile, meteorologist badge application, home city, and account settings." />
         <meta property="og:url" content="https://stormcircle.net/account" />
       </Helmet>
@@ -327,7 +327,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
           </p>
         </header>
 
-        {/* SECTION 1 — Profile */}
+        {/* SECTION 1 - Profile */}
         <section className="glass-panel relative z-20 rounded-sm overflow-visible">
           <SectionHeader icon={UserIcon} label="Operator Profile" hint="STRATO.OPS" />
           <div className="p-5 space-y-5">
@@ -402,7 +402,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
         </section>
 
 
-        {/* SECTION 2 — Meteorologist application */}
+        {/* SECTION 2 - Meteorologist application */}
         {(showApplication || showUnderReview) && (
           <section className="glass-panel rounded-sm overflow-hidden">
             <SectionHeader icon={ShieldCheck} label="Meteorologist Badge" />
@@ -415,7 +415,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
               ) : (
                 <form onSubmit={handleApplication} className="space-y-4">
                   <p className="text-[11px] font-mono text-muted-foreground leading-relaxed">
-                    Apply for the Meteorologist badge. Tell us about your background — minimum 50 characters.
+                    Apply for the Meteorologist badge. Tell us about your background - minimum 50 characters.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
@@ -487,7 +487,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
           </section>
         )}
 
-        {/* SECTION 3 — Contact / Feedback */}
+        {/* SECTION 3 - Contact / Feedback */}
         {profile && (
         <section className="glass-panel rounded-sm overflow-hidden">
           <SectionHeader icon={Mail} label="Contact / Feedback" />
@@ -548,7 +548,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
 
 
 
-        {/* SECTION 4 — Recent Updates / Changelog */}
+        {/* SECTION 4 - Recent Updates / Changelog */}
         <section className="glass-panel rounded-sm overflow-hidden">
           <SectionHeader icon={Sparkles} label="Recent Updates" hint="What's new on StormCircle™, 04/26" />
           <div className="p-5">

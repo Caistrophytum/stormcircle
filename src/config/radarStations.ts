@@ -1,11 +1,11 @@
 /**
- * radarStations.ts — static list of every CONUS NEXRAD WSR-88D radar site.
+ * radarStations.ts - static list of every CONUS NEXRAD WSR-88D radar site.
  *
  * Source: NOAA / NWS public station catalog. Coordinates are the radar's
  * physical location (not the city center). Used by `findNearestStation` in
  * src/lib/nearestStation.ts to pick the best site for any given lat/lon.
  *
- * Adding a station: just append a new object — no other code changes needed.
+ * Adding a station: just append a new object - no other code changes needed.
  */
 
 export interface RadarStation {

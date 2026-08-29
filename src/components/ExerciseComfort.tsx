@@ -1,5 +1,5 @@
 /**
- * ExerciseComfort — modal panel that scores outdoor activity comfort for the
+ * ExerciseComfort - modal panel that scores outdoor activity comfort for the
  * user's home city over the next 6 hours. Reachable from a top-center button
  * on desktop and a bottom-nav icon on mobile.
  *
@@ -69,7 +69,7 @@ function ScoreRow({ r }: { r: ActivityResult }) {
     return r.best.time.slice(11, 16) + "Z";
   })();
 
-  // Every hazard is shown — even at 0 points — so the additive maths is legible.
+  // Every hazard is shown - even at 0 points - so the additive maths is legible.
   const factors = r.now.factors;
   const totalPoints = factors.reduce((s, f) => s + f.points, 0);
 
@@ -221,7 +221,7 @@ function ScoreRow({ r }: { r: ActivityResult }) {
                 {factors[0].penalty}/100 severity × {factors[0].maxPoints} pt budget for {meta.label.toLowerCase()}.
               </>
             ) : (
-              <>No meaningful hazards right now — conditions are clean.</>
+              <>No meaningful hazards right now - conditions are clean.</>
             )}
           </div>
         </div>
@@ -239,7 +239,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const data = useExerciseComfortData(home.coords);
 
   // Dedupe warnings by event (keeping the highest severity), only those whose
-  // polygon covers the home point. Works for any feed in `active_alerts` —
+  // polygon covers the home point. Works for any feed in `active_alerts` -
   // NWS products and IMS colour-tier warnings alike.
   const activeWarnings = useMemo(() => {
     if (!home.coords) return [] as { event: string; severity?: string | null }[];
@@ -277,7 +277,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const loading = data.loading && !data.hourly.length;
   const isMobile = useMobile();
 
-  const subtitle = hasLocation ? `${location} — now + next 6 h` : "Set a hometown to compute local comfort";
+  const subtitle = hasLocation ? `${location} - now + next 6 h` : "Set a hometown to compute local comfort";
 
   const body = (
     <div style={{ fontFamily: "'JetBrains Mono', monospace", color: "#e8e8e8" }}>
@@ -290,7 +290,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
       {hasLocation && loading && <div style={{ padding: 20, fontSize: 12, color: "#a1a1aa" }}>Loading forecast…</div>}
       {hasLocation && !loading && !results.length && (
         <div style={{ padding: 20, fontSize: 12, color: "#ff6b6b" }}>
-          Couldn't load the forecast — try again in a minute.
+          Couldn't load the forecast - try again in a minute.
         </div>
       )}
       {activeWarnings.length > 0 && (
@@ -351,7 +351,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
     </div>
   );
 
-  // Mobile: render inline full-width inside the MobileScreen shell — the
+  // Mobile: render inline full-width inside the MobileScreen shell - the
   // desktop FloatingWindow anchors to #desktop-dock which doesn't exist on
   // mobile, so its geometry would collapse to a thin column.
   if (isMobile) {

@@ -1,5 +1,5 @@
 /**
- * LocationPicker — search-bar UI used in the Operator Profile section of the
+ * LocationPicker - search-bar UI used in the Operator Profile section of the
  * Account Center to let a user set/change their saved home city. Uses
  * Open-Meteo geocoding via useCitySearch and persists to profiles.location.
  */

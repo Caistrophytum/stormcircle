@@ -1,5 +1,5 @@
 /**
- * MobileScreen — full-screen overlay rendered above MobileLayout when one of
+ * MobileScreen - full-screen overlay rendered above MobileLayout when one of
  * the floating action buttons is activated. Hosts every "secondary" surface:
  *
  *   • faq      → embedded FAQ page (mirrors /faq from desktop StatusBar)
@@ -41,7 +41,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
       }}
     >
       <div style={{ flex: 1, overflow: "auto", position: "relative" }}>
-        {/* FAQ — reuses the same page rendered at /faq on desktop. Extra bottom
+        {/* FAQ - reuses the same page rendered at /faq on desktop. Extra bottom
             padding so the floating "Return" button never overlaps the last item. */}
         {screen === "faq" && (
           <div style={{ paddingBottom: "72px" }}>
@@ -64,7 +64,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
 
         {screen === "alerts" && <MobileAlertsPanel />}
 
-        {/* Exercise comfort — the component IS the modal; we render it with
+        {/* Exercise comfort - the component IS the modal; we render it with
             open=true and route its close callback back to the screen closer.
             The floating Return button below still works as a fallback. */}
         {screen === "exercise" && <ExerciseComfort open onClose={onClose} />}

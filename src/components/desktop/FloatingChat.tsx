@@ -1,5 +1,5 @@
 /**
- * FloatingChat — bottom-right square glassy chat panel.
+ * FloatingChat - bottom-right square glassy chat panel.
  * Wraps CitizenReports and flashes a white border when a new message arrives.
  */
 import { useEffect, useState } from "react";
@@ -38,7 +38,7 @@ export default function FloatingChat() {
         transition: "border-color 200ms ease, box-shadow 200ms ease",
       }}
     >
-      {/* CitizenReports renders an <aside class="w-80 h-full …"> — override
+      {/* CitizenReports renders an <aside class="w-80 h-full …"> - override
           with a wrapping div that forces full-width fill of our square. */}
       <div className="h-full w-full [&>aside]:!w-full [&>aside]:!border-0 [&>aside]:!bg-transparent">
         <CitizenReports />

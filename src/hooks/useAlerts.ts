@@ -1,5 +1,5 @@
 /**
- * useAlerts — thin selector over the shared DataProvider.
+ * useAlerts - thin selector over the shared DataProvider.
  *
  * Types are exported here so all existing imports (`from "@/hooks/useAlerts"`)
  * continue to work unchanged. The actual fetching, derivation, and realtime

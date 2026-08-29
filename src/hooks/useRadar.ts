@@ -86,7 +86,7 @@ export function useRadar() {
     setSelectedStation(station);
     setStationDistanceKm(0);
 
-    // station.name is "City, ST" — the second token is the US state abbrev
+    // station.name is "City, ST" - the second token is the US state abbrev
     // (e.g. "FL" for KMLB). We MUST constrain the reverse-geocode to US +
     // that state, otherwise homonyms like Melbourne, AU or Birmingham, UK
     // silently outrank Melbourne, FL / Birmingham, AL and hijack the map.

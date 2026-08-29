@@ -1,5 +1,5 @@
 /**
- * BotsTab — grid of bot buttons (SPC, Fire, Hurricane, others).
+ * BotsTab - grid of bot buttons (SPC, Fire, Hurricane, others).
  * Clicking a button opens a FloatingWindow with that bot's latest messages.
  */
 import { useEffect, useMemo, useState } from "react";

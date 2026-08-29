@@ -1,11 +1,11 @@
 /**
- * MobileAlertsPanel — the mobile equivalent of the desktop EventInfoPanel +
+ * MobileAlertsPanel - the mobile equivalent of the desktop EventInfoPanel +
  * LSR list. Renders four collapsible/expandable sections, top-to-bottom:
  *
  *   1. Top 10 Most Dangerous   (from useAlerts.mostDangerous)
  *   2. Top 10 Hazards          (most common active warnings, from useAlerts.topHazards)
  *   3. New Warnings            (first-seen in the last 5 refresh cycles,
- *                               from useAlerts.newWarnings — same rolling
+ *                               from useAlerts.newWarnings - same rolling
  *                               window timer as the desktop card)
  *   4. Professional Weather Reports (latest LSRs from useLSR)
  *
@@ -281,7 +281,7 @@ export default function MobileAlertsPanel() {
         gap: "8px",
       }}
     >
-      {/* 1. Top 10 Most Dangerous — sorted by severity/kind/tags via useAlerts.dangerScore */}
+      {/* 1. Top 10 Most Dangerous - sorted by severity/kind/tags via useAlerts.dangerScore */}
       <Section
         title="Top 10 Most Dangerous"
         open={openDangerous}
@@ -330,7 +330,7 @@ export default function MobileAlertsPanel() {
         ))}
       </Section>
 
-      {/* 2. Top 10 Hazards — counts of each event type, descending */}
+      {/* 2. Top 10 Hazards - counts of each event type, descending */}
       <Section
         title="Top 10 Hazards"
         open={openHazards}
@@ -348,7 +348,7 @@ export default function MobileAlertsPanel() {
         ))}
       </Section>
 
-      {/* 3. New Warnings — warnings first observed inside the last 5 refresh cycles */}
+      {/* 3. New Warnings - warnings first observed inside the last 5 refresh cycles */}
       <Section
         title="New Warnings"
         open={openNew}
@@ -366,7 +366,7 @@ export default function MobileAlertsPanel() {
         ))}
       </Section>
 
-      {/* 4. Professional Weather Reports — latest LSRs from IEM (2 h rolling window) */}
+      {/* 4. Professional Weather Reports - latest LSRs from IEM (2 h rolling window) */}
       <Section
         title="Professional Weather Reports"
         open={openLSR}
