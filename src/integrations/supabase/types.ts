@@ -554,6 +554,24 @@ export type Database = {
         }
         Relationships: []
       }
+      site_visitors: {
+        Row: {
+          first_seen_at: string
+          last_seen_at: string
+          visitor_id: string
+        }
+        Insert: {
+          first_seen_at?: string
+          last_seen_at?: string
+          visitor_id: string
+        }
+        Update: {
+          first_seen_at?: string
+          last_seen_at?: string
+          visitor_id?: string
+        }
+        Relationships: []
+      }
       spc_outlook_state: {
         Row: {
           groups: Json | null
@@ -666,6 +684,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      register_visit: { Args: { _visitor_id: string }; Returns: number }
       run_maintenance: { Args: never; Returns: undefined }
       upsert_cron_secret: { Args: { _val: string }; Returns: undefined }
     }
