@@ -240,32 +240,9 @@ const WARNING_CATEGORIES: { re: RegExp; key: HazardKey }[] = [
   { re: /dust|air quality|smoke|haze|sandstorm/i, key: "aq" },
 ];
 
-/** Severity floor applied per warning rank. */
-const SEV_FLOOR: Record<number, number> = { 1: 45, 2: 70, 3: 90 };
 
-function warningFloors(list: NormWarning[]): Partial<Record<HazardKey, number>> {
-  const out: Partial<Record<HazardKey, number>> = {};
-  for (const w of list) {
-    for (const c of WARNING_CATEGORIES) {
-      if (!c.re.test(w.event)) continue;
-      const floor = SEV_FLOOR[w.sev] ?? 45;
-      if ((out[c.key] ?? 0) < floor) out[c.key] = floor;
-    }
-  }
-  return out;
-}
 
-// ── Hard gates ──────────────────────────────────────────────────────────
-// Only truly binary/life-safety events cap the score outright.
-function hardGate(warnings: NormWarning[]): { cap: number; label: string } | null {
-  const evac = warnings.find((w) => /evacuation|shelter in place/i.test(w.event));
-  if (evac) return { cap: 0, label: `Alert: ${evac.event}` };
-  const tor = warnings.find((w) => /tornado (warning|emergency)/i.test(w.event));
-  if (tor) return { cap: 0, label: `Alert: ${tor.event}` };
-  const extreme = warnings.find((w) => w.sev >= 3);
-  if (extreme) return { cap: 15, label: `Alert: ${extreme.event}` };
-  return null;
-}
+
 
 // ── Readable current-value strings for the UI ───────────────────────────
 function details(h: HourlyPoint, aqi: number | null): Record<HazardKey, string> {
@@ -285,11 +262,12 @@ function scoreHour(
   h: HourlyPoint,
   aqi: number | null,
   activity: Activity,
-  ctx: Pick<ComfortContext, "activeWarnings">,
+  _ctx: Pick<ComfortContext, "activeWarnings">,
 ): HourResult {
   const mult = MULTIPLIERS[activity];
-  const warnings = normalizeWarnings(ctx?.activeWarnings ?? []);
 
+  // NOTE: active warnings deliberately do NOT affect the score — they are
+  // surfaced separately in the UI header only.
   const severity: Record<HazardKey, number> = {
     temp: tempSeverity(h.apparentTemperature),
     wind: windSeverity(h.windSpeed, h.windGusts),
@@ -298,11 +276,6 @@ function scoreHour(
     rain: rainSeverity(h.precipMm),
   };
 
-  // Active warnings lift their hazard to a severity floor.
-  const floors = warningFloors(warnings);
-  (Object.keys(floors) as HazardKey[]).forEach((k) => {
-    severity[k] = Math.max(severity[k], floors[k] ?? 0);
-  });
 
   const text = details(h, aqi);
   const keys: HazardKey[] = ["temp", "wind", "uv", "aq", "rain"];
@@ -320,7 +293,7 @@ function scoreHour(
   });
 
   const totalPoints = raw.reduce((s, f) => s + f.points, 0);
-  let score = clamp(100 - totalPoints, 0, 100);
+  const score = clamp(100 - totalPoints, 0, 100);
 
   const factors: ComfortFactor[] = raw
     .map((f) => ({
@@ -337,13 +310,8 @@ function scoreHour(
     .sort((a, b) => b.points - a.points);
 
   const top = factors.filter((f) => f.points >= Math.max(3, factors[0].points * 0.6));
-  let limiterLabel = factors[0]?.points >= 3 ? top.map((f) => f.label).join(" + ") : "None";
+  const limiterLabel = factors[0]?.points >= 3 ? top.map((f) => f.label).join(" + ") : "None";
 
-  const gate = hardGate(warnings);
-  if (gate && gate.cap < score) {
-    score = gate.cap;
-    limiterLabel = gate.label;
-  }
 
   return {
     time: h.time,
@@ -389,39 +357,32 @@ export interface WarningRestriction {
 
 const SEV_LABEL: Record<number, string> = { 1: "Moderate", 2: "Severe", 3: "Extreme" };
 
-/** Convert a numeric floor into a qualitative hazard level. */
-function floorLabel(v: number): string {
-  if (v >= 90) return "major hazard";
-  if (v >= 70) return "significant hazard";
-  if (v >= 45) return "moderate hazard";
-  return "elevated hazard";
-}
 
 export function describeWarningRestrictions(list: ActiveWarning[]): WarningRestriction[] {
   return normalizeWarnings(list).map((w) => {
     const effects: string[] = [];
 
-    // Hard gates first — they override everything else.
+    // Life-safety products first.
     if (/evacuation|shelter in place|tornado (warning|emergency)/i.test(w.event)) {
-      effects.push("Outdoor exercise is not recommended — this alert overrides the score.");
+      effects.push("Outdoor exercise is not recommended — follow official instructions.");
       return { event: w.event, severityLabel: "Extreme", effects };
     }
 
     if (w.sev >= 3) {
-      effects.push("Maximum possible comfort score is 15/100 — exercise is dangerous right now.");
+      effects.push("Extreme alert in effect — conditions can be dangerous regardless of the score.");
     }
 
-    const floor = SEV_FLOOR[w.sev] ?? 45;
     const matched = WARNING_CATEGORIES.filter((c) => c.re.test(w.event));
     if (matched.length) {
       const categories = Array.from(new Set(matched.map((c) => LABELS[c.key].toLowerCase())));
       effects.push(
-        `This alert treats ${categories.join(" + ")} as at least a ${floorLabel(floor)} ` +
-          `(${floor}/100), so that hazard keeps deducting points even if the reading looks mild.`,
+        `Take extra care with ${categories.join(" + ")} — readings may worsen quickly. ` +
+          `The comfort score is based on measured conditions only and is not adjusted by this alert.`,
       );
     }
 
-    if (!effects.length) effects.push("Advisory only — no automatic score restriction.");
+    if (!effects.length) effects.push("Advisory only — the comfort score is unaffected.");
+
     return { event: w.event, severityLabel: SEV_LABEL[w.sev] ?? "Moderate", effects };
   });
 }
