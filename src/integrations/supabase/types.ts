@@ -254,6 +254,8 @@ export type Database = {
           content: string
           created_at: string | null
           id: string
+          place_lat: number | null
+          place_lon: number | null
           user_id: string
           username: string
         }
@@ -262,6 +264,8 @@ export type Database = {
           content: string
           created_at?: string | null
           id?: string
+          place_lat?: number | null
+          place_lon?: number | null
           user_id: string
           username: string
         }
@@ -270,6 +274,8 @@ export type Database = {
           content?: string
           created_at?: string | null
           id?: string
+          place_lat?: number | null
+          place_lon?: number | null
           user_id?: string
           username?: string
         }
@@ -354,6 +360,8 @@ export type Database = {
         Row: {
           alerts_new: boolean
           alerts_upgrade: boolean
+          chat_messages: boolean
+          chat_scope: string
           created_at: string
           enabled: boolean
           fire_outlook: boolean
@@ -369,6 +377,8 @@ export type Database = {
         Insert: {
           alerts_new?: boolean
           alerts_upgrade?: boolean
+          chat_messages?: boolean
+          chat_scope?: string
           created_at?: string
           enabled?: boolean
           fire_outlook?: boolean
@@ -384,6 +394,8 @@ export type Database = {
         Update: {
           alerts_new?: boolean
           alerts_upgrade?: boolean
+          chat_messages?: boolean
+          chat_scope?: string
           created_at?: string
           enabled?: boolean
           fire_outlook?: boolean
@@ -401,6 +413,7 @@ export type Database = {
       notification_state: {
         Row: {
           active_alerts: Json
+          last_chat_at: string | null
           last_fire: string | null
           last_spc: string | null
           last_wrs: number | null
@@ -411,6 +424,7 @@ export type Database = {
         }
         Insert: {
           active_alerts?: Json
+          last_chat_at?: string | null
           last_fire?: string | null
           last_spc?: string | null
           last_wrs?: number | null
@@ -421,6 +435,7 @@ export type Database = {
         }
         Update: {
           active_alerts?: Json
+          last_chat_at?: string | null
           last_fire?: string | null
           last_spc?: string | null
           last_wrs?: number | null

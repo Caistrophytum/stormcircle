@@ -18,6 +18,8 @@ interface Prefs {
   wrs_swings: boolean;
   spc_outlook: boolean;
   fire_outlook: boolean;
+  chat_messages: boolean;
+  chat_scope: "all" | "local";
   wrs_delta: number;
   quiet_start: number | null;
   quiet_end: number | null;
@@ -31,6 +33,8 @@ const DEFAULTS: Prefs = {
   wrs_swings: true,
   spc_outlook: true,
   fire_outlook: true,
+  chat_messages: false,
+  chat_scope: "local",
   wrs_delta: 15,
   quiet_start: null,
   quiet_end: null,
@@ -43,6 +47,7 @@ const TOGGLES: Array<{ key: keyof Prefs; label: string; hint: string }> = [
   { key: "wrs_swings", label: "Storm risk swings", hint: "Rapid rise or fall of the Weather Risk Score." },
   { key: "spc_outlook", label: "SPC outlook (Enhanced+)", hint: "Convective outlook at Enhanced risk or above." },
   { key: "fire_outlook", label: "Fire weather outlook", hint: "Elevated, Critical or Extreme fire weather days." },
+  { key: "chat_messages", label: "Chat reports", hint: "New citizen reports posted in the live chat." },
 ];
 
 const labelClass = "text-[10px] font-mono uppercase tracking-wider text-muted-foreground";
@@ -156,6 +161,31 @@ export default function NotificationSettings() {
                   />
                 </div>
               ))}
+            </div>
+
+            <div className="pt-3 border-t border-border">
+              <span className={labelClass}>Chat report scope</span>
+              <div className="mt-2 flex gap-2">
+                {(["local", "all"] as const).map((scope) => (
+                  <button
+                    key={scope}
+                    type="button"
+                    disabled={!prefs.enabled || !prefs.chat_messages}
+                    onClick={() => void save({ ...prefs, chat_scope: scope })}
+                    className={`flex-1 rounded-sm border px-2 py-1 font-mono text-[11px] uppercase tracking-wider transition-colors disabled:opacity-40 ${
+                      prefs.chat_scope === scope
+                        ? "border-primary/60 bg-primary/10 text-primary"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {scope === "local" ? "Local" : "All"}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Local sends only reports posted within 150 km of your hometown. All sends every new
+                citizen report.
+              </p>
             </div>
 
             <div className="pt-3 border-t border-border">

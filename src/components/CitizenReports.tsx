@@ -30,7 +30,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, MapPin, ChevronDown, LocateFixed, X as XIcon } from "lucide-react";
-import { resolveDeviceCity } from "@/lib/deviceLocation";
+import { resolveDeviceCityDetailed } from "@/lib/deviceLocation";
 import type { GeocodedCity } from "@/hooks/useCitySearch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -114,6 +114,9 @@ export default function CitizenReports() {
   const [relation, setRelation] = useState<Relation | null>(null);
   const [placeQuery, setPlaceQuery] = useState("");
   const [placeLabel, setPlaceLabel] = useState<string | null>(null);
+  // Coordinates of the chosen place - used for "local" chat notifications.
+  const [placeCoords, setPlaceCoords] = useState<{ lat: number; lon: number } | null>(null);
+
   
   const { results: placeResults, loading: placeLoading } = useCitySearch(placeQuery);
 
@@ -275,6 +278,7 @@ export default function CitizenReports() {
     setRelation(null);
     setPlaceQuery("");
     setPlaceLabel(null);
+    setPlaceCoords(null);
   }
 
   async function sendReport() {
@@ -287,7 +291,10 @@ export default function CitizenReports() {
       username: profile.username,
       badge: profile.badge,
       content,
+      place_lat: placeCoords?.lat ?? null,
+      place_lon: placeCoords?.lon ?? null,
     });
+
     if (error) {
       toast.error("Failed to send report");
     } else {
@@ -711,10 +718,12 @@ export default function CitizenReports() {
             sending={sending}
             onPickPhenomenon={(v) => setPhenomenon(v)}
             onPickRelation={(v) => setRelation(v)}
-            onPickPlace={(v) => {
+            onPickPlace={(v, coords) => {
               setPlaceLabel(v);
+              setPlaceCoords(coords ?? null);
               setPlaceQuery("");
             }}
+
             onChangePlaceQuery={setPlaceQuery}
             onSend={sendReport}
             onReset={resetComposer}
@@ -789,7 +798,7 @@ interface ComposerProps {
   sending: boolean;
   onPickPhenomenon: (v: string) => void;
   onPickRelation: (v: Relation) => void;
-  onPickPlace: (v: string) => void;
+  onPickPlace: (v: string, coords?: { lat: number; lon: number }) => void;
   onChangePlaceQuery: (v: string) => void;
   onSend: () => void;
   onReset: () => void;
@@ -919,9 +928,10 @@ function ComposerDropdowns({
                   onClick={async () => {
                     setLocating(true);
                     try {
-                      const label = await resolveDeviceCity();
-                      onPickPlace(label);
+                      const here = await resolveDeviceCityDetailed();
+                      onPickPlace(here.label, { lat: here.lat, lon: here.lon });
                       setOpen(null);
+
                     } catch (err) {
                       toast.error(err instanceof Error ? err.message : "Failed to locate.");
                     } finally {
@@ -958,7 +968,7 @@ function ComposerDropdowns({
                       <button
                         type="button"
                         onClick={() => {
-                          onPickPlace(label);
+                          onPickPlace(label, { lat: r.latitude, lon: r.longitude });
                           setOpen(null);
                         }}
                         className="w-full text-left px-2 py-1.5 text-[11px] font-mono text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
