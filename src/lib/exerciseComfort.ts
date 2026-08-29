@@ -240,8 +240,6 @@ const WARNING_CATEGORIES: { re: RegExp; key: HazardKey }[] = [
   { re: /dust|air quality|smoke|haze|sandstorm/i, key: "aq" },
 ];
 
-/** Severity floor applied per warning rank. */
-const SEV_FLOOR: Record<number, number> = { 1: 45, 2: 70, 3: 90 };
 
 
 
@@ -359,13 +357,6 @@ export interface WarningRestriction {
 
 const SEV_LABEL: Record<number, string> = { 1: "Moderate", 2: "Severe", 3: "Extreme" };
 
-/** Convert a numeric floor into a qualitative hazard level. */
-function floorLabel(v: number): string {
-  if (v >= 90) return "major hazard";
-  if (v >= 70) return "significant hazard";
-  if (v >= 45) return "moderate hazard";
-  return "elevated hazard";
-}
 
 export function describeWarningRestrictions(list: ActiveWarning[]): WarningRestriction[] {
   return normalizeWarnings(list).map((w) => {
