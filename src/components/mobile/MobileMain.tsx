@@ -314,6 +314,20 @@ export default function MobileMain() {
     if (el) el.scrollTop = 0;
   }, [chatMsgs.length]);
   const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
+
+  // 60 s sync countdown - drives the neon blue shell around the WRS bar.
+  const syncTick = useRefreshTick();
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  useEffect(() => {
+    const update = () => {
+      const msIntoMinute = Date.now() % 60_000;
+      setSecondsLeft(Math.max(0, Math.ceil((60_000 - msIntoMinute) / 1000)));
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [syncTick]);
+
   const toggleKey = (id: string) =>
     setExpandedKey((prev) => {
       const next = new Set(prev);
@@ -980,9 +994,10 @@ export default function MobileMain() {
         </div>
       </div>
 
-      {/* 5. WRS bar */}
+      {/* 5. WRS bar - wrapped in a neon blue 60 s sync countdown shell */}
       <div
         style={{
+          position: "relative",
           padding: "8px 10px",
           border: "1px solid rgba(255,157,0,0.2)",
           background: "rgba(10,10,14,0.6)",
@@ -992,6 +1007,31 @@ export default function MobileMain() {
           gap: "10px",
         }}
       >
+        {/* Depleting neon blue perimeter */}
+        <svg
+          aria-hidden
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
+        >
+          <rect
+            x="1"
+            y="1"
+            width="calc(100% - 2px)"
+            height="calc(100% - 2px)"
+            rx="3"
+            fill="none"
+            stroke="#00b4ff"
+            strokeWidth="2"
+            pathLength={100}
+            strokeDasharray={100}
+            strokeDashoffset={100 - (secondsLeft / 60) * 100}
+            strokeLinecap="round"
+            style={{
+              filter: "drop-shadow(0 0 4px #00b4ff)",
+              transition: "stroke-dashoffset 0.35s linear",
+            }}
+          />
+        </svg>
+
         <h2
           style={{
             fontSize: "10px",
@@ -1028,7 +1068,19 @@ export default function MobileMain() {
         >
           {threatLevel}
         </span>
+        <span
+          style={{
+            fontSize: "10px",
+            color: "#00b4ff",
+            fontWeight: 700,
+            fontFamily: "'JetBrains Mono', monospace",
+            textShadow: "0 0 6px #00b4ff",
+          }}
+        >
+          {secondsLeft}s
+        </span>
       </div>
+
 
       {/* 6. Latest chat messages - fills remaining space up to floating buttons */}
       <div
