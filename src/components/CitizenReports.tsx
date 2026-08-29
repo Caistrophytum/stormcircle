@@ -798,7 +798,7 @@ interface ComposerProps {
   sending: boolean;
   onPickPhenomenon: (v: string) => void;
   onPickRelation: (v: Relation) => void;
-  onPickPlace: (v: string) => void;
+  onPickPlace: (v: string, coords?: { lat: number; lon: number }) => void;
   onChangePlaceQuery: (v: string) => void;
   onSend: () => void;
   onReset: () => void;
