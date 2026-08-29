@@ -165,6 +165,15 @@ export default function MetricsTab() {
   const dash = (threatLevel / 100) * c;
   const color = wrsColor(threatLevel);
 
+  // Neon blue sync shell sits just outside the WRS circle.
+  const SYNC_COLOR = "hsl(195 100% 55%)";
+  const shellPad = 10;
+  const shellSize = size + shellPad * 2;
+  const shellStroke = 3;
+  const shellR = (shellSize - shellStroke) / 2;
+  const shellC = 2 * Math.PI * shellR;
+  const shellDash = (secondsLeft / 60) * shellC;
+
   // Physical: single line, each param a segment sized by wrsContribution %.
   const physTotal = physicalNodes.reduce((s, n) => s + n.wrsContribution, 0);
 
