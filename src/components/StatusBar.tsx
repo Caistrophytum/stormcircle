@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSelectedCity } from "@/contexts/CityContext";
-import { useHometownWeather } from "@/hooks/useHometownWeather";
+import { useHometownWeather, pressureTrendDescriptor } from "@/hooks/useHometownWeather";
 import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
 
 import {
@@ -11,6 +11,7 @@ import {
   toggleUnitSystem,
   displayTemp,
   displayWindSpeed,
+  displayPressure,
 } from "@/hooks/useUnitSystem";
 import { useAuth } from "@/hooks/useAuth";
 import OnlineCounter from "@/components/OnlineCounter";
@@ -188,7 +189,12 @@ const StatusBar = () => {
         </span>
       );
     }
-    const value = label === "UV" ? Math.round(display.value) : display.value.toFixed(0);
+    const value =
+      label === "UV"
+        ? Math.round(display.value)
+        : display.unit === " inHg"
+          ? display.value.toFixed(2)
+          : display.value.toFixed(0);
     return (
       <span key={label}>
         {label}: <span className="text-primary font-semibold">{value}{display.unit}</span>
@@ -283,6 +289,13 @@ const StatusBar = () => {
                     hometown.uvIndex != null ? { value: hometown.uvIndex, unit: "" } : null,
                     hometown.uvIndex,
                     hometown.uvIndex != null ? uvDescriptor(hometown.uvIndex) : undefined,
+                  )}
+                  {rulerSeparator}
+                  {renderRulerMetric(
+                    "Pressure",
+                    displayPressure(hometown.pressureHpa, unitSystem),
+                    hometown.pressureHpa,
+                    pressureTrendDescriptor(hometown.pressureTrend3hHpa) ?? undefined,
                   )}
                 </>
               )}

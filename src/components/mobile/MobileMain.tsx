@@ -13,11 +13,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import { useHomeCityFireRisk, type FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
-import { useHometownWeather } from "@/hooks/useHometownWeather";
+import { useHometownWeather, pressureTrendDescriptor } from "@/hooks/useHometownWeather";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
-import { useUnitSystem, displayTemp, displayWindSpeed, displayLengthM } from "@/hooks/useUnitSystem";
+import { useUnitSystem, displayTemp, displayWindSpeed, displayLengthM, displayPressure } from "@/hooks/useUnitSystem";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { useLocalClock } from "@/hooks/useLocalClock";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
@@ -572,7 +572,12 @@ export default function MobileMain() {
                   </span>
                 );
               }
-              const value = label === "UV" ? Math.round(display.value) : display.value.toFixed(0);
+              const value =
+                label === "UV"
+                  ? Math.round(display.value)
+                  : display.unit === " inHg"
+                    ? display.value.toFixed(2)
+                    : display.value.toFixed(0);
               return (
                 <span key={label}>
                   {label}:{" "}
@@ -628,6 +633,13 @@ export default function MobileMain() {
                   hometownWeather.uvIndex != null ? { value: hometownWeather.uvIndex, unit: "" } : null,
                   hometownWeather.uvIndex,
                   hometownWeather.uvIndex != null ? uvDescriptor(hometownWeather.uvIndex) : undefined,
+                )}
+                <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
+                {render(
+                  "Pressure",
+                  displayPressure(hometownWeather.pressureHpa, unitSystem),
+                  hometownWeather.pressureHpa,
+                  pressureTrendDescriptor(hometownWeather.pressureTrend3hHpa) ?? undefined,
                 )}
               </>
             );
