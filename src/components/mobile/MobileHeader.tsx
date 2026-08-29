@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
+import { useLifetimeVisitors } from "@/hooks/useLifetimeVisitors";
 import { useUnitSystem, toggleUnitSystem } from "@/hooks/useUnitSystem";
 import NotificationBell from "@/components/NotificationBell";
 
 export default function MobileHeader() {
   const onlineCount = useOnlineCount();
+  const lifetime = useLifetimeVisitors();
+  const [showLifetime, setShowLifetime] = useState(false);
   const unitSystem = useUnitSystem();
   const [now, setNow] = useState(() => new Date());
+
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -66,30 +70,42 @@ export default function MobileHeader() {
         {timeLabel}
       </div>
 
-      <div
+      <button
+        type="button"
+        onClick={() => setShowLifetime((v) => !v)}
+        aria-label={showLifetime ? "Show live online count" : "Show lifetime visitors"}
         style={{
           display: "flex",
           alignItems: "center",
           gap: "6px",
-          color: "#00ff88",
+          color: showLifetime ? "#00b4ff" : "#00ff88",
           fontSize: "10px",
           fontWeight: 700,
           letterSpacing: "0.08em",
           whiteSpace: "nowrap",
+          background: "transparent",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
         }}
       >
-        <span
-          style={{
-            width: "6px",
-            height: "6px",
-            borderRadius: "50%",
-            background: "#00ff88",
-            display: "inline-block",
-            boxShadow: "0 0 6px #00ff88",
-          }}
-        />
-        {onlineCount} ONLINE
-      </div>
+        {!showLifetime && (
+          <span
+            style={{
+              width: "6px",
+              height: "6px",
+              borderRadius: "50%",
+              background: "#00ff88",
+              display: "inline-block",
+              boxShadow: "0 0 6px #00ff88",
+            }}
+          />
+        )}
+        {showLifetime
+          ? `${lifetime != null ? lifetime.toLocaleString() : "..."} ALL TIME`
+          : `${onlineCount} ONLINE`}
+      </button>
+
 
       <NotificationBell compact />
     </div>
