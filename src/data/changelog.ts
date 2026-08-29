@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-08-29 13z",
+    tag: "NEW",
+    title: "Notifications and other updates",
+    body: "Added in-site and push notifications for various uses. I will expand into the EU warnings next to provide the most accurate experience.",
+  },
+  {
     date: "2026-08-11 07z",
     tag: "IMPROVED",
     title: "Minor but significant changes",
