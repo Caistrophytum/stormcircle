@@ -1,92 +1,80 @@
-# StormCircle Desktop UI Overhaul — Plan
+# Database Deep Scan: Findings and Clean-Up Plan
 
-Scope: desktop layout only (mobile files under `src/components/mobile/*` untouched). The map remains full-screen background; all UI becomes floating glassy panels on top.
+Read-only audit of the live database (tables, indexes, policies, scheduled jobs, storage/bloat, security linter). Below is what is actually there today, what is wrong or inconsistent, and the exact SQL to change it so you can adjust anything yourself.
 
-## 1. Layout restructure (`src/pages/Index.tsx`)
+## Health snapshot (measured now)
 
-Remove the current `flex` layout with `LeftSidePanel` + `CitizenReports` side columns and their two toggle buttons. New structure:
+- Database size 142.6 MB, disk 17% used, memory 71% used, connections 17/60.
+- WAL (the write-ahead log, Postgres' crash-recovery journal) is 1024 MB, which is large relative to a 142 MB database.
+- Rolled-back transactions since boot: 66,861. Some rollbacks are normal (the email helpers use exception blocks), but this count is high enough to be worth confirming.
+- All 13 public tables have row-level security enabled, a primary key, and at least one policy. No missing-RLS problems.
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│ StatusBar (unchanged, top)                              │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  TacticalMap (full-bleed background)                    │
-│                                                         │
-│   ┌──────────────────────────┐  ┌──────────────────┐   │
-│   │ Tab dock (4 tabs)        │  │                  │   │
-│   │ [Metrics|Situation|Bots| │  │  Chat panel      │   │
-│   │  Radar & Reports]        │  │  (square,        │   │
-│   │                          │  │   glassy,        │   │
-│   │ Active tab content       │  │   lower-right)   │   │
-│   └──────────────────────────┘  └──────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+## Findings, in priority order
+
+### 1. Table bloat: 112 MB of the 142 MB database is dead space
+
+| Table | Live rows | Disk | Comment |
+|---|---|---|---|
+| `cron.job_run_details` | 4,865 | 43 MB | Should be ~2 MB. Bloated from repeated mass deletes. |
+| `net._http_response` | 399 | 27 MB | pg_net response log, never cleaned. |
+| `public.zone_geom_cache` | 3,428 | 42 MB | Mostly TOAST (large JSON geometry); partly legitimate, partly bloat. |
+| `public.active_alerts` | 247 | 15 MB | Large JSON geometry plus 136 dead rows. |
+
+Autovacuum reclaims space *inside* a table but never returns it to disk. Only `VACUUM FULL` shrinks the file, and it briefly locks the table.
+
+### 2. Cleanup jobs overlap and contradict each other
+
+Current schedule:
+
+- `delete-old-messages` (every 6 h) deletes non-System chat messages older than 2 hours.
+- `cleanup-geom-and-alerts-weekly` (Sunday 00:00) deletes zone cache older than 7 days and expired alerts.
+- `zone-geom-cache-cleanup-daily` (03:17 daily) deletes zone cache older than 7 days - duplicate of part of the weekly job.
+- `cleanup-cron-history-weekly` (Sunday 00:05) trims cron history older than 3 days.
+
+Problems:
+- The 2-hour chat retention only runs every 6 hours, so a message actually survives 2 to 8 hours. The intent and the schedule do not match.
+- Zone cache cleanup exists twice; the weekly copy is redundant.
+- Cron history is trimmed to 3 days but only weekly, so it grows to a week's worth (currently 15,265 rows) before being cut, which is what causes the bloat in finding 1.
+- Expired alerts are only removed weekly: 88 of the 247 alert rows are already expired right now.
+- Nothing at all cleans `net._http_response`, `email_send_log`, or `email_unsubscribe_tokens`.
+
+### 3. Bot messages accumulate forever
+
+All 185 rows in `messages` carry badge `System`, dating back to 15 Aug. The retention job deliberately skips System rows, so bot posts never expire. Also, 183 of them are posted by a single bot identity (`...0001`), while `...0000` and `...0002` have one message each, so the bot identities are not being used consistently.
+
+### 4. Unused and duplicate indexes
+
+- `email_unsubscribe_tokens` has both `email_unsubscribe_tokens_token_key` (unique) and `idx_unsubscribe_tokens_token` on the same column - one is redundant.
+- `suppressed_emails` has both `suppressed_emails_email_key` (unique) and `idx_suppressed_emails_email` - same duplication.
+- `email_unsubscribe_tokens_email_key` is unique on `email`, which permanently limits each address to one unsubscribe token ever. That is probably not intended.
+- `active_alerts_first_seen_at_idx` has never been used (0 scans).
+
+### 5. Security linter: 2 warnings, both expected
+
+`delete_user()` and `is_meteorologist(uuid)` are SECURITY DEFINER functions executable by signed-in users. That is by design (account deletion and moderator checks), and both check `auth.uid()` internally. No change needed; they can be marked as accepted.
+
+## What I would change
+
+1. Reclaim disk: `VACUUM FULL` on `cron.job_run_details`, `net._http_response`, `active_alerts`, `zone_geom_cache`.
+2. Consolidate cleanup into one hourly maintenance job covering cron history (3 days), pg_net responses (2 days), expired alerts (12 h past expiry), zone cache (7 days), old chat messages, and email logs (30 days); remove the three overlapping jobs.
+3. Add a System-message retention window (default 7 days, easily editable) so bot posts stop accumulating.
+4. Drop the two duplicate indexes and the unused one, and drop the unique constraint on unsubscribe token email.
+5. Record the two SECURITY DEFINER linter warnings as accepted in the security memory.
+6. Write `docs/database-maintenance.md` with a table-by-table explanation, the full job list with editable retention values, and copy-paste SQL for each change, so you can tune retention yourself later.
+
+## Technical notes
+
+Each cleanup change ships as a migration you can read and adjust. Retention values are plain intervals at the top of the maintenance function, for example:
+
+```sql
+-- edit these to taste
+chat_retention      interval := '2 hours';
+system_retention    interval := '7 days';
+alert_grace         interval := '12 hours';
+zone_cache_ttl      interval := '7 days';
+cron_history_ttl    interval := '3 days';
+http_response_ttl   interval := '2 days';
+email_log_ttl       interval := '30 days';
 ```
 
-- Chat panel: fixed bottom-right, ~380×380px square, glassy dark-gray, border flashes white on new message (hook into existing `useNewReportPing`).
-- Tab dock: fixed to the left of chat, ~420×440px glassy panel with 4 top-tab buttons and content area below.
-- Delete the `PanelLeftOpen/Close`, `PanelRightOpen/Close` toggles and the `leftOpen`/`rightOpen` state.
-
-## 2. New components
-
-Create under `src/components/desktop/`:
-
-- `FloatingChat.tsx` — square glassy CitizenReports variant; reuses existing chat data/hooks from `CitizenReports.tsx` but with a compact layout and border-flash animation on `useNewReportPing`.
-- `TabDock.tsx` — container with 4 tabs and a floating-window portal for expanded views.
-- `tabs/MetricsTab.tsx` — WRS circle + physical line + virtual boxes.
-- `tabs/SituationTab.tsx` — convective / fire / hazards stack + exercise button.
-- `tabs/BotsTab.tsx` — grid of bot buttons; opens floating window per bot.
-- `tabs/RadarReportsTab.tsx` — radar preview square + reports feed.
-- `FloatingWindow.tsx` — reusable modal-style floating panel (matches existing `ExerciseComfort` overlay style) used by expanded radar, expanded bot messages, and exercise.
-
-## 3. Tab 1 — Hometown Metrics
-
-Reuse data from `useHomeCityRisk` / `useExerciseComfortData`.
-
-- **WRS circle**: SVG conic/radial fill circle. Color interpolates through a neon gradient (green→amber→red) based on score using HSL interpolation with CSS transitions. Score number centered on top.
-- **Physical Parameters line**: horizontal stacked bar; each parameter is a segment colored by its own neon token, width = its % contribution to the physical score. Segments animate width changes with `transition: width 600ms ease`.
-- **Virtual Parameters**: keep current visual boxes from `ExerciseComfort` but with `rounded-xl`, glassy bg, glow border. Placed below the line.
-
-## 4. Tab 2 — Hometown Situation
-
-- Order: convective outlook (from `useSPCOutlook`) → fire risk (from `useHomeCityFireRisk`) → current hazards (from `CurrentLocationHazards` data).
-- Each section is a glassy neon card; empty sections render `null` so lower ones shift up naturally via flex.
-- If all three are empty: single centered message "Situation's Calm Here."
-- Exercise button (currently floating in `ExerciseComfort`) moves here, placed above bot messages area (bot messages moved out to Tab 3).
-
-## 5. Tab 3 — Bot Network
-
-- Extract bot messages from `CitizenReports.tsx` (currently interleaved). Filter chat by `role/user_id` matching known bots (Convective Weather Bot, Hurricane Weather Bot, ENSO Bot, etc.).
-- Grid of rounded-square bot buttons, each with icon + name.
-- Click → opens `FloatingWindow` showing that bot's messages in larger font.
-
-## 6. Tab 4 — Radar & Weather Reports
-
-- Left: rounded-square radar preview using existing `RadarMiniMap` at reduced size. Click → opens `FloatingWindow` with full radar (`RadarMiniMap` at large size + search bar + station name up top + scan-type selector list down the left).
-- Right: weather reports feed — LSR / station reports (from `useLSR` + station report queries currently in `CitizenReports`).
-
-## 7. Visual language (global)
-
-Add to `src/index.css`:
-
-- `.glass` — `bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_0_24px_rgba(0,0,0,0.6)]`.
-- `.neon-edge` — subtle animated inset + outer glow using `box-shadow` on the primary neon tokens; supports color variants via CSS var `--glow-color`.
-- `@keyframes border-flash-white` used by chat panel on new-message ping.
-- Global transitions: bump default `transition-colors`/`transition-all` durations to 400-600ms where values change (scores, colors on WRS circle, bar segments).
-- Reuse existing `--neon-amber/green/red/blue` tokens; add `--neon-violet` and `--neon-cyan` for extra parameter coloring.
-
-## 8. Cleanup
-
-After migration:
-- `LeftSidePanel.tsx`, `IntegrationPanel.tsx`, the old side-panel toggle wiring in `Index.tsx` — remove imports and delete unused files.
-- `ExerciseComfort` floating trigger button removed; the panel itself (floating window) remains, triggered from Tab 2.
-- `CitizenReports.tsx` split: chat lives in `FloatingChat`, station/LSR feed lives in Tab 4, bot messages live in Tab 3. Original file deleted or reduced to shared hooks.
-
-## Open questions (need answers before build)
-
-1. **Tab dock position**: should the dock sit flush against the chat (chat at bottom-right, dock immediately to its left, both bottom-aligned)? Or dock centered vertically on the left/middle while chat stays bottom-right?
-2. **Chat panel size**: strict square ~380×380, or should it scale with viewport (e.g. `min(30vw, 420px)`)?
-3. **Bot identification**: is there a `bot_type` / `is_bot` field on messages, or should I filter by known bot display names? (I'll check the messages schema — flag if you know off-hand.)
-4. **Physical Parameters colors**: any preferred mapping (temp=red, wind=cyan, humidity=blue, UV=violet, AQ=green, precip=amber)? Or free choice?
-
-Once you confirm, I'll implement in one pass.
+`VACUUM FULL` cannot run inside a migration transaction; it will be run separately via direct SQL during a quiet moment. No table structure, RLS policy, or grant is removed by this plan - only indexes named above, redundant cron jobs, and dead rows.
