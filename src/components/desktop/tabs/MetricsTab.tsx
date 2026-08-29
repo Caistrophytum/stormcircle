@@ -3,7 +3,7 @@
  * parameter cards. Colors shift gradually as values change (CSS transitions
  * on stroke / background).
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Loader2 } from "lucide-react";
 import { useWRSMetrics } from "@/hooks/useWRSMetrics";
@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useRadarContext } from "@/contexts/RadarContext";
 import { useCitySearch } from "@/hooks/useCitySearch";
 import { useLocalClock } from "@/hooks/useLocalClock";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
