@@ -278,6 +278,7 @@ export default function CitizenReports() {
     setRelation(null);
     setPlaceQuery("");
     setPlaceLabel(null);
+    setPlaceCoords(null);
   }
 
   async function sendReport() {
@@ -290,7 +291,10 @@ export default function CitizenReports() {
       username: profile.username,
       badge: profile.badge,
       content,
+      place_lat: placeCoords?.lat ?? null,
+      place_lon: placeCoords?.lon ?? null,
     });
+
     if (error) {
       toast.error("Failed to send report");
     } else {
