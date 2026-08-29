@@ -718,10 +718,12 @@ export default function CitizenReports() {
             sending={sending}
             onPickPhenomenon={(v) => setPhenomenon(v)}
             onPickRelation={(v) => setRelation(v)}
-            onPickPlace={(v) => {
+            onPickPlace={(v, coords) => {
               setPlaceLabel(v);
+              setPlaceCoords(coords ?? null);
               setPlaceQuery("");
             }}
+
             onChangePlaceQuery={setPlaceQuery}
             onSend={sendReport}
             onReset={resetComposer}
