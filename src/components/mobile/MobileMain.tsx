@@ -994,9 +994,10 @@ export default function MobileMain() {
         </div>
       </div>
 
-      {/* 5. WRS bar */}
+      {/* 5. WRS bar - wrapped in a neon blue 60 s sync countdown shell */}
       <div
         style={{
+          position: "relative",
           padding: "8px 10px",
           border: "1px solid rgba(255,157,0,0.2)",
           background: "rgba(10,10,14,0.6)",
@@ -1006,6 +1007,31 @@ export default function MobileMain() {
           gap: "10px",
         }}
       >
+        {/* Depleting neon blue perimeter */}
+        <svg
+          aria-hidden
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
+        >
+          <rect
+            x="1"
+            y="1"
+            width="calc(100% - 2px)"
+            height="calc(100% - 2px)"
+            rx="3"
+            fill="none"
+            stroke="#00b4ff"
+            strokeWidth="2"
+            pathLength={100}
+            strokeDasharray={100}
+            strokeDashoffset={100 - (secondsLeft / 60) * 100}
+            strokeLinecap="round"
+            style={{
+              filter: "drop-shadow(0 0 4px #00b4ff)",
+              transition: "stroke-dashoffset 0.35s linear",
+            }}
+          />
+        </svg>
+
         <h2
           style={{
             fontSize: "10px",
@@ -1042,7 +1068,19 @@ export default function MobileMain() {
         >
           {threatLevel}
         </span>
+        <span
+          style={{
+            fontSize: "10px",
+            color: "#00b4ff",
+            fontWeight: 700,
+            fontFamily: "'JetBrains Mono', monospace",
+            textShadow: "0 0 6px #00b4ff",
+          }}
+        >
+          {secondsLeft}s
+        </span>
       </div>
+
 
       {/* 6. Latest chat messages - fills remaining space up to floating buttons */}
       <div
