@@ -62,6 +62,7 @@ const PHENOMENA: { emoji: string; label: string; value: string }[] = [
   { emoji: "🔌", label: "Power outage", value: "Power outage" },
   { emoji: "🌊", label: "Road flooded", value: "Road flooded" },
   { emoji: "❄️", label: "Snow", value: "Snow" },
+  { emoji: "💨", label: "Strong winds", value: "Strong winds" },
   { emoji: "⛈️", label: "Thunderstorm", value: "Thunderstorm" },
   { emoji: "🌪️", label: "Tornado", value: "Tornado" },
   { emoji: "🌳", label: "Tree down", value: "Tree down" },
