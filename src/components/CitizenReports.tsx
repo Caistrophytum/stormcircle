@@ -968,7 +968,7 @@ function ComposerDropdowns({
                       <button
                         type="button"
                         onClick={() => {
-                          onPickPlace(label);
+                          onPickPlace(label, { lat: r.latitude, lon: r.longitude });
                           setOpen(null);
                         }}
                         className="w-full text-left px-2 py-1.5 text-[11px] font-mono text-card-foreground hover:bg-primary/10 hover:text-primary transition-colors flex items-center gap-2"
