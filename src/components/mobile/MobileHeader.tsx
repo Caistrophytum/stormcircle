@@ -34,6 +34,9 @@ export default function MobileHeader() {
     >
       <div
         style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
           color: "#ff9d00",
           fontWeight: 700,
           fontSize: "11px",
@@ -41,8 +44,16 @@ export default function MobileHeader() {
           whiteSpace: "nowrap",
         }}
       >
-        ⛈ STORMCIRCLE
+        <img
+          src={stormcircleLogo.url}
+          alt="StormCircle logo"
+          width={22}
+          height={22}
+          style={{ display: "block", width: 22, height: 22, objectFit: "contain" }}
+        />
+        STORMCIRCLE
       </div>
+
 
       <button
         type="button"
