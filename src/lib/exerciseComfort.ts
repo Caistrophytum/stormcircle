@@ -285,11 +285,12 @@ function scoreHour(
   h: HourlyPoint,
   aqi: number | null,
   activity: Activity,
-  ctx: Pick<ComfortContext, "activeWarnings">,
+  _ctx: Pick<ComfortContext, "activeWarnings">,
 ): HourResult {
   const mult = MULTIPLIERS[activity];
-  const warnings = normalizeWarnings(ctx?.activeWarnings ?? []);
 
+  // NOTE: active warnings deliberately do NOT affect the score — they are
+  // surfaced separately in the UI header only.
   const severity: Record<HazardKey, number> = {
     temp: tempSeverity(h.apparentTemperature),
     wind: windSeverity(h.windSpeed, h.windGusts),
@@ -298,11 +299,6 @@ function scoreHour(
     rain: rainSeverity(h.precipMm),
   };
 
-  // Active warnings lift their hazard to a severity floor.
-  const floors = warningFloors(warnings);
-  (Object.keys(floors) as HazardKey[]).forEach((k) => {
-    severity[k] = Math.max(severity[k], floors[k] ?? 0);
-  });
 
   const text = details(h, aqi);
   const keys: HazardKey[] = ["temp", "wind", "uv", "aq", "rain"];
