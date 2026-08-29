@@ -188,7 +188,12 @@ const StatusBar = () => {
         </span>
       );
     }
-    const value = label === "UV" ? Math.round(display.value) : display.value.toFixed(0);
+    const value =
+      label === "UV"
+        ? Math.round(display.value)
+        : display.unit === " inHg"
+          ? display.value.toFixed(2)
+          : display.value.toFixed(0);
     return (
       <span key={label}>
         {label}: <span className="text-primary font-semibold">{value}{display.unit}</span>
@@ -283,6 +288,13 @@ const StatusBar = () => {
                     hometown.uvIndex != null ? { value: hometown.uvIndex, unit: "" } : null,
                     hometown.uvIndex,
                     hometown.uvIndex != null ? uvDescriptor(hometown.uvIndex) : undefined,
+                  )}
+                  {rulerSeparator}
+                  {renderRulerMetric(
+                    "Pressure",
+                    displayPressure(hometown.pressureHpa, unitSystem),
+                    hometown.pressureHpa,
+                    pressureTrendDescriptor(hometown.pressureTrend3hHpa) ?? undefined,
                   )}
                 </>
               )}

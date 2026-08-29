@@ -140,3 +140,13 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
 
   return data;
 }
+
+/** 3-hour barometric tendency wording. */
+export function pressureTrendDescriptor(deltaHpa: number | null): string | null {
+  if (deltaHpa == null) return null;
+  if (deltaHpa >= 5) return "Climbing Sharply";
+  if (deltaHpa >= 2) return "Climbing";
+  if (deltaHpa <= -5) return "Falling Sharply";
+  if (deltaHpa <= -2) return "Falling";
+  return "Stable";
+}

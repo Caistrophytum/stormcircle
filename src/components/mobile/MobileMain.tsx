@@ -572,7 +572,12 @@ export default function MobileMain() {
                   </span>
                 );
               }
-              const value = label === "UV" ? Math.round(display.value) : display.value.toFixed(0);
+              const value =
+                label === "UV"
+                  ? Math.round(display.value)
+                  : display.unit === " inHg"
+                    ? display.value.toFixed(2)
+                    : display.value.toFixed(0);
               return (
                 <span key={label}>
                   {label}:{" "}
@@ -628,6 +633,13 @@ export default function MobileMain() {
                   hometownWeather.uvIndex != null ? { value: hometownWeather.uvIndex, unit: "" } : null,
                   hometownWeather.uvIndex,
                   hometownWeather.uvIndex != null ? uvDescriptor(hometownWeather.uvIndex) : undefined,
+                )}
+                <span style={{ color: "rgba(255,255,255,0.25)" }}>\</span>
+                {render(
+                  "Pressure",
+                  displayPressure(hometownWeather.pressureHpa, unitSystem),
+                  hometownWeather.pressureHpa,
+                  pressureTrendDescriptor(hometownWeather.pressureTrend3hHpa) ?? undefined,
                 )}
               </>
             );
