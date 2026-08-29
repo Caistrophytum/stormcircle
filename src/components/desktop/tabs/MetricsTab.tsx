@@ -209,8 +209,54 @@ export default function MetricsTab() {
 
       {/* WRS circle + physical line */}
       <div className="flex items-center gap-4">
-        <div className="relative shrink-0" style={{ width: size, height: size, overflow: "visible" }}>
-          <svg width={size} height={size} className="-rotate-90" style={{ overflow: "visible" }}>
+        <div
+          className="relative shrink-0"
+          style={{ width: shellSize, height: shellSize, overflow: "visible" }}
+        >
+          {/* Neon blue sync countdown shell */}
+          <svg
+            width={shellSize}
+            height={shellSize}
+            className="absolute left-0 top-0 -rotate-90"
+            style={{ overflow: "visible" }}
+          >
+            <circle
+              cx={shellSize / 2}
+              cy={shellSize / 2}
+              r={shellR}
+              stroke="rgba(255,255,255,0.06)"
+              strokeWidth={shellStroke}
+              fill="none"
+            />
+            <motion.circle
+              cx={shellSize / 2}
+              cy={shellSize / 2}
+              r={shellR}
+              stroke={SYNC_COLOR}
+              strokeWidth={shellStroke}
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={shellC}
+              initial={false}
+              animate={{ strokeDashoffset: shellC - shellDash }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              style={{
+                filter: `drop-shadow(0 0 6px ${SYNC_COLOR})`,
+              }}
+            />
+          </svg>
+
+          {/* WRS filling circle */}
+          <svg
+            width={size}
+            height={size}
+            className="absolute -rotate-90"
+            style={{
+              left: shellPad,
+              top: shellPad,
+              overflow: "visible",
+            }}
+          >
             <circle
               cx={size / 2}
               cy={size / 2}
@@ -237,6 +283,7 @@ export default function MetricsTab() {
               }}
             />
           </svg>
+
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
             <span
               className="font-mono text-3xl font-bold tabular-nums"
@@ -246,6 +293,12 @@ export default function MetricsTab() {
             </span>
             <span className="mt-0.5 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
               WRS
+            </span>
+            <span
+              className="mt-0.5 text-[9px] font-mono font-bold tabular-nums"
+              style={{ color: SYNC_COLOR, textShadow: `0 0 6px ${SYNC_COLOR}` }}
+            >
+              {secondsLeft}s
             </span>
           </div>
         </div>
