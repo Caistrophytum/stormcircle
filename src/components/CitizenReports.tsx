@@ -30,7 +30,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, MapPin, ChevronDown, LocateFixed, X as XIcon } from "lucide-react";
-import { resolveDeviceCity } from "@/lib/deviceLocation";
+import { resolveDeviceCityDetailed } from "@/lib/deviceLocation";
 import type { GeocodedCity } from "@/hooks/useCitySearch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
