@@ -29,14 +29,16 @@ const getVisitorId = () => {
 const registerVisit = async (): Promise<number | null> => {
   if (cachedCount != null) return cachedCount;
   if (!inflight) {
-    inflight = supabase
-      .rpc("register_visit", { _visitor_id: getVisitorId() })
+    inflight = Promise.resolve(
+      supabase.rpc("register_visit", { _visitor_id: getVisitorId() }),
+    )
       .then(({ data, error }) => {
         if (error) return null;
         cachedCount = typeof data === "number" ? data : Number(data);
         return cachedCount;
       })
       .catch(() => null);
+
   }
   return inflight;
 };
