@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
+import { useLifetimeVisitors } from "@/hooks/useLifetimeVisitors";
 import { useUnitSystem, toggleUnitSystem } from "@/hooks/useUnitSystem";
 import NotificationBell from "@/components/NotificationBell";
 
 export default function MobileHeader() {
   const onlineCount = useOnlineCount();
+  const lifetime = useLifetimeVisitors();
+  const [showLifetime, setShowLifetime] = useState(false);
   const unitSystem = useUnitSystem();
   const [now, setNow] = useState(() => new Date());
+
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
