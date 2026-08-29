@@ -279,14 +279,16 @@ export const LeafletRadar = ({
       {interactive && <WarningPolygons ref={warningsRef} polygons={polygons} />}
       {interactive && (
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
-          subdomains="abcd"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
           opacity={0.9}
           attribution=""
           zIndex={1000}
+          maxZoom={20}
+          maxNativeZoom={16}
           {...tileOpts}
         />
       )}
+
       <Recenter station={station} />
       {onMap && <MapRefCapture onMap={onMap} />}
     </MapContainer>
