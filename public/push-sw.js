@@ -16,8 +16,8 @@ self.addEventListener("push", (event) => {
   const title = data.title || "StormCircle";
   const options = {
     body: data.body || "",
-    icon: "/favicon.ico",
-    badge: "/favicon.ico",
+    icon: data.icon || "/icon-192.png",
+    badge: "/badge-96.png",
     tag: data.id || data.category || "stormcircle",
     data: { url: data.url || "/", id: data.id || null },
     requireInteraction: data.severity === "Extreme",
