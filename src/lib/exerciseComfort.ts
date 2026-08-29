@@ -371,27 +371,27 @@ export function describeWarningRestrictions(list: ActiveWarning[]): WarningRestr
   return normalizeWarnings(list).map((w) => {
     const effects: string[] = [];
 
-    // Hard gates first — they override everything else.
+    // Life-safety products first.
     if (/evacuation|shelter in place|tornado (warning|emergency)/i.test(w.event)) {
-      effects.push("Outdoor exercise is not recommended — this alert overrides the score.");
+      effects.push("Outdoor exercise is not recommended — follow official instructions.");
       return { event: w.event, severityLabel: "Extreme", effects };
     }
 
     if (w.sev >= 3) {
-      effects.push("Maximum possible comfort score is 15/100 — exercise is dangerous right now.");
+      effects.push("Extreme alert in effect — conditions can be dangerous regardless of the score.");
     }
 
-    const floor = SEV_FLOOR[w.sev] ?? 45;
     const matched = WARNING_CATEGORIES.filter((c) => c.re.test(w.event));
     if (matched.length) {
       const categories = Array.from(new Set(matched.map((c) => LABELS[c.key].toLowerCase())));
       effects.push(
-        `This alert treats ${categories.join(" + ")} as at least a ${floorLabel(floor)} ` +
-          `(${floor}/100), so that hazard keeps deducting points even if the reading looks mild.`,
+        `Take extra care with ${categories.join(" + ")} — readings may worsen quickly. ` +
+          `The comfort score is based on measured conditions only and is not adjusted by this alert.`,
       );
     }
 
-    if (!effects.length) effects.push("Advisory only — no automatic score restriction.");
+    if (!effects.length) effects.push("Advisory only — the comfort score is unaffected.");
+
     return { event: w.event, severityLabel: SEV_LABEL[w.sev] ?? "Moderate", effects };
   });
 }
