@@ -145,6 +145,18 @@ export default function MetricsTab() {
     radar.selectedCity?.lon ?? null,
   );
 
+  // Sync countdown - neon blue shell that depletes over the 60 s refresh cycle.
+  const syncTick = useRefreshTick();
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  useEffect(() => {
+    const update = () => {
+      const msIntoMinute = Date.now() % 60_000;
+      setSecondsLeft(Math.max(0, Math.ceil((60_000 - msIntoMinute) / 1000)));
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [syncTick]);
 
   const size = 140;
   const stroke = 12;
