@@ -333,13 +333,8 @@ function scoreHour(
     .sort((a, b) => b.points - a.points);
 
   const top = factors.filter((f) => f.points >= Math.max(3, factors[0].points * 0.6));
-  let limiterLabel = factors[0]?.points >= 3 ? top.map((f) => f.label).join(" + ") : "None";
+  const limiterLabel = factors[0]?.points >= 3 ? top.map((f) => f.label).join(" + ") : "None";
 
-  const gate = hardGate(warnings);
-  if (gate && gate.cap < score) {
-    score = gate.cap;
-    limiterLabel = gate.label;
-  }
 
   return {
     time: h.time,
