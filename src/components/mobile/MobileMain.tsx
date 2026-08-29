@@ -314,6 +314,20 @@ export default function MobileMain() {
     if (el) el.scrollTop = 0;
   }, [chatMsgs.length]);
   const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
+
+  // 60 s sync countdown - drives the neon blue shell around the WRS bar.
+  const syncTick = useRefreshTick();
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  useEffect(() => {
+    const update = () => {
+      const msIntoMinute = Date.now() % 60_000;
+      setSecondsLeft(Math.max(0, Math.ceil((60_000 - msIntoMinute) / 1000)));
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [syncTick]);
+
   const toggleKey = (id: string) =>
     setExpandedKey((prev) => {
       const next = new Set(prev);
