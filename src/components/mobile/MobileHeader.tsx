@@ -3,6 +3,7 @@ import { useOnlineCount } from "@/hooks/useOnlineCount";
 import { useLifetimeVisitors } from "@/hooks/useLifetimeVisitors";
 import { useUnitSystem, toggleUnitSystem } from "@/hooks/useUnitSystem";
 import NotificationBell from "@/components/NotificationBell";
+import stormcircleLogo from "@/assets/stormcircle-logo.png.asset.json";
 
 export default function MobileHeader() {
   const onlineCount = useOnlineCount();
