@@ -51,11 +51,13 @@ export default function RadarReportsTab() {
       <FloatingWindow
         open={radarMini.isOpen}
         onClose={() => radarMini.close()}
-        title="NEXRAD Radar"
+        title={radar.euMode ? "European Radar" : "NEXRAD Radar"}
         subtitle={
-          radar.selectedStation
-            ? `${radar.selectedStation.id} - ${radar.selectedStation.name}`
-            : "Select a station on the map"
+          radar.euMode
+            ? "EUMETNET composite reflectivity"
+            : radar.selectedStation
+              ? `${radar.selectedStation.id} - ${radar.selectedStation.name}`
+              : "Select a station on the map"
         }
         accent="125,211,252"
         width="33vw"
@@ -84,6 +86,7 @@ export default function RadarReportsTab() {
               <LeafletRadar
                 station={radar.selectedStation}
                 tileUrl={radar.tileUrl}
+                euMode={radar.euMode}
                 interactive
                 selectedStation={radar.selectedStation}
                 onStationMarkerSelect={radar.selectStationByMarker}
@@ -97,11 +100,13 @@ export default function RadarReportsTab() {
       <FloatingWindow
         open={radarFullOpen}
         onClose={() => setRadarFullOpen(false)}
-        title="NEXRAD Radar - Full View"
+        title={radar.euMode ? "European Radar - Full View" : "NEXRAD Radar - Full View"}
         subtitle={
-          radar.selectedStation
-            ? `${radar.selectedStation.id} - ${radar.selectedStation.name}`
-            : "Select a station on the map"
+          radar.euMode
+            ? "EUMETNET composite reflectivity"
+            : radar.selectedStation
+              ? `${radar.selectedStation.id} - ${radar.selectedStation.name}`
+              : "Select a station on the map"
         }
         accent="125,211,252"
         anchor="center"
@@ -115,6 +120,7 @@ export default function RadarReportsTab() {
             selectedStation={radar.selectedStation}
             stationDistanceKm={radar.stationDistanceKm}
             selectedProduct={radar.selectedProduct}
+            euMode={radar.euMode}
             onProductChange={(code) => {
               radar.setSelectedProduct(code);
               radarMini.open();
@@ -122,17 +128,18 @@ export default function RadarReportsTab() {
           />
           <div>
             <div className="mb-1.5 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-              Scan Types
+              {radar.euMode ? "Scan Types (NEXRAD only)" : "Scan Types"}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {PRODUCTS.map((p) => (
                 <button
                   key={p.code}
+                  disabled={radar.euMode}
                   onClick={() => {
                     radar.setSelectedProduct(p.code as ProductCode);
                     radarMini.open();
                   }}
-                  className="rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors"
+                  className="rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
                     background:
                       radar.selectedProduct === p.code
@@ -161,6 +168,7 @@ export default function RadarReportsTab() {
               <LeafletRadar
                 station={radar.selectedStation}
                 tileUrl={radar.tileUrl}
+                euMode={radar.euMode}
                 interactive
                 selectedStation={radar.selectedStation}
                 onStationMarkerSelect={radar.selectStationByMarker}

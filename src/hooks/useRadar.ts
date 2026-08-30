@@ -4,6 +4,12 @@ import { findNearestStation } from "@/lib/nearestStation";
 import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/CityContext";
 import { searchGeocode } from "@/lib/openMeteo";
 import { useHometownCoords } from "@/hooks/useHometownCoords";
+import {
+  isInEuRadarCoverage,
+  fetchLatestEuRadarFrame,
+  euRadarTileUrl,
+  EuRadarFrame,
+} from "@/lib/euRadar";
 
 
 /** Open-Meteo returns admin1 as the full state name; NEXRAD station labels
@@ -54,6 +60,35 @@ export function useRadar() {
   const [stationDistanceKm, setStationDistanceKm] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<ProductCode | null>(null);
 
+  // European (non-US) radar composite. When the selected city sits outside the
+  // US but inside the OPERA/European coverage box we drop NEXRAD entirely and
+  // show the European composite anchored on the city itself.
+  const euMode =
+    !!selectedCity &&
+    (selectedCity.countryCode ?? "US").toUpperCase() !== "US" &&
+    isInEuRadarCoverage(selectedCity.lat, selectedCity.lon);
+
+  const [euFrame, setEuFrame] = useState<EuRadarFrame | null>(null);
+
+  useEffect(() => {
+    if (!euMode) {
+      setEuFrame(null);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      const frame = await fetchLatestEuRadarFrame();
+      if (!cancelled) setEuFrame(frame);
+    };
+    load();
+    // Radar composites refresh every 10 minutes upstream.
+    const id = window.setInterval(load, 10 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [euMode]);
+
   // Keep nearest-station state in sync with the shared selectedCity.
   // The NEXRAD radar network is CONUS-only, so when the selected city is
   // outside the US we anchor the radar to the user's saved hometown instead,
@@ -61,6 +96,19 @@ export function useRadar() {
   useEffect(() => {
     if (selectedCity) {
       const isUS = (selectedCity.countryCode ?? "US").toUpperCase() === "US";
+      if (!isUS && isInEuRadarCoverage(selectedCity.lat, selectedCity.lon)) {
+        // Synthetic "station" so the map centers on the city; there is no
+        // per-site product selection for the European composite.
+        setSelectedStation({
+          id: "OPERA",
+          name: `${selectedCity.name} - EU composite`,
+          lat: selectedCity.lat,
+          lon: selectedCity.lon,
+        });
+        setStationDistanceKm(null);
+        setSelectedProduct("N0B");
+        return;
+      }
       const anchor = isUS
         ? { lat: selectedCity.lat, lon: selectedCity.lon }
         : homeCoords
@@ -75,12 +123,14 @@ export function useRadar() {
       setStationDistanceKm(null);
     }
   }, [
+    selectedCity?.name,
     selectedCity?.lat,
     selectedCity?.lon,
     selectedCity?.countryCode,
     homeCoords?.lat,
     homeCoords?.lon,
   ]);
+
 
 
   const setSelectedCity = (city: CtxSelectedCity | null) => {
@@ -134,10 +184,11 @@ export function useRadar() {
 
 
   const tileUrl = useMemo(() => {
+    if (euMode) return euRadarTileUrl(euFrame);
     if (!selectedStation || !selectedProduct) return null;
     const tileId = selectedStation.id.replace(/^K/, "");
     return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${tileId}-${selectedProduct}-0/{z}/{x}/{y}.png`;
-  }, [selectedStation, selectedProduct]);
+  }, [euMode, euFrame, selectedStation, selectedProduct]);
 
   return {
     selectedCity,
@@ -149,5 +200,9 @@ export function useRadar() {
     selectedProduct,
     setSelectedProduct,
     tileUrl,
+    /** True when the European composite is being shown instead of NEXRAD. */
+    euMode,
+    /** Unix seconds of the displayed European frame (null in NEXRAD mode). */
+    euFrameTime: euFrame?.time ?? null,
   };
 }

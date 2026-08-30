@@ -23,6 +23,7 @@ export default function MobileRadar() {
     selectedProduct,
     setSelectedProduct,
     tileUrl,
+    euMode,
   } = useRadar();
 
   const [cityOpen, setCityOpen] = useState(false);
@@ -31,7 +32,9 @@ export default function MobileRadar() {
   const { results, loading, error } = useCitySearch(query);
 
   const selectedProductLabel =
-    PRODUCTS.find((p) => p.code === selectedProduct)?.label ?? "Select scan...";
+    euMode
+      ? "EU composite"
+      : PRODUCTS.find((p) => p.code === selectedProduct)?.label ?? "Select scan...";
 
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column" }}>
@@ -40,6 +43,7 @@ export default function MobileRadar() {
         <LeafletRadar
           station={selectedStation}
           tileUrl={tileUrl}
+          euMode={euMode}
           interactive
           mobile
           selectedStation={selectedStation}
@@ -156,7 +160,7 @@ export default function MobileRadar() {
           <Popover open={scanOpen} onOpenChange={setScanOpen}>
             <PopoverTrigger asChild>
               <button
-                disabled={!selectedStation}
+                disabled={!selectedStation || euMode}
                 className="w-full flex items-center justify-between gap-2 px-3 h-10 rounded-sm font-mono text-xs disabled:opacity-40"
                 style={{
                   background: "rgba(255,255,255,0.04)",
