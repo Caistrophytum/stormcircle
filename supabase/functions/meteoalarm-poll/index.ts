@@ -25,6 +25,9 @@ const BASE = "https://api.meteogate.eu/warnings/collections/warnings/locations/A
 const FETCH_TIMEOUT_MS = 20_000;
 const PAGE_SIZE = 100;
 const MAX_PAGES = 12;          // EDR calls are rate limited (50 / hour / key)
+const SWEEP_WINDOWS = 3;       // 3 x 23h back-sweep: catches products issued
+                               // days ago that are still (or not yet) valid
+const ACTIVE_AHEAD_DAYS = 5;   // keep warnings valid now or starting soon
 const MAX_CAP_DOCS = 500;      // safety cap on object-storage fetches per run
 const CAP_CONCURRENCY = 8;
 const SWEEP_HOURS = 23;        // API rejects ranges of 24 hours or more
@@ -225,10 +228,15 @@ async function fetchIndexPage(
   page: number,
   from: string,
   to: string,
+  activeFrom: string,
+  activeTo: string,
 ): Promise<Record<string, unknown>[]> {
   const url = new URL(BASE);
   url.searchParams.set("language", "en");
+  // `datetime` filters the CAP *sent* time (mandatory, must span < 24h);
+  // `active` filters by validity so old-but-still-valid products come back.
   url.searchParams.set("datetime", `${from}/${to}`);
+  url.searchParams.set("active", `${activeFrom}/${activeTo}`);
   if (page > 1) url.searchParams.set("page", String(page));
 
   const res = await fetchJson(url.toString(), {
@@ -287,15 +295,33 @@ Deno.serve(async (req) => {
   try {
     const now = Date.now();
     const iso = (ms: number) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
-    const from = iso(now - SWEEP_HOURS * 3600_000);
-    const to = iso(now);
 
-    // 1. Index sweep.
+    // 1. Index sweep. The API caps each `datetime` range at < 24h, so we walk
+    //    SWEEP_WINDOWS consecutive 23h windows backwards and keep anything
+    //    still active (or starting within ACTIVE_AHEAD_DAYS).
+    const activeFrom = iso(now);
+    const activeTo = iso(now + ACTIVE_AHEAD_DAYS * 24 * 3600_000);
     const features: Record<string, unknown>[] = [];
-    for (let page = 0; page < MAX_PAGES; page++) {
-      const batch = await fetchIndexPage(token, page + 1, from, to);
-      features.push(...batch);
-      if (batch.length < PAGE_SIZE) break;
+    const seenFeature = new Set<string>();
+    for (let w = 0; w < SWEEP_WINDOWS; w++) {
+      const hi = iso(now - w * SWEEP_HOURS * 3600_000);
+      const lo = iso(now - (w + 1) * SWEEP_HOURS * 3600_000);
+      for (let page = 0; page < MAX_PAGES; page++) {
+        let batch: Record<string, unknown>[];
+        try {
+          batch = await fetchIndexPage(token, page + 1, lo, hi, activeFrom, activeTo);
+        } catch (e) {
+          console.warn("[meteoalarm-poll] index page failed", w, page, String(e));
+          break;
+        }
+        for (const f of batch) {
+          const key = String(f.id ?? JSON.stringify((f.properties ?? {})));
+          if (seenFeature.has(key)) continue;
+          seenFeature.add(key);
+          features.push(f);
+        }
+        if (batch.length < PAGE_SIZE) break;
+      }
     }
 
     // 2. CAP documents, one per distinct alert.
