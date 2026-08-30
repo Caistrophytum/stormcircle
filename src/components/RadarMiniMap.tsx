@@ -9,6 +9,7 @@ import { ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { useRadarStationStatus } from "@/hooks/useRadarStationStatus";
+import { EU_RADAR_STATIONS } from "@/config/euRadarStations";
 import WarningPolygons, { WarningPolygonsHandle } from "./WarningPolygons";
 
 /** Custom Leaflet pane name for radar station markers. Sits above the
@@ -54,10 +55,14 @@ const Recenter = forwardRef<unknown, { station: RadarStation | null }>(function 
 interface RadarOverlayLayerProps {
   tileUrl: string | null;
   onTileRequest?: (url: string) => void;
+  /** European composite: upstream tiles only exist up to z7, above that the
+   *  service returns a "Zoom Level Not Supported" placeholder. Upsample the
+   *  z7 tile instead so the echoes stay visible when zoomed in. */
+  euMode?: boolean;
 }
 
 const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function RadarOverlayLayer(
-  { tileUrl, onTileRequest },
+  { tileUrl, onTileRequest, euMode },
   _ref,
 ) {
   const map = useMap();
@@ -86,8 +91,11 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
       detectRetina: false,
       minZoom: 1,
       maxZoom: 20,
+      ...(euMode ? { maxNativeZoom: 7 } : {}),
       zIndex: 650,
-      attribution: "IEM NEXRAD / Iowa State",
+      attribution: euMode
+        ? "RainViewer / EUMETNET OPERA members"
+        : "IEM NEXRAD / Iowa State",
       updateWhenIdle: true,
       updateWhenZooming: false,
       keepBuffer: 1,
@@ -110,7 +118,7 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
       layerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, hasTileUrl]);
+  }, [map, hasTileUrl, euMode]);
 
   // Push tileUrl + cacheBust changes via setUrl without recreating the layer.
   useEffect(() => {
@@ -126,6 +134,8 @@ interface RadarStationMarkersProps {
   selectedStation: RadarStation | null;
   onStationSelect: (station: RadarStation) => void;
   onProductSelect: (product: ProductCode) => void;
+  /** Plot European (OPERA) sites instead of the CONUS NEXRAD network. */
+  euMode?: boolean;
 }
 
 /** Creates a dedicated Leaflet pane for the radar station markers so they
@@ -146,16 +156,20 @@ const RadarStationMarkers = ({
   selectedStation,
   onStationSelect,
   onProductSelect,
+  euMode,
 }: RadarStationMarkersProps) => {
   const lastReceived = useRadarStationStatus();
   const now = Date.now();
   const STALE_MS = 20 * 60 * 1000;
+  // NEXRAD ingest status only exists for US sites; European sites always
+  // render in the "healthy" colour scheme.
+  const stations = euMode ? EU_RADAR_STATIONS : RADAR_STATIONS;
   return (
     <>
       <EnsureRadarMarkersPane />
-      {RADAR_STATIONS.map((station) => {
+      {stations.map((station) => {
         const isSelected = selectedStation?.id === station.id;
-        const ts = lastReceived[station.id];
+        const ts = euMode ? undefined : lastReceived[station.id];
         const isStale = ts !== undefined && now - ts > STALE_MS;
         const baseColor = isSelected ? "#00ffff" : isStale ? "#ff3838" : "#4af";
         const fillColor = isSelected ? "#00ffff" : isStale ? "#aa1111" : "#1a6aaa";
@@ -272,14 +286,15 @@ export const LeafletRadar = ({
           {...tileOpts}
         />
       )}
-      {interactive && !euMode && (
+      {interactive && (
         <RadarStationMarkers
           selectedStation={selectedStation}
           onStationSelect={onStationMarkerSelect}
           onProductSelect={setSelectedProduct}
+          euMode={euMode}
         />
       )}
-      <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
+      <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} euMode={euMode} />
       {interactive && <WarningPolygons ref={warningsRef} polygons={polygons} />}
       {interactive && (
         <TileLayer
