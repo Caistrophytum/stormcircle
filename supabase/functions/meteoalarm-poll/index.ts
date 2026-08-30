@@ -222,14 +222,14 @@ async function fetchJson(url: string, headers: Record<string, string>): Promise<
 /** One page of the warning index. Returns [] on 204 (nothing sent in range). */
 async function fetchIndexPage(
   token: string,
-  offset: number,
+  page: number,
   from: string,
   to: string,
 ): Promise<Record<string, unknown>[]> {
   const url = new URL(BASE);
   url.searchParams.set("language", "en");
   url.searchParams.set("datetime", `${from}/${to}`);
-  if (offset > 0) url.searchParams.set("offset", String(offset));
+  if (page > 1) url.searchParams.set("page", String(page));
 
   const res = await fetchJson(url.toString(), {
     Authorization: `Bearer ${token}`,
@@ -293,7 +293,7 @@ Deno.serve(async (req) => {
     // 1. Index sweep.
     const features: Record<string, unknown>[] = [];
     for (let page = 0; page < MAX_PAGES; page++) {
-      const batch = await fetchIndexPage(token, page * PAGE_SIZE, from, to);
+      const batch = await fetchIndexPage(token, page + 1, from, to);
       features.push(...batch);
       if (batch.length < PAGE_SIZE) break;
     }
