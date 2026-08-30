@@ -59,9 +59,12 @@ function geocodeKey(name: string, value: string): string | null {
   const v = value.trim().toUpperCase();
   if (!v) return null;
   if (n === "EMMA_ID") return `emma:${v}`;
+  if (n === "NUTS1") return `nuts1:${v}`;
+  if (n === "NUTS2") return `nuts2:${v}`;
   if (n === "NUTS3" || n === "NUTS") return `nuts3:${v}`;
   return null;
 }
+
 
 function toPolygons(g: Geometry | null): number[][][][] {
   if (!g) return [];
