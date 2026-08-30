@@ -249,6 +249,10 @@ Deno.serve(async (req) => {
       ["raw", { headers: { Authorization: token } }],
       ["xapikey", { headers: { "X-API-Key": token } }],
       ["apikey", { headers: { apikey: token } }],
+      ["tokenScheme", { headers: { Authorization: `Token ${token}` } }],
+      ["basicApi", { headers: { Authorization: `Basic ${btoa(`api:${token}`)}` } }],
+      ["basicToken", { headers: { Authorization: `Basic ${btoa(`${token}:`)}` } }],
+      ["xauthtoken", { headers: { "X-Auth-Token": token } }],
     ];
     for (const [name, init] of tries) {
       try {
