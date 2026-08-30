@@ -229,7 +229,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  const token = Deno.env.get("METEOALARM_API_TOKEN") ?? "";
+  // Trim: pasted credentials often carry a trailing newline or quotes.
+  const token = (Deno.env.get("METEOALARM_API_TOKEN") ?? "").trim().replace(/^["']|["']$/g, "");
   if (!token) {
     return new Response(JSON.stringify({ error: "METEOALARM_API_TOKEN not configured" }), {
       status: 500,
@@ -249,6 +250,10 @@ Deno.serve(async (req) => {
       ["raw", { headers: { Authorization: token } }],
       ["xapikey", { headers: { "X-API-Key": token } }],
       ["apikey", { headers: { apikey: token } }],
+      ["tokenScheme", { headers: { Authorization: `Token ${token}` } }],
+      ["basicApi", { headers: { Authorization: `Basic ${btoa(`api:${token}`)}` } }],
+      ["basicToken", { headers: { Authorization: `Basic ${btoa(`${token}:`)}` } }],
+      ["xauthtoken", { headers: { "X-Auth-Token": token } }],
     ];
     for (const [name, init] of tries) {
       try {
