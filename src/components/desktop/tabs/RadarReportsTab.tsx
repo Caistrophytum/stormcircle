@@ -128,17 +128,18 @@ export default function RadarReportsTab() {
           />
           <div>
             <div className="mb-1.5 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
-              Scan Types
+              {radar.euMode ? "Scan Types (NEXRAD only)" : "Scan Types"}
             </div>
             <div className="flex flex-wrap gap-1.5">
               {PRODUCTS.map((p) => (
                 <button
                   key={p.code}
+                  disabled={radar.euMode}
                   onClick={() => {
                     radar.setSelectedProduct(p.code as ProductCode);
                     radarMini.open();
                   }}
-                  className="rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors"
+                  className="rounded-md px-2 py-1 font-mono text-[10px] uppercase tracking-wider transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
                     background:
                       radar.selectedProduct === p.code
