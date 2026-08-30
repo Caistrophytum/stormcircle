@@ -4,6 +4,12 @@ import { findNearestStation } from "@/lib/nearestStation";
 import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/CityContext";
 import { searchGeocode } from "@/lib/openMeteo";
 import { useHometownCoords } from "@/hooks/useHometownCoords";
+import {
+  isInEuRadarCoverage,
+  fetchLatestEuRadarFrame,
+  euRadarTileUrl,
+  EuRadarFrame,
+} from "@/lib/euRadar";
 
 
 /** Open-Meteo returns admin1 as the full state name; NEXRAD station labels
@@ -178,10 +184,11 @@ export function useRadar() {
 
 
   const tileUrl = useMemo(() => {
+    if (euMode) return euRadarTileUrl(euFrame);
     if (!selectedStation || !selectedProduct) return null;
     const tileId = selectedStation.id.replace(/^K/, "");
     return `https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::${tileId}-${selectedProduct}-0/{z}/{x}/{y}.png`;
-  }, [selectedStation, selectedProduct]);
+  }, [euMode, euFrame, selectedStation, selectedProduct]);
 
   return {
     selectedCity,
@@ -193,5 +200,9 @@ export function useRadar() {
     selectedProduct,
     setSelectedProduct,
     tileUrl,
+    /** True when the European composite is being shown instead of NEXRAD. */
+    euMode,
+    /** Unix seconds of the displayed European frame (null in NEXRAD mode). */
+    euFrameTime: euFrame?.time ?? null,
   };
 }
