@@ -15,7 +15,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const BASE = "https://api.meteoalarm.org/edr/v1/collections/warnings/locations";
+const BASE = "https://api.meteogate.eu/warnings/collections/warnings/locations";
 const FETCH_TIMEOUT_MS = 20_000;
 const MAX_PAGES = 25;
 const DEFAULT_DURATION_MS = 12 * 60 * 60 * 1000;
