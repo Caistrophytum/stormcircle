@@ -14,22 +14,22 @@ const faqs = [
   {
     question: "What is StormCircle?",
     answer:
-      "StormCircle is a forever-free, indie, solo-developed weather social network where anyone, from curious members of the public to professional meteorologists can share real-time storm reports, follow severe weather events, and stay informed during active weather situations across the USA.",
+      "StormCircle is a forever-free, indie, solo-developed weather social network where anyone, from curious members of the public to professional meteorologists, can share real-time storm reports, follow severe weather events, and stay informed during active weather situations. It combines a tactical weather map, automated weather bots, a personal Weather Risk Score, an Outdoor Exercise Comfort index, and community chat into one browser-based command deck.",
   },
   {
     question: "Who is StormCircle for?",
     answer:
-      "StormCircle is built for everyone. Whether you're a professional meteorologist sharing a verified severe weather warning, a storm enthusiast tracking a supercell, or an everyday person wanting to know if that dark cloud is something to worry about - StormCircle connects you with the right information at the right time.",
+      "StormCircle is built for everyone. Whether you're a professional meteorologist sharing a verified severe weather warning, a storm enthusiast tracking a supercell, an athlete deciding if it's safe to run or bike, or an everyday person wanting to know if that dark cloud is something to worry about - StormCircle connects you with the right information at the right time.",
   },
   {
     question: "Who are you, Mr. developer?",
     answer:
-      "Hi! Nice to meet you. First, let me extend my sincerest thanks for visiting my website. My name's Omri, at the time of writing this paragraph and developing the website (2026) I'm 18 years old. I've been a weather enthusiast since infancy, and since then I've been collecting measurment instruments, studying models and taking online university courses. This website is my little love project for the community. IF you'd like to contact me further, feel free to browse for AspiringMolecularEngineer on Tumblr or on email at stormcirclecontact@gmail.com.",
+      "Hi! Nice to meet you. First, let me extend my sincerest thanks for visiting my website. My name's Omri, at the time of writing this paragraph and developing the website (2026) I'm 18 years old. I've been a weather enthusiast since infancy, and since then I've been collecting measurement instruments, studying models and taking online university courses. This website is my little love project for the community. If you'd like to contact me further, feel free to browse for AspiringMolecularEngineer on Tumblr or on email at stormcirclecontact@gmail.com.",
   },
   {
     question: "How do I report severe weather on StormCircle?",
     answer:
-      "Simply create a free account, log in, and post your storm report to the live community feed. Describe what you're observing: wind, hail, flooding, rotation, and your report becomes instantly visible to other users and meteorologists monitoring the platform.",
+      "Simply create a free account, log in, and post your storm report to the live community feed. Describe what you're observing: wind, hail, flooding, rotation, strong winds, heat-related events, or active wildfire. Your report becomes instantly visible to other users and meteorologists monitoring the platform. Meteorologists can verify reports so the community knows which posts are trusted.",
   },
   {
     question: "Is StormCircle free to use?",
@@ -39,32 +39,47 @@ const faqs = [
   {
     question: "How is StormCircle different from other weather apps?",
     answer:
-      "Most weather apps give you forecasts. StormCircle gives you a community. It's the only platform designed specifically to bridge professional meteorologists and the general public in a shared, real-time space, combining social networking with live severe weather data, NEXRAD radar overlays, and SPC outlook information.",
+      "Most weather apps give you forecasts. StormCircle gives you a community command deck. It bridges professional meteorologists and the general public in a shared, real-time space, combining social networking with live severe weather data, NEXRAD radar overlays, SPC and Fire Weather outlooks, European MeteoAlarm warnings, an Outdoor Exercise Comfort model, browser push notifications, and a personal Weather Risk Score.",
   },
   {
     question: "Can meteorologists use StormCircle professionally?",
     answer:
-      "Absolutely. StormCircle features a verified Meteorologist badge for credentialed professionals. Meteorologists can use the platform to share situational awareness updates, communicate warnings directly to the public, and monitor citizen storm reports as ground-truth data during active weather events. If you're a certified, known meteorologist, you can apply to get your badge in the Contact section, which sits in the Account Center.",
+      "Absolutely. StormCircle features a verified Meteorologist badge for credentialed professionals. Meteorologists can use the platform to share situational awareness updates, communicate warnings directly to the public, verify citizen storm reports as ground-truth data during active weather events, and apply for the badge through the Account Center.",
   },
   {
     question: "What severe weather data does StormCircle show?",
     answer:
-      "StormCircle integrates live NEXRAD radar, NWS severe weather alerts, SPC Day 1 convective outlooks, and real-time Local Storm Reports (LSRs). All data is displayed on an interactive map so you can see the full weather picture at a glance.",
+      "StormCircle integrates live NEXRAD radar, U.S. NWS severe weather alerts and Local Storm Reports, SPC convective outlooks, Fire Weather outlooks, hurricane and ENSO briefings, and European severe weather warnings via MeteoAlarm. All data is displayed on an interactive tactical map so you can see the full weather picture at a glance.",
   },
   {
     question: "Does StormCircle cover weather outside the USA?",
     answer:
-      "StormCircle currently focuses on the United States, where our severe weather data integrations, including NEXRAD radar and NWS alerts provide the most comprehensive coverage. International expansion is on our roadmap.",
+      "Yes. StormCircle now supports global hometowns and city search through Open-Meteo geocoding, shows European severe weather warnings via MeteoAlarm, and uses Open-Meteo weather data worldwide. NEXRAD radar coverage is still U.S.-only, but the map and warning layers work for many international locations.",
   },
   {
     question: "Where can I find real-time storm reports near me?",
     answer:
-      "StormCircle's live map shows community storm reports, NWS warnings, and radar data all in one place. You can monitor your local area or zoom out to track regional severe weather events as they develop in real time.",
+      "StormCircle's live map and chat feed show community storm reports, official warnings, and radar data all in one place. You can monitor your local area, switch the danger-panel filter to Local or International, or zoom out to track regional severe weather events as they develop in real time.",
+  },
+  {
+    question: "What is the Weather Risk Score?",
+    answer:
+      "The Weather Risk Score is a 0-100 index that blends surface humidity, mid-level humidity, mid-level lapse rate, CAPE, bulk shear, LCL, EL, and CIN into a single convective-severity readout. It updates on a shared refresh cycle and is shown on both desktop and mobile.",
+  },
+  {
+    question: "What is Outdoor Exercise Comfort?",
+    answer:
+      "Outdoor Exercise Comfort calculates how comfortable and safe it is to walk, run, bike, or hike right now. It scores each activity from 0 to 100 using real-feel temperature, wind, UV index, air quality, and rain, and shows which parameter is limiting you most. It also projects the next six hours so you can plan your workout.",
+  },
+  {
+    question: "Can I get notifications from StormCircle?",
+    answer:
+      "Yes. You can enable push and in-app notifications in the Account Center for hometown weather alerts, WRS changes, SPC Enhanced or greater outlooks, Fire Weather updates, and chat messages. Chat notifications can be set to ALL posts or only LOCAL posts within about 150 km of you.",
   },
   {
     question: "How do I get started on StormCircle?",
     answer:
-      "Visit StormCircle.net, create a free account, and you're in. No app download required: StormCircle runs entirely in your browser. Join the community, follow active weather discussions, and start contributing reports from your area.",
+      "Visit StormCircle.net, create a free account, and you're in. No app download required: StormCircle runs entirely in your browser. Join the community, follow active weather discussions, set your hometown, and start contributing reports from your area.",
   },
 ];
 
