@@ -1,37 +1,49 @@
 // meteoalarm-poll: scheduled ingest of European weather warnings from the
-// EUMETNET MeteoAlarm / MeteoGate EDR API.
+// EUMETNET MeteoAlarm public country feeds.
 //
-// Flow (the EDR service only supports the "locations" query):
-//   1. GET /warnings/collections/warnings/locations/ALL?datetime=<sent range>
-//      -> GeoJSON index. Each feature = one CAP area, geometry is the bbox,
-//         properties carry alertId + countryCode + links to the full CAP doc.
-//         The datetime filter applies to the CAP "sent" time and must span
-//         less than 24 hours, so we sweep the last 23 hours on every run.
-//   2. For every distinct alertId, download the linked CAP JSON (hosted on
-//      object storage, not rate limited) to get event, severity, onset,
-//      expiry, area names and instructions.
+// Source: https://feeds.meteoalarm.org/api/v1/warnings/feeds-<country>
+//   Free, no token, one JSON document per member country. Each document is a
+//   list of CAP alerts; every alert carries one info block per language and a
+//   list of areas.
 //
-// Rows are written into `active_alerts` with an "MA-<CC>-" alert_id prefix so
-// the whole downstream stack (map polygons, current-location hazards, danger
-// lists, notifications) works unchanged.
+// Geometry (see geometry.ts):
+//   1. CAP `polygon` / `circle` when the member service publishes coordinates
+//      (Norway, UK, Israel, ...).
+//   2. `NUTS3` geocodes -> Eurostat GISCO NUTS3 boundaries.
+//   3. `EMMA_ID` geocodes -> MeteoAlarm awareness-region boundaries.
+//   Resolved shapes are cached in `zone_geom_cache` so a run costs one small
+//   query instead of a multi-megabyte download.
+//
+// Rows land in `active_alerts` with an "MA-<CC>-" alert_id prefix so the whole
+// downstream stack (map polygons, current-location hazards, danger lists,
+// notifications) works unchanged. One row per alert info block: all areas of
+// that block are merged into a single MultiPolygon.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { GeometryResolver, type Geometry } from "./geometry.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const BASE = "https://api.meteogate.eu/warnings/collections/warnings/locations/ALL";
-const FETCH_TIMEOUT_MS = 20_000;
-const PAGE_SIZE = 100;
-const MAX_PAGES = 12;          // EDR calls are rate limited (50 / hour / key)
-const SWEEP_WINDOWS = 3;       // 3 x 23h back-sweep: catches products issued
-                               // days ago that are still (or not yet) valid
-const ACTIVE_AHEAD_DAYS = 5;   // keep warnings valid now or starting soon
-const MAX_CAP_DOCS = 500;      // safety cap on object-storage fetches per run
-const CAP_CONCURRENCY = 8;
-const SWEEP_HOURS = 23;        // API rejects ranges of 24 hours or more
+const FEED_BASE = "https://feeds.meteoalarm.org/api/v1/warnings/feeds-";
+const FETCH_TIMEOUT_MS = 30_000;
+const FEED_CONCURRENCY = 6;
 const DEFAULT_DURATION_MS = 12 * 60 * 60 * 1000;
+
+/** MeteoAlarm member countries. Israel is served by our own ims-poll. */
+const COUNTRIES: [slug: string, iso2: string][] = [
+  ["andorra", "AD"], ["austria", "AT"], ["belgium", "BE"], ["bosnia-herzegovina", "BA"],
+  ["bulgaria", "BG"], ["croatia", "HR"], ["cyprus", "CY"], ["czechia", "CZ"],
+  ["denmark", "DK"], ["estonia", "EE"], ["finland", "FI"], ["france", "FR"],
+  ["germany", "DE"], ["greece", "GR"], ["hungary", "HU"], ["iceland", "IS"],
+  ["ireland", "IE"], ["italy", "IT"], ["latvia", "LV"], ["lithuania", "LT"],
+  ["luxembourg", "LU"], ["malta", "MT"], ["moldova", "MD"], ["montenegro", "ME"],
+  ["netherlands", "NL"], ["norway", "NO"], ["poland", "PL"], ["portugal", "PT"],
+  ["republic-of-north-macedonia", "MK"], ["romania", "RO"], ["serbia", "RS"],
+  ["slovakia", "SK"], ["slovenia", "SI"], ["spain", "ES"], ["sweden", "SE"],
+  ["switzerland", "CH"], ["ukraine", "UA"], ["united-kingdom", "GB"],
+];
 
 type Severity = "Extreme" | "Severe" | "Moderate" | "Minor";
 
@@ -80,7 +92,7 @@ function titleCase(s: string): string {
     .trim();
 }
 
-interface Row {
+export interface Row {
   alert_id: string;
   event: string;
   severity: Severity;
@@ -95,45 +107,45 @@ interface Row {
   ends: string;
   status: string;
   message_type: string;
-  geometry: unknown;
+  geometry: Geometry | null;
   properties: Record<string, unknown>;
 }
 
-type CapInfo = Record<string, unknown>;
+type Info = Record<string, unknown>;
+type Area = {
+  areaDesc?: string;
+  polygon?: string[];
+  circle?: string[];
+  geocode?: { value?: string; valueName?: string }[];
+};
 
-/** Pick the English CAP info block for the requested area index. */
-function selectInfo(cap: Record<string, unknown>, indexInfo: number): CapInfo | null {
-  const infos = (cap.info as CapInfo[] | undefined) ?? [];
-  if (!infos.length) return null;
-  const english = infos.filter((i) => String(i.language ?? "en").toLowerCase().startsWith("en"));
-  const pool = english.length ? english : infos;
-  return pool[indexInfo] ?? pool[0] ?? null;
-}
-
-function paramValue(info: CapInfo, name: string): string {
+function paramValue(info: Info, name: string): string {
   const params = (info.parameter as { valueName?: string; value?: string }[] | undefined) ?? [];
   const hit = params.find((p) => String(p.valueName ?? "").toLowerCase() === name);
   return hit?.value ?? "";
 }
 
-/**
- * Combine one index feature (geometry + ids) with its CAP document into an
- * active_alerts row. Returns null for green / expired / unusable products.
- */
+/** English info blocks (fall back to whatever the member published). */
+function englishInfos(alert: Record<string, unknown>): Info[] {
+  const infos = (alert.info as Info[] | undefined) ?? [];
+  const english = infos.filter((i) => String(i.language ?? "en").toLowerCase().startsWith("en"));
+  return english.length ? english : infos;
+}
+
+/** Build one active_alerts row from a CAP info block. Geometry filled later. */
 export function buildRow(
-  feature: Record<string, unknown>,
-  cap: Record<string, unknown>,
+  alert: Record<string, unknown>,
+  info: Info,
+  iso2: string,
   now: number,
 ): Row | null {
-  const geometry = feature.geometry as Record<string, unknown> | null;
-  if (!geometry || !geometry.type) return null;
-  const p = ((feature.properties ?? {}) as Record<string, unknown>) ?? {};
-  if (p.supersededByAlertId) return null;
-
-  const info = selectInfo(cap, Number(p.indexInfo ?? 0) || 0);
-  if (!info) return null;
+  if (String(alert.status ?? "Actual") !== "Actual") return null;
+  const msgType = String(alert.msgType ?? "Alert");
+  if (msgType === "Cancel" || msgType === "Ack" || msgType === "Error") return null;
 
   const levelCode = code(paramValue(info, "awareness_level"));
+  // Awareness level 1 is "green" - informational, not an actionable warning.
+  if (levelCode === "1") return null;
   const typeCode = code(paramValue(info, "awareness_type"));
 
   const severity =
@@ -146,128 +158,83 @@ export function buildRow(
       return "Moderate";
     })();
 
-  // Awareness level 1 is "green" - informational, not an actionable warning.
-  if (levelCode === "1") return null;
-
-  const rawEvent = String(info.event ?? "").trim();
-  const event = AWARENESS_EVENT[typeCode] ?? (rawEvent ? titleCase(rawEvent).slice(0, 90) : "Weather Warning");
-
-  const country = String(p.countryCode ?? "").slice(0, 2).toUpperCase() || "EU";
-
-  const areas = (info.area as { areaDesc?: string }[] | undefined) ?? [];
-  const areaIdx = Number(p.indexArea ?? 0) || 0;
-  const areaDesc = String(areas[areaIdx]?.areaDesc ?? areas[0]?.areaDesc ?? "").trim() ||
-    `${country} warning area`;
-
   const parse = (v: unknown): number => Date.parse(String(v ?? ""));
-
-  const sentMs = parse(cap.sent);
-  const sent = Number.isNaN(sentMs) ? new Date(now).toISOString() : new Date(sentMs).toISOString();
-
-  const onsetMs = parse(info.onset ?? info.effective);
-  const onset = Number.isNaN(onsetMs) ? null : new Date(onsetMs).toISOString();
 
   const expiresMs = parse(info.expires);
   const expires = Number.isNaN(expiresMs)
     ? new Date(now + DEFAULT_DURATION_MS).toISOString()
     : new Date(expiresMs).toISOString();
+  if (Date.parse(expires) <= now) return null;
+
+  const rawEvent = String(info.event ?? "").trim();
+  const event = AWARENESS_EVENT[typeCode] ??
+    (rawEvent ? titleCase(rawEvent).slice(0, 90) : "Weather Warning");
+
+  const areas = (info.area as Area[] | undefined) ?? [];
+  const names = areas.map((a) => String(a.areaDesc ?? "").trim()).filter(Boolean);
+  const areaDesc = (names.length > 3 ? `${names.slice(0, 3).join(", ")} +${names.length - 3} more` : names.join(", ")) ||
+    `${iso2} warning area`;
+
+  const sentMs = parse(alert.sent);
+  const sent = Number.isNaN(sentMs) ? new Date(now).toISOString() : new Date(sentMs).toISOString();
+
+  const onsetMs = parse(info.onset ?? info.effective);
+  const onset = Number.isNaN(onsetMs) ? null : new Date(onsetMs).toISOString();
 
   const headline = String(info.headline ?? "").trim() || `${severity} ${event} for ${areaDesc}`;
-  const description = String(info.description ?? "").trim();
-  const instruction = String(info.instruction ?? "").trim();
-  const senderName = String(info.senderName ?? "MeteoAlarm");
-
-  const featureId = String(feature.id ?? p.OBJECTID ?? `${p.alertId}-${areaIdx}`);
+  const identifier = String(alert.identifier ?? "");
 
   return {
-    alert_id: `MA-${country}-${hash(featureId)}`,
+    alert_id: `MA-${iso2}-${hash(`${identifier}|${levelCode}|${typeCode}|${info.language ?? ""}`)}`,
     event,
     severity,
     certainty: String(info.certainty ?? "Likely"),
     urgency: String(info.urgency ?? (onset && Date.parse(onset) > now ? "Future" : "Expected")),
-    headline,
-    area_desc: areaDesc,
+    headline: headline.slice(0, 300),
+    area_desc: areaDesc.slice(0, 300),
     sent,
     effective: onset ?? sent,
     onset,
     expires_at: expires,
     ends: expires,
-    status: String(cap.status ?? "Actual"),
-    message_type: String(cap.msgType ?? "Alert"),
-    geometry,
+    status: "Actual",
+    message_type: msgType,
+    geometry: null,
     properties: {
-      description: description || headline,
-      instruction,
+      description: String(info.description ?? "").trim() || headline,
+      instruction: String(info.instruction ?? "").trim(),
       headline,
       source: "MeteoAlarm",
       parameters: {
-        senderName,
-        country,
+        senderName: String(info.senderName ?? "MeteoAlarm"),
+        country: iso2,
         awarenessLevel: levelCode,
         awarenessType: typeCode,
-        capAlertId: String(p.alertId ?? ""),
+        capAlertId: identifier,
+        areas: names.slice(0, 40),
       },
       affectedZones: [],
     },
   };
 }
 
-async function fetchJson(url: string, headers: Record<string, string>): Promise<Response> {
+async function fetchFeed(slug: string): Promise<Record<string, unknown>[]> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
-    return await fetch(url, { headers, signal: ctrl.signal });
+    const res = await fetch(`${FEED_BASE}${slug}`, {
+      signal: ctrl.signal,
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)",
+      },
+    });
+    if (!res.ok) throw new Error(`${res.status}`);
+    const body = (await res.json()) as { warnings?: { alert?: Record<string, unknown> }[] };
+    return (body.warnings ?? []).map((w) => w.alert ?? {}).filter((a) => Object.keys(a).length > 0);
   } finally {
     clearTimeout(timer);
   }
-}
-
-/** One page of the warning index. Returns [] on 204 (nothing sent in range). */
-async function fetchIndexPage(
-  token: string,
-  page: number,
-  from: string,
-  to: string,
-  activeFrom: string,
-  activeTo: string,
-): Promise<Record<string, unknown>[]> {
-  const url = new URL(BASE);
-  url.searchParams.set("language", "en");
-  // `datetime` filters the CAP *sent* time (mandatory, must span < 24h);
-  // `active` filters by validity so old-but-still-valid products come back.
-  url.searchParams.set("datetime", `${from}/${to}`);
-  url.searchParams.set("active", `${activeFrom}/${activeTo}`);
-  if (page > 1) url.searchParams.set("page", String(page));
-
-  const res = await fetchJson(url.toString(), {
-    Authorization: `Bearer ${token}`,
-    Accept: "application/geo+json, application/json",
-    "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)",
-  });
-  if (res.status === 204) return [];
-  if (!res.ok) throw new Error(`MeteoAlarm ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  const body = (await res.json()) as { features?: Record<string, unknown>[] };
-  return body.features ?? [];
-}
-
-/** Download the CAP documents referenced by the index, with limited concurrency. */
-async function fetchCapDocs(links: Map<string, string>): Promise<Map<string, Record<string, unknown>>> {
-  const out = new Map<string, Record<string, unknown>>();
-  const entries = [...links.entries()].slice(0, MAX_CAP_DOCS);
-  let cursor = 0;
-  const workers = Array.from({ length: Math.min(CAP_CONCURRENCY, entries.length) }, async () => {
-    while (cursor < entries.length) {
-      const [alertId, href] = entries[cursor++];
-      try {
-        const res = await fetchJson(href, { Accept: "application/json" });
-        if (res.ok) out.set(alertId, (await res.json()) as Record<string, unknown>);
-      } catch (e) {
-        console.warn("[meteoalarm-poll] cap fetch failed", alertId, String(e));
-      }
-    }
-  });
-  await Promise.all(workers);
-  return out;
 }
 
 Deno.serve(async (req) => {
@@ -287,67 +254,49 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Trim: pasted credentials often carry a trailing newline or quotes.
-  const token = (Deno.env.get("METEOALARM_API_TOKEN") ?? "").trim().replace(/^["']|["']$/g, "");
-
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
   try {
     const now = Date.now();
-    const iso = (ms: number) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
 
-    // 1. Index sweep. The API caps each `datetime` range at < 24h, so we walk
-    //    SWEEP_WINDOWS consecutive 23h windows backwards and keep anything
-    //    still active (or starting within ACTIVE_AHEAD_DAYS).
-    const activeFrom = iso(now);
-    const activeTo = iso(now + ACTIVE_AHEAD_DAYS * 24 * 3600_000);
-    const features: Record<string, unknown>[] = [];
-    const seenFeature = new Set<string>();
-    for (let w = 0; w < SWEEP_WINDOWS; w++) {
-      const hi = iso(now - w * SWEEP_HOURS * 3600_000);
-      const lo = iso(now - (w + 1) * SWEEP_HOURS * 3600_000);
-      for (let page = 0; page < MAX_PAGES; page++) {
-        let batch: Record<string, unknown>[];
-        try {
-          batch = await fetchIndexPage(token, page + 1, lo, hi, activeFrom, activeTo);
-        } catch (e) {
-          console.warn("[meteoalarm-poll] index page failed", w, page, String(e));
-          break;
+    // 1. Pull every country feed with bounded concurrency.
+    const rows: Row[] = [];
+    const pending: { row: Row; areas: Area[] }[] = [];
+    const failed: string[] = [];
+    let cursor = 0;
+    await Promise.all(
+      Array.from({ length: Math.min(FEED_CONCURRENCY, COUNTRIES.length) }, async () => {
+        while (cursor < COUNTRIES.length) {
+          const [slug, iso2] = COUNTRIES[cursor++];
+          let alerts: Record<string, unknown>[];
+          try {
+            alerts = await fetchFeed(slug);
+          } catch (e) {
+            failed.push(`${slug}:${String(e)}`);
+            continue;
+          }
+          for (const alert of alerts) {
+            for (const info of englishInfos(alert)) {
+              const row = buildRow(alert, info, iso2, now);
+              if (!row) continue;
+              pending.push({ row, areas: (info.area as Area[] | undefined) ?? [] });
+            }
+          }
         }
-        for (const f of batch) {
-          const key = String(f.id ?? JSON.stringify((f.properties ?? {})));
-          if (seenFeature.has(key)) continue;
-          seenFeature.add(key);
-          features.push(f);
-        }
-        if (batch.length < PAGE_SIZE) break;
-      }
-    }
+      }),
+    );
 
-    // 2. CAP documents, one per distinct alert.
-    const capLinks = new Map<string, string>();
-    for (const f of features) {
-      const p = (f.properties ?? {}) as Record<string, unknown>;
-      const alertId = String(p.alertId ?? "");
-      if (!alertId || capLinks.has(alertId)) continue;
-      const links = (f.links as { rel?: string; type?: string; href?: string }[] | undefined) ?? [];
-      const json = links.find((l) => l.rel === "json" || l.type === "application/json");
-      if (json?.href) capLinks.set(alertId, json.href);
-    }
-    const caps = await fetchCapDocs(capLinks);
-
-    // 3. Rows.
+    // 2. Resolve geometry (inline CAP shapes, then cached region boundaries).
+    const resolver = new GeometryResolver(supabase);
+    await resolver.prepare(pending.map((p) => p.areas));
     const byId = new Map<string, Row>();
-    for (const f of features) {
-      const p = (f.properties ?? {}) as Record<string, unknown>;
-      const cap = caps.get(String(p.alertId ?? ""));
-      if (!cap) continue;
-      const row = buildRow(f, cap, now);
-      if (!row) continue;
-      if (Date.parse(row.expires_at) <= now) continue;
+    for (const { row, areas } of pending) {
+      row.geometry = resolver.resolve(areas);
       byId.set(row.alert_id, row);
     }
+    rows.push(...byId.values());
 
+    // 3. Upsert, preserving first_seen_at, then drop everything that vanished.
     const nowIso = new Date(now).toISOString();
     const { data: existing } = await supabase
       .from("active_alerts")
@@ -356,20 +305,19 @@ Deno.serve(async (req) => {
     const firstSeen = new Map<string, string>();
     for (const r of existing ?? []) if (r.first_seen_at) firstSeen.set(r.alert_id, r.first_seen_at);
 
-    const rows = [...byId.values()].map((r) => ({
+    const payload = rows.map((r) => ({
       ...r,
       updated_at: nowIso,
       first_seen_at: firstSeen.get(r.alert_id) ?? nowIso,
     }));
 
-    for (let i = 0; i < rows.length; i += 300) {
+    for (let i = 0; i < payload.length; i += 200) {
       const { error } = await supabase
         .from("active_alerts")
-        .upsert(rows.slice(i, i + 300), { onConflict: "alert_id" });
+        .upsert(payload.slice(i, i + 200), { onConflict: "alert_id" });
       if (error) console.warn("[meteoalarm-poll] upsert err:", error);
     }
 
-    // Warnings that dropped out of the sweep or expired are removed.
     const currentIds = new Set(rows.map((r) => r.alert_id));
     const toDelete = (existing ?? [])
       .map((r: { alert_id: string }) => r.alert_id)
@@ -378,13 +326,20 @@ Deno.serve(async (req) => {
       await supabase.from("active_alerts").delete().in("alert_id", toDelete.slice(i, i + 300));
     }
 
+    const withGeom = rows.filter((r) => r.geometry).length;
+    console.log(
+      `[meteoalarm-poll] ${rows.length} active (${withGeom} with geometry), ` +
+        `${toDelete.length} removed, ${failed.length} feeds failed`,
+    );
+
     return new Response(
       JSON.stringify({
         ok: true,
-        features: features.length,
-        caps: caps.size,
         active: rows.length,
+        withGeometry: withGeom,
         deleted: toDelete.length,
+        failedFeeds: failed,
+        unresolvedCodes: resolver.unresolved(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

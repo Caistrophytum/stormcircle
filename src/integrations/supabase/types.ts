@@ -647,6 +647,30 @@ export type Database = {
         }
         Relationships: []
       }
+      warning_regions: {
+        Row: {
+          code: string
+          country: string | null
+          geometry: Json
+          name: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          country?: string | null
+          geometry: Json
+          name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          country?: string | null
+          geometry?: Json
+          name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       zone_geom_cache: {
         Row: {
           fetched_at: string
