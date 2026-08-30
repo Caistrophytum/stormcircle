@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-08-30 15z",
+    tag: "NEW",
+    title: "Eurozone is here!",
+    body: "The european warnings are live on StormCircle! Complete with enhanced geometry.",
+  },
+  {
     date: "2026-08-29 13z",
     tag: "NEW",
     title: "Notifications and other updates",
