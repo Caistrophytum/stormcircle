@@ -65,13 +65,31 @@ export function useRadar() {
   const [stationDistanceKm, setStationDistanceKm] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<ProductCode | null>(null);
 
-  // European (non-US) radar composite. When the selected city sits outside the
-  // US but inside the OPERA/European coverage box we drop NEXRAD entirely and
-  // show the European composite anchored on the city itself.
+  // Radar focus: the selected city when there is one, otherwise the signed-in
+  // user's saved hometown. Washington DC is only used when neither is known.
+  const focus: SelectedCity | null = selectedCity
+    ? {
+        name: selectedCity.name,
+        lat: selectedCity.lat,
+        lon: selectedCity.lon,
+        countryCode: selectedCity.countryCode,
+      }
+    : homeCoords
+      ? {
+          name: "Hometown",
+          lat: homeCoords.lat,
+          lon: homeCoords.lon,
+          countryCode: homeCoords.countryCode,
+        }
+      : null;
+
+  // European (non-US) radar composite. When the focus sits outside the US but
+  // inside the OPERA/European coverage box we drop NEXRAD entirely and show the
+  // European composite anchored on the focus itself.
   const euMode =
-    !!selectedCity &&
-    (selectedCity.countryCode ?? "US").toUpperCase() !== "US" &&
-    isInEuRadarCoverage(selectedCity.lat, selectedCity.lon);
+    !!focus &&
+    (focus.countryCode ?? "US").toUpperCase() !== "US" &&
+    isInEuRadarCoverage(focus.lat, focus.lon);
 
   const [euFrame, setEuFrame] = useState<EuRadarFrame | null>(null);
 
@@ -94,28 +112,24 @@ export function useRadar() {
     };
   }, [euMode]);
 
-  // Keep nearest-station state in sync with the shared selectedCity.
-  // The NEXRAD radar network is CONUS-only, so when the selected city is
-  // outside the US we anchor the radar to the user's saved hometown instead,
-  // and only fall back to Washington DC when no hometown is known.
+  // Keep nearest-station state in sync with the radar focus. The NEXRAD network
+  // is CONUS-only, so a non-US focus outside European coverage falls back to the
+  // hometown, and finally to Washington DC when no hometown is known.
   useEffect(() => {
-    if (selectedCity) {
-      const isUS = (selectedCity.countryCode ?? "US").toUpperCase() === "US";
-      if (!isUS && isInEuRadarCoverage(selectedCity.lat, selectedCity.lon)) {
+    if (focus) {
+      const isUS = (focus.countryCode ?? "US").toUpperCase() === "US";
+      if (!isUS && isInEuRadarCoverage(focus.lat, focus.lon)) {
         // Anchor on the nearest physical OPERA site, exactly like NEXRAD in
         // the US. The imagery itself stays the European composite.
-        const { station: euStation, distanceKm } = findNearestEuStation(
-          selectedCity.lat,
-          selectedCity.lon,
-        );
+        const { station: euStation, distanceKm } = findNearestEuStation(focus.lat, focus.lon);
         setSelectedStation(euStation);
         setStationDistanceKm(Math.round(distanceKm));
         setSelectedProduct("N0B");
         return;
       }
       const anchor = isUS
-        ? { lat: selectedCity.lat, lon: selectedCity.lon }
-        : homeCoords
+        ? { lat: focus.lat, lon: focus.lon }
+        : homeCoords && (homeCoords.countryCode ?? "US").toUpperCase() === "US"
           ? { lat: homeCoords.lat, lon: homeCoords.lon }
           : { lat: 38.9072, lon: -77.0369 }; // Washington, DC fallback
       const { station, distanceKm } = findNearestStation(anchor.lat, anchor.lon);
@@ -127,13 +141,14 @@ export function useRadar() {
       setStationDistanceKm(null);
     }
   }, [
-    selectedCity?.name,
-    selectedCity?.lat,
-    selectedCity?.lon,
-    selectedCity?.countryCode,
+    focus?.lat,
+    focus?.lon,
+    focus?.countryCode,
     homeCoords?.lat,
     homeCoords?.lon,
+    homeCoords?.countryCode,
   ]);
+
 
 
 
