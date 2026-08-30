@@ -49,12 +49,12 @@ const faqs = [
   {
     question: "What severe weather data does StormCircle show?",
     answer:
-      "StormCircle integrates live NEXRAD radar, U.S. NWS severe weather alerts and Local Storm Reports, SPC convective outlooks, Fire Weather outlooks, hurricane and ENSO briefings, and European severe weather warnings via MeteoAlarm. All data is displayed on an interactive tactical map so you can see the full weather picture at a glance.",
+      "StormCircle integrates live NEXRAD radar, U.S. NWS severe weather alerts and Local Storm Reports, SPC convective outlooks, Fire Weather outlooks, hurricane and ENSO briefings, and European severe weather warnings and radar information via MeteoAlarm. All data is displayed on an interactive tactical map so you can see the full weather picture at a glance.",
   },
   {
     question: "Does StormCircle cover weather outside the USA?",
     answer:
-      "Yes. StormCircle now supports global hometowns and city search through Open-Meteo geocoding, shows European severe weather warnings via MeteoAlarm, and uses Open-Meteo weather data worldwide. NEXRAD radar coverage is still U.S.-only, but the map and warning layers work for many international locations.",
+      "Yes. StormCircle now supports global hometowns and city search through Open-Meteo geocoding, shows European severe weather warnings and radar products via MeteoAlarm, NEXRAD U.S radar information and uses Open-Meteo weather data worldwide.",
   },
   {
     question: "Where can I find real-time storm reports near me?",
