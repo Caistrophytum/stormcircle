@@ -1,23 +1,18 @@
 /**
- * European radar (EUMETNET OPERA via MeteoGate) - PLACEHOLDER.
+ * European radar composite.
  *
- * Landing endpoint: https://api.meteogate.eu/eu-eumetnet-weather-radar
+ * The EUMETNET OPERA composite is exposed by MeteoGate
+ * (https://api.meteogate.eu/eu-eumetnet-weather-radar) only as OGC EDR
+ * CoverageJSON point/area queries - there is no tiled imagery endpoint, so a
+ * Leaflet raster overlay cannot consume it directly. For the map layer we use
+ * RainViewer's public radar tile cache, which mosaics the European national
+ * radar networks (OPERA members) and needs no API key.
  *
- * Status: not wired into the UI yet. The NEXRAD tile pipeline in
- * `useRadar.ts` is CONUS-only; this module is the seam where a European
- * composite layer will plug in once the MeteoGate collection/coverage
- * details are confirmed (auth requirements, tile vs. coverage-data output,
- * update cadence).
- *
- * TODO before going live:
- *  1. GET `${EU_RADAR_BASE}/collections` and pick the reflectivity collection.
- *  2. Decide delivery: OGC EDR coverage (needs client-side rendering) vs. a
- *     WMS/tile endpoint that Leaflet can consume directly.
- *  3. Add an auth token secret if the collection is not public.
- *  4. Fall back to NEXRAD when the selected city is inside the US.
+ * NEXRAD stays the source inside the US (higher resolution, per-station
+ * products); this module only powers the non-US / European view.
  */
 
-/** MeteoGate EUMETNET weather radar service root. */
+/** MeteoGate EUMETNET weather radar service root (metadata / EDR queries). */
 export const EU_RADAR_BASE = "https://api.meteogate.eu/eu-eumetnet-weather-radar";
 
 /** Rough bounding box of the OPERA composite (lon/lat). */
@@ -38,19 +33,52 @@ export function isInEuRadarCoverage(lat: number, lon: number): boolean {
   );
 }
 
-/**
- * Placeholder tile URL builder. Returns null until the real MeteoGate
- * radar endpoint shape is confirmed, so callers can safely no-op.
- */
-export function euRadarTileUrl(): string | null {
-  return null;
+const RAINVIEWER_INDEX = "https://api.rainviewer.com/public/weather-maps.json";
+
+export interface EuRadarFrame {
+  /** Unix seconds of the frame. */
+  time: number;
+  /** Tile host, e.g. https://tilecache.rainviewer.com */
+  host: string;
+  /** Frame path, e.g. /v2/radar/ffa6dbf57c1b */
+  path: string;
 }
 
-/** Discovery helper: lists the collections exposed by the service. */
-export async function listEuRadarCollections(): Promise<unknown> {
-  const res = await fetch(`${EU_RADAR_BASE}/collections?f=json`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!res.ok) throw new Error(`MeteoGate radar ${res.status}`);
-  return res.json();
+interface RainViewerIndex {
+  host?: string;
+  radar?: {
+    past?: { time: number; path: string }[];
+    nowcast?: { time: number; path: string }[];
+  };
+}
+
+/**
+ * Fetches the newest available radar frame. Returns null on any failure so
+ * callers can fall back to "no overlay" instead of breaking the map.
+ */
+export async function fetchLatestEuRadarFrame(): Promise<EuRadarFrame | null> {
+  try {
+    const res = await fetch(RAINVIEWER_INDEX, { headers: { Accept: "application/json" } });
+    if (!res.ok) return null;
+    const json = (await res.json()) as RainViewerIndex;
+    const past = json.radar?.past ?? [];
+    const last = past[past.length - 1];
+    if (!last) return null;
+    return {
+      time: last.time,
+      host: json.host ?? "https://tilecache.rainviewer.com",
+      path: last.path,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Builds a Leaflet tile URL template for a radar frame.
+ * Colour scheme 4 (\"Universal Blue\") with smoothing, no snow mask.
+ */
+export function euRadarTileUrl(frame: EuRadarFrame | null): string | null {
+  if (!frame) return null;
+  return `${frame.host}${frame.path}/256/{z}/{x}/{y}/4/1_1.png`;
 }
