@@ -238,7 +238,22 @@ const IMS_COLORS: Record<string, string> = {
   green: "#32CD32",
 };
 
+/**
+ * MeteoAlarm (European) warnings carry an awareness level 1-4 instead of an
+ * NWS product name: 1 green, 2 yellow, 3 orange, 4 red.
+ */
+const MA_LEVEL_COLORS: Record<string, string> = {
+  "1": "#32CD32",
+  "2": "#FFD700",
+  "3": "#FF8C00",
+  "4": "#FF0000",
+};
+
 export function getWarningColor(properties: any): string {
+  const maLevel = properties?.parameters?.awarenessLevel;
+  if (maLevel != null && MA_LEVEL_COLORS[String(maLevel)]) {
+    return MA_LEVEL_COLORS[String(maLevel)];
+  }
   const imsColor = properties?.parameters?.imsColor;
   if (typeof imsColor === "string" && IMS_COLORS[imsColor.toLowerCase()]) {
     return IMS_COLORS[imsColor.toLowerCase()];
