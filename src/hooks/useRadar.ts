@@ -47,20 +47,23 @@ export interface SelectedCity {
 
 export function useRadar() {
   const { selectedCity, setSelectedCity: setCtxCity } = useSelectedCity();
+  const homeCoords = useHometownCoords();
   const [selectedStation, setSelectedStation] = useState<RadarStation | null>(null);
   const [stationDistanceKm, setStationDistanceKm] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<ProductCode | null>(null);
 
   // Keep nearest-station state in sync with the shared selectedCity.
   // The NEXRAD radar network is CONUS-only, so when the selected city is
-  // outside the US we anchor the radar to Washington DC as a default point
-  // while weather / WRS keep using the real city coordinates.
+  // outside the US we anchor the radar to the user's saved hometown instead,
+  // and only fall back to Washington DC when no hometown is known.
   useEffect(() => {
     if (selectedCity) {
       const isUS = (selectedCity.countryCode ?? "US").toUpperCase() === "US";
       const anchor = isUS
         ? { lat: selectedCity.lat, lon: selectedCity.lon }
-        : { lat: 38.9072, lon: -77.0369 }; // Washington, DC
+        : homeCoords
+          ? { lat: homeCoords.lat, lon: homeCoords.lon }
+          : { lat: 38.9072, lon: -77.0369 }; // Washington, DC fallback
       const { station, distanceKm } = findNearestStation(anchor.lat, anchor.lon);
       setSelectedStation(station);
       setStationDistanceKm(isUS ? distanceKm : null);
@@ -69,7 +72,14 @@ export function useRadar() {
       setSelectedStation(null);
       setStationDistanceKm(null);
     }
-  }, [selectedCity?.lat, selectedCity?.lon, selectedCity?.countryCode]);
+  }, [
+    selectedCity?.lat,
+    selectedCity?.lon,
+    selectedCity?.countryCode,
+    homeCoords?.lat,
+    homeCoords?.lon,
+  ]);
+
 
   const setSelectedCity = (city: CtxSelectedCity | null) => {
     setCtxCity(city);
