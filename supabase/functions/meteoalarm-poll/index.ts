@@ -237,31 +237,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  const sp = new URL(req.url).searchParams;
-  const sample = sp.get("sample") === "1";
+  const sample = new URL(req.url).searchParams.get("sample") === "1";
 
-  // Auth-probe mode: try the documented authentication variants and report
-  // which one the API accepts. Never echoes the token itself.
-  if (sp.get("probe") === "1") {
-    const u = `${BASE}?language=en`;
-    const variants: Record<string, RequestInit | string> = {
-      bearer: { headers: { Authorization: `Bearer ${token}` } },
-      raw: { headers: { Authorization: token } },
-      xapikey: { headers: { "X-API-Key": token } },
-    };
-    const out: Record<string, unknown> = { tokenLength: token.length };
-    for (const [name, init] of Object.entries(variants)) {
-      try {
-        const r = await fetch(u, init as RequestInit);
-        out[name] = { status: r.status, body: (await r.text()).slice(0, 120) };
-      } catch (e) { out[name] = String(e); }
-    }
-    try {
-      const r = await fetch(`${u}&token=${encodeURIComponent(token)}`);
-      out.queryToken = { status: r.status, body: (await r.text()).slice(0, 120) };
-    } catch (e) { out.queryToken = String(e); }
-    return new Response(JSON.stringify(out), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-  }
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
   try {
