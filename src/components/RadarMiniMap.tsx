@@ -55,10 +55,14 @@ const Recenter = forwardRef<unknown, { station: RadarStation | null }>(function 
 interface RadarOverlayLayerProps {
   tileUrl: string | null;
   onTileRequest?: (url: string) => void;
+  /** European composite: upstream tiles only exist up to z7, above that the
+   *  service returns a "Zoom Level Not Supported" placeholder. Upsample the
+   *  z7 tile instead so the echoes stay visible when zoomed in. */
+  euMode?: boolean;
 }
 
 const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function RadarOverlayLayer(
-  { tileUrl, onTileRequest },
+  { tileUrl, onTileRequest, euMode },
   _ref,
 ) {
   const map = useMap();
@@ -87,8 +91,11 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
       detectRetina: false,
       minZoom: 1,
       maxZoom: 20,
+      ...(euMode ? { maxNativeZoom: 7 } : {}),
       zIndex: 650,
-      attribution: "IEM NEXRAD / Iowa State",
+      attribution: euMode
+        ? "RainViewer / EUMETNET OPERA members"
+        : "IEM NEXRAD / Iowa State",
       updateWhenIdle: true,
       updateWhenZooming: false,
       keepBuffer: 1,
@@ -111,7 +118,7 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
       layerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, hasTileUrl]);
+  }, [map, hasTileUrl, euMode]);
 
   // Push tileUrl + cacheBust changes via setUrl without recreating the layer.
   useEffect(() => {
@@ -287,7 +294,7 @@ export const LeafletRadar = ({
           euMode={euMode}
         />
       )}
-      <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
+      <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} euMode={euMode} />
       {interactive && <WarningPolygons ref={warningsRef} polygons={polygons} />}
       {interactive && (
         <TileLayer
