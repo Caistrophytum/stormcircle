@@ -196,6 +196,9 @@ interface LeafletMapProps {
   onStationMarkerSelect: (s: RadarStation) => void;
   setSelectedProduct: (p: ProductCode) => void;
   onMap?: (m: L.Map) => void;
+  /** European composite mode: hide the CONUS-only NEXRAD station markers
+   *  and the US state boundaries overlay. */
+  euMode?: boolean;
   /** When true, skip the US-states + dark-labels overlay tile grids to
    *  reduce network/render load on phones. Visual context is preserved by
    *  the basemap + radar layers. */
@@ -221,6 +224,7 @@ export const LeafletRadar = ({
   setSelectedProduct,
   onMap,
   mobile,
+  euMode,
 }: LeafletMapProps) => {
   const center: [number, number] = station ? [station.lat, station.lon] : DEFAULT_CENTER;
   const zoom = station ? STATION_ZOOM : DEFAULT_ZOOM;
@@ -260,7 +264,7 @@ export const LeafletRadar = ({
         {...tileOpts}
       />
 
-      {interactive && !mobile && (
+      {interactive && !mobile && !euMode && (
         <TileLayer
           url="https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/usstates/{z}/{x}/{y}.png"
           opacity={0.6}
@@ -268,7 +272,7 @@ export const LeafletRadar = ({
           {...tileOpts}
         />
       )}
-      {interactive && (
+      {interactive && !euMode && (
         <RadarStationMarkers
           selectedStation={selectedStation}
           onStationSelect={onStationMarkerSelect}
