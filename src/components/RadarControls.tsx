@@ -23,6 +23,8 @@ interface Props {
   stationDistanceKm: number | null;
   selectedProduct: ProductCode | null;
   onProductChange: (product: ProductCode) => void;
+  /** European composite mode: no per-station NEXRAD products available. */
+  euMode?: boolean;
 }
 
 const RadarControls = ({
@@ -32,6 +34,7 @@ const RadarControls = ({
   stationDistanceKm,
   selectedProduct,
   onProductChange,
+  euMode = false,
 }: Props) => {
   const [cityOpen, setCityOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -124,13 +127,13 @@ const RadarControls = ({
       {selectedStation && selectedCity && (
         <div className="px-2 py-1.5 rounded-sm bg-primary/5 border border-primary/20 flex flex-col gap-0.5">
           <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider">
-            Nearest Radar
+            {euMode ? "Radar Source" : "Nearest Radar"}
           </span>
           <span className="text-[11px] font-mono font-bold text-primary leading-tight">
-            {selectedStation.id}
+            {euMode ? "OPERA" : selectedStation.id}
           </span>
           <span className="text-[9px] font-mono text-muted-foreground leading-tight">
-            {selectedStation.name}
+            {euMode ? "EUMETNET European composite" : selectedStation.name}
             {stationDistanceKm != null && (() => {
               const d = displayLengthKm(stationDistanceKm, unitSystem);
               return d ? <> · {Math.round(d.value)} {d.unit}</> : null;
@@ -142,12 +145,18 @@ const RadarControls = ({
       {/* Product picker - single-column tile menu */}
       <div className="flex flex-col gap-1.5 flex-1 min-h-0">
         <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-          Available Scans
+          {euMode ? "Composite Reflectivity" : "Available Scans"}
         </span>
+        {euMode && (
+          <p className="text-[10px] font-mono text-muted-foreground leading-snug px-1">
+            Outside the US the map shows the European radar composite. Per-site
+            velocity and echo-top scans are NEXRAD-only.
+          </p>
+        )}
         <div className="grid grid-cols-1 gap-1.5 flex-1 auto-rows-fr">
           {PRODUCTS.map((p) => {
             const isSelected = selectedProduct === p.code;
-            const isDisabled = !selectedStation;
+            const isDisabled = !selectedStation || euMode;
             return (
               <button
                 key={p.code}
