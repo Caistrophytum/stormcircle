@@ -127,13 +127,13 @@ const RadarControls = ({
       {selectedStation && selectedCity && (
         <div className="px-2 py-1.5 rounded-sm bg-primary/5 border border-primary/20 flex flex-col gap-0.5">
           <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider">
-            {euMode ? "Radar Source" : "Nearest Radar"}
+            {euMode ? "Nearest EU Radar" : "Nearest Radar"}
           </span>
           <span className="text-[11px] font-mono font-bold text-primary leading-tight">
-            {euMode ? "OPERA" : selectedStation.id}
+            {euMode ? selectedStation.id.replace("EU-", "") : selectedStation.id}
           </span>
           <span className="text-[9px] font-mono text-muted-foreground leading-tight">
-            {euMode ? "EUMETNET European composite" : selectedStation.name}
+            {selectedStation.name}
             {stationDistanceKm != null && (() => {
               const d = displayLengthKm(stationDistanceKm, unitSystem);
               return d ? <> · {Math.round(d.value)} {d.unit}</> : null;
