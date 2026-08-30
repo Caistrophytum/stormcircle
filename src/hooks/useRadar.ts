@@ -3,6 +3,8 @@ import { RadarStation } from "@/config/radarStations";
 import { findNearestStation } from "@/lib/nearestStation";
 import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/CityContext";
 import { searchGeocode } from "@/lib/openMeteo";
+import { useHometownCoords } from "@/hooks/useHometownCoords";
+
 
 /** Open-Meteo returns admin1 as the full state name; NEXRAD station labels
  *  use the 2-letter USPS code. Map full-name → abbrev for state matching. */
