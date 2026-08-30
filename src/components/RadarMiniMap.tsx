@@ -9,6 +9,7 @@ import { ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { useRadarStationStatus } from "@/hooks/useRadarStationStatus";
+import { EU_RADAR_STATIONS } from "@/config/euRadarStations";
 import WarningPolygons, { WarningPolygonsHandle } from "./WarningPolygons";
 
 /** Custom Leaflet pane name for radar station markers. Sits above the
@@ -126,6 +127,8 @@ interface RadarStationMarkersProps {
   selectedStation: RadarStation | null;
   onStationSelect: (station: RadarStation) => void;
   onProductSelect: (product: ProductCode) => void;
+  /** Plot European (OPERA) sites instead of the CONUS NEXRAD network. */
+  euMode?: boolean;
 }
 
 /** Creates a dedicated Leaflet pane for the radar station markers so they
@@ -146,16 +149,20 @@ const RadarStationMarkers = ({
   selectedStation,
   onStationSelect,
   onProductSelect,
+  euMode,
 }: RadarStationMarkersProps) => {
   const lastReceived = useRadarStationStatus();
   const now = Date.now();
   const STALE_MS = 20 * 60 * 1000;
+  // NEXRAD ingest status only exists for US sites; European sites always
+  // render in the "healthy" colour scheme.
+  const stations = euMode ? EU_RADAR_STATIONS : RADAR_STATIONS;
   return (
     <>
       <EnsureRadarMarkersPane />
-      {RADAR_STATIONS.map((station) => {
+      {stations.map((station) => {
         const isSelected = selectedStation?.id === station.id;
-        const ts = lastReceived[station.id];
+        const ts = euMode ? undefined : lastReceived[station.id];
         const isStale = ts !== undefined && now - ts > STALE_MS;
         const baseColor = isSelected ? "#00ffff" : isStale ? "#ff3838" : "#4af";
         const fillColor = isSelected ? "#00ffff" : isStale ? "#aa1111" : "#1a6aaa";
@@ -272,11 +279,12 @@ export const LeafletRadar = ({
           {...tileOpts}
         />
       )}
-      {interactive && !euMode && (
+      {interactive && (
         <RadarStationMarkers
           selectedStation={selectedStation}
           onStationSelect={onStationMarkerSelect}
           onProductSelect={setSelectedProduct}
+          euMode={euMode}
         />
       )}
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} />
