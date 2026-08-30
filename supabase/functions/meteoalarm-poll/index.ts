@@ -31,18 +31,22 @@ const FETCH_TIMEOUT_MS = 30_000;
 const FEED_CONCURRENCY = 6;
 const DEFAULT_DURATION_MS = 12 * 60 * 60 * 1000;
 
-/** MeteoAlarm member countries. Israel is served by our own ims-poll. */
+/**
+ * MeteoAlarm member countries. Israel is included: its IMS feed publishes
+ * real CAP polygons per forecast region, so the geometry is far more accurate
+ * than the hand-drawn boxes the old ims-poll used.
+ */
 const COUNTRIES: [slug: string, iso2: string][] = [
   ["andorra", "AD"], ["austria", "AT"], ["belgium", "BE"], ["bosnia-herzegovina", "BA"],
   ["bulgaria", "BG"], ["croatia", "HR"], ["cyprus", "CY"], ["czechia", "CZ"],
   ["denmark", "DK"], ["estonia", "EE"], ["finland", "FI"], ["france", "FR"],
   ["germany", "DE"], ["greece", "GR"], ["hungary", "HU"], ["iceland", "IS"],
-  ["ireland", "IE"], ["italy", "IT"], ["latvia", "LV"], ["lithuania", "LT"],
-  ["luxembourg", "LU"], ["malta", "MT"], ["moldova", "MD"], ["montenegro", "ME"],
-  ["netherlands", "NL"], ["norway", "NO"], ["poland", "PL"], ["portugal", "PT"],
-  ["republic-of-north-macedonia", "MK"], ["romania", "RO"], ["serbia", "RS"],
-  ["slovakia", "SK"], ["slovenia", "SI"], ["spain", "ES"], ["sweden", "SE"],
-  ["switzerland", "CH"], ["ukraine", "UA"], ["united-kingdom", "GB"],
+  ["ireland", "IE"], ["israel", "IL"], ["italy", "IT"], ["latvia", "LV"],
+  ["lithuania", "LT"], ["luxembourg", "LU"], ["malta", "MT"], ["moldova", "MD"],
+  ["montenegro", "ME"], ["netherlands", "NL"], ["norway", "NO"], ["poland", "PL"],
+  ["portugal", "PT"], ["republic-of-north-macedonia", "MK"], ["romania", "RO"],
+  ["serbia", "RS"], ["slovakia", "SK"], ["slovenia", "SI"], ["spain", "ES"],
+  ["sweden", "SE"], ["switzerland", "CH"], ["ukraine", "UA"], ["united-kingdom", "GB"],
 ];
 
 type Severity = "Extreme" | "Severe" | "Moderate" | "Minor";
