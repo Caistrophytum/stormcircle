@@ -323,8 +323,14 @@ interface AlertRow {
 function rowToAlert(r: AlertRow): Alert {
   const event = r.event ?? "Unknown";
   // Country provenance: IMS rows are prefixed "IMS-" by the Israeli poller,
+  // MeteoAlarm rows are prefixed "MA-<CC>-" by the European poller,
   // everything else in `active_alerts` comes from the NWS (United States).
-  const country = r.alert_id?.startsWith("IMS-") ? "IL" : "US";
+  const country = r.alert_id?.startsWith("IMS-")
+    ? "IL"
+    : r.alert_id?.startsWith("MA-")
+      ? (r.alert_id.split("-")[1] ?? "EU")
+      : "US";
+
   const params = r.properties?.parameters ?? {};
   return {
     event,
