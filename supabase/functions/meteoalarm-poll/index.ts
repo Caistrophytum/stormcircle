@@ -229,7 +229,8 @@ Deno.serve(async (req) => {
     });
   }
 
-  const token = Deno.env.get("METEOALARM_API_TOKEN") ?? "";
+  // Trim: pasted credentials often carry a trailing newline or quotes.
+  const token = (Deno.env.get("METEOALARM_API_TOKEN") ?? "").trim().replace(/^["']|["']$/g, "");
   if (!token) {
     return new Response(JSON.stringify({ error: "METEOALARM_API_TOKEN not configured" }), {
       status: 500,
