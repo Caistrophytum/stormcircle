@@ -239,6 +239,32 @@ Deno.serve(async (req) => {
 
   const sample = new URL(req.url).searchParams.get("sample") === "1";
 
+  // Auth diagnostics: reports which authentication variant the API accepts.
+  // Never echoes the token itself, only its length.
+  if (new URL(req.url).searchParams.get("probe") === "1") {
+    const u = `${BASE}?language=en`;
+    const out: Record<string, unknown> = { tokenLength: token.length };
+    const tries: [string, RequestInit][] = [
+      ["bearer", { headers: { Authorization: `Bearer ${token}` } }],
+      ["raw", { headers: { Authorization: token } }],
+      ["xapikey", { headers: { "X-API-Key": token } }],
+      ["apikey", { headers: { apikey: token } }],
+    ];
+    for (const [name, init] of tries) {
+      try {
+        const r = await fetch(u, init);
+        out[name] = { status: r.status, body: (await r.text()).slice(0, 150) };
+      } catch (e) { out[name] = String(e); }
+    }
+    for (const q of ["token", "api_key", "access_token"]) {
+      try {
+        const r = await fetch(`${u}&${q}=${encodeURIComponent(token)}`);
+        out[q] = { status: r.status, body: (await r.text()).slice(0, 150) };
+      } catch (e) { out[q] = String(e); }
+    }
+    return new Response(JSON.stringify(out), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
   try {
