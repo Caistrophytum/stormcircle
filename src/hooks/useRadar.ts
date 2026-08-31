@@ -1,17 +1,42 @@
+/**
+ * useRadar - single source of truth for the radar overlay and map anchor.
+ *
+ * Rule: a US location pans to its nearest NEXRAD site (per-site products);
+ * a European/Israeli location shows the OPERA-area composite centred on the
+ * location itself; the manual toggle overrides that choice either way.
+ *
+ * Both regions refresh on the shared 60-second clock (`useRefreshTick`), so
+ * NEXRAD tiles and the European composite update in lockstep.
+ */
 import { useState, useMemo, useEffect } from "react";
 import { RadarStation } from "@/config/radarStations";
 import { findNearestStation } from "@/lib/nearestStation";
 import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/CityContext";
 import { searchGeocode } from "@/lib/openMeteo";
 import { useHometownCoords } from "@/hooks/useHometownCoords";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 import {
-
   isInEuRadarCoverage,
   fetchLatestEuRadarFrame,
   euRadarTileUrl,
   EuRadarFrame,
 } from "@/lib/euRadar";
 
+/** Washington DC - last-resort anchor when no location at all is known. */
+const DC = { lat: 38.9072, lon: -77.0369 };
+
+/**
+ * True when a coordinate sits inside NEXRAD coverage (CONUS, Alaska, Hawaii).
+ * `countryCode` is often missing on saved hometowns and legacy selections, so
+ * the coordinates - never a defaulted country code - decide the region.
+ */
+function isUsCoord(lat: number, lon: number): boolean {
+  return (
+    (lat >= 24 && lat <= 50 && lon >= -125 && lon <= -66) ||
+    (lat >= 51 && lat <= 72 && lon >= -170 && lon <= -129) ||
+    (lat >= 18 && lat <= 23 && lon >= -161 && lon <= -154)
+  );
+}
 
 /** Open-Meteo returns admin1 as the full state name; NEXRAD station labels
  *  use the 2-letter USPS code. Map full-name → abbrev for state matching. */
@@ -30,7 +55,6 @@ const US_STATE_ABBREV: Record<string, string> = {
   vermont: "VT", virginia: "VA", washington: "WA", "west virginia": "WV",
   wisconsin: "WI", wyoming: "WY",
 };
-
 
 export type ProductCode = "N0B" | "N0U" | "N0S" | "N0Z" | "NET";
 
@@ -57,75 +81,47 @@ export interface SelectedCity {
 export function useRadar() {
   const { selectedCity, setSelectedCity: setCtxCity } = useSelectedCity();
   const homeCoords = useHometownCoords();
+  const tick = useRefreshTick();
   const [selectedStation, setSelectedStation] = useState<RadarStation | null>(null);
   const [stationDistanceKm, setStationDistanceKm] = useState<number | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<ProductCode | null>(null);
 
-  // Radar focus: the selected city when there is one, otherwise the signed-in
-  // user's saved hometown. Washington DC is only used when neither is known.
+  // Radar focus: the selected city, else the signed-in user's saved hometown.
   const focus: SelectedCity | null = selectedCity
-    ? {
-        name: selectedCity.name,
-        lat: selectedCity.lat,
-        lon: selectedCity.lon,
-        countryCode: selectedCity.countryCode,
-      }
+    ? { ...selectedCity }
     : homeCoords
-      ? {
-          name: "Hometown",
-          lat: homeCoords.lat,
-          lon: homeCoords.lon,
-          countryCode: homeCoords.countryCode,
-        }
+      ? { name: "Hometown", ...homeCoords }
       : null;
 
-  // Region detection. countryCode is frequently missing (saved hometowns,
-  // legacy selections), so we never assume "US" from a missing code - the
-  // coordinates decide instead.
-  const isUsCoord = (lat: number, lon: number) =>
-    (lat >= 24 && lat <= 50 && lon >= -125 && lon <= -66) || // CONUS
-    (lat >= 51 && lat <= 72 && lon >= -170 && lon <= -129) || // Alaska
-    (lat >= 18 && lat <= 23 && lon >= -161 && lon <= -154); // Hawaii
-
-  const autoRegion: "us" | "eu" | null = focus
-    ? (focus.countryCode ?? "").toUpperCase() === "US" || isUsCoord(focus.lat, focus.lon)
+  // Region: coordinates decide, a manual toggle can override.
+  const [modeOverride, setModeOverride] = useState<"us" | "eu" | null>(null);
+  const autoRegion: "us" | "eu" | null = !focus
+    ? null
+    : isUsCoord(focus.lat, focus.lon) || (focus.countryCode ?? "").toUpperCase() === "US"
       ? "us"
       : isInEuRadarCoverage(focus.lat, focus.lon)
         ? "eu"
-        : null
-    : null;
-
-  // Manual override so the user can flip between the European composite and
-  // the NEXRAD mosaic regardless of where the focus sits.
-  const [modeOverride, setModeOverride] = useState<"us" | "eu" | null>(null);
-  const region: "us" | "eu" = modeOverride ?? autoRegion ?? "us";
-  const euMode = region === "eu";
+        : null;
+  const euMode = (modeOverride ?? autoRegion ?? "us") === "eu";
   const toggleRadarMode = () => setModeOverride(euMode ? "us" : "eu");
 
+  // European composite frame, refreshed on the shared 60 s clock. A failed
+  // fetch keeps the previous frame on screen instead of blanking the overlay.
   const [euFrame, setEuFrame] = useState<EuRadarFrame | null>(null);
-
   useEffect(() => {
-    if (!euMode) {
-      setEuFrame(null);
-      return;
-    }
+    if (!euMode) return;
     let cancelled = false;
-    const load = async () => {
+    void (async () => {
       const frame = await fetchLatestEuRadarFrame();
-      if (!cancelled) setEuFrame(frame);
-    };
-    load();
-    // Radar composites refresh every 10 minutes upstream.
-    const id = window.setInterval(load, 10 * 60 * 1000);
+      if (!cancelled && frame) setEuFrame(frame);
+    })();
     return () => {
       cancelled = true;
-      window.clearInterval(id);
     };
-  }, [euMode]);
+  }, [euMode, tick]);
 
-  // Keep the map anchor in sync with the radar focus:
-  //  - EU/Israel: composite overlay centred on the focus itself (no site).
-  //  - US: pan to the nearest NEXRAD site.
+  // Map anchor: EU/Israel centres the composite on the focus itself; US pans
+  // to the nearest NEXRAD site (focus -> US hometown -> Washington DC).
   useEffect(() => {
     if (!focus) {
       setSelectedStation(null);
@@ -134,25 +130,18 @@ export function useRadar() {
     }
 
     if (euMode) {
-      setSelectedStation({
-        id: "EU-COMPOSITE",
-        name: focus.name,
-        lat: focus.lat,
-        lon: focus.lon,
-      });
+      setSelectedStation({ id: "EU-COMPOSITE", name: focus.name, lat: focus.lat, lon: focus.lon });
       setStationDistanceKm(null);
       setSelectedProduct(null);
       return;
     }
 
-    // NEXRAD: anchor on the focus when it is inside US coverage, otherwise on
-    // a US hometown, and only then on Washington DC.
     const focusIsUS = isUsCoord(focus.lat, focus.lon);
     const anchor = focusIsUS
-      ? { lat: focus.lat, lon: focus.lon }
+      ? focus
       : homeCoords && isUsCoord(homeCoords.lat, homeCoords.lon)
-        ? { lat: homeCoords.lat, lon: homeCoords.lon }
-        : { lat: 38.9072, lon: -77.0369 }; // Washington, DC fallback
+        ? homeCoords
+        : DC;
     const { station, distanceKm } = findNearestStation(anchor.lat, anchor.lon);
     setSelectedStation(station);
     setStationDistanceKm(focusIsUS ? distanceKm : null);
@@ -165,10 +154,6 @@ export function useRadar() {
     homeCoords?.lat,
     homeCoords?.lon,
   ]);
-
-
-
-
 
   const setSelectedCity = (city: CtxSelectedCity | null) => {
     setCtxCity(city);
@@ -184,8 +169,6 @@ export function useRadar() {
     // Optimistic: switch station immediately so the radar overlay/recenter fires.
     setSelectedStation(station);
     setStationDistanceKm(0);
-
-
 
     // station.name is "City, ST" - the second token is the US state abbrev
     // (e.g. "FL" for KMLB). We MUST constrain the reverse-geocode to US +
@@ -221,7 +204,6 @@ export function useRadar() {
     setCtxCity({ name: cityName, lat: station.lat, lon: station.lon, countryCode: "US" });
   };
 
-
   const tileUrl = useMemo(() => {
     if (euMode) return euRadarTileUrl(euFrame);
     if (!selectedStation || !selectedProduct) return null;
@@ -243,8 +225,6 @@ export function useRadar() {
     euMode,
     /** Flips between the European composite and the NEXRAD mosaic. */
     toggleRadarMode,
-    /** True when the user has manually overridden the detected region. */
-    radarModeManual: modeOverride !== null,
     /** Unix seconds of the displayed European frame (null in NEXRAD mode). */
     euFrameTime: euFrame?.time ?? null,
 

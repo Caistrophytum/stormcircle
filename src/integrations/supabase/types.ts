@@ -206,6 +206,27 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_http_cache: {
+        Row: {
+          etag: string | null
+          feed_key: string
+          last_modified: string | null
+          updated_at: string
+        }
+        Insert: {
+          etag?: string | null
+          feed_key: string
+          last_modified?: string | null
+          updated_at?: string
+        }
+        Update: {
+          etag?: string | null
+          feed_key?: string
+          last_modified?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fire_outlook_state: {
         Row: {
           discussion: string | null

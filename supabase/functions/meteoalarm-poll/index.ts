@@ -222,24 +222,59 @@ export function buildRow(
   };
 }
 
-async function fetchFeed(slug: string): Promise<Record<string, unknown>[]> {
+/**
+ * Per-feed change detection. The job runs every minute alongside the US
+ * poller, so most countries have nothing new: we send the validators saved on
+ * the previous run and, when the feed offers none (the MeteoAlarm feeds
+ * currently do not), fall back to hashing the response body. Either way an
+ * unchanged country is skipped and its already-stored rows are left untouched.
+ */
+type FeedCache = { etag: string | null; last_modified: string | null };
+type FeedResult =
+  | { changed: true; alerts: Record<string, unknown>[]; etag: string | null; lastModified: string | null }
+  | { changed: false };
+
+/** Hex sha-256 of the raw feed body, stored in the `etag` column as `sha256:...`. */
+async function bodyHash(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return "sha256:" + [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function fetchFeed(slug: string, cache: FeedCache | undefined): Promise<FeedResult> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(`${FEED_BASE}${slug}`, {
-      signal: ctrl.signal,
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)",
-      },
-    });
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)",
+    };
+    if (cache?.etag && !cache.etag.startsWith("sha256:")) headers["If-None-Match"] = cache.etag;
+    if (cache?.last_modified) headers["If-Modified-Since"] = cache.last_modified;
+
+    const res = await fetch(`${FEED_BASE}${slug}`, { signal: ctrl.signal, headers });
+    if (res.status === 304) {
+      await res.body?.cancel();
+      return { changed: false };
+    }
     if (!res.ok) throw new Error(`${res.status}`);
-    const body = (await res.json()) as { warnings?: { alert?: Record<string, unknown> }[] };
-    return (body.warnings ?? []).map((w) => w.alert ?? {}).filter((a) => Object.keys(a).length > 0);
+
+    const raw = await res.text();
+    const etag = res.headers.get("etag") ?? (await bodyHash(raw));
+    // No validator headers from this feed: an identical body means no change.
+    if (etag === cache?.etag) return { changed: false };
+
+    const body = JSON.parse(raw) as { warnings?: { alert?: Record<string, unknown> }[] };
+    return {
+      changed: true,
+      alerts: (body.warnings ?? []).map((w) => w.alert ?? {}).filter((a) => Object.keys(a).length > 0),
+      etag,
+      lastModified: res.headers.get("last-modified"),
+    };
   } finally {
     clearTimeout(timer);
   }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -263,23 +298,49 @@ Deno.serve(async (req) => {
   try {
     const now = Date.now();
 
-    // 1. Pull every country feed with bounded concurrency.
-    const rows: Row[] = [];
+    // 1. Pull every country feed with bounded concurrency, sending the HTTP
+    //    validators stored on the previous run. A 304 (or a failed fetch)
+    //    means "nothing new for this country": we skip it and keep its rows.
+    const { data: cacheRows } = await supabase
+      .from("feed_http_cache")
+      .select("feed_key, etag, last_modified")
+      .like("feed_key", "meteoalarm:%");
+    const cache = new Map<string, FeedCache>(
+      (cacheRows ?? []).map((r: { feed_key: string; etag: string | null; last_modified: string | null }) => [
+        r.feed_key,
+        { etag: r.etag, last_modified: r.last_modified },
+      ]),
+    );
+
     const pending: { row: Row; areas: Area[] }[] = [];
     const failed: string[] = [];
+    /** Countries whose rows this run is authoritative for (feed changed). */
+    const refreshed = new Set<string>();
+    const validators: { feed_key: string; etag: string | null; last_modified: string | null; updated_at: string }[] = [];
+    const nowIso = new Date(now).toISOString();
     let cursor = 0;
     await Promise.all(
       Array.from({ length: Math.min(FEED_CONCURRENCY, COUNTRIES.length) }, async () => {
         while (cursor < COUNTRIES.length) {
           const [slug, iso2] = COUNTRIES[cursor++];
-          let alerts: Record<string, unknown>[];
+          const key = `meteoalarm:${slug}`;
+          let result: FeedResult;
           try {
-            alerts = await fetchFeed(slug);
+            result = await fetchFeed(slug, cache.get(key));
           } catch (e) {
             failed.push(`${slug}:${String(e)}`);
             continue;
           }
-          for (const alert of alerts) {
+          if (!result.changed) continue;
+
+          refreshed.add(iso2);
+          validators.push({
+            feed_key: key,
+            etag: result.etag,
+            last_modified: result.lastModified,
+            updated_at: nowIso,
+          });
+          for (const alert of result.alerts) {
             for (const info of englishInfos(alert)) {
               const row = buildRow(alert, info, iso2, now);
               if (!row) continue;
@@ -298,10 +359,10 @@ Deno.serve(async (req) => {
       row.geometry = resolver.resolve(areas);
       byId.set(row.alert_id, row);
     }
-    rows.push(...byId.values());
+    const rows = [...byId.values()];
 
-    // 3. Upsert, preserving first_seen_at, then drop everything that vanished.
-    const nowIso = new Date(now).toISOString();
+    // 3. Upsert, preserving first_seen_at, then drop rows that vanished from a
+    //    feed we actually re-read this run. Untouched countries keep their rows.
     const { data: existing } = await supabase
       .from("active_alerts")
       .select("alert_id, first_seen_at")
@@ -325,23 +386,34 @@ Deno.serve(async (req) => {
     const currentIds = new Set(rows.map((r) => r.alert_id));
     const toDelete = (existing ?? [])
       .map((r: { alert_id: string }) => r.alert_id)
-      .filter((id: string) => !currentIds.has(id));
+      .filter((id: string) => !currentIds.has(id) && refreshed.has(id.slice(3, 5)));
     for (let i = 0; i < toDelete.length; i += 300) {
       await supabase.from("active_alerts").delete().in("alert_id", toDelete.slice(i, i + 300));
     }
 
+    // 4. Store the new validators so the next run can ask "anything changed?".
+    if (validators.length) {
+      const { error } = await supabase
+        .from("feed_http_cache")
+        .upsert(validators, { onConflict: "feed_key" });
+      if (error) console.warn("[meteoalarm-poll] validator upsert err:", error);
+    }
+
     const withGeom = rows.filter((r) => r.geometry).length;
     console.log(
-      `[meteoalarm-poll] ${rows.length} active (${withGeom} with geometry), ` +
+      `[meteoalarm-poll] ${refreshed.size}/${COUNTRIES.length} feeds changed, ` +
+        `${rows.length} active (${withGeom} with geometry), ` +
         `${toDelete.length} removed, ${failed.length} feeds failed`,
     );
 
     return new Response(
       JSON.stringify({
         ok: true,
+        feedsChanged: refreshed.size,
         active: rows.length,
         withGeometry: withGeom,
         deleted: toDelete.length,
+
         failedFeeds: failed,
         unresolvedCodes: resolver.unresolved(),
       }),
