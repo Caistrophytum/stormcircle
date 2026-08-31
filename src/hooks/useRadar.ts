@@ -179,8 +179,6 @@ export function useRadar() {
     setSelectedStation(station);
     setStationDistanceKm(0);
 
-
-
     // station.name is "City, ST" - the second token is the US state abbrev
     // (e.g. "FL" for KMLB). We MUST constrain the reverse-geocode to US +
     // that state, otherwise homonyms like Melbourne, AU or Birmingham, UK
@@ -215,7 +213,6 @@ export function useRadar() {
     setCtxCity({ name: cityName, lat: station.lat, lon: station.lon, countryCode: "US" });
   };
 
-
   const tileUrl = useMemo(() => {
     if (euMode) return euRadarTileUrl(euFrame);
     if (!selectedStation || !selectedProduct) return null;
@@ -237,8 +234,6 @@ export function useRadar() {
     euMode,
     /** Flips between the European composite and the NEXRAD mosaic. */
     toggleRadarMode,
-    /** True when the user has manually overridden the detected region. */
-    radarModeManual: modeOverride !== null,
     /** Unix seconds of the displayed European frame (null in NEXRAD mode). */
     euFrameTime: euFrame?.time ?? null,
 

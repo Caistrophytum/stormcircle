@@ -12,9 +12,6 @@
  * products); this module only powers the non-US / European view.
  */
 
-/** MeteoGate EUMETNET weather radar service root (metadata / EDR queries). */
-export const EU_RADAR_BASE = "https://api.meteogate.eu/eu-eumetnet-weather-radar";
-
 /** Rough bounding box of the OPERA composite (lon/lat). */
 export const EU_RADAR_BBOX = {
   minLon: -31.5,
