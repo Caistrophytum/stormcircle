@@ -222,24 +222,45 @@ export function buildRow(
   };
 }
 
-async function fetchFeed(slug: string): Promise<Record<string, unknown>[]> {
+/**
+ * Per-feed HTTP validator cache. The job runs every minute alongside the US
+ * poller, so almost every request answers 304 Not Modified: the country is
+ * skipped entirely and its already-stored rows are left untouched.
+ */
+type FeedCache = { etag: string | null; last_modified: string | null };
+type FeedResult =
+  | { changed: true; alerts: Record<string, unknown>[]; etag: string | null; lastModified: string | null }
+  | { changed: false };
+
+async function fetchFeed(slug: string, cache: FeedCache | undefined): Promise<FeedResult> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(`${FEED_BASE}${slug}`, {
-      signal: ctrl.signal,
-      headers: {
-        Accept: "application/json",
-        "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)",
-      },
-    });
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)",
+    };
+    if (cache?.etag) headers["If-None-Match"] = cache.etag;
+    if (cache?.last_modified) headers["If-Modified-Since"] = cache.last_modified;
+
+    const res = await fetch(`${FEED_BASE}${slug}`, { signal: ctrl.signal, headers });
+    if (res.status === 304) {
+      await res.body?.cancel();
+      return { changed: false };
+    }
     if (!res.ok) throw new Error(`${res.status}`);
     const body = (await res.json()) as { warnings?: { alert?: Record<string, unknown> }[] };
-    return (body.warnings ?? []).map((w) => w.alert ?? {}).filter((a) => Object.keys(a).length > 0);
+    return {
+      changed: true,
+      alerts: (body.warnings ?? []).map((w) => w.alert ?? {}).filter((a) => Object.keys(a).length > 0),
+      etag: res.headers.get("etag"),
+      lastModified: res.headers.get("last-modified"),
+    };
   } finally {
     clearTimeout(timer);
   }
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
