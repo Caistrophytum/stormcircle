@@ -241,7 +241,12 @@ export function useRadar() {
     tileUrl,
     /** True when the European composite is being shown instead of NEXRAD. */
     euMode,
+    /** Flips between the European composite and the NEXRAD mosaic. */
+    toggleRadarMode,
+    /** True when the user has manually overridden the detected region. */
+    radarModeManual: modeOverride !== null,
     /** Unix seconds of the displayed European frame (null in NEXRAD mode). */
     euFrameTime: euFrame?.time ?? null,
+
   };
 }
