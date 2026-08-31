@@ -156,23 +156,21 @@ const RadarStationMarkers = ({
   selectedStation,
   onStationSelect,
   onProductSelect,
-  euMode,
 }: RadarStationMarkersProps) => {
   const lastReceived = useRadarStationStatus();
   const now = Date.now();
   const STALE_MS = 20 * 60 * 1000;
-  // NEXRAD ingest status only exists for US sites; European sites always
-  // render in the "healthy" colour scheme.
-  const stations = euMode ? EU_RADAR_STATIONS : RADAR_STATIONS;
+  const stations = RADAR_STATIONS;
   return (
     <>
       <EnsureRadarMarkersPane />
       {stations.map((station) => {
         const isSelected = selectedStation?.id === station.id;
-        const ts = euMode ? undefined : lastReceived[station.id];
+        const ts = lastReceived[station.id];
         const isStale = ts !== undefined && now - ts > STALE_MS;
         const baseColor = isSelected ? "#00ffff" : isStale ? "#ff3838" : "#4af";
         const fillColor = isSelected ? "#00ffff" : isStale ? "#aa1111" : "#1a6aaa";
+
         return (
           <CircleMarker
             key={station.id}
