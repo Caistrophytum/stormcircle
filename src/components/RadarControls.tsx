@@ -123,12 +123,13 @@ const RadarControls = ({
         </PopoverContent>
       </Popover>
 
-      {/* Nearest radar readout */}
-      {selectedStation && selectedCity && (
+      {/* Nearest radar readout - NEXRAD only; the EU composite has no site. */}
+      {!euMode && selectedStation && selectedCity && (
         <div className="px-2 py-1.5 rounded-sm bg-primary/5 border border-primary/20 flex flex-col gap-0.5">
           <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider">
-            {euMode ? "Nearest EU Radar" : "Nearest Radar"}
+            Nearest Radar
           </span>
+
           <span className="text-[11px] font-mono font-bold text-primary leading-tight">
             {euMode ? selectedStation.id.replace("EU-", "") : selectedStation.id}
           </span>
