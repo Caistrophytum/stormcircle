@@ -25,6 +25,8 @@ interface Props {
   onProductChange: (product: ProductCode) => void;
   /** European composite mode: no per-station NEXRAD products available. */
   euMode?: boolean;
+  /** Flips between the European composite and the NEXRAD mosaic. */
+  onToggleMode?: () => void;
 }
 
 const RadarControls = ({
@@ -35,6 +37,7 @@ const RadarControls = ({
   selectedProduct,
   onProductChange,
   euMode = false,
+  onToggleMode,
 }: Props) => {
   const [cityOpen, setCityOpen] = useState(false);
   const [query, setQuery] = useState("");
