@@ -286,14 +286,14 @@ export const LeafletRadar = ({
           {...tileOpts}
         />
       )}
-      {interactive && (
+      {interactive && !euMode && (
         <RadarStationMarkers
           selectedStation={selectedStation}
           onStationSelect={onStationMarkerSelect}
           onProductSelect={setSelectedProduct}
-          euMode={euMode}
         />
       )}
+
       <RadarOverlayLayer tileUrl={tileUrl} onTileRequest={onTileRequest} euMode={euMode} />
       {interactive && <WarningPolygons ref={warningsRef} polygons={polygons} />}
       {interactive && (
