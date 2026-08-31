@@ -121,6 +121,7 @@ export default function RadarReportsTab() {
             stationDistanceKm={radar.stationDistanceKm}
             selectedProduct={radar.selectedProduct}
             euMode={radar.euMode}
+            onToggleMode={radar.toggleRadarMode}
             onProductChange={(code) => {
               radar.setSelectedProduct(code);
               radarMini.open();
