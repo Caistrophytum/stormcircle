@@ -25,6 +25,8 @@ interface Props {
   onProductChange: (product: ProductCode) => void;
   /** European composite mode: no per-station NEXRAD products available. */
   euMode?: boolean;
+  /** Flips between the European composite and the NEXRAD mosaic. */
+  onToggleMode?: () => void;
 }
 
 const RadarControls = ({
@@ -35,6 +37,7 @@ const RadarControls = ({
   selectedProduct,
   onProductChange,
   euMode = false,
+  onToggleMode,
 }: Props) => {
   const [cityOpen, setCityOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -123,7 +126,19 @@ const RadarControls = ({
         </PopoverContent>
       </Popover>
 
+      {/* Overlay source toggle: EU composite vs NEXRAD mosaic. */}
+      {onToggleMode && (
+        <button
+          type="button"
+          onClick={onToggleMode}
+          className="w-full h-8 rounded-sm border border-primary/40 bg-primary/5 hover:bg-primary/10 font-mono text-[10px] uppercase tracking-wider text-primary transition-colors"
+        >
+          {euMode ? "Overlay: EU Composite" : "Overlay: NEXRAD"} · Switch
+        </button>
+      )}
+
       {/* Nearest radar readout - NEXRAD only; the EU composite has no site. */}
+
       {!euMode && selectedStation && selectedCity && (
         <div className="px-2 py-1.5 rounded-sm bg-primary/5 border border-primary/20 flex flex-col gap-0.5">
           <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider">
