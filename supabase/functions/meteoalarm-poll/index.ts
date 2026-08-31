@@ -392,13 +392,14 @@ Deno.serve(async (req) => {
         `${toDelete.length} removed, ${failed.length} feeds failed`,
     );
 
-
     return new Response(
       JSON.stringify({
         ok: true,
+        feedsChanged: refreshed.size,
         active: rows.length,
         withGeometry: withGeom,
         deleted: toDelete.length,
+
         failedFeeds: failed,
         unresolvedCodes: resolver.unresolved(),
       }),
