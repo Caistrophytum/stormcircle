@@ -76,9 +76,10 @@ export async function fetchLatestEuRadarFrame(): Promise<EuRadarFrame | null> {
 
 /**
  * Builds a Leaflet tile URL template for a radar frame.
- * Colour scheme 4 (\"Universal Blue\") with smoothing, no snow mask.
+ * Colour scheme 6 (NEXRAD Level III) with smoothing, no snow mask, so the
+ * European composite matches the US NEXRAD palette.
  */
 export function euRadarTileUrl(frame: EuRadarFrame | null): string | null {
   if (!frame) return null;
-  return `${frame.host}${frame.path}/256/{z}/{x}/{y}/4/1_1.png`;
+  return `${frame.host}${frame.path}/256/{z}/{x}/{y}/6/1_1.png`;
 }
