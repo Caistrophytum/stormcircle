@@ -115,14 +115,19 @@ export function useRadar() {
     if (focus) {
       const isUS = (focus.countryCode ?? "US").toUpperCase() === "US";
       if (!isUS && isInEuRadarCoverage(focus.lat, focus.lon)) {
-        // Anchor on the nearest physical OPERA site, exactly like NEXRAD in
-        // the US. The imagery itself stays the European composite.
-        const { station: euStation, distanceKm } = findNearestEuStation(focus.lat, focus.lon);
-        setSelectedStation(euStation);
-        setStationDistanceKm(Math.round(distanceKm));
-        setSelectedProduct("N0B");
+        // European composite: there is no per-site product, so we simply centre
+        // the map on the focus itself. No OPERA site markers, no distance.
+        setSelectedStation({
+          id: "EU-COMPOSITE",
+          name: focus.name,
+          lat: focus.lat,
+          lon: focus.lon,
+        });
+        setStationDistanceKm(null);
+        setSelectedProduct(null);
         return;
       }
+
       const anchor = isUS
         ? { lat: focus.lat, lon: focus.lon }
         : homeCoords && (homeCoords.countryCode ?? "US").toUpperCase() === "US"
