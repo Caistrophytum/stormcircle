@@ -168,19 +168,7 @@ export function useRadar() {
     setSelectedStation(station);
     setStationDistanceKm(0);
 
-    // European site: no US reverse-geocode, just adopt the site as the city
-    // so the composite (and all parameters) recenter on it.
-    if (station.id.startsWith(EU_STATION_PREFIX)) {
-      const eu = EU_RADAR_STATIONS.find((s) => s.id === station.id);
-      const label = station.name.split(",")[0].trim();
-      setCtxCity({
-        name: label,
-        lat: station.lat,
-        lon: station.lon,
-        countryCode: eu?.cc ?? "EU",
-      });
-      return;
-    }
+
 
     // station.name is "City, ST" - the second token is the US state abbrev
     // (e.g. "FL" for KMLB). We MUST constrain the reverse-geocode to US +
