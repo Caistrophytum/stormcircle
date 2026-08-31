@@ -1,16 +1,44 @@
+/**
+ * useRadar - single source of truth for the radar overlay and map anchor.
+ *
+ * Rule: a US location pans to its nearest NEXRAD site (per-site products);
+ * a European/Israeli location shows the OPERA-area composite centred on the
+ * location itself; the manual toggle overrides that choice either way.
+ *
+ * Both regions refresh on the shared 60-second clock (`useRefreshTick`), so
+ * NEXRAD tiles and the European composite update in lockstep.
+ */
 import { useState, useMemo, useEffect } from "react";
 import { RadarStation } from "@/config/radarStations";
 import { findNearestStation } from "@/lib/nearestStation";
 import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/CityContext";
 import { searchGeocode } from "@/lib/openMeteo";
 import { useHometownCoords } from "@/hooks/useHometownCoords";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 import {
-
   isInEuRadarCoverage,
   fetchLatestEuRadarFrame,
   euRadarTileUrl,
   EuRadarFrame,
 } from "@/lib/euRadar";
+
+/** Washington DC - last-resort anchor when no location at all is known. */
+const DC = { lat: 38.9072, lon: -77.0369 };
+
+/**
+ * True when a coordinate sits inside NEXRAD coverage (CONUS, Alaska, Hawaii).
+ * `countryCode` is often missing on saved hometowns and legacy selections, so
+ * the coordinates - never a defaulted country code - decide the region.
+ */
+function isUsCoord(lat: number, lon: number): boolean {
+  return (
+    (lat >= 24 && lat <= 50 && lon >= -125 && lon <= -66) ||
+    (lat >= 51 && lat <= 72 && lon >= -170 && lon <= -129) ||
+    (lat >= 18 && lat <= 23 && lon >= -161 && lon <= -154)
+  );
+}
+
+
 
 
 /** Open-Meteo returns admin1 as the full state name; NEXRAD station labels
