@@ -284,23 +284,49 @@ Deno.serve(async (req) => {
   try {
     const now = Date.now();
 
-    // 1. Pull every country feed with bounded concurrency.
-    const rows: Row[] = [];
+    // 1. Pull every country feed with bounded concurrency, sending the HTTP
+    //    validators stored on the previous run. A 304 (or a failed fetch)
+    //    means "nothing new for this country": we skip it and keep its rows.
+    const { data: cacheRows } = await supabase
+      .from("feed_http_cache")
+      .select("feed_key, etag, last_modified")
+      .like("feed_key", "meteoalarm:%");
+    const cache = new Map<string, FeedCache>(
+      (cacheRows ?? []).map((r: { feed_key: string; etag: string | null; last_modified: string | null }) => [
+        r.feed_key,
+        { etag: r.etag, last_modified: r.last_modified },
+      ]),
+    );
+
     const pending: { row: Row; areas: Area[] }[] = [];
     const failed: string[] = [];
+    /** Countries whose rows this run is authoritative for (feed changed). */
+    const refreshed = new Set<string>();
+    const validators: { feed_key: string; etag: string | null; last_modified: string | null; updated_at: string }[] = [];
+    const nowIso = new Date(now).toISOString();
     let cursor = 0;
     await Promise.all(
       Array.from({ length: Math.min(FEED_CONCURRENCY, COUNTRIES.length) }, async () => {
         while (cursor < COUNTRIES.length) {
           const [slug, iso2] = COUNTRIES[cursor++];
-          let alerts: Record<string, unknown>[];
+          const key = `meteoalarm:${slug}`;
+          let result: FeedResult;
           try {
-            alerts = await fetchFeed(slug);
+            result = await fetchFeed(slug, cache.get(key));
           } catch (e) {
             failed.push(`${slug}:${String(e)}`);
             continue;
           }
-          for (const alert of alerts) {
+          if (!result.changed) continue;
+
+          refreshed.add(iso2);
+          validators.push({
+            feed_key: key,
+            etag: result.etag,
+            last_modified: result.lastModified,
+            updated_at: nowIso,
+          });
+          for (const alert of result.alerts) {
             for (const info of englishInfos(alert)) {
               const row = buildRow(alert, info, iso2, now);
               if (!row) continue;
@@ -319,10 +345,10 @@ Deno.serve(async (req) => {
       row.geometry = resolver.resolve(areas);
       byId.set(row.alert_id, row);
     }
-    rows.push(...byId.values());
+    const rows = [...byId.values()];
 
-    // 3. Upsert, preserving first_seen_at, then drop everything that vanished.
-    const nowIso = new Date(now).toISOString();
+    // 3. Upsert, preserving first_seen_at, then drop rows that vanished from a
+    //    feed we actually re-read this run. Untouched countries keep their rows.
     const { data: existing } = await supabase
       .from("active_alerts")
       .select("alert_id, first_seen_at")
@@ -346,16 +372,26 @@ Deno.serve(async (req) => {
     const currentIds = new Set(rows.map((r) => r.alert_id));
     const toDelete = (existing ?? [])
       .map((r: { alert_id: string }) => r.alert_id)
-      .filter((id: string) => !currentIds.has(id));
+      .filter((id: string) => !currentIds.has(id) && refreshed.has(id.slice(3, 5)));
     for (let i = 0; i < toDelete.length; i += 300) {
       await supabase.from("active_alerts").delete().in("alert_id", toDelete.slice(i, i + 300));
     }
 
+    // 4. Store the new validators so the next run can ask "anything changed?".
+    if (validators.length) {
+      const { error } = await supabase
+        .from("feed_http_cache")
+        .upsert(validators, { onConflict: "feed_key" });
+      if (error) console.warn("[meteoalarm-poll] validator upsert err:", error);
+    }
+
     const withGeom = rows.filter((r) => r.geometry).length;
     console.log(
-      `[meteoalarm-poll] ${rows.length} active (${withGeom} with geometry), ` +
+      `[meteoalarm-poll] ${refreshed.size}/${COUNTRIES.length} feeds changed, ` +
+        `${rows.length} active (${withGeom} with geometry), ` +
         `${toDelete.length} removed, ${failed.length} feeds failed`,
     );
+
 
     return new Response(
       JSON.stringify({
