@@ -140,14 +140,13 @@ Deno.serve(async (req) => {
 
     // Preserve first_seen_at across upserts so the "New Warnings" panel can
     // show items first observed in the last 5 minutes.
-    // Only NWS-sourced rows. Alerts written by other pollers (e.g. `IMS-…`
-    // rows from ims-poll, `MA-…` rows from meteoalarm-poll) must never appear
-    // in this run's delete set.
+    // Only NWS-sourced rows. Alerts written by other pollers (`MA-…` rows
+    // from meteoalarm-poll) must never appear in this run's delete set.
     const { data: existing } = await supabase
       .from("active_alerts")
       .select("alert_id, first_seen_at")
-      .not("alert_id", "like", "IMS-%")
       .not("alert_id", "like", "MA-%");
+
     const firstSeenById = new Map<string, string>();
     for (const r of existing ?? []) {
       if (r.first_seen_at) firstSeenById.set(r.alert_id, r.first_seen_at);

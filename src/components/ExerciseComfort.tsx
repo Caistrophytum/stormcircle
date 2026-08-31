@@ -300,7 +300,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
 
   // Dedupe warnings by event (keeping the highest severity), only those whose
   // polygon covers the home point. Works for any feed in `active_alerts` -
-  // NWS products and IMS colour-tier warnings alike.
+  // NWS products and MeteoAlarm awareness-level warnings alike.
   const activeWarnings = useMemo(() => {
     if (!home.coords) return [] as { event: string; severity?: string | null }[];
     const { lat, lon } = home.coords;

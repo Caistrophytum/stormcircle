@@ -2,7 +2,7 @@
 //
 // Runs every 5 minutes. For every user who opted in it resolves their saved
 // hometown, checks:
-//   • new NWS/IMS alerts covering that point, and severity upgrades
+//   • new NWS/MeteoAlarm alerts covering that point, and severity upgrades
 //   • rapid WRS swings (default 15 points inside 30 minutes)
 //   • SPC convective outlook at ENH or above (and any upgrade)
 //   • SPC fire weather outlook at Elevated or above (and any change)

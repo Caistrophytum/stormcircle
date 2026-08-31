@@ -22,7 +22,7 @@ export interface Alert {
   certainty: Certainty;
   urgency: Urgency;
   tags: string[];
-  /** ISO country the alert originates from ("US" = NWS, "IL" = IMS). */
+  /** ISO country the alert originates from ("US" = NWS, others = MeteoAlarm). */
   country: string;
 }
 

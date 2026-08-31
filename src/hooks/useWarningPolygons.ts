@@ -228,19 +228,8 @@ function resolveByKeyword(event: string): string | null {
 }
 
 /**
- * Israel Meteorological Service warnings carry an official colour tier
- * (green → red) instead of an NWS product name, so they resolve first.
- */
-const IMS_COLORS: Record<string, string> = {
-  red: "#FF0000",
-  orange: "#FF8C00",
-  yellow: "#FFD700",
-  green: "#32CD32",
-};
-
-/**
- * MeteoAlarm (European) warnings carry an awareness level 1-4 instead of an
- * NWS product name: 1 green, 2 yellow, 3 orange, 4 red.
+ * MeteoAlarm (European, Israel included) warnings carry an awareness level
+ * 1-4 instead of an NWS product name: 1 green, 2 yellow, 3 orange, 4 red.
  */
 const MA_LEVEL_COLORS: Record<string, string> = {
   "1": "#32CD32",
@@ -254,10 +243,7 @@ export function getWarningColor(properties: any): string {
   if (maLevel != null && MA_LEVEL_COLORS[String(maLevel)]) {
     return MA_LEVEL_COLORS[String(maLevel)];
   }
-  const imsColor = properties?.parameters?.imsColor;
-  if (typeof imsColor === "string" && IMS_COLORS[imsColor.toLowerCase()]) {
-    return IMS_COLORS[imsColor.toLowerCase()];
-  }
+
   const event = properties?.event as string;
   const haystack = buildHaystack(properties);
   const pds = hasPDS(haystack);

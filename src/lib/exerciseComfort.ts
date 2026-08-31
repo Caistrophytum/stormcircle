@@ -14,7 +14,7 @@
  *   AQI      Good – Hazardous                 100      ×1.25  ×1.5   ×1.25  ×1.0
  *   Rain     0 – 20 mm/h                       80      ×1.25  ×1.25  ×1.0   ×1.5
  *
- * Active warnings (NWS / IMS) raise the severity floor of the hazard they
+ * Active warnings (NWS / MeteoAlarm) raise the severity floor of the hazard they
  * cover; life-safety products (tornado, evacuation) still hard-cap the score.
  */
 
@@ -55,7 +55,7 @@ export interface AQPoint {
 
 /**
  * A warning covering the home point. Accepts a bare event name (legacy) or an
- * object carrying the issuing severity - IMS colour tiers map onto the same
+ * object carrying the issuing severity - MeteoAlarm awareness levels map onto the same
  * Moderate / Severe / Extreme scale NWS uses, so both feeds score identically.
  */
 export type ActiveWarning = string | { event: string; severity?: string | null };
@@ -63,7 +63,7 @@ export type ActiveWarning = string | { event: string; severity?: string | null }
 export interface ComfortContext {
   hourly: HourlyPoint[];       // 7 hours: index 0 = current, 1..6 next 6
   airQuality: AQPoint[];       // aligned by time (best effort)
-  activeWarnings: ActiveWarning[]; // NWS/IMS events covering the home point
+  activeWarnings: ActiveWarning[]; // NWS/MeteoAlarm events covering the home point
   spcRisk: SPCRiskLevel;
   fireRisk: FireRiskLevel;
   wrs: number;                 // 0–100 WRS threat from sounding panel
@@ -202,7 +202,7 @@ const LABELS: Record<HazardKey, string> = {
   rain: "Rain",
 };
 
-// ── Warning normalisation (NWS + IMS) ───────────────────────────────────
+// ── Warning normalisation (NWS + MeteoAlarm) ───────────────────────────────────
 /** 1 = advisory/moderate, 2 = severe, 3 = extreme. */
 const SEV_RANK: Record<string, number> = {
   minor: 1,
