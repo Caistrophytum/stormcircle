@@ -9,7 +9,6 @@ import { ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { useRadarStationStatus } from "@/hooks/useRadarStationStatus";
-import { EU_RADAR_STATIONS } from "@/config/euRadarStations";
 import WarningPolygons, { WarningPolygonsHandle } from "./WarningPolygons";
 
 /** Custom Leaflet pane name for radar station markers. Sits above the
