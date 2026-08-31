@@ -129,10 +129,10 @@ const RadarControls = ({
           <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-wider">
             Nearest Radar
           </span>
-
           <span className="text-[11px] font-mono font-bold text-primary leading-tight">
-            {euMode ? selectedStation.id.replace("EU-", "") : selectedStation.id}
+            {selectedStation.id}
           </span>
+
           <span className="text-[9px] font-mono text-muted-foreground leading-tight">
             {selectedStation.name}
             {stationDistanceKm != null && (() => {
