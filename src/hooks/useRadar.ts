@@ -5,11 +5,7 @@ import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/Cit
 import { searchGeocode } from "@/lib/openMeteo";
 import { useHometownCoords } from "@/hooks/useHometownCoords";
 import {
-  EU_RADAR_STATIONS,
-  EU_STATION_PREFIX,
-  findNearestEuStation,
-} from "@/config/euRadarStations";
-import {
+
   isInEuRadarCoverage,
   fetchLatestEuRadarFrame,
   euRadarTileUrl,
@@ -119,14 +115,19 @@ export function useRadar() {
     if (focus) {
       const isUS = (focus.countryCode ?? "US").toUpperCase() === "US";
       if (!isUS && isInEuRadarCoverage(focus.lat, focus.lon)) {
-        // Anchor on the nearest physical OPERA site, exactly like NEXRAD in
-        // the US. The imagery itself stays the European composite.
-        const { station: euStation, distanceKm } = findNearestEuStation(focus.lat, focus.lon);
-        setSelectedStation(euStation);
-        setStationDistanceKm(Math.round(distanceKm));
-        setSelectedProduct("N0B");
+        // European composite: there is no per-site product, so we simply centre
+        // the map on the focus itself. No OPERA site markers, no distance.
+        setSelectedStation({
+          id: "EU-COMPOSITE",
+          name: focus.name,
+          lat: focus.lat,
+          lon: focus.lon,
+        });
+        setStationDistanceKm(null);
+        setSelectedProduct(null);
         return;
       }
+
       const anchor = isUS
         ? { lat: focus.lat, lon: focus.lon }
         : homeCoords && (homeCoords.countryCode ?? "US").toUpperCase() === "US"
@@ -167,19 +168,7 @@ export function useRadar() {
     setSelectedStation(station);
     setStationDistanceKm(0);
 
-    // European site: no US reverse-geocode, just adopt the site as the city
-    // so the composite (and all parameters) recenter on it.
-    if (station.id.startsWith(EU_STATION_PREFIX)) {
-      const eu = EU_RADAR_STATIONS.find((s) => s.id === station.id);
-      const label = station.name.split(",")[0].trim();
-      setCtxCity({
-        name: label,
-        lat: station.lat,
-        lon: station.lon,
-        countryCode: eu?.cc ?? "EU",
-      });
-      return;
-    }
+
 
     // station.name is "City, ST" - the second token is the US state abbrev
     // (e.g. "FL" for KMLB). We MUST constrain the reverse-geocode to US +
