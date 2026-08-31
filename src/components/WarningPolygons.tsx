@@ -275,7 +275,7 @@ const WarningPolygons = forwardRef<WarningPolygonsHandle, WarningPolygonsProps>(
         }
       });
 
-      // Stacking: big area-wide polygons (e.g. an "All of Israel" IMS
+      // Stacking: big area-wide polygons (e.g. an "All of Israel" MeteoAlarm
       // warning) must sit behind the smaller, more specific ones so the
       // local hazard stays readable and clickable. Bringing layers to the
       // front from largest to smallest leaves the largest at the back.
