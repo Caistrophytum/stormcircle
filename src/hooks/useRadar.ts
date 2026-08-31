@@ -38,9 +38,6 @@ function isUsCoord(lat: number, lon: number): boolean {
   );
 }
 
-
-
-
 /** Open-Meteo returns admin1 as the full state name; NEXRAD station labels
  *  use the 2-letter USPS code. Map full-name → abbrev for state matching. */
 const US_STATE_ABBREV: Record<string, string> = {
@@ -58,7 +55,6 @@ const US_STATE_ABBREV: Record<string, string> = {
   vermont: "VT", virginia: "VA", washington: "WA", "west virginia": "WV",
   wisconsin: "WI", wyoming: "WY",
 };
-
 
 export type ProductCode = "N0B" | "N0U" | "N0S" | "N0Z" | "NET";
 
@@ -158,11 +154,6 @@ export function useRadar() {
     homeCoords?.lat,
     homeCoords?.lon,
   ]);
-
-
-
-
-
 
   const setSelectedCity = (city: CtxSelectedCity | null) => {
     setCtxCity(city);
