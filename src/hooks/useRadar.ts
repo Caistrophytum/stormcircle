@@ -5,9 +5,7 @@ import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/Cit
 import { searchGeocode } from "@/lib/openMeteo";
 import { useHometownCoords } from "@/hooks/useHometownCoords";
 import {
-  isInEuRadarCoverage,
 
-import {
   isInEuRadarCoverage,
   fetchLatestEuRadarFrame,
   euRadarTileUrl,
