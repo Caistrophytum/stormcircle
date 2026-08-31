@@ -24,6 +24,7 @@ export default function MobileRadar() {
     setSelectedProduct,
     tileUrl,
     euMode,
+    toggleRadarMode,
   } = useRadar();
 
   const [cityOpen, setCityOpen] = useState(false);
@@ -51,6 +52,23 @@ export default function MobileRadar() {
           setSelectedProduct={setSelectedProduct}
         />
       </div>
+
+      {/* Overlay source toggle (EU composite vs NEXRAD) */}
+      <button
+        type="button"
+        onClick={toggleRadarMode}
+        className="absolute font-mono text-[10px] uppercase tracking-wider rounded-sm px-2 py-1"
+        style={{
+          top: 10,
+          left: 10,
+          zIndex: 900,
+          background: "rgba(10,10,14,0.9)",
+          border: "1px solid rgba(255,157,0,0.5)",
+          color: "#ff9d00",
+        }}
+      >
+        {euMode ? "EU Composite" : "NEXRAD"}
+      </button>
 
       {/* Bottom 17% - controls */}
       <div
