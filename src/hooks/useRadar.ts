@@ -5,10 +5,8 @@ import { useSelectedCity, SelectedCity as CtxSelectedCity } from "@/contexts/Cit
 import { searchGeocode } from "@/lib/openMeteo";
 import { useHometownCoords } from "@/hooks/useHometownCoords";
 import {
-  EU_RADAR_STATIONS,
-  EU_STATION_PREFIX,
-  findNearestEuStation,
-} from "@/config/euRadarStations";
+  isInEuRadarCoverage,
+
 import {
   isInEuRadarCoverage,
   fetchLatestEuRadarFrame,
