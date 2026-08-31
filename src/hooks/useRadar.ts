@@ -79,13 +79,28 @@ export function useRadar() {
         }
       : null;
 
-  // European (non-US) radar composite. When the focus sits outside the US but
-  // inside the OPERA/European coverage box we drop NEXRAD entirely and show the
-  // European composite anchored on the focus itself.
-  const euMode =
-    !!focus &&
-    (focus.countryCode ?? "US").toUpperCase() !== "US" &&
-    isInEuRadarCoverage(focus.lat, focus.lon);
+  // Region detection. countryCode is frequently missing (saved hometowns,
+  // legacy selections), so we never assume "US" from a missing code - the
+  // coordinates decide instead.
+  const isUsCoord = (lat: number, lon: number) =>
+    (lat >= 24 && lat <= 50 && lon >= -125 && lon <= -66) || // CONUS
+    (lat >= 51 && lat <= 72 && lon >= -170 && lon <= -129) || // Alaska
+    (lat >= 18 && lat <= 23 && lon >= -161 && lon <= -154); // Hawaii
+
+  const autoRegion: "us" | "eu" | null = focus
+    ? (focus.countryCode ?? "").toUpperCase() === "US" || isUsCoord(focus.lat, focus.lon)
+      ? "us"
+      : isInEuRadarCoverage(focus.lat, focus.lon)
+        ? "eu"
+        : null
+    : null;
+
+  // Manual override so the user can flip between the European composite and
+  // the NEXRAD mosaic regardless of where the focus sits.
+  const [modeOverride, setModeOverride] = useState<"us" | "eu" | null>(null);
+  const region: "us" | "eu" = modeOverride ?? autoRegion ?? "us";
+  const euMode = region === "eu";
+  const toggleRadarMode = () => setModeOverride(euMode ? "us" : "eu");
 
   const [euFrame, setEuFrame] = useState<EuRadarFrame | null>(null);
 
@@ -108,47 +123,49 @@ export function useRadar() {
     };
   }, [euMode]);
 
-  // Keep nearest-station state in sync with the radar focus. The NEXRAD network
-  // is CONUS-only, so a non-US focus outside European coverage falls back to the
-  // hometown, and finally to Washington DC when no hometown is known.
+  // Keep the map anchor in sync with the radar focus:
+  //  - EU/Israel: composite overlay centred on the focus itself (no site).
+  //  - US: pan to the nearest NEXRAD site.
   useEffect(() => {
-    if (focus) {
-      const isUS = (focus.countryCode ?? "US").toUpperCase() === "US";
-      if (!isUS && isInEuRadarCoverage(focus.lat, focus.lon)) {
-        // European composite: there is no per-site product, so we simply centre
-        // the map on the focus itself. No OPERA site markers, no distance.
-        setSelectedStation({
-          id: "EU-COMPOSITE",
-          name: focus.name,
-          lat: focus.lat,
-          lon: focus.lon,
-        });
-        setStationDistanceKm(null);
-        setSelectedProduct(null);
-        return;
-      }
-
-      const anchor = isUS
-        ? { lat: focus.lat, lon: focus.lon }
-        : homeCoords && (homeCoords.countryCode ?? "US").toUpperCase() === "US"
-          ? { lat: homeCoords.lat, lon: homeCoords.lon }
-          : { lat: 38.9072, lon: -77.0369 }; // Washington, DC fallback
-      const { station, distanceKm } = findNearestStation(anchor.lat, anchor.lon);
-      setSelectedStation(station);
-      setStationDistanceKm(isUS ? distanceKm : null);
-      setSelectedProduct("N0B");
-    } else {
+    if (!focus) {
       setSelectedStation(null);
       setStationDistanceKm(null);
+      return;
     }
+
+    if (euMode) {
+      setSelectedStation({
+        id: "EU-COMPOSITE",
+        name: focus.name,
+        lat: focus.lat,
+        lon: focus.lon,
+      });
+      setStationDistanceKm(null);
+      setSelectedProduct(null);
+      return;
+    }
+
+    // NEXRAD: anchor on the focus when it is inside US coverage, otherwise on
+    // a US hometown, and only then on Washington DC.
+    const focusIsUS = isUsCoord(focus.lat, focus.lon);
+    const anchor = focusIsUS
+      ? { lat: focus.lat, lon: focus.lon }
+      : homeCoords && isUsCoord(homeCoords.lat, homeCoords.lon)
+        ? { lat: homeCoords.lat, lon: homeCoords.lon }
+        : { lat: 38.9072, lon: -77.0369 }; // Washington, DC fallback
+    const { station, distanceKm } = findNearestStation(anchor.lat, anchor.lon);
+    setSelectedStation(station);
+    setStationDistanceKm(focusIsUS ? distanceKm : null);
+    setSelectedProduct("N0B");
   }, [
+    euMode,
     focus?.lat,
     focus?.lon,
-    focus?.countryCode,
+    focus?.name,
     homeCoords?.lat,
     homeCoords?.lon,
-    homeCoords?.countryCode,
   ]);
+
 
 
 
