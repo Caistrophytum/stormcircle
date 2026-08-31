@@ -223,14 +223,22 @@ export function buildRow(
 }
 
 /**
- * Per-feed HTTP validator cache. The job runs every minute alongside the US
- * poller, so almost every request answers 304 Not Modified: the country is
- * skipped entirely and its already-stored rows are left untouched.
+ * Per-feed change detection. The job runs every minute alongside the US
+ * poller, so most countries have nothing new: we send the validators saved on
+ * the previous run and, when the feed offers none (the MeteoAlarm feeds
+ * currently do not), fall back to hashing the response body. Either way an
+ * unchanged country is skipped and its already-stored rows are left untouched.
  */
 type FeedCache = { etag: string | null; last_modified: string | null };
 type FeedResult =
   | { changed: true; alerts: Record<string, unknown>[]; etag: string | null; lastModified: string | null }
   | { changed: false };
+
+/** Hex sha-256 of the raw feed body, stored in the `etag` column as `sha256:...`. */
+async function bodyHash(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return "sha256:" + [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 async function fetchFeed(slug: string, cache: FeedCache | undefined): Promise<FeedResult> {
   const ctrl = new AbortController();
@@ -240,7 +248,7 @@ async function fetchFeed(slug: string, cache: FeedCache | undefined): Promise<Fe
       Accept: "application/json",
       "User-Agent": "StormCircle/1.0 (bot@stormcircle.net)",
     };
-    if (cache?.etag) headers["If-None-Match"] = cache.etag;
+    if (cache?.etag && !cache.etag.startsWith("sha256:")) headers["If-None-Match"] = cache.etag;
     if (cache?.last_modified) headers["If-Modified-Since"] = cache.last_modified;
 
     const res = await fetch(`${FEED_BASE}${slug}`, { signal: ctrl.signal, headers });
@@ -249,11 +257,17 @@ async function fetchFeed(slug: string, cache: FeedCache | undefined): Promise<Fe
       return { changed: false };
     }
     if (!res.ok) throw new Error(`${res.status}`);
-    const body = (await res.json()) as { warnings?: { alert?: Record<string, unknown> }[] };
+
+    const raw = await res.text();
+    const etag = res.headers.get("etag") ?? (await bodyHash(raw));
+    // No validator headers from this feed: an identical body means no change.
+    if (etag === cache?.etag) return { changed: false };
+
+    const body = JSON.parse(raw) as { warnings?: { alert?: Record<string, unknown> }[] };
     return {
       changed: true,
       alerts: (body.warnings ?? []).map((w) => w.alert ?? {}).filter((a) => Object.keys(a).length > 0),
-      etag: res.headers.get("etag"),
+      etag,
       lastModified: res.headers.get("last-modified"),
     };
   } finally {
