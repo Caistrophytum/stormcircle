@@ -134,9 +134,8 @@ interface RadarStationMarkersProps {
   selectedStation: RadarStation | null;
   onStationSelect: (station: RadarStation) => void;
   onProductSelect: (product: ProductCode) => void;
-  /** Plot European (OPERA) sites instead of the CONUS NEXRAD network. */
-  euMode?: boolean;
 }
+
 
 /** Creates a dedicated Leaflet pane for the radar station markers so they
  *  always render above the warning polygon overlay pane. */
