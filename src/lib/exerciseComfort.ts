@@ -7,12 +7,12 @@
  * Each hazard maps its raw value linearly onto 0..100 severity, is scaled by
  * a per-hazard maximum point budget, and then by a per-activity multiplier:
  *
- *   Hazard   Range                        Max points   run    walk   bike   hike
- *   Temp     coldest ← comfort → hottest      100      ×1.5   ×1.25  ×1.0   ×1.25
- *   Wind     0 – 110 km/h                     100      ×1.0   ×1.25  ×1.25  ×1.5
- *   UV       0 – 11                            60      ×1.0   ×1.25  ×1.25  ×1.5
- *   AQI      Good – Hazardous                 100      ×1.25  ×1.5   ×1.25  ×1.0
- *   Rain     0 – 20 mm/h                       80      ×1.25  ×1.25  ×1.0   ×1.5
+ *   Hazard   Range                        Max points   run    walk   bike   hike   calisthenics
+ *   Temp     coldest ← comfort → hottest      100      ×1.5   ×1.25  ×1.0   ×1.25  ×1.5
+ *   Wind     0 – 110 km/h                     100      ×1.0   ×1.25  ×1.25  ×1.5   ×1.0
+ *   UV       0 – 11                            60      ×1.0   ×1.25  ×1.25  ×1.5   ×1.25
+ *   AQI      Good – Hazardous                 100      ×1.25  ×1.5   ×1.25  ×1.0   ×1.0
+ *   Rain     0 – 20 mm/h                       80      ×1.25  ×1.25  ×1.0   ×1.5   ×1.0
  *
  * Active warnings (NWS / MeteoAlarm) raise the severity floor of the hazard they
  * cover; life-safety products (tornado, evacuation) still hard-cap the score.
