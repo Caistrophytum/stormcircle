@@ -2,6 +2,7 @@
 // signed-in user, and exposes the VAPID public key the browser needs before
 // it can create one.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { rateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const publicKey = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
+  const ip = clientIp(req);
+
+  // Per-IP throttle so an unauthenticated caller cannot loop on this endpoint.
+  const ipLimit = rateLimit(`push:ip:${ip}`, 30, 60_000);
+  if (!ipLimit.allowed) {
+    return new Response(JSON.stringify({ error: "Too many requests" }), {
+      status: 429,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(ipLimit.retryAfter) },
+    });
+  }
 
   // Unauthenticated bootstrap: the client needs the public key to subscribe.
   if (req.method === "GET") return json({ publicKey });
@@ -33,6 +44,15 @@ Deno.serve(async (req) => {
   const { data: userData, error: userErr } = await supabase.auth.getUser(token);
   const user = userData?.user;
   if (userErr || !user) return json({ error: "Unauthorized" }, 401);
+
+  // Per-user write throttle: registering/removing a device is a rare action.
+  const userLimit = rateLimit(`push:user:${user.id}`, 10, 60_000);
+  if (!userLimit.allowed) {
+    return new Response(JSON.stringify({ error: "Too many requests" }), {
+      status: 429,
+      headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(userLimit.retryAfter) },
+    });
+  }
 
   let body: Record<string, unknown>;
   try {
