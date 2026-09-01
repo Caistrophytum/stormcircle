@@ -15,7 +15,7 @@
  */
 import { useEffect, useState, FormEvent } from "react";
 import { Helmet } from "react-helmet-async";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   LogOut,
@@ -80,6 +80,17 @@ const subjectSchema = z.enum(["General Feedback", "Bug Report", "Feature Request
 
 const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /* Scroll to the notification settings when arriving via the bell shortcut. */
+  useEffect(() => {
+    if (location.hash !== "#notification-settings") return;
+    const t = window.setTimeout(() => {
+      document.getElementById("notification-settings")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [location.hash]);
+
   const { user, profile, loading, profileLoading, signOut, refreshProfile } = useAuth();
 
   // Redirect to /auth when not signed in
@@ -403,8 +414,11 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
         </section>
 
 
-        {/* SECTION 1b - Notification preferences */}
-        <NotificationSettings />
+        {/* SECTION 1b - Notification preferences (anchor target for the bell shortcut) */}
+        <div id="notification-settings" className="scroll-mt-20">
+          <NotificationSettings />
+        </div>
+
 
 
         {/* SECTION 2 - Meteorologist application */}
