@@ -133,11 +133,13 @@ export default function NotificationBell({ compact = false }: { compact?: boolea
 
         <button
           type="button"
-          onClick={() => navigate("/account")}
-          className="w-full border-t border-border px-3 py-2 text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-primary"
+          onClick={() => navigate("/account#notification-settings")}
+          className="flex w-full items-center justify-center gap-1.5 border-t border-border px-3 py-2 text-center font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-primary"
         >
+          <Settings className="size-3" />
           Notification settings
         </button>
+
       </PopoverContent>
     </Popover>
   );
