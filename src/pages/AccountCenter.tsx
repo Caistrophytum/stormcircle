@@ -403,8 +403,11 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
         </section>
 
 
-        {/* SECTION 1b - Notification preferences */}
-        <NotificationSettings />
+        {/* SECTION 1b - Notification preferences (anchor target for the bell shortcut) */}
+        <div id="notification-settings" className="scroll-mt-20">
+          <NotificationSettings />
+        </div>
+
 
 
         {/* SECTION 2 - Meteorologist application */}
