@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.rate_limit_messages() FROM PUBLIC, anon, authenticated;
