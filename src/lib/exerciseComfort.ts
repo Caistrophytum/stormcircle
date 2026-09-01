@@ -7,12 +7,12 @@
  * Each hazard maps its raw value linearly onto 0..100 severity, is scaled by
  * a per-hazard maximum point budget, and then by a per-activity multiplier:
  *
- *   Hazard   Range                        Max points   run    walk   bike   hike
- *   Temp     coldest ← comfort → hottest      100      ×1.5   ×1.25  ×1.0   ×1.25
- *   Wind     0 – 110 km/h                     100      ×1.0   ×1.25  ×1.25  ×1.5
- *   UV       0 – 11                            60      ×1.0   ×1.25  ×1.25  ×1.5
- *   AQI      Good – Hazardous                 100      ×1.25  ×1.5   ×1.25  ×1.0
- *   Rain     0 – 20 mm/h                       80      ×1.25  ×1.25  ×1.0   ×1.5
+ *   Hazard   Range                        Max points   run    walk   bike   hike   calisthenics
+ *   Temp     coldest ← comfort → hottest      100      ×1.5   ×1.25  ×1.0   ×1.25  ×1.5
+ *   Wind     0 – 110 km/h                     100      ×1.0   ×1.25  ×1.25  ×1.5   ×1.0
+ *   UV       0 – 11                            60      ×1.0   ×1.25  ×1.25  ×1.5   ×1.25
+ *   AQI      Good – Hazardous                 100      ×1.25  ×1.5   ×1.25  ×1.0   ×1.0
+ *   Rain     0 – 20 mm/h                       80      ×1.25  ×1.25  ×1.0   ×1.5   ×1.0
  *
  * Active warnings (NWS / MeteoAlarm) raise the severity floor of the hazard they
  * cover; life-safety products (tornado, evacuation) still hard-cap the score.
@@ -21,7 +21,7 @@
 import type { SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import type { FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
 
-export type Activity = "walk" | "run" | "bike" | "hike";
+export type Activity = "walk" | "run" | "bike" | "hike" | "calisthenics";
 
 export type ComfortTier = "Ideal" | "Good" | "Fair" | "Poor" | "Dangerous";
 
@@ -188,10 +188,11 @@ const MAX_POINTS: Record<HazardKey, number> = {
 };
 
 const MULTIPLIERS: Record<Activity, Record<HazardKey, number>> = {
-  run:  { temp: 1.5,  wind: 1.0,  uv: 1.0,  aq: 1.25, rain: 1.25 },
-  walk: { temp: 1.25, wind: 1.25, uv: 1.25, aq: 1.5,  rain: 1.25 },
-  bike: { temp: 1.0,  wind: 1.25, uv: 1.25, aq: 1.25, rain: 1.0 },
-  hike: { temp: 1.25, wind: 1.5,  uv: 1.5,  aq: 1.0,  rain: 1.5 },
+  run:          { temp: 1.5,  wind: 1.0,  uv: 1.0,  aq: 1.25, rain: 1.25 },
+  walk:         { temp: 1.25, wind: 1.25, uv: 1.25, aq: 1.5,  rain: 1.25 },
+  bike:         { temp: 1.0,  wind: 1.25, uv: 1.25, aq: 1.25, rain: 1.0 },
+  hike:         { temp: 1.25, wind: 1.5,  uv: 1.5,  aq: 1.0,  rain: 1.5 },
+  calisthenics: { temp: 1.5,  wind: 1.0,  uv: 1.25, aq: 1.0,  rain: 1.0 },
 };
 
 const LABELS: Record<HazardKey, string> = {
@@ -342,7 +343,7 @@ function computeComfort(activity: Activity, ctx: ComfortContext): ActivityResult
 }
 
 export function computeAllActivities(ctx: ComfortContext): ActivityResult[] {
-  const activities: Activity[] = ["walk", "run", "bike", "hike"];
+  const activities: Activity[] = ["walk", "run", "bike", "hike", "calisthenics"];
   return activities.map((a) => computeComfort(a, ctx));
 }
 

@@ -69,7 +69,7 @@ const faqs = [
   {
     question: "What is Outdoor Exercise Comfort?",
     answer:
-      "Outdoor Exercise Comfort calculates how comfortable and safe it is to walk, run, bike, or hike right now. It scores each activity from 0 to 100 using real-feel temperature, wind, UV index, air quality, and rain, and shows which parameter is limiting you most. It also projects the next six hours so you can plan your workout.",
+      "Outdoor Exercise Comfort calculates how comfortable and safe it is to walk, run, bike, hike, or do outdoor calisthenics right now. It scores each activity from 0 to 100 using real-feel temperature, wind, UV index, air quality, and rain, and shows which parameter is limiting you most. It also projects the next six hours so you can plan your workout.",
   },
   {
     question: "Can I get notifications from StormCircle?",
