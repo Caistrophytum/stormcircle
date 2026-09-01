@@ -80,6 +80,17 @@ const subjectSchema = z.enum(["General Feedback", "Bug Report", "Feature Request
 
 const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  /* Scroll to the notification settings when arriving via the bell shortcut. */
+  useEffect(() => {
+    if (location.hash !== "#notification-settings") return;
+    const t = window.setTimeout(() => {
+      document.getElementById("notification-settings")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+    return () => window.clearTimeout(t);
+  }, [location.hash]);
+
   const { user, profile, loading, profileLoading, signOut, refreshProfile } = useAuth();
 
   // Redirect to /auth when not signed in
