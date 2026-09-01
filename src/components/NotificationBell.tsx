@@ -3,7 +3,7 @@
  * header. Shows unread count, recent notifications, and a quick toggle for
  * browser push.
  */
-import { Bell, BellOff, BellRing, Check, Trash2 } from "lucide-react";
+import { Bell, BellOff, BellRing, Check, Settings, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useNotifications } from "@/hooks/useNotifications";
