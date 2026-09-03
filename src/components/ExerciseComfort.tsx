@@ -13,7 +13,7 @@
  *   • SPC categorical, SPC fire outlook, and WRS threat via existing hooks.
  */
 import { useMemo, useState } from "react";
-import { AlertTriangle, Bike, ChevronDown, Dumbbell, Footprints, Mountain, PersonStanding, X } from "lucide-react";
+import { AlertTriangle, Bike, ChevronDown, Footprints, Mountain, PersonStanding, X } from "lucide-react";
 
 import FloatingWindow from "@/components/desktop/FloatingWindow";
 import { useAuth } from "@/hooks/useAuth";
@@ -51,7 +51,6 @@ const ACTIVITY_META: Record<Activity, { label: string; Icon: typeof Bike }> = {
   run: { label: "Run", Icon: PersonStanding },
   bike: { label: "Bike", Icon: Bike },
   hike: { label: "Hike", Icon: Mountain },
-  calisthenics: { label: "Outdoor Calisthenics", Icon: Dumbbell },
 };
 
 // Palette for the single-line contribution bar (mirrors the desktop WRS

@@ -63,7 +63,7 @@ export const changelog: ChangelogEntry[] = [
     date: "2026-07-01 20z",
     tag: "NEW",
     title: "Exercise-o-meter V1",
-    body: "A simple and intuitive window aiming to use environmental factors, as well as warnings, watches, alerts, and outlooks, in order to try and pinpoint the best (and worst) times to exercise. Including walking, running, biking, hiking, and outdoor calisthenics.",
+    body: "A simple and intuitive window aiming to use environmental factors, as well as warnings, watches, alerts, and outlooks, in order to try and pinpoint the best (and worst) times to exercise. Including walking, running, biking, and hiking.",
   },
   {
     date: "2026-07-01 05z",
