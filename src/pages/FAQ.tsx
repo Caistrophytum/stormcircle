@@ -10,7 +10,13 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, HelpCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const faqs = [
+type FaqItem = {
+  question: string;
+  answer: string | React.ReactNode;
+  jsonAnswer?: string;
+};
+
+const faqs: FaqItem[] = [
   {
     question: "What is StormCircle?",
     answer:
@@ -81,6 +87,25 @@ const faqs = [
     answer:
       "Visit StormCircle.net, create a free account, and you're in. No app download required: StormCircle runs entirely in your browser. Join the community, follow active weather discussions, set your hometown, and start contributing reports from your area.",
   },
+  {
+    question: "Is there a StormCircle Zello channel?",
+    answer: (
+      <>
+        Yes — you can join the StormCircle channel on Zello for live voice storm spotting and community coordination during active weather. Visit{" "}
+        <a
+          href="https://Zello.com/stormcirclezello"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+        >
+          Zello.com/stormcirclezello
+        </a>{" "}
+        to join.
+      </>
+    ),
+    jsonAnswer:
+      "Yes — you can join the StormCircle channel on Zello for live voice storm spotting and community coordination during active weather. Visit https://Zello.com/stormcirclezello to join.",
+  },
 ];
 
 export default function FAQ({ hideBackButton = false }: { hideBackButton?: boolean } = {}) {
@@ -112,7 +137,10 @@ export default function FAQ({ hideBackButton = false }: { hideBackButton?: boole
             mainEntity: faqs.map((f) => ({
               "@type": "Question",
               name: f.question,
-              acceptedAnswer: { "@type": "Answer", text: f.answer },
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: f.jsonAnswer ?? (typeof f.answer === "string" ? f.answer : ""),
+              },
             })),
           })}
         </script>
@@ -179,7 +207,7 @@ export default function FAQ({ hideBackButton = false }: { hideBackButton?: boole
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeInOut" }}
                       >
-                        <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
+                        <div className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{faq.answer}</div>
                       </motion.div>
                     )}
                   </AnimatePresence>
