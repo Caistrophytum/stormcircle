@@ -207,7 +207,7 @@ export default function FAQ({ hideBackButton = false }: { hideBackButton?: boole
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.25, ease: "easeInOut" }}
                       >
-                        <p className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
+                        <div className="px-5 pb-5 text-sm leading-relaxed text-muted-foreground">{faq.answer}</div>
                       </motion.div>
                     )}
                   </AnimatePresence>
