@@ -137,7 +137,10 @@ export default function FAQ({ hideBackButton = false }: { hideBackButton?: boole
             mainEntity: faqs.map((f) => ({
               "@type": "Question",
               name: f.question,
-              acceptedAnswer: { "@type": "Answer", text: f.answer },
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: f.jsonAnswer ?? (typeof f.answer === "string" ? f.answer : ""),
+              },
             })),
           })}
         </script>
