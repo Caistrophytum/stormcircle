@@ -219,18 +219,12 @@ Deno.serve(async (req) => {
     // Build all bot messages, then insert in a single call.
     const botRows: { user_id: string; username: string; badge: string; content: string }[] = [];
     changed.forEach((s, i) => {
-      const headline = headlines[i];
       botRows.push({
         user_id: HURRICANE_BOT_ID, username: "Hurricane Bot", badge: "System",
-        content: advisoryMsg(s, newIds.has(s.storm_id), headline),
+        content: advisoryMsg(s, newIds.has(s.storm_id), headlines[i]),
       });
-      if (s.is_dangerous) {
-        botRows.push({
-          user_id: HURRICANE_BOT_ID, username: "Hurricane Bot", badge: "System",
-          content: dangerMsg(s, headline),
-        });
-      }
     });
+
     if (botRows.length > 0) {
       const { error: insErr } = await supabase.from("messages").insert(botRows);
       if (insErr) console.warn("[nhc-poll] bot insert failed:", insErr);
