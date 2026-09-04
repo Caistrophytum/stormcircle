@@ -117,8 +117,14 @@ async function fetchAdvisoryHeadline(url: string): Promise<string | null> {
   } catch { return null; }
 }
 
+// Single card per storm per advisory. Dangerous storms get the red danger
+// header + forecast links folded in, instead of a second near-identical post.
 function advisoryMsg(s: NormStorm, isNew: boolean, headline: string | null): string {
-  const header = isNew ? `🌀 NEW STORM: ${s.name} - ${s.classification_label}` : `🌀 ADVISORY UPDATE: ${s.name}`;
+  const header = s.is_dangerous
+    ? `🔴 ${s.danger_level}: ${s.name.toUpperCase()}`
+    : isNew
+      ? `🌀 NEW STORM: ${s.name} - ${s.classification_label}`
+      : `🌀 ADVISORY UPDATE: ${s.name}`;
   return [header,
     headline ? `📢 ${headline}` : ``,
     ``,
@@ -128,24 +134,12 @@ function advisoryMsg(s: NormStorm, isNew: boolean, headline: string | null): str
     `Pressure: ${s.pressure} mb`,
     `Movement: ${s.movement_dir_compass} at ${Math.round(s.movement_speed * 1.151)} mph`,
     ``,
-    s.is_dangerous && s.forecast_graphics_url
-      ? `⚠️ DANGEROUS STORM - See forecast: ${s.forecast_graphics_url}`
-      : ``,
+    s.is_dangerous && s.discussion_url ? `📊 Forecast discussion: ${s.discussion_url}` : ``,
+    s.is_dangerous && s.forecast_graphics_url ? `🗺️ Forecast graphics: ${s.forecast_graphics_url}` : ``,
     `<!--hadv:${s.storm_id}:${s.last_update}-->`,
   ].filter(Boolean).join("\n");
 }
-function dangerMsg(s: NormStorm, headline: string | null): string {
-  return [`🔴 ${s.danger_level}: ${s.name.toUpperCase()}`,
-    headline ? `📢 ${headline}` : ``,
-    ``,
-    `Winds: ${s.intensity_mph} mph - Pressure: ${s.pressure} mb`,
-    `Current position: ${s.lat_str}, ${s.lon_str}`,
-    `Moving: ${s.movement_dir_compass} at ${Math.round(s.movement_speed * 1.151)} mph`, ``,
-    s.discussion_url ? `📊 Forecast discussion: ${s.discussion_url}` : ``,
-    s.forecast_graphics_url ? `🗺️ Forecast graphics: ${s.forecast_graphics_url}` : ``,
-    `<!--hadv:${s.storm_id}:danger:${s.last_update}-->`,
-  ].filter(Boolean).join("\n");
-}
+
 
 async function buildEnsoLine(supabase: any): Promise<string | null> {
   const { data } = await supabase.from("enso_state").select("*").eq("id", 1).maybeSingle();
@@ -225,18 +219,12 @@ Deno.serve(async (req) => {
     // Build all bot messages, then insert in a single call.
     const botRows: { user_id: string; username: string; badge: string; content: string }[] = [];
     changed.forEach((s, i) => {
-      const headline = headlines[i];
       botRows.push({
         user_id: HURRICANE_BOT_ID, username: "Hurricane Bot", badge: "System",
-        content: advisoryMsg(s, newIds.has(s.storm_id), headline),
+        content: advisoryMsg(s, newIds.has(s.storm_id), headlines[i]),
       });
-      if (s.is_dangerous) {
-        botRows.push({
-          user_id: HURRICANE_BOT_ID, username: "Hurricane Bot", badge: "System",
-          content: dangerMsg(s, headline),
-        });
-      }
     });
+
     if (botRows.length > 0) {
       const { error: insErr } = await supabase.from("messages").insert(botRows);
       if (insErr) console.warn("[nhc-poll] bot insert failed:", insErr);
