@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
 import { useLifetimeVisitors } from "@/hooks/useLifetimeVisitors";
 import { useUnitSystem, toggleUnitSystem } from "@/hooks/useUnitSystem";
+import { Radio } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import stormcircleLogo from "@/assets/stormcircle-logo.png.asset.json";
 
@@ -118,6 +119,28 @@ export default function MobileHeader() {
           : `${onlineCount} ONLINE`}
       </button>
 
+
+      <a
+        href="https://Zello.com/stormcirclezello"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Open StormCircle Radio on Zello"
+        title="StormCircle Radio"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 28,
+          height: 28,
+          borderRadius: 2,
+          background: "rgba(0,180,255,0.08)",
+          border: "1px solid rgba(0,180,255,0.35)",
+          color: "#00b4ff",
+          flexShrink: 0,
+        }}
+      >
+        <Radio size={14} />
+      </a>
 
       <NotificationBell compact />
     </div>
