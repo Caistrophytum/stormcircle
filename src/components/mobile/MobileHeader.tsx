@@ -120,6 +120,28 @@ export default function MobileHeader() {
       </button>
 
 
+      <a
+        href="https://Zello.com/stormcirclezello"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Open StormCircle Radio on Zello"
+        title="StormCircle Radio"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 28,
+          height: 28,
+          borderRadius: 2,
+          background: "rgba(0,180,255,0.08)",
+          border: "1px solid rgba(0,180,255,0.35)",
+          color: "#00b4ff",
+          flexShrink: 0,
+        }}
+      >
+        <Radio size={14} />
+      </a>
+
       <NotificationBell compact />
     </div>
   );
