@@ -15,7 +15,6 @@ import {
 export default function MobileHeader() {
   const onlineCount = useOnlineCount();
   const lifetime = useLifetimeVisitors();
-  const [showLifetime, setShowLifetime] = useState(false);
   const unitSystem = useUnitSystem();
   const [now, setNow] = useState(() => new Date());
 
