@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler } from "lucide-react";
+import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSelectedCity } from "@/contexts/CityContext";
 import { useHometownWeather, pressureTrendDescriptor } from "@/hooks/useHometownWeather";
@@ -318,6 +318,18 @@ const StatusBar = () => {
         <div className="shrink-0">
           <OnlineCounter />
         </div>
+
+        <a
+          href="https://Zello.com/stormcirclezello"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open StormCircle Radio on Zello"
+          title="StormCircle Radio"
+          className="shrink-0 flex items-center gap-1.5 px-2 py-1 border border-neon-blue/25 bg-neon-blue/5 text-neon-blue rounded-sm hover:bg-neon-blue/10 hover:border-neon-blue/50 transition-colors"
+        >
+          <Radio className="size-3" />
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider hidden sm:inline">Radio</span>
+        </a>
 
         <div className="shrink-0">
           <NotificationBell />
