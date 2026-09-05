@@ -89,41 +89,65 @@ export default function MobileHeader() {
         {timeLabel}
       </div>
 
-      <button
-        type="button"
-        onClick={() => setShowLifetime((v) => !v)}
-        aria-label={showLifetime ? "Show live online count" : "Show lifetime visitors"}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "6px",
-          color: showLifetime ? "#00b4ff" : "#00ff88",
-          fontSize: "10px",
-          fontWeight: 700,
-          letterSpacing: "0.08em",
-          whiteSpace: "nowrap",
-          background: "transparent",
-          border: "none",
-          padding: 0,
-          cursor: "pointer",
-        }}
-      >
-        {!showLifetime && (
-          <span
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            aria-label="Open visitor counts"
             style={{
-              width: "6px",
-              height: "6px",
-              borderRadius: "50%",
-              background: "#00ff88",
-              display: "inline-block",
-              boxShadow: "0 0 6px #00ff88",
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              color: "#00ff88",
+              fontSize: "10px",
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              whiteSpace: "nowrap",
+              background: "transparent",
+              border: "none",
+              padding: "2px 4px",
+              cursor: "pointer",
             }}
-          />
-        )}
-        {showLifetime
-          ? `${lifetime != null ? lifetime.toLocaleString() : "..."} ALL TIME`
-          : `${onlineCount} ONLINE`}
-      </button>
+          >
+            <span
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: "#00ff88",
+                display: "inline-block",
+                boxShadow: "0 0 6px #00ff88",
+              }}
+            />
+            LIVE
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="font-mono min-w-[140px]">
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="text-[11px] uppercase tracking-wider cursor-default focus:bg-primary/10 focus:text-[#00ff88]"
+          >
+            <span
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                background: "#00ff88",
+                display: "inline-block",
+                boxShadow: "0 0 6px #00ff88",
+                marginRight: "8px",
+              }}
+            />
+            {onlineCount} Online
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={(e) => e.preventDefault()}
+            className="text-[11px] uppercase tracking-wider cursor-default focus:bg-neon-blue/10 focus:text-neon-blue"
+          >
+            {lifetime != null ? lifetime.toLocaleString() : "..."} All Time
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
 
       <a
