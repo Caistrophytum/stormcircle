@@ -121,7 +121,7 @@ export default function MobileHeader() {
 
 
       <a
-        href="https://Zello.com/stormcirclezello"
+        href="https://on.zello.com/t5xn213"
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Open StormCircle Radio on Zello"
