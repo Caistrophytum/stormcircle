@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler } from "lucide-react";
+import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSelectedCity } from "@/contexts/CityContext";
 import { useHometownWeather, pressureTrendDescriptor } from "@/hooks/useHometownWeather";
