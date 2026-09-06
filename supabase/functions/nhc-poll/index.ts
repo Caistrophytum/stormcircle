@@ -225,25 +225,24 @@ Deno.serve(async (req) => {
       if (upsertErr) console.warn("[nhc-poll] batch upsert failed:", upsertErr);
     }
 
-    // Fetch all advisory headlines in parallel (each with its own 6s
-    // timeout so one slow storm page can't block the others).
-    const headlines = await Promise.all(
-      changed.map((s) => fetchAdvisoryHeadline(s.advisory_url)),
-    );
+    // Only the highest-threat storm with a fresh advisory gets a card this
+    // refresh. One fetch, one insert - the rest are summarised inside it.
+    const lead = changed.length
+      ? changed.reduce((a, b) => (threatScore(b) > threatScore(a) ? b : a))
+      : null;
 
-    // Build all bot messages, then insert in a single call.
-    const botRows: { user_id: string; username: string; badge: string; content: string }[] = [];
-    changed.forEach((s, i) => {
-      botRows.push({
+    if (lead) {
+      const headline = await fetchAdvisoryHeadline(lead.advisory_url);
+      const others = storms
+        .filter((s) => s.storm_id !== lead.storm_id)
+        .sort((a, b) => threatScore(b) - threatScore(a));
+      const { error: insErr } = await supabase.from("messages").insert({
         user_id: HURRICANE_BOT_ID, username: "Hurricane Bot", badge: "System",
-        content: advisoryMsg(s, newIds.has(s.storm_id), headlines[i]),
+        content: advisoryMsg(lead, newIds.has(lead.storm_id), headline, others),
       });
-    });
-
-    if (botRows.length > 0) {
-      const { error: insErr } = await supabase.from("messages").insert(botRows);
       if (insErr) console.warn("[nhc-poll] bot insert failed:", insErr);
     }
+
 
     // Remove storms NHC dropped - single .in() delete instead of N deletes.
     const currentIds = new Set(storms.map((s) => s.storm_id));
