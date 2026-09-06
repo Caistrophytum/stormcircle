@@ -117,14 +117,26 @@ async function fetchAdvisoryHeadline(url: string): Promise<string | null> {
   } catch { return null; }
 }
 
-// Single card per storm per advisory. Dangerous storms get the red danger
-// header + forecast links folded in, instead of a second near-identical post.
-function advisoryMsg(s: NormStorm, isNew: boolean, headline: string | null): string {
+// One card per refresh: only the single most imminent/threatening storm is
+// posted, so mobile users always see the message that matters most. Other
+// active storms are folded into a one-line roster at the bottom.
+function threatScore(s: NormStorm): number {
+  const classWeight: Record<string, number> = {
+    HU: 400, TY: 400, STY: 500, TS: 200, STS: 180, TD: 100, STD: 90,
+    TC: 120, EX: 40, LO: 20, DB: 10,
+  };
+  return (classWeight[s.classification] ?? 0) + s.intensity_kt;
+}
+
+function advisoryMsg(s: NormStorm, isNew: boolean, headline: string | null, others: NormStorm[]): string {
   const header = s.is_dangerous
     ? `🔴 ${s.danger_level}: ${s.name.toUpperCase()}`
     : isNew
       ? `🌀 NEW STORM: ${s.name} - ${s.classification_label}`
       : `🌀 ADVISORY UPDATE: ${s.name}`;
+  const roster = others.length
+    ? `Also active: ${others.map((o) => `${o.name} (${o.classification_label}, ${o.intensity_mph} mph)`).join("; ")}`
+    : "";
   return [header,
     headline ? `📢 ${headline}` : ``,
     ``,
@@ -136,9 +148,12 @@ function advisoryMsg(s: NormStorm, isNew: boolean, headline: string | null): str
     ``,
     s.is_dangerous && s.discussion_url ? `📊 Forecast discussion: ${s.discussion_url}` : ``,
     s.is_dangerous && s.forecast_graphics_url ? `🗺️ Forecast graphics: ${s.forecast_graphics_url}` : ``,
+    roster ? `` : ``,
+    roster,
     `<!--hadv:${s.storm_id}:${s.last_update}-->`,
   ].filter(Boolean).join("\n");
 }
+
 
 
 async function buildEnsoLine(supabase: any): Promise<string | null> {
