@@ -203,15 +203,32 @@ Deno.serve(async (req) => {
     const { data: existing } = await supabase.from("nhc_storms").select("storm_id, last_update");
     const existingMap = new Map<string, string>((existing ?? []).map((r: any) => [r.storm_id, r.last_update]));
 
-    // Perf: classify once, then do all IO in parallel batches.
-    // Previously we awaited upsert → headline fetch → 1-2 bot inserts
-    // sequentially per storm (5-storm season = ~20 serial round-trips).
+    // What has actually been ANNOUNCED (not merely stored) is tracked via the
+    // <!--hadv:id:last_update--> marker on past bot cards. Using the DB row's
+    // last_update here would swallow advisories for non-lead storms, since the
+    // upsert below records every storm even though only one card is posted.
+    const { data: pastCards } = await supabase.from("messages")
+      .select("content")
+      .eq("user_id", HURRICANE_BOT_ID)
+      .ilike("content", "%<!--hadv:%")
+      .order("created_at", { ascending: false })
+      .limit(80);
+    const postedMap = new Map<string, number>();
+    for (const row of pastCards ?? []) {
+      const m = String(row.content).match(/<!--hadv:([^:]+):([^>]+)-->/);
+      if (!m) continue;
+      const t = new Date(m[2]).getTime();
+      if (!Number.isFinite(t)) continue;
+      if (!postedMap.has(m[1]) || t > postedMap.get(m[1])!) postedMap.set(m[1], t);
+    }
+
     const changed: NormStorm[] = [];
     const newIds = new Set<string>();
     for (const s of storms) {
-      const prev = existingMap.get(s.storm_id);
-      const isNew = !prev;
-      const isChanged = isNew || new Date(s.last_update).getTime() !== new Date(prev!).getTime();
+      const isNew = !existingMap.has(s.storm_id) && !postedMap.has(s.storm_id);
+      const postedAt = postedMap.get(s.storm_id);
+      const isChanged = postedAt === undefined ||
+        new Date(s.last_update).getTime() !== postedAt;
       if (isChanged) changed.push(s);
       if (isNew) newIds.add(s.storm_id);
     }
@@ -225,11 +242,15 @@ Deno.serve(async (req) => {
       if (upsertErr) console.warn("[nhc-poll] batch upsert failed:", upsertErr);
     }
 
-    // Only the highest-threat storm with a fresh advisory gets a card this
-    // refresh. One fetch, one insert - the rest are summarised inside it.
+    // One card per refresh: never-announced storms come first (so a new storm
+    // is not buried behind a stronger hurricane), then highest threat score.
+    // Anything skipped stays "unposted" and is picked up on the next run.
+    const rank = (s: NormStorm) =>
+      (postedMap.has(s.storm_id) ? 0 : 10_000) + threatScore(s);
     const lead = changed.length
-      ? changed.reduce((a, b) => (threatScore(b) > threatScore(a) ? b : a))
+      ? changed.reduce((a, b) => (rank(b) > rank(a) ? b : a))
       : null;
+
 
     if (lead) {
       const headline = await fetchAdvisoryHeadline(lead.advisory_url);
