@@ -51,6 +51,7 @@ const ACTIVITY_META: Record<Activity, { label: string; Icon: typeof Bike }> = {
   run: { label: "Run", Icon: PersonStanding },
   bike: { label: "Bike", Icon: Bike },
   hike: { label: "Hike", Icon: Mountain },
+  calisthenics: { label: "Calisthenics", Icon: Dumbbell },
 };
 
 // Palette for the single-line contribution bar (mirrors the desktop WRS
