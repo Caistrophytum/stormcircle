@@ -225,7 +225,10 @@ Deno.serve(async (req) => {
     const changed: NormStorm[] = [];
     const newIds = new Set<string>();
     for (const s of storms) {
-      const isNew = !existingMap.has(s.storm_id) && !postedMap.has(s.storm_id);
+      // "New" means never announced by the bot. The nhc_storms upsert runs for
+      // every storm each poll, so existingMap can't be part of this test or a
+      // deferred storm would lose its NEW STORM headline on the next refresh.
+      const isNew = !postedMap.has(s.storm_id);
       const postedAt = postedMap.get(s.storm_id);
       const isChanged = postedAt === undefined ||
         new Date(s.last_update).getTime() !== postedAt;
