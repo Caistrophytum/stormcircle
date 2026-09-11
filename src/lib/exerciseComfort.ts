@@ -21,7 +21,7 @@
 import type { SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import type { FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
 
-export type Activity = "walk" | "run" | "bike" | "hike";
+export type Activity = "walk" | "run" | "bike" | "hike" | "calisthenics";
 
 export type ComfortTier = "Ideal" | "Good" | "Fair" | "Poor" | "Dangerous";
 
