@@ -343,7 +343,7 @@ function computeComfort(activity: Activity, ctx: ComfortContext): ActivityResult
 }
 
 export function computeAllActivities(ctx: ComfortContext): ActivityResult[] {
-  const activities: Activity[] = ["walk", "run", "bike", "hike"];
+  const activities: Activity[] = ["walk", "run", "bike", "hike", "calisthenics"];
   return activities.map((a) => computeComfort(a, ctx));
 }
 
