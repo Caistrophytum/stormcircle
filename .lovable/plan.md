@@ -17,7 +17,7 @@ A slim bar across the top of the map, sitting between the "Top 10 Most Dangerous
 - A day runs from 12Z to 12Z.
 - Each new warning that appears is counted once, per warning type, into that day's bucket.
 - Once a type has three complete past days, its average is computed from those three days.
-- The bar compares today's running count against that 3-day average: spiking if clearly above, calming if clearly below (threshold: at least 30% change and at least 3 warnings difference, to avoid noise).
+- The bar compares today's running count against that 3-day average: spiking if clearly above, calming if clearly below (threshold: at least 10% (10–15% “Trending”; 16–25% “Rushing”; above 25% “Spiking”, each labeled Upwards/Downwards in the format “X is Y Upwards/Downwards. (Z%).” and colored yellow/orange/red for growth or neon green/ocean turquoise/deep blue for decline) change and at least 3 warnings difference, to avoid noise).
 - Buckets older than the three complete days (4 days prior and beyond) are deleted automatically.
 
 ## Technical details
