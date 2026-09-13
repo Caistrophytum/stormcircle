@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import HazardTabs, { DangerousPanel } from "./desktop/HazardTabs";
+import { NewsBar } from "./desktop/NewsBar";
 import { useWRSMetrics, type WeatherCondition } from "@/hooks/useWRSMetrics";
 import { useDataContext } from "@/providers/DataProvider";
 
@@ -71,6 +72,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
       <div className="absolute top-3 left-3 z-10">
         <DangerousPanel />
       </div>
+      <NewsBar />
       <div className="absolute top-3 right-3 z-10">
         <HazardTabs />
       </div>

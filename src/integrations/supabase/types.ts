@@ -668,6 +668,27 @@ export type Database = {
         }
         Relationships: []
       }
+      warning_daily_counts: {
+        Row: {
+          count: number
+          day: string
+          event: string
+          updated_at: string
+        }
+        Insert: {
+          count?: number
+          day: string
+          event: string
+          updated_at?: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          event?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       warning_regions: {
         Row: {
           code: string
@@ -719,6 +740,7 @@ export type Database = {
       is_meteorologist: { Args: { _user_id: string }; Returns: boolean }
       message_signature: { Args: { _content: string }; Returns: string }
       register_visit: { Args: { _visitor_id: string }; Returns: number }
+      rollup_warning_counts: { Args: never; Returns: undefined }
       run_maintenance: { Args: never; Returns: undefined }
       upsert_cron_secret: { Args: { _val: string }; Returns: undefined }
     }
