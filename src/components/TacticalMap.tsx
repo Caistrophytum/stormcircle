@@ -72,6 +72,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
       <div className="absolute top-3 left-3 z-10">
         <DangerousPanel />
       </div>
+      <NewsBar />
       <div className="absolute top-3 right-3 z-10">
         <HazardTabs />
       </div>
