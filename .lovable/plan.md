@@ -6,8 +6,8 @@ A slim bar across the top of the map, sitting between the "Top 10 Most Dangerous
 
 - A glass/neon bar matching the two side panels, same top offset and same 12px gaps to each panel.
 - One headline at a time, fading to the next every ~6 seconds, e.g.
-  - "Flood Warning spiking — 42 today vs 3-day avg 18 (+133%)"
-  - "Heat Advisory calming — 9 today vs 3-day avg 25 (-64%)"
+  - "Flood Warning spiking - 42 today vs 3-day avg 18 (+133%)"
+  - "Heat Advisory calming - 9 today vs 3-day avg 25 (-64%)"
 - Types with little change are not shown. If nothing qualifies, it shows "Warning trends steady".
 - During the first three days of history it shows "Building warning trends…".
 - Hidden on mobile (this is the desktop map layout only).
