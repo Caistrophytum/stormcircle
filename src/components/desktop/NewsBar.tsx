@@ -22,10 +22,10 @@ export function NewsBar() {
 
   return (
     <div
-      className="pointer-events-auto absolute top-3 z-20 hidden md:flex items-center justify-center overflow-hidden rounded-2xl px-4 py-2"
+      className="pointer-events-auto absolute top-3 z-20 hidden md:flex items-center justify-center overflow-hidden rounded-lg px-4 py-2"
       style={{
-        left: "calc(0.75rem + ((100vw - 56px) / 3))",
-        right: "calc(0.75rem + ((100vw - 56px) / 3))",
+        left: "calc(1.25rem + ((100vw - 56px) / 3))",
+        right: "calc(1.25rem + ((100vw - 56px) / 3))",
         background: "rgba(18,18,22,0.72)",
         backdropFilter: "blur(24px)",
         border: "1px solid rgba(255,157,0,0.35)",
