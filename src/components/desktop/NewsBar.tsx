@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWarningTrends } from "@/hooks/useWarningTrends";
 
 const ROTATE_INTERVAL_MS = 6_000;
-const MARQUEE_SPEED_PX_S = 55;
+const MARQUEE_SPEED_PX_S = 35;
+const MARQUEE_MIN_DURATION_S = 12;
 
 function useUtcClock() {
   const [time, setTime] = useState(() => formatUtc());
@@ -65,7 +66,7 @@ export function NewsBar() {
     }
     const start = zoneWidth + 8;
     const end = -(contentWidth + 16);
-    const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, 6);
+    const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, MARQUEE_MIN_DURATION_S);
     setMarquee({ start, end, duration });
   }, [index, trends, collecting, steady]);
 
