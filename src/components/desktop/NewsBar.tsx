@@ -155,7 +155,21 @@ export function NewsBar() {
               transition={{ duration: 0.3 }}
               className="absolute inset-0 flex items-center overflow-hidden"
             >
-              <span className="newsbar-ticker pl-4">
+              <span
+                ref={contentRef}
+                className={marquee ? "newsbar-marquee pl-4" : "pl-4"}
+                style={
+                  marquee
+                    ? ({
+                        "--marquee-start": `${marquee.start}px`,
+                        "--marquee-end": `${marquee.end}px`,
+                        animationDuration: `${marquee.duration}s`,
+                        animationFillMode: "forwards",
+                      } as React.CSSProperties)
+                    : undefined
+                }
+                onAnimationEnd={marquee ? advance : undefined}
+              >
                 <span
                   className="font-mono text-xs font-bold uppercase tracking-wider"
                   style={{ color: current.color }}
