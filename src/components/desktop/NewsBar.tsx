@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWarningTrends } from "@/hooks/useWarningTrends";
 
 const ROTATE_INTERVAL_MS = 6_000;
+const MARQUEE_SPEED_PX_S = 55;
 
 function useUtcClock() {
   const [time, setTime] = useState(() => formatUtc());
@@ -23,15 +24,50 @@ export function NewsBar() {
   const { trends, collecting, steady } = useWarningTrends();
   const [index, setIndex] = useState(0);
   const clock = useUtcClock();
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLSpanElement>(null);
+  const [marquee, setMarquee] = useState<{
+    start: number;
+    end: number;
+    duration: number;
+  } | null>(null);
 
   useEffect(() => {
     if (trends.length === 0) return;
     setIndex(0);
-    const id = setInterval(() => {
-      setIndex((i) => (i + 1) % trends.length);
-    }, ROTATE_INTERVAL_MS);
-    return () => clearInterval(id);
   }, [trends.length]);
+
+  const advance = useCallback(() => {
+    setIndex((i) => (i + 1) % Math.max(trends.length, 1));
+  }, [trends.length]);
+
+  // When a headline fits without scrolling, rotate on a timer instead.
+  useEffect(() => {
+    if (marquee || trends.length <= 1) return;
+    const id = setInterval(advance, ROTATE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [marquee, trends.length, advance]);
+
+  // Measure each headline: scroll it fully through the bar when it overflows,
+  // center it statically when it fits.
+  useLayoutEffect(() => {
+    const zone = zoneRef.current;
+    const content = contentRef.current;
+    if (!zone || !content || collecting || trends.length === 0) {
+      setMarquee(null);
+      return;
+    }
+    const zoneWidth = zone.clientWidth;
+    const contentWidth = content.scrollWidth;
+    if (contentWidth + 24 <= zoneWidth) {
+      setMarquee(null);
+      return;
+    }
+    const start = zoneWidth + 8;
+    const end = -(contentWidth + 16);
+    const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, 6);
+    setMarquee({ start, end, duration });
+  }, [index, trends, collecting, steady]);
 
   const current = trends[index];
 
@@ -87,7 +123,7 @@ export function NewsBar() {
       </div>
 
       {/* Ticker zone */}
-      <div className="flex-1 h-full relative flex items-center overflow-hidden">
+      <div ref={zoneRef} className="flex-1 h-full relative flex items-center overflow-hidden">
         {/* Decorative sweep line */}
         <div
           className="absolute inset-0 pointer-events-none opacity-5"
@@ -119,7 +155,21 @@ export function NewsBar() {
               transition={{ duration: 0.3 }}
               className="absolute inset-0 flex items-center overflow-hidden"
             >
-              <span className="newsbar-ticker pl-4">
+              <span
+                ref={contentRef}
+                className={marquee ? "newsbar-marquee pl-4" : "pl-4"}
+                style={
+                  marquee
+                    ? ({
+                        "--marquee-start": `${marquee.start}px`,
+                        "--marquee-end": `${marquee.end}px`,
+                        animationDuration: `${marquee.duration}s`,
+                        animationFillMode: "forwards",
+                      } as React.CSSProperties)
+                    : undefined
+                }
+                onAnimationEnd={marquee ? advance : undefined}
+              >
                 <span
                   className="font-mono text-xs font-bold uppercase tracking-wider"
                   style={{ color: current.color }}
