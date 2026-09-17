@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWarningTrends } from "@/hooks/useWarningTrends";
 
 const ROTATE_INTERVAL_MS = 6_000;
-const MARQUEE_SPEED_PX_S = 55;
+const MARQUEE_SPEED_PX_S = 35;
+const MARQUEE_MIN_DURATION_S = 12;
 
 function useUtcClock() {
   const [time, setTime] = useState(() => formatUtc());
