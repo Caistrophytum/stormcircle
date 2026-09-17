@@ -18,18 +18,12 @@ function getBucketDate() {
   return new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-// Wording follows the change ladder (10-15 / 16-25 / 25+ percent),
-// while the color follows the magnitude levels (low / medium / high).
+// Wording and color both follow the magnitude levels
+// (low: up to 50%, medium: up to 150%, high: above 150%).
 function getTrendLabel(percent: number, direction: "up" | "down") {
   const abs = Math.abs(percent);
-  if (direction === "up") {
-    if (abs >= 25) return "Spiking Upwards";
-    if (abs >= 16) return "Rushing Upwards";
-    return "Trending Upwards";
-  }
-  if (abs >= 25) return "Spiking Downwards";
-  if (abs >= 16) return "Rushing Downwards";
-  return "Trending Downwards";
+  const word = abs > 150 ? "Spiking" : abs > 50 ? "Rushing" : "Trending";
+  return `${word} ${direction === "up" ? "Upwards" : "Downwards"}`;
 }
 
 function getLevelColor(level: Trend["level"], direction: "up" | "down") {
