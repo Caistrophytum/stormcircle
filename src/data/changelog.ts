@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-09-16 09z",
+    tag: "NEW",
+    title: "News headbar for warning fluctuations",
+    body: "Shows the fluctuations of warnings today in comparison to the last three days, worldwide. Just a fun lil' thing, isn't it?",
+  },
+  {
     date: "2026-08-30 19z",
     tag: "NEW",
     title: "Eurozone is here!",
