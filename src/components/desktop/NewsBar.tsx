@@ -6,6 +6,22 @@ const ROTATE_INTERVAL_MS = 6_000;
 const MARQUEE_SPEED_PX_S = 50;
 const MARQUEE_MIN_DURATION_S = 12;
 
+// Thick, cartoony-but-serious outline: eight directional hits plus a soft glow.
+function buildOutline(color: string) {
+  const px = "1.3px";
+  return [
+    `-${px} 0 0 ${color}`,
+    `${px} 0 0 ${color}`,
+    `0 -${px} 0 ${color}`,
+    `0 ${px} 0 ${color}`,
+    `-${px} -${px} 0 ${color}`,
+    `${px} -${px} 0 ${color}`,
+    `-${px} ${px} 0 ${color}`,
+    `${px} ${px} 0 ${color}`,
+    `0 0 5px ${color}`,
+  ].join(", ");
+}
+
 export function NewsBar() {
   const { trends, collecting, steady } = useWarningTrends();
   const [index, setIndex] = useState(0);
@@ -155,8 +171,7 @@ export function NewsBar() {
               transition={{ duration: 0.3 }}
               className="pl-4 font-mono text-xs font-bold uppercase tracking-wider text-white/50 whitespace-nowrap"
               style={{
-                textShadow:
-                  "-0.5px 0 0 #fff, 0.5px 0 0 #fff, 0 -0.5px 0 #fff, 0 0.5px 0 #fff",
+                textShadow: buildOutline("rgba(255,157,0,0.45)"),
               }}
             >
               {collecting ? "Building warning trends..." : "Warning trends steady"}
@@ -175,11 +190,9 @@ export function NewsBar() {
                 className="inline-flex items-center gap-3 whitespace-nowrap pl-4"
               >
                 <span
-                  className="font-mono text-xs font-bold uppercase tracking-wider"
+                  className="font-mono text-xs font-bold uppercase tracking-wider text-white"
                   style={{
-                    color: current.color,
-                    textShadow:
-                      "-0.5px 0 0 #fff, 0.5px 0 0 #fff, 0 -0.5px 0 #fff, 0 0.5px 0 #fff",
+                    textShadow: buildOutline(current.color),
                   }}
                 >
                   {current.event} is {current.label}.
@@ -188,8 +201,7 @@ export function NewsBar() {
                   className="font-mono text-[11px] font-black rounded-sm px-1.5 py-0.5 tracking-tight"
                   style={{ background: current.color, color: "#050505" }}
                 >
-                  {current.percent > 0 ? "+" : ""}
-                  {current.percent}%
+                  {current.levelLabel}
                 </span>
               </span>
             </motion.div>

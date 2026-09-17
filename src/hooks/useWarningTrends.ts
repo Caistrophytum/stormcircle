@@ -6,6 +6,8 @@ export type Trend = {
   event: string;
   direction: "up" | "down";
   percent: number;
+  level: "low" | "medium" | "high";
+  levelLabel: string;
   today: number;
   average: number;
   label: string;
@@ -95,12 +97,19 @@ export function useWarningTrends() {
       if (Math.abs(percent) < 10 || Math.abs(diff) < 3) continue;
 
       const direction = diff > 0 ? "up" : "down";
+      const abs = Math.abs(percent);
+      const level: Trend["level"] = abs <= 50 ? "low" : abs <= 150 ? "medium" : "high";
+      const levelLabel = `${level.charAt(0).toUpperCase()}${level.slice(1)} ${
+        direction === "up" ? "Increase" : "Decrease"
+      }`;
       const { label, color } = getTrendLabelAndColor(percent, direction);
 
       trends.push({
         event,
         direction,
         percent,
+        level,
+        levelLabel,
         today: data.today,
         average: Math.round(average),
         label,
