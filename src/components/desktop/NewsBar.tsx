@@ -52,22 +52,37 @@ export function NewsBar() {
   // Measure each headline: scroll it fully through the bar when it overflows,
   // center it statically when it fits.
   useLayoutEffect(() => {
-    const zone = zoneRef.current;
-    const content = contentRef.current;
-    if (!zone || !content || collecting || trends.length === 0) {
-      setMarquee(null);
-      return;
-    }
-    const zoneWidth = zone.clientWidth;
-    const contentWidth = content.scrollWidth;
-    if (contentWidth + 24 <= zoneWidth) {
-      setMarquee(null);
-      return;
-    }
-    const start = zoneWidth + 8;
-    const end = -(contentWidth + 16);
-    const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, MARQUEE_MIN_DURATION_S);
-    setMarquee({ start, end, duration });
+    const measure = () => {
+      const zone = zoneRef.current;
+      const content = contentRef.current;
+      if (!zone || !content || collecting || trends.length === 0) {
+        setMarquee(null);
+        return;
+      }
+      const zoneWidth = zone.clientWidth;
+      const contentWidth = content.scrollWidth;
+      if (contentWidth + 24 <= zoneWidth) {
+        setMarquee(null);
+        return;
+      }
+      const start = zoneWidth + 8;
+      const end = -(contentWidth + 16);
+      const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, MARQUEE_MIN_DURATION_S);
+      setMarquee({ start, end, duration });
+    };
+
+    measure();
+
+    // Re-measure once web fonts settle, so the first headline is sized correctly.
+    let cancelled = false;
+    void document.fonts?.ready.then(() => {
+      if (!cancelled) measure();
+    });
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", measure);
+    };
   }, [index, trends, collecting, steady]);
 
   const current = trends[index];
