@@ -24,7 +24,7 @@ function getTrendLabelAndColor(percent: number, direction: "up" | "down") {
     if (abs >= 16) return { label: "Rushing Upwards", color: "hsl(28, 95%, 55%)" };
     return { label: "Trending Upwards", color: "hsl(50, 100%, 55%)" };
   }
-  if (abs >= 25) return { label: "Spiking Downwards", color: "hsl(220, 90%, 55%)" };
+  if (abs >= 25) return { label: "Spiking Downwards", color: "hsl(220, 85%, 42%)" };
   if (abs >= 16) return { label: "Rushing Downwards", color: "hsl(175, 90%, 45%)" };
   return { label: "Trending Downwards", color: "hsl(142, 100%, 60%)" };
 }
