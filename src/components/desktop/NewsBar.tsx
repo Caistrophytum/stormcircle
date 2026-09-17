@@ -24,7 +24,7 @@ export function NewsBar() {
     setTickerRun((run) => run + 1);
   }, [trends.length]);
 
-  // Drive the marquee directly so clock updates and data refreshes cannot
+  // Drive the marquee directly so data refreshes and rerenders cannot
   // reset a headline midway through its trip across the ticker.
   useLayoutEffect(() => {
     let animation: Animation | null = null;
