@@ -158,7 +158,11 @@ export function NewsBar() {
             >
               <span
                 ref={contentRef}
-                className={marquee ? "newsbar-marquee pl-4" : "pl-4"}
+                className={
+                  marquee
+                    ? "newsbar-marquee pl-4"
+                    : "inline-flex items-center gap-3 whitespace-nowrap pl-4"
+                }
                 style={
                   marquee
                     ? ({
