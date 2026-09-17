@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWarningTrends } from "@/hooks/useWarningTrends";
 
@@ -28,11 +28,7 @@ export function NewsBar() {
   const clock = useUtcClock();
   const zoneRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLSpanElement>(null);
-  const [marquee, setMarquee] = useState<{
-    start: number;
-    end: number;
-    duration: number;
-  } | null>(null);
+  const current = trends[index];
 
   useEffect(() => {
     if (trends.length === 0) return;
@@ -44,51 +40,63 @@ export function NewsBar() {
     setTickerRun((run) => run + 1);
   }, [trends.length]);
 
-  // When a headline fits without scrolling, rotate on a timer instead.
-  useEffect(() => {
-    if (marquee || trends.length <= 1) return;
-    const id = setInterval(advance, ROTATE_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [marquee, trends.length, advance]);
+  // Drive the marquee directly so clock updates and data refreshes cannot
+  // reset a headline midway through its trip across the ticker.
+  useLayoutEffect(() => {
+    let animation: Animation | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
 
-  // Measure each headline: scroll it fully through the bar when it overflows,
-  // center it statically when it fits.
-  useEffect(() => {
-    const measure = () => {
+    const start = () => {
       const zone = zoneRef.current;
       const content = contentRef.current;
       if (!zone || !content || collecting || trends.length === 0) {
-        setMarquee(null);
         return;
       }
+
+      animation?.cancel();
+      if (timer) clearTimeout(timer);
+
       const zoneWidth = zone.clientWidth;
       const contentWidth = content.scrollWidth;
       if (contentWidth + 24 <= zoneWidth) {
-        setMarquee(null);
+        content.style.transform = "translateX(0px)";
+        if (trends.length > 1) timer = setTimeout(advance, ROTATE_INTERVAL_MS);
         return;
       }
-      const start = zoneWidth + 8;
-      const end = -(contentWidth + 16);
-      const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, MARQUEE_MIN_DURATION_S);
-      setMarquee({ start, end, duration });
+
+      const startX = zoneWidth + 8;
+      const endX = -(contentWidth + 16);
+      const duration = Math.max(
+        ((startX - endX) / MARQUEE_SPEED_PX_S) * 1000,
+        MARQUEE_MIN_DURATION_S * 1000,
+      );
+      animation = content.animate(
+        [
+          { transform: `translateX(${startX}px)` },
+          { transform: `translateX(${endX}px)` },
+        ],
+        { duration, easing: "linear", fill: "forwards" },
+      );
+      animation.onfinish = () => {
+        if (!cancelled) advance();
+      };
     };
 
-    const frame = requestAnimationFrame(measure);
+    const frame = requestAnimationFrame(start);
 
-    // Re-measure once web fonts settle, so the first headline is sized correctly.
-    let cancelled = false;
     void document.fonts?.ready.then(() => {
-      if (!cancelled) measure();
+      if (!cancelled) start();
     });
-    window.addEventListener("resize", measure);
+    window.addEventListener("resize", start);
     return () => {
       cancelled = true;
       cancelAnimationFrame(frame);
-      window.removeEventListener("resize", measure);
+      animation?.cancel();
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("resize", start);
     };
-  }, [index, trends, collecting, steady]);
-
-  const current = trends[index];
+  }, [index, trends.length, collecting, current?.event, advance]);
 
   return (
     <div
@@ -174,13 +182,9 @@ export function NewsBar() {
               transition={{ duration: 0.3 }}
               className="absolute inset-0 flex items-center overflow-hidden"
             >
-              <motion.span
+              <span
                 ref={contentRef}
                 className="inline-flex items-center gap-3 whitespace-nowrap pl-4"
-                initial={marquee ? { x: marquee.start } : false}
-                animate={marquee ? { x: marquee.end } : { x: 0 }}
-                transition={marquee ? { duration: marquee.duration, ease: "linear" } : undefined}
-                onAnimationComplete={marquee ? advance : undefined}
               >
                 <span
                   className="font-mono text-xs font-bold uppercase tracking-wider"
@@ -195,7 +199,7 @@ export function NewsBar() {
                   {current.percent > 0 ? "+" : ""}
                   {current.percent}%
                 </span>
-              </motion.span>
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
