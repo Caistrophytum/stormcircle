@@ -24,6 +24,7 @@ function formatUtc(): string {
 export function NewsBar() {
   const { trends, collecting, steady } = useWarningTrends();
   const [index, setIndex] = useState(0);
+  const [tickerRun, setTickerRun] = useState(0);
   const clock = useUtcClock();
   const zoneRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLSpanElement>(null);
@@ -40,6 +41,7 @@ export function NewsBar() {
 
   const advance = useCallback(() => {
     setIndex((i) => (i + 1) % Math.max(trends.length, 1));
+    setTickerRun((run) => run + 1);
   }, [trends.length]);
 
   // When a headline fits without scrolling, rotate on a timer instead.
@@ -164,31 +166,20 @@ export function NewsBar() {
             </motion.span>
           ) : (
             <motion.div
-              key={current.event}
+              key={`${current.event}-${index}-${tickerRun}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="absolute inset-0 flex items-center overflow-hidden"
             >
-              <span
+              <motion.span
                 ref={contentRef}
-                className={
-                  marquee
-                    ? "newsbar-marquee pl-4"
-                    : "inline-flex items-center gap-3 whitespace-nowrap pl-4"
-                }
-                style={
-                  marquee
-                    ? ({
-                        "--marquee-start": `${marquee.start}px`,
-                        "--marquee-end": `${marquee.end}px`,
-                        animationDuration: `${marquee.duration}s`,
-                        animationFillMode: "forwards",
-                      } as React.CSSProperties)
-                    : undefined
-                }
-                onAnimationEnd={marquee ? advance : undefined}
+                className="inline-flex items-center gap-3 whitespace-nowrap pl-4"
+                initial={marquee ? { x: marquee.start } : false}
+                animate={marquee ? { x: marquee.end } : { x: 0 }}
+                transition={marquee ? { duration: marquee.duration, ease: "linear" } : undefined}
+                onAnimationComplete={marquee ? advance : undefined}
               >
                 <span
                   className="font-mono text-xs font-bold uppercase tracking-wider"
@@ -203,7 +194,7 @@ export function NewsBar() {
                   {current.percent > 0 ? "+" : ""}
                   {current.percent}%
                 </span>
-              </span>
+              </motion.span>
             </motion.div>
           )}
         </AnimatePresence>
