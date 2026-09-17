@@ -264,6 +264,7 @@
   align-items: center;
   gap: 0.75rem;
   white-space: nowrap;
-  animation: newsbar-ticker 16s linear infinite;
+  animation: newsbar-ticker 6s linear infinite;
   will-change: transform;
 }
+
