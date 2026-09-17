@@ -24,14 +24,11 @@ function formatUtc(): string {
 export function NewsBar() {
   const { trends, collecting, steady } = useWarningTrends();
   const [index, setIndex] = useState(0);
+  const [tickerRun, setTickerRun] = useState(0);
   const clock = useUtcClock();
   const zoneRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLSpanElement>(null);
-  const [marquee, setMarquee] = useState<{
-    start: number;
-    end: number;
-    duration: number;
-  } | null>(null);
+  const [contentNode, setContentNode] = useState<HTMLSpanElement | null>(null);
+  const current = trends[index];
 
   useEffect(() => {
     if (trends.length === 0) return;
@@ -40,52 +37,66 @@ export function NewsBar() {
 
   const advance = useCallback(() => {
     setIndex((i) => (i + 1) % Math.max(trends.length, 1));
+    setTickerRun((run) => run + 1);
   }, [trends.length]);
 
-  // When a headline fits without scrolling, rotate on a timer instead.
-  useEffect(() => {
-    if (marquee || trends.length <= 1) return;
-    const id = setInterval(advance, ROTATE_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [marquee, trends.length, advance]);
-
-  // Measure each headline: scroll it fully through the bar when it overflows,
-  // center it statically when it fits.
+  // Drive the marquee directly so clock updates and data refreshes cannot
+  // reset a headline midway through its trip across the ticker.
   useLayoutEffect(() => {
-    const measure = () => {
+    let animation: Animation | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
+
+    const start = () => {
       const zone = zoneRef.current;
-      const content = contentRef.current;
+      const content = contentNode;
       if (!zone || !content || collecting || trends.length === 0) {
-        setMarquee(null);
         return;
       }
+
+      animation?.cancel();
+      if (timer) clearTimeout(timer);
+
       const zoneWidth = zone.clientWidth;
       const contentWidth = content.scrollWidth;
       if (contentWidth + 24 <= zoneWidth) {
-        setMarquee(null);
+        content.style.transform = "translateX(0px)";
+        if (trends.length > 1) timer = setTimeout(advance, ROTATE_INTERVAL_MS);
         return;
       }
-      const start = zoneWidth + 8;
-      const end = -(contentWidth + 16);
-      const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, MARQUEE_MIN_DURATION_S);
-      setMarquee({ start, end, duration });
+
+      const startX = zoneWidth + 8;
+      const endX = -(contentWidth + 16);
+      const duration = Math.max(
+        ((startX - endX) / MARQUEE_SPEED_PX_S) * 1000,
+        MARQUEE_MIN_DURATION_S * 1000,
+      );
+      animation = content.animate(
+        [
+          { transform: `translateX(${startX}px)` },
+          { transform: `translateX(${endX}px)` },
+        ],
+        { duration, easing: "linear", fill: "forwards" },
+      );
+      animation.onfinish = () => {
+        if (!cancelled) advance();
+      };
     };
 
-    measure();
+    const frame = requestAnimationFrame(start);
 
-    // Re-measure once web fonts settle, so the first headline is sized correctly.
-    let cancelled = false;
     void document.fonts?.ready.then(() => {
-      if (!cancelled) measure();
+      if (!cancelled) start();
     });
-    window.addEventListener("resize", measure);
+    window.addEventListener("resize", start);
     return () => {
       cancelled = true;
-      window.removeEventListener("resize", measure);
+      cancelAnimationFrame(frame);
+      animation?.cancel();
+      if (timer) clearTimeout(timer);
+      window.removeEventListener("resize", start);
     };
-  }, [index, trends, collecting, steady]);
-
-  const current = trends[index];
+  }, [index, trends.length, collecting, current?.event, contentNode, advance]);
 
   return (
     <div
@@ -164,7 +175,7 @@ export function NewsBar() {
             </motion.span>
           ) : (
             <motion.div
-              key={current.event}
+              key={`${current.event}-${index}-${tickerRun}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -172,23 +183,8 @@ export function NewsBar() {
               className="absolute inset-0 flex items-center overflow-hidden"
             >
               <span
-                ref={contentRef}
-                className={
-                  marquee
-                    ? "newsbar-marquee pl-4"
-                    : "inline-flex items-center gap-3 whitespace-nowrap pl-4"
-                }
-                style={
-                  marquee
-                    ? ({
-                        "--marquee-start": `${marquee.start}px`,
-                        "--marquee-end": `${marquee.end}px`,
-                        animationDuration: `${marquee.duration}s`,
-                        animationFillMode: "forwards",
-                      } as React.CSSProperties)
-                    : undefined
-                }
-                onAnimationEnd={marquee ? advance : undefined}
+                ref={setContentNode}
+                className="inline-flex items-center gap-3 whitespace-nowrap pl-4"
               >
                 <span
                   className="font-mono text-xs font-bold uppercase tracking-wider"
