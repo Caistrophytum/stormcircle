@@ -171,8 +171,7 @@ export function NewsBar() {
               transition={{ duration: 0.3 }}
               className="pl-4 font-mono text-xs font-bold uppercase tracking-wider text-white/50 whitespace-nowrap"
               style={{
-                textShadow:
-                  "-0.5px 0 0 #fff, 0.5px 0 0 #fff, 0 -0.5px 0 #fff, 0 0.5px 0 #fff",
+                textShadow: buildOutline("rgba(255,157,0,0.45)"),
               }}
             >
               {collecting ? "Building warning trends..." : "Warning trends steady"}
