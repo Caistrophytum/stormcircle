@@ -113,24 +113,26 @@ export function NewsBar() {
           ) : (
             <motion.div
               key={current.event}
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              className="pl-4 flex items-center gap-3 whitespace-nowrap overflow-hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="absolute inset-0 flex items-center overflow-hidden"
             >
-              <span
-                className="font-mono text-xs font-bold uppercase tracking-wider"
-                style={{ color: current.color }}
-              >
-                {current.event} is {current.label}.
-              </span>
-              <span
-                className="font-mono text-[11px] font-black rounded-sm px-1.5 py-0.5 tracking-tight"
-                style={{ background: current.color, color: "#050505" }}
-              >
-                {current.percent > 0 ? "+" : ""}
-                {current.percent}%
+              <span className="newsbar-ticker pl-4">
+                <span
+                  className="font-mono text-xs font-bold uppercase tracking-wider"
+                  style={{ color: current.color }}
+                >
+                  {current.event} is {current.label}.
+                </span>
+                <span
+                  className="font-mono text-[11px] font-black rounded-sm px-1.5 py-0.5 tracking-tight"
+                  style={{ background: current.color, color: "#050505" }}
+                >
+                  {current.percent > 0 ? "+" : ""}
+                  {current.percent}%
+                </span>
               </span>
             </motion.div>
           )}
@@ -143,22 +145,21 @@ export function NewsBar() {
             background: "linear-gradient(to left, rgba(10,10,12,0.95), transparent)",
           }}
         />
+        <div
+          className="absolute inset-y-0 left-0 w-6 pointer-events-none"
+          style={{
+            background: "linear-gradient(to right, rgba(10,10,12,0.95), transparent)",
+          }}
+        />
       </div>
 
-      {/* Right HUD accents */}
-      <div className="absolute right-0 top-0 h-full flex items-center pr-4 gap-1 pointer-events-none">
-        <span
-          className="w-px h-3"
-          style={{ background: "rgba(255,157,0,0.4)" }}
-        />
-        <span
-          className="w-px h-5"
-          style={{ background: "rgba(255,157,0,0.6)" }}
-        />
-        <span
-          className="w-px h-3"
-          style={{ background: "rgba(255,157,0,0.4)" }}
-        />
+      {/* Clock + right HUD accents */}
+      <div className="flex items-center h-full pl-3 pr-4 shrink-0 z-10 gap-3">
+        <span className="font-mono text-[11px] font-bold tabular-nums whitespace-nowrap text-white/40">
+          {clock}Z
+        </span>
+        <span className="w-px h-5" style={{ background: "rgba(255,157,0,0.6)" }} />
+        <span className="w-px h-3" style={{ background: "rgba(255,157,0,0.4)" }} />
       </div>
 
       {/* Inset vignette */}
