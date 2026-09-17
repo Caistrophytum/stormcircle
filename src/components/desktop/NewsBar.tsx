@@ -201,7 +201,8 @@ export function NewsBar() {
                   className="font-mono text-[11px] font-black rounded-sm px-1.5 py-0.5 tracking-tight"
                   style={{ background: current.color, color: "#050505" }}
                 >
-                  {current.levelLabel}
+                  {current.percent > 0 ? "+" : ""}
+                  {current.percent}%
                 </span>
               </span>
             </motion.div>

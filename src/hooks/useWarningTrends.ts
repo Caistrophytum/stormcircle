@@ -7,7 +7,6 @@ export type Trend = {
   direction: "up" | "down";
   percent: number;
   level: "low" | "medium" | "high";
-  levelLabel: string;
   today: number;
   average: number;
   label: string;
@@ -19,16 +18,29 @@ function getBucketDate() {
   return new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-function getTrendLabelAndColor(percent: number, direction: "up" | "down") {
+// Wording follows the change ladder (10-15 / 16-25 / 25+ percent),
+// while the color follows the magnitude levels (low / medium / high).
+function getTrendLabel(percent: number, direction: "up" | "down") {
   const abs = Math.abs(percent);
   if (direction === "up") {
-    if (abs >= 25) return { label: "Spiking Upwards", color: "hsl(0, 80%, 55%)" };
-    if (abs >= 16) return { label: "Rushing Upwards", color: "hsl(28, 95%, 55%)" };
-    return { label: "Trending Upwards", color: "hsl(50, 100%, 55%)" };
+    if (abs >= 25) return "Spiking Upwards";
+    if (abs >= 16) return "Rushing Upwards";
+    return "Trending Upwards";
   }
-  if (abs >= 25) return { label: "Spiking Downwards", color: "hsl(220, 85%, 42%)" };
-  if (abs >= 16) return { label: "Rushing Downwards", color: "hsl(175, 90%, 45%)" };
-  return { label: "Trending Downwards", color: "hsl(142, 100%, 60%)" };
+  if (abs >= 25) return "Spiking Downwards";
+  if (abs >= 16) return "Rushing Downwards";
+  return "Trending Downwards";
+}
+
+function getLevelColor(level: Trend["level"], direction: "up" | "down") {
+  if (direction === "up") {
+    if (level === "high") return "hsl(0, 80%, 55%)";
+    if (level === "medium") return "hsl(28, 95%, 55%)";
+    return "hsl(50, 100%, 55%)";
+  }
+  if (level === "high") return "hsl(220, 85%, 42%)";
+  if (level === "medium") return "hsl(175, 90%, 45%)";
+  return "hsl(142, 100%, 60%)";
 }
 
 export function useWarningTrends() {
@@ -99,17 +111,14 @@ export function useWarningTrends() {
       const direction = diff > 0 ? "up" : "down";
       const abs = Math.abs(percent);
       const level: Trend["level"] = abs <= 50 ? "low" : abs <= 150 ? "medium" : "high";
-      const levelLabel = `${level.charAt(0).toUpperCase()}${level.slice(1)} ${
-        direction === "up" ? "Increase" : "Decrease"
-      }`;
-      const { label, color } = getTrendLabelAndColor(percent, direction);
+      const label = getTrendLabel(percent, direction);
+      const color = getLevelColor(level, direction);
 
       trends.push({
         event,
         direction,
         percent,
         level,
-        levelLabel,
         today: data.today,
         average: Math.round(average),
         label,
