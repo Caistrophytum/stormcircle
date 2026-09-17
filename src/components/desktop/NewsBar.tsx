@@ -61,8 +61,8 @@ export function NewsBar() {
         </span>
       </div>
 
-      {/* Live trends badge + UTC clock */}
-      <div className="flex items-center gap-3 px-4 shrink-0 z-10">
+      {/* Live trends badge */}
+      <div className="flex items-center px-3 shrink-0 z-10">
         <div
           className="flex items-center gap-2 px-2 py-0.5 rounded-sm"
           style={{
@@ -84,9 +84,6 @@ export function NewsBar() {
             Live Trends
           </span>
         </div>
-        <span className="font-mono text-[11px] font-bold tabular-nums whitespace-nowrap text-white/40">
-          {clock} UTC
-        </span>
       </div>
 
       {/* Ticker zone */}
