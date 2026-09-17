@@ -6,26 +6,10 @@ const ROTATE_INTERVAL_MS = 6_000;
 const MARQUEE_SPEED_PX_S = 35;
 const MARQUEE_MIN_DURATION_S = 12;
 
-function useUtcClock() {
-  const [time, setTime] = useState(() => formatUtc());
-  useEffect(() => {
-    const id = setInterval(() => setTime(formatUtc()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return time;
-}
-
-function formatUtc(): string {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
-}
-
 export function NewsBar() {
   const { trends, collecting, steady } = useWarningTrends();
   const [index, setIndex] = useState(0);
   const [tickerRun, setTickerRun] = useState(0);
-  const clock = useUtcClock();
   const zoneRef = useRef<HTMLDivElement>(null);
   const [contentNode, setContentNode] = useState<HTMLSpanElement | null>(null);
   const current = trends[index];
