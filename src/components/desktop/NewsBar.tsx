@@ -24,15 +24,50 @@ export function NewsBar() {
   const { trends, collecting, steady } = useWarningTrends();
   const [index, setIndex] = useState(0);
   const clock = useUtcClock();
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLSpanElement>(null);
+  const [marquee, setMarquee] = useState<{
+    start: number;
+    end: number;
+    duration: number;
+  } | null>(null);
 
   useEffect(() => {
     if (trends.length === 0) return;
     setIndex(0);
-    const id = setInterval(() => {
-      setIndex((i) => (i + 1) % trends.length);
-    }, ROTATE_INTERVAL_MS);
-    return () => clearInterval(id);
   }, [trends.length]);
+
+  const advance = useCallback(() => {
+    setIndex((i) => (i + 1) % Math.max(trends.length, 1));
+  }, [trends.length]);
+
+  // When a headline fits without scrolling, rotate on a timer instead.
+  useEffect(() => {
+    if (marquee || trends.length <= 1) return;
+    const id = setInterval(advance, ROTATE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [marquee, trends.length, advance]);
+
+  // Measure each headline: scroll it fully through the bar when it overflows,
+  // center it statically when it fits.
+  useLayoutEffect(() => {
+    const zone = zoneRef.current;
+    const content = contentRef.current;
+    if (!zone || !content || collecting || trends.length === 0) {
+      setMarquee(null);
+      return;
+    }
+    const zoneWidth = zone.clientWidth;
+    const contentWidth = content.scrollWidth;
+    if (contentWidth + 24 <= zoneWidth) {
+      setMarquee(null);
+      return;
+    }
+    const start = zoneWidth + 8;
+    const end = -(contentWidth + 16);
+    const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, 6);
+    setMarquee({ start, end, duration });
+  }, [index, trends, collecting, steady]);
 
   const current = trends[index];
 
