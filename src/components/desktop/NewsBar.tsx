@@ -123,7 +123,7 @@ export function NewsBar() {
       </div>
 
       {/* Ticker zone */}
-      <div className="flex-1 h-full relative flex items-center overflow-hidden">
+      <div ref={zoneRef} className="flex-1 h-full relative flex items-center overflow-hidden">
         {/* Decorative sweep line */}
         <div
           className="absolute inset-0 pointer-events-none opacity-5"
