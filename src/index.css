@@ -253,3 +253,18 @@
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* News bar ticker marquee */
+@keyframes newsbar-ticker {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+.newsbar-ticker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  white-space: nowrap;
+  animation: newsbar-ticker 6s linear infinite;
+  will-change: transform;
+}
+
