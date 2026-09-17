@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWarningTrends } from "@/hooks/useWarningTrends";
 
@@ -53,7 +53,7 @@ export function NewsBar() {
 
   // Measure each headline: scroll it fully through the bar when it overflows,
   // center it statically when it fits.
-  useLayoutEffect(() => {
+  useEffect(() => {
     const measure = () => {
       const zone = zoneRef.current;
       const content = contentRef.current;
@@ -73,7 +73,7 @@ export function NewsBar() {
       setMarquee({ start, end, duration });
     };
 
-    measure();
+    const frame = requestAnimationFrame(measure);
 
     // Re-measure once web fonts settle, so the first headline is sized correctly.
     let cancelled = false;
@@ -83,6 +83,7 @@ export function NewsBar() {
     window.addEventListener("resize", measure);
     return () => {
       cancelled = true;
+      cancelAnimationFrame(frame);
       window.removeEventListener("resize", measure);
     };
   }, [index, trends, collecting, steady]);
