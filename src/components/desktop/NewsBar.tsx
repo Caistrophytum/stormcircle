@@ -154,6 +154,10 @@ export function NewsBar() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3 }}
               className="pl-4 font-mono text-xs font-bold uppercase tracking-wider text-white/50 whitespace-nowrap"
+              style={{
+                textShadow:
+                  "-0.5px 0 0 #fff, 0.5px 0 0 #fff, 0 -0.5px 0 #fff, 0 0.5px 0 #fff",
+              }}
             >
               {collecting ? "Building warning trends..." : "Warning trends steady"}
             </motion.span>
@@ -172,7 +176,11 @@ export function NewsBar() {
               >
                 <span
                   className="font-mono text-xs font-bold uppercase tracking-wider"
-                  style={{ color: current.color }}
+                  style={{
+                    color: current.color,
+                    textShadow:
+                      "-0.5px 0 0 #fff, 0.5px 0 0 #fff, 0 -0.5px 0 #fff, 0 0.5px 0 #fff",
+                  }}
                 >
                   {current.event} is {current.label}.
                 </span>
@@ -203,13 +211,10 @@ export function NewsBar() {
         />
       </div>
 
-      {/* Clock + right HUD accents */}
-      <div className="flex items-center h-full pl-3 pr-4 shrink-0 z-10 gap-3">
-        <span className="font-mono text-[11px] font-bold tabular-nums whitespace-nowrap text-white/40">
-          {clock}Z
-        </span>
+      {/* Right accent */}
+      <div className="flex items-center h-full pl-3 pr-4 shrink-0 z-10">
         <span className="w-px h-5" style={{ background: "rgba(255,157,0,0.6)" }} />
-        <span className="w-px h-3" style={{ background: "rgba(255,157,0,0.4)" }} />
+        <span className="w-px h-3 ml-2" style={{ background: "rgba(255,157,0,0.4)" }} />
       </div>
 
       {/* Inset vignette */}
