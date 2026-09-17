@@ -27,7 +27,7 @@ export function NewsBar() {
   const [tickerRun, setTickerRun] = useState(0);
   const clock = useUtcClock();
   const zoneRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLSpanElement>(null);
+  const [contentNode, setContentNode] = useState<HTMLSpanElement | null>(null);
   const current = trends[index];
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export function NewsBar() {
 
     const start = () => {
       const zone = zoneRef.current;
-      const content = contentRef.current;
+      const content = contentNode;
       if (!zone || !content || collecting || trends.length === 0) {
         return;
       }
@@ -96,7 +96,7 @@ export function NewsBar() {
       if (timer) clearTimeout(timer);
       window.removeEventListener("resize", start);
     };
-  }, [index, trends.length, collecting, current?.event, advance]);
+  }, [index, trends.length, collecting, current?.event, contentNode, advance]);
 
   return (
     <div
@@ -183,7 +183,7 @@ export function NewsBar() {
               className="absolute inset-0 flex items-center overflow-hidden"
             >
               <span
-                ref={contentRef}
+                ref={setContentNode}
                 className="inline-flex items-center gap-3 whitespace-nowrap pl-4"
               >
                 <span
