@@ -66,7 +66,7 @@ export function NewsBar() {
     }
     const start = zoneWidth + 8;
     const end = -(contentWidth + 16);
-    const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, 6);
+    const duration = Math.max((start - end) / MARQUEE_SPEED_PX_S, MARQUEE_MIN_DURATION_S);
     setMarquee({ start, end, duration });
   }, [index, trends, collecting, steady]);
 
