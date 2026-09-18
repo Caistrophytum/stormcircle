@@ -22,13 +22,23 @@ function buildOutline(color: string) {
   ].join(", ");
 }
 
+// Click cycles ticker speed: normal -> slow (0.5x) -> fast (1.5x) -> normal.
+const SPEED_MULTIPLIERS = [1, 0.5, 1.5];
+
 export function NewsBar() {
   const { trends, collecting, steady } = useWarningTrends();
   const [index, setIndex] = useState(0);
   const [tickerRun, setTickerRun] = useState(0);
+  const [speedMode, setSpeedMode] = useState(0);
   const zoneRef = useRef<HTMLDivElement>(null);
   const [contentNode, setContentNode] = useState<HTMLSpanElement | null>(null);
   const current = trends[index];
+
+  // Preserves scroll position across speed changes (same headline only).
+  const animRef = useRef<Animation | null>(null);
+  const animDurationRef = useRef(0);
+  const progressKeyRef = useRef<string | null>(null);
+  const progressRatioRef = useRef(0);
 
   useEffect(() => {
     if (trends.length === 0) return;
@@ -46,6 +56,7 @@ export function NewsBar() {
     let animation: Animation | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
+    const runKey = `${current?.event}-${index}-${tickerRun}`;
 
     const start = () => {
       const zone = zoneRef.current;
@@ -67,8 +78,9 @@ export function NewsBar() {
 
       const startX = zoneWidth + 8;
       const endX = -(contentWidth + 16);
+      const speedMult = SPEED_MULTIPLIERS[speedMode];
       const duration = Math.max(
-        ((startX - endX) / MARQUEE_SPEED_PX_S) * 1000,
+        ((startX - endX) / (MARQUEE_SPEED_PX_S * speedMult)) * 1000,
         MARQUEE_MIN_DURATION_S * 1000,
       );
       animation = content.animate(
@@ -78,6 +90,16 @@ export function NewsBar() {
         ],
         { duration, easing: "linear", fill: "forwards" },
       );
+      // Resume where the previous run of this same headline left off, so a
+      // speed change never restarts the headline from the beginning.
+      const preserved =
+        progressKeyRef.current === runKey ? progressRatioRef.current : 0;
+      progressKeyRef.current = runKey;
+      if (preserved > 0) {
+        animation.currentTime = Math.min(preserved, 0.999) * duration;
+      }
+      animRef.current = animation;
+      animDurationRef.current = duration;
       animation.onfinish = () => {
         if (!cancelled) advance();
       };
@@ -91,12 +113,18 @@ export function NewsBar() {
     window.addEventListener("resize", start);
     return () => {
       cancelled = true;
+      // Snapshot progress so a speed change can resume mid-headline.
+      const running = animRef.current;
+      if (running && progressKeyRef.current === runKey && animDurationRef.current > 0) {
+        const t = typeof running.currentTime === "number" ? running.currentTime : 0;
+        progressRatioRef.current = Math.min(t / animDurationRef.current, 1);
+      }
       cancelAnimationFrame(frame);
       animation?.cancel();
       if (timer) clearTimeout(timer);
       window.removeEventListener("resize", start);
     };
-  }, [index, trends.length, collecting, current?.event, contentNode, advance]);
+  }, [index, tickerRun, speedMode, trends.length, collecting, current?.event, contentNode, advance]);
 
   return (
     <div
