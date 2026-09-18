@@ -37,8 +37,8 @@ export function NewsBar() {
   // Preserves scroll position across speed changes (same headline only).
   const animRef = useRef<Animation | null>(null);
   const animDurationRef = useRef(0);
-  const progressKeyRef = useRef<string | null>(null);
-  const progressRatioRef = useRef(0);
+  const resumeRef = useRef<{ key: string; ratio: number } | null>(null);
+
 
   useEffect(() => {
     if (trends.length === 0) return;
@@ -92,17 +92,20 @@ export function NewsBar() {
       );
       // Resume where the previous run of this same headline left off, so a
       // speed change never restarts the headline from the beginning.
-      const preserved =
-        progressKeyRef.current === runKey ? progressRatioRef.current : 0;
-      progressKeyRef.current = runKey;
-      if (preserved > 0) {
-        animation.currentTime = Math.min(preserved, 0.999) * duration;
+      // The saved progress is consumed once so it can never leak into a
+      // later headline and make it finish (or stall) unexpectedly.
+      const resume = resumeRef.current;
+      resumeRef.current = null;
+      if (resume && resume.key === runKey && resume.ratio > 0 && resume.ratio < 1) {
+        animation.currentTime = resume.ratio * duration;
       }
       animRef.current = animation;
       animDurationRef.current = duration;
-      animation.onfinish = () => {
-        if (!cancelled) advance();
+      const finished = animation;
+      finished.onfinish = () => {
+        if (!cancelled && animRef.current === finished) advance();
       };
+
     };
 
     const frame = requestAnimationFrame(start);
@@ -115,10 +118,12 @@ export function NewsBar() {
       cancelled = true;
       // Snapshot progress so a speed change can resume mid-headline.
       const running = animRef.current;
-      if (running && progressKeyRef.current === runKey && animDurationRef.current > 0) {
+      if (running && animDurationRef.current > 0) {
         const t = typeof running.currentTime === "number" ? running.currentTime : 0;
-        progressRatioRef.current = Math.min(t / animDurationRef.current, 1);
+        const ratio = t / animDurationRef.current;
+        resumeRef.current = ratio > 0 && ratio < 1 ? { key: runKey, ratio } : null;
       }
+
       cancelAnimationFrame(frame);
       animation?.cancel();
       if (timer) clearTimeout(timer);
