@@ -118,10 +118,12 @@ export function NewsBar() {
       cancelled = true;
       // Snapshot progress so a speed change can resume mid-headline.
       const running = animRef.current;
-      if (running && progressKeyRef.current === runKey && animDurationRef.current > 0) {
+      if (running && animDurationRef.current > 0) {
         const t = typeof running.currentTime === "number" ? running.currentTime : 0;
-        progressRatioRef.current = Math.min(t / animDurationRef.current, 1);
+        const ratio = t / animDurationRef.current;
+        resumeRef.current = ratio > 0 && ratio < 1 ? { key: runKey, ratio } : null;
       }
+
       cancelAnimationFrame(frame);
       animation?.cancel();
       if (timer) clearTimeout(timer);
