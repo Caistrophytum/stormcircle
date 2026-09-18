@@ -1,14 +1,21 @@
 # StormCircle performance and reliability audit
 
+All items below are implemented and verified.
+
 ## Database / cloud
-- [ ] D1 alerts-poll rewrites all ~520 alert rows every minute (574s total DB time, ~6MB geometry writes/min, ~520 realtime events/min to every tab). Add content hash, upsert only changed rows.
-- [ ] D2 Browser re-downloads 4.1MB of alert geometry every 60s per tab. Make the polygon fetch incremental.
-- [ ] D3 notify-dispatch pulls every alert with geometry every 5 min. Filter expired rows in SQL.
-- [ ] D4 Missing indexes on frequently filtered columns.
+- [x] D1 alerts-poll rewrote every alert row every minute. Added a content hash; only changed rows are written. Verified: 0 of 226 rows rewritten in a quiet minute.
+- [x] D2 Browser re-downloaded ~4MB of map shapes every 60s. Now fetches a tiny fingerprint list and pulls shapes only for new or changed alerts. Verified in a live 80 second run.
+- [x] D3 notify-dispatch now filters expired alerts in SQL instead of loading the whole table every 5 minutes.
+- [x] D4 Added an index for the trend bar query. Restored a dead expired-row cleanup branch in alerts-poll.
 
 ## Frontend
-- [ ] F1 Single monolithic DataProvider context: any alert/polygon/presence change re-renders every consumer. Split into per-domain contexts.
-- [ ] F2 One-second countdown intervals re-render the whole mobile main screen and the desktop metrics tab. Extract into isolated components.
-- [ ] F3 No memoization anywhere. Memoize heavy leaf components.
-- [ ] F4 Five hooks hit Open-Meteo separately for the same city. Add shared dedupe + TTL cache.
-- [ ] F5 Oversized background images (636KB of JPEGs).
+- [x] F1 Split the single shared data context into six per-domain contexts.
+- [x] F2 Moved the one-second countdown into isolated memoized widgets.
+- [x] F3 Memoized the main map panel.
+- [x] F4 Added a shared TTL cache and in-flight dedupe for Open-Meteo calls.
+- [x] F5 Recompressed background images and app icons (roughly 900KB saved).
+
+## Known remaining risks
+- zone_geom_cache is the largest table (~41MB). A 3-day vacuum job exists; not changed.
+- alerts-poll defers ~250 zone shape lookups per run by design (CPU budget).
+- No React.memo on the large mobile and chat components; the context split removed the main re-render driver, so this was left alone rather than risk behaviour changes.
