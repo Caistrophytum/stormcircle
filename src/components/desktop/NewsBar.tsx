@@ -37,8 +37,8 @@ export function NewsBar() {
   // Preserves scroll position across speed changes (same headline only).
   const animRef = useRef<Animation | null>(null);
   const animDurationRef = useRef(0);
-  const progressKeyRef = useRef<string | null>(null);
-  const progressRatioRef = useRef(0);
+  const resumeRef = useRef<{ key: string; ratio: number } | null>(null);
+
 
   useEffect(() => {
     if (trends.length === 0) return;
