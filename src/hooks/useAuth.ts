@@ -6,7 +6,7 @@
  * and network errors during getSession() so `loading` resolves immediately
  * instead of leaving the UI in a half-rendered state.
  */
-import { useDataContext } from "@/providers/DataProvider";
+import { useAuthSlice } from "@/providers/DataProvider";
 
 export interface Profile {
   id: string;
@@ -19,5 +19,5 @@ export interface Profile {
 }
 
 export function useAuth() {
-  return useDataContext().auth;
+  return useAuthSlice();
 }

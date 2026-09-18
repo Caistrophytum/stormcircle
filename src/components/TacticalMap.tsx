@@ -1,9 +1,9 @@
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, memo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import HazardTabs, { DangerousPanel } from "./desktop/HazardTabs";
 import { NewsBar } from "./desktop/NewsBar";
 import { useWRSMetrics, type WeatherCondition } from "@/hooks/useWRSMetrics";
-import { useDataContext } from "@/providers/DataProvider";
+import { useStatusSlice } from "@/providers/DataProvider";
 
 const weatherBackgrounds: Record<WeatherCondition, string> = {
   sunny: new URL("../assets/weather-calm.jpg", import.meta.url).href,
@@ -18,7 +18,7 @@ interface Props {
 
 const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
   const { weatherCondition } = useWRSMetrics();
-  const { appReady } = useDataContext();
+  const { appReady } = useStatusSlice();
   const [loadingTooLong, setLoadingTooLong] = useState(false);
 
   useEffect(() => {
@@ -82,4 +82,6 @@ const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
 
 TacticalMap.displayName = "TacticalMap";
 
-export default TacticalMap;
+// PERF: memoized so a re-render of the page shell does not tear down and
+// rebuild the full-bleed background image / AnimatePresence tree.
+export default memo(TacticalMap);

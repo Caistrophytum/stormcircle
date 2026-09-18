@@ -19,6 +19,7 @@ export type Database = {
           alert_id: string
           area_desc: string | null
           certainty: string | null
+          content_hash: string | null
           effective: string | null
           ends: string | null
           event: string | null
@@ -39,6 +40,7 @@ export type Database = {
           alert_id: string
           area_desc?: string | null
           certainty?: string | null
+          content_hash?: string | null
           effective?: string | null
           ends?: string | null
           event?: string | null
@@ -59,6 +61,7 @@ export type Database = {
           alert_id?: string
           area_desc?: string | null
           certainty?: string | null
+          content_hash?: string | null
           effective?: string | null
           ends?: string | null
           event?: string | null

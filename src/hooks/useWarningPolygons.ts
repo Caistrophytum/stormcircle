@@ -8,7 +8,7 @@
  * active_alerts.geometry, so the client almost never has to hit
  * api.weather.gov directly anymore.
  */
-import { useDataContext } from "@/providers/DataProvider";
+import { usePolygonsSlice } from "@/providers/DataProvider";
 
 /**
  * Official NWS product → display color mapping. Mirrors the canonical
@@ -308,5 +308,5 @@ export interface WarningPolygonsData {
 }
 
 export function useWarningPolygons(): WarningPolygonsData {
-  return useDataContext().polygons;
+  return usePolygonsSlice();
 }

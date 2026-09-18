@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { fetchJsonCached } from "@/lib/apiCache";
 import { useRefreshTick } from "./useRefreshTick";
 
 export interface CurrentWeather {
@@ -64,9 +64,9 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
         setData((prev) => ({ ...prev, loading: true, error: false }));
       }
       try {
-        const res = await fetchWithTimeout(url);
-        if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
-        const json = await res.json();
+        // Shared 4-minute cache: the desktop metrics tab and the mobile
+        // screen ask for the same URL, and the refresh tick is 60s.
+        const json = await fetchJsonCached<any>(url, 4 * 60_000);
         const c = json?.current ?? {};
         if (cancelled) return;
         setData({

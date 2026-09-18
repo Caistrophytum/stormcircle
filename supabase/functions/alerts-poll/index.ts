@@ -108,6 +108,26 @@ function combinePolys(geoms: GeomT[]): GeomT {
   return { type: "MultiPolygon", coordinates: polys };
 }
 
+// FNV-1a over the serialized row. Cheap, deterministic, and good enough to
+// detect "this alert is byte-identical to what we already stored". Used to
+// avoid rewriting ~520 rows (and ~6MB of geometry) every single minute.
+function contentHash(value: unknown): string {
+  const s = JSON.stringify(value);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  // Second pass with a different offset basis keeps collisions negligible
+  // across a few hundred rows without pulling in a crypto digest.
+  let g = 0x1000193;
+  for (let i = s.length - 1; i >= 0; i--) {
+    g ^= s.charCodeAt(i);
+    g = Math.imul(g, 0x01000193) >>> 0;
+  }
+  return `${h.toString(36)}${g.toString(36)}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -142,10 +162,16 @@ Deno.serve(async (req) => {
     // show items first observed in the last 5 minutes.
     // Only NWS-sourced rows. Alerts written by other pollers (`MA-…` rows
     // from meteoalarm-poll) must never appear in this run's delete set.
+    // `content_hash` lets us skip re-writing rows that have not changed.
+    // `expires_at` is needed by the cleanup pass below (it used to read a
+    // column that was never selected, so the expiry branch never fired).
     const { data: existing } = await supabase
       .from("active_alerts")
-      .select("alert_id, first_seen_at")
+      .select("alert_id, first_seen_at, expires_at, content_hash")
       .not("alert_id", "like", "MA-%");
+
+    const hashById = new Map<string, string | null>();
+    for (const r of existing ?? []) hashById.set(r.alert_id, r.content_hash ?? null);
 
     const firstSeenById = new Map<string, string>();
     for (const r of existing ?? []) {
@@ -249,7 +275,10 @@ Deno.serve(async (req) => {
       const watchNumber = extractWatchNumber(p.event ?? null, p.parameters ?? {}, p.headline ?? null);
       const enrich = watchNumber ? watchEnrichment.get(watchNumber) : undefined;
 
-      return {
+      // `core` is everything that comes from upstream. The hash covers only
+      // these fields - NOT updated_at/first_seen_at, which are bookkeeping
+      // and would otherwise make every row look changed on every run.
+      const core = {
         alert_id: id,
         event: p.event ?? null,
         severity: p.severity ?? null,
@@ -275,17 +304,28 @@ Deno.serve(async (req) => {
           },
           affectedZones: Array.isArray(p.affectedZones) ? p.affectedZones : [],
         },
+      };
+
+      return {
+        ...core,
+        content_hash: contentHash(core),
         updated_at: nowIso,
         first_seen_at: firstSeenById.get(id) ?? nowIso,
       };
     });
 
+    // Perf: only write rows whose upstream content actually changed. In a
+    // quiet hour this drops a ~520-row / ~6MB write down to a handful of
+    // rows, and stops the realtime channel from firing 520 change events a
+    // minute at every connected browser.
+    const changed = rows.filter((r) => hashById.get(r.alert_id) !== r.content_hash);
+
     // Smaller batches keep each upsert well inside the Postgres
     // statement_timeout (large geometry payloads can otherwise push a
     // 200-row batch past the 8s limit and abort with SQLSTATE 57014).
     const BATCH = UPSERT_BATCH;
-    for (let i = 0; i < rows.length; i += BATCH) {
-      const slice = rows.slice(i, i + BATCH);
+    for (let i = 0; i < changed.length; i += BATCH) {
+      const slice = changed.slice(i, i + BATCH);
       try {
         const { error } = await supabase.from("active_alerts").upsert(slice, { onConflict: "alert_id" });
         if (error) console.warn("[alerts-poll] batch upsert err:", error);
@@ -295,9 +335,12 @@ Deno.serve(async (req) => {
     }
 
     const currentIds = new Set(rows.map((r) => r.alert_id));
+    // Drop rows the feed no longer carries, plus anything that expired more
+    // than six hours ago (a safety net for rows the feed keeps re-listing).
+    const staleCutoff = Date.now() - 6 * 60 * 60 * 1000;
     const toDelete = (existing ?? []).filter((r: any) => {
       if (!currentIds.has(r.alert_id)) return true;
-      if (r.expires_at && new Date(r.expires_at).getTime() < Date.now()) return true;
+      if (r.expires_at && new Date(r.expires_at).getTime() < staleCutoff) return true;
       return false;
     }).map((r: any) => r.alert_id);
     if (toDelete.length > 0) {
@@ -314,7 +357,9 @@ Deno.serve(async (req) => {
     const resolvedCount = rows.filter((r) => r.geometry).length;
     return new Response(JSON.stringify({
       ok: true,
-      upserted: rows.length,
+      seen: rows.length,
+      upserted: changed.length,
+      unchanged: rows.length - changed.length,
       deleted: toDelete.length,
       withGeometry: resolvedCount,
       zoneCacheHits: zoneList.length,

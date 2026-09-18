@@ -5,13 +5,13 @@
  */
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { SyncSeconds, SyncShellCircle } from "@/components/SyncCountdown";
 import { Search, Loader2 } from "lucide-react";
 import { useWRSMetrics } from "@/hooks/useWRSMetrics";
 import { useAuth } from "@/hooks/useAuth";
 import { useRadarContext } from "@/contexts/RadarContext";
 import { useCitySearch } from "@/hooks/useCitySearch";
 import { useLocalClock } from "@/hooks/useLocalClock";
-import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 
@@ -145,18 +145,8 @@ export default function MetricsTab() {
     radar.selectedCity?.lon ?? null,
   );
 
-  // Sync countdown - neon blue shell that depletes over the 60 s refresh cycle.
-  const syncTick = useRefreshTick();
-  const [secondsLeft, setSecondsLeft] = useState(60);
-  useEffect(() => {
-    const update = () => {
-      const msIntoMinute = Date.now() % 60_000;
-      setSecondsLeft(Math.max(0, Math.ceil((60_000 - msIntoMinute) / 1000)));
-    };
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, [syncTick]);
+  // Sync countdown lives in <SyncShellCircle> / <SyncSeconds> so its
+  // once-per-second tick does not re-render this whole tab.
 
   const size = 140;
   const stroke = 12;
@@ -170,9 +160,6 @@ export default function MetricsTab() {
   const shellPad = 10;
   const shellSize = size + shellPad * 2;
   const shellStroke = 3;
-  const shellR = (shellSize - shellStroke) / 2;
-  const shellC = 2 * Math.PI * shellR;
-  const shellDash = (secondsLeft / 60) * shellC;
 
   // Physical: single line, each param a segment sized by wrsContribution %.
   const physTotal = physicalNodes.reduce((s, n) => s + n.wrsContribution, 0);
@@ -214,37 +201,7 @@ export default function MetricsTab() {
           style={{ width: shellSize, height: shellSize, overflow: "visible" }}
         >
           {/* Neon blue sync countdown shell */}
-          <svg
-            width={shellSize}
-            height={shellSize}
-            className="absolute left-0 top-0 -rotate-90"
-            style={{ overflow: "visible" }}
-          >
-            <circle
-              cx={shellSize / 2}
-              cy={shellSize / 2}
-              r={shellR}
-              stroke="rgba(255,255,255,0.06)"
-              strokeWidth={shellStroke}
-              fill="none"
-            />
-            <motion.circle
-              cx={shellSize / 2}
-              cy={shellSize / 2}
-              r={shellR}
-              stroke={SYNC_COLOR}
-              strokeWidth={shellStroke}
-              fill="none"
-              strokeLinecap="round"
-              strokeDasharray={shellC}
-              initial={false}
-              animate={{ strokeDashoffset: shellC - shellDash }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              style={{
-                filter: `drop-shadow(0 0 6px ${SYNC_COLOR})`,
-              }}
-            />
-          </svg>
+          <SyncShellCircle size={shellSize} stroke={shellStroke} color={SYNC_COLOR} />
 
           {/* WRS filling circle */}
           <svg
@@ -294,12 +251,10 @@ export default function MetricsTab() {
             <span className="mt-0.5 text-[9px] font-mono uppercase tracking-widest text-muted-foreground">
               WRS
             </span>
-            <span
+            <SyncSeconds
               className="mt-0.5 text-[9px] font-mono font-bold tabular-nums"
               style={{ color: SYNC_COLOR, textShadow: `0 0 6px ${SYNC_COLOR}` }}
-            >
-              {secondsLeft}s
-            </span>
+            />
           </div>
         </div>
 
