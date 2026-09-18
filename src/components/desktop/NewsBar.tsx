@@ -91,9 +91,12 @@ export function NewsBar() {
       const startX = zoneWidth + 8;
       const endX = -(contentWidth + 16);
       const speedMult = SPEED_MULTIPLIERS[speedMode];
+      // Minimum duration scales with the speed multiplier so faster modes
+      // are never clamped back toward the base pace.
+      const minDuration = MARQUEE_MIN_DURATION_S * 1000 / speedMult;
       const duration = Math.max(
         ((startX - endX) / (MARQUEE_SPEED_PX_S * speedMult)) * 1000,
-        MARQUEE_MIN_DURATION_S * 1000,
+        minDuration,
       );
       animation = content.animate(
         [
