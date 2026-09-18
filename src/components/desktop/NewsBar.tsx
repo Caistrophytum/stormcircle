@@ -58,6 +58,16 @@ export function NewsBar() {
     let cancelled = false;
     const runKey = `${current?.event}-${index}-${tickerRun}`;
 
+    // Capture how far the current run of this headline has travelled, so any
+    // restart (speed change, font load, resize) picks up from that point.
+    const snapshot = () => {
+      const running = animRef.current;
+      if (!running || animDurationRef.current <= 0) return;
+      const t = typeof running.currentTime === "number" ? running.currentTime : 0;
+      const ratio = t / animDurationRef.current;
+      if (ratio > 0 && ratio < 1) resumeRef.current = { key: runKey, ratio };
+    };
+
     const start = () => {
       const zone = zoneRef.current;
       const content = contentNode;
@@ -65,7 +75,9 @@ export function NewsBar() {
         return;
       }
 
+      snapshot();
       animation?.cancel();
+      animRef.current = null;
       if (timer) clearTimeout(timer);
 
       const zoneWidth = zone.clientWidth;
@@ -90,10 +102,6 @@ export function NewsBar() {
         ],
         { duration, easing: "linear", fill: "forwards" },
       );
-      // Resume where the previous run of this same headline left off, so a
-      // speed change never restarts the headline from the beginning.
-      // The saved progress is consumed once so it can never leak into a
-      // later headline and make it finish (or stall) unexpectedly.
       const resume = resumeRef.current;
       resumeRef.current = null;
       if (resume && resume.key === runKey && resume.ratio > 0 && resume.ratio < 1) {
