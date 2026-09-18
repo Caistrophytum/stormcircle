@@ -6,7 +6,7 @@
  * subscription live in src/providers/DataProvider.tsx so the work runs ONCE
  * per page instead of once per component that calls this hook.
  */
-import { useDataContext } from "@/providers/DataProvider";
+import { useAlertsSlice } from "@/providers/DataProvider";
 
 export type Severity = "Extreme" | "Severe" | "Moderate" | "Minor" | "Unknown";
 export type AlertKind = "Warning" | "Watch" | "Advisory" | "Statement" | "Emergency" | "Other";
@@ -42,5 +42,5 @@ export interface AlertsData {
 }
 
 export function useAlerts(): AlertsData {
-  return useDataContext().alerts;
+  return useAlertsSlice();
 }

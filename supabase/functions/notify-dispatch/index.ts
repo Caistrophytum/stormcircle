@@ -145,9 +145,13 @@ Deno.serve(async (req) => {
       await Promise.all([
         supabase.from("profiles").select("id, username, location").in("id", userIds),
         supabase.from("notification_state").select("*").in("user_id", userIds),
+        // PERF: push the expiry filter into SQL. This used to pull every row
+        // in the table (geometry included, ~4MB) and discard expired ones in
+        // JS, on a five-minute cron.
         supabase
           .from("active_alerts")
-          .select("alert_id, event, severity, headline, area_desc, expires_at, geometry"),
+          .select("alert_id, event, severity, headline, area_desc, expires_at, geometry")
+          .or(`expires_at.is.null,expires_at.gte.${new Date().toISOString()}`),
         supabase
           .from("messages")
           .select("id, user_id, username, content, created_at, place_lat, place_lon")

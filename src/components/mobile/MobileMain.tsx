@@ -9,6 +9,7 @@
  *   5. WRS bar (0–100)
  */
 import { useEffect, useMemo, useRef, useState } from "react";
+import { SyncSeconds, SyncShellRect } from "@/components/SyncCountdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
@@ -315,18 +316,8 @@ export default function MobileMain() {
   }, [chatMsgs.length]);
   const [expandedKey, setExpandedKey] = useState<Set<string>>(new Set());
 
-  // 60 s sync countdown - drives the neon blue shell around the WRS bar.
-  const syncTick = useRefreshTick();
-  const [secondsLeft, setSecondsLeft] = useState(60);
-  useEffect(() => {
-    const update = () => {
-      const msIntoMinute = Date.now() % 60_000;
-      setSecondsLeft(Math.max(0, Math.ceil((60_000 - msIntoMinute) / 1000)));
-    };
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, [syncTick]);
+  // 60 s sync countdown lives in <SyncShellRect> / <SyncSeconds> so its
+  // once-per-second tick does not re-render this entire screen.
 
   const toggleKey = (id: string) =>
     setExpandedKey((prev) => {
@@ -1008,29 +999,7 @@ export default function MobileMain() {
         }}
       >
         {/* Depleting neon blue perimeter */}
-        <svg
-          aria-hidden
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
-        >
-          <rect
-            x="1"
-            y="1"
-            width="calc(100% - 2px)"
-            height="calc(100% - 2px)"
-            rx="3"
-            fill="none"
-            stroke="#00b4ff"
-            strokeWidth="2"
-            pathLength={100}
-            strokeDasharray={100}
-            strokeDashoffset={100 - (secondsLeft / 60) * 100}
-            strokeLinecap="round"
-            style={{
-              filter: "drop-shadow(0 0 4px #00b4ff)",
-              transition: "stroke-dashoffset 0.35s linear",
-            }}
-          />
-        </svg>
+        <SyncShellRect color="#00b4ff" />
 
         <h2
           style={{
@@ -1068,7 +1037,7 @@ export default function MobileMain() {
         >
           {threatLevel}
         </span>
-        <span
+        <SyncSeconds
           style={{
             fontSize: "10px",
             color: "#00b4ff",
@@ -1076,9 +1045,7 @@ export default function MobileMain() {
             fontFamily: "'JetBrains Mono', monospace",
             textShadow: "0 0 6px #00b4ff",
           }}
-        >
-          {secondsLeft}s
-        </span>
+        />
       </div>
 
 

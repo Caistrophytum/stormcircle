@@ -2,7 +2,7 @@
  * useLSR - thin selector over the shared DataProvider, plus pure styling
  * helpers used to color local storm reports on maps and in lists.
  */
-import { useDataContext } from "@/providers/DataProvider";
+import { useLsrSlice } from "@/providers/DataProvider";
 
 export interface LSRReport {
   valid: string;
@@ -71,5 +71,5 @@ interface UseLSRResult {
 }
 
 export function useLSR(): UseLSRResult {
-  return useDataContext().lsr;
+  return useLsrSlice();
 }

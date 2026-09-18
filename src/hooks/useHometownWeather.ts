@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { fetchJsonCached } from "@/lib/apiCache";
 import { useRefreshTick } from "./useRefreshTick";
 
 export interface HometownWeather {
@@ -77,9 +77,8 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
         setData((prev) => ({ ...prev, loading: true, error: false }));
       }
       try {
-        const res = await fetchWithTimeout(url);
-        if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
-        const json = await res.json();
+        // Shared 4-minute cache, deduped against the other Open-Meteo hooks.
+        const json = await fetchJsonCached<any>(url, 4 * 60_000);
         const c = json?.current ?? {};
         const hourly = json?.hourly ?? {};
         const times: string[] = hourly.time ?? [];

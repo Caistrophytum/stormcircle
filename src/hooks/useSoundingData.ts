@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { fetchJsonCached } from "@/lib/apiCache";
 import { useRefreshTick } from "./useRefreshTick";
 
 export interface SoundingData {
@@ -110,9 +110,9 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         setData((prev) => ({ ...prev, loading: true, error: false }));
       }
       try {
-        const res = await fetchWithTimeout(url);
-        if (!res.ok) throw new Error(`Open-Meteo ${res.status}`);
-        const json = await res.json();
+        // Soundings only move hourly upstream; a 5-minute shared cache keeps
+        // the desktop and mobile WRS panels from each issuing their own call.
+        const json = await fetchJsonCached<any>(url, 5 * 60_000);
         const c = json?.current ?? {};
 
         const t2m = typeof c.temperature_2m === "number" ? c.temperature_2m : null;

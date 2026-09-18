@@ -429,6 +429,32 @@ const EMPTY_LSR = { reports: [] as LSRReport[], loading: true, error: null as st
 
 const DataContext = createContext<DataContextValue | null>(null);
 
+// PERF: the provider used to expose a single context object, so a presence
+// heartbeat or an LSR refresh re-rendered every alert list, every map layer
+// and the whole account tree. Each slice now has its own context, and the
+// selector hooks subscribe to just the one they need.
+type AuthSlice = DataContextValue["auth"];
+type LsrSlice = DataContextValue["lsr"];
+type StatusSlice = { appReady: boolean; recoveryAttempt: number };
+
+const AlertsContext = createContext<AlertsData>(EMPTY_ALERTS);
+const PolygonsContext = createContext<WarningPolygonsData>(EMPTY_POLYS);
+const AuthContext = createContext<AuthSlice | null>(null);
+const LsrContext = createContext<LsrSlice>(EMPTY_LSR);
+const OnlineContext = createContext<number>(1);
+const StatusContext = createContext<StatusSlice>({ appReady: false, recoveryAttempt: 0 });
+
+export function useAlertsSlice(): AlertsData { return useContext(AlertsContext); }
+export function usePolygonsSlice(): WarningPolygonsData { return useContext(PolygonsContext); }
+export function useLsrSlice(): LsrSlice { return useContext(LsrContext); }
+export function useOnlineSlice(): number { return useContext(OnlineContext); }
+export function useStatusSlice(): StatusSlice { return useContext(StatusContext); }
+export function useAuthSlice(): AuthSlice {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within <DataProvider>");
+  return ctx;
+}
+
 // ---------------- provider ----------------
 
 export function DataProvider({ children }: { children: ReactNode }) {
@@ -480,6 +506,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const loadAlertsRef = useRef<() => void>(() => {});
   const polyVersionRef = useRef(0);
   const lastRowsRef = useRef<AlertRow[]>([]);
+  // PERF: alert_id -> { fingerprint, geometry }. Lets loadPolygons re-download
+  // geometry only for alerts that are new or have actually changed, instead of
+  // pulling the whole ~4MB geometry column every refresh tick.
+  const geomCacheRef = useRef<Map<string, { fp: string; geometry: any }>>(new Map());
   const alertsFetchingRef = useRef(false);
 
   useEffect(() => {
@@ -557,17 +587,67 @@ export function DataProvider({ children }: { children: ReactNode }) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), POLYGONS_TIMEOUT_MS);
       try {
-        const { data: geoRows, error } = await supabase
+        // PERF: geometry is by far the heaviest column in the database
+        // (~12KB/row, ~4MB across every active alert). Re-downloading all of
+        // it once a minute cost roughly 250MB/hour per open tab.
+        //
+        // Instead we first pull a tiny fingerprint list, then fetch geometry
+        // ONLY for alerts that are new or whose content actually changed.
+        // Everything else is served from the in-memory cache.
+        const { data: stampRows, error: stampErr } = await supabase
           .from("active_alerts")
-          .select("alert_id, geometry")
+          .select("alert_id, content_hash, updated_at")
           .abortSignal(controller.signal);
-        if (error) throw error;
+        if (stampErr) throw stampErr;
         if (cancelled) return;
 
-        const geomById = new Map<string, any>();
-        for (const g of (geoRows ?? []) as { alert_id: string; geometry: any }[]) {
-          if (g.geometry) geomById.set(g.alert_id, g.geometry);
+        const stamps = (stampRows ?? []) as {
+          alert_id: string; content_hash: string | null; updated_at: string | null;
+        }[];
+        const cache = geomCacheRef.current;
+        const liveIds = new Set<string>();
+        const needed: string[] = [];
+        for (const s of stamps) {
+          liveIds.add(s.alert_id);
+          // MeteoAlarm rows carry no content_hash, so fall back to updated_at.
+          const fp = s.content_hash ?? s.updated_at ?? "";
+          const hit = cache.get(s.alert_id);
+          if (!hit || hit.fp !== fp) needed.push(s.alert_id);
         }
+        // Drop cache entries for alerts that have expired out of the feed.
+        for (const id of Array.from(cache.keys())) {
+          if (!liveIds.has(id)) cache.delete(id);
+        }
+
+        const fpById = new Map(
+          stamps.map((s) => [s.alert_id, s.content_hash ?? s.updated_at ?? ""] as const),
+        );
+        // Chunked so the URL built by PostgREST's `in()` filter stays sane.
+        const CHUNK = 150;
+        for (let i = 0; i < needed.length; i += CHUNK) {
+          const slice = needed.slice(i, i + CHUNK);
+          const { data: geoRows, error } = await supabase
+            .from("active_alerts")
+            .select("alert_id, geometry")
+            .in("alert_id", slice)
+            .abortSignal(controller.signal);
+          if (error) throw error;
+          if (cancelled) return;
+          for (const g of (geoRows ?? []) as { alert_id: string; geometry: any }[]) {
+            cache.set(g.alert_id, { fp: fpById.get(g.alert_id) ?? "", geometry: g.geometry ?? null });
+          }
+          // Rows that came back without geometry still get a cache entry
+          // above; ids missing entirely are recorded so we do not re-ask.
+          for (const id of slice) {
+            if (!cache.has(id)) cache.set(id, { fp: fpById.get(id) ?? "", geometry: null });
+          }
+        }
+
+        const geomById = new Map<string, any>();
+        for (const [id, entry] of cache) {
+          if (entry.geometry) geomById.set(id, entry.geometry);
+        }
+
 
         const rowsArr = lastRowsRef.current;
         const inline: WarningPolygon[] = [];
@@ -992,13 +1072,39 @@ export function DataProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Each slice is memoized independently so an update to one does not
+  // invalidate the others' consumers.
+  const authValue = useMemo<AuthSlice>(
+    () => ({ user, profile, loading: authLoading, profileLoading, signOut, refreshProfile }),
+    [user, profile, authLoading, profileLoading, signOut, refreshProfile],
+  );
+  const statusValue = useMemo<StatusSlice>(
+    () => ({ appReady, recoveryAttempt }),
+    [appReady, recoveryAttempt],
+  );
+  // Kept for the legacy whole-object accessor. Nothing reads it in a hot
+  // path; the slice contexts above are what components actually consume.
   const value = useMemo<DataContextValue>(() => ({
-    alerts, polygons,
-    auth: { user, profile, loading: authLoading, profileLoading, signOut, refreshProfile },
-    lsr, onlineCount, appReady, recoveryAttempt,
-  }), [alerts, polygons, user, profile, authLoading, profileLoading, signOut, refreshProfile, lsr, onlineCount, appReady, recoveryAttempt]);
+    alerts, polygons, auth: authValue, lsr, onlineCount, appReady, recoveryAttempt,
+  }), [alerts, polygons, authValue, lsr, onlineCount, appReady, recoveryAttempt]);
 
-  return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={value}>
+      <AuthContext.Provider value={authValue}>
+        <StatusContext.Provider value={statusValue}>
+          <AlertsContext.Provider value={alerts}>
+            <PolygonsContext.Provider value={polygons}>
+              <LsrContext.Provider value={lsr}>
+                <OnlineContext.Provider value={onlineCount}>
+                  {children}
+                </OnlineContext.Provider>
+              </LsrContext.Provider>
+            </PolygonsContext.Provider>
+          </AlertsContext.Provider>
+        </StatusContext.Provider>
+      </AuthContext.Provider>
+    </DataContext.Provider>
+  );
 }
 
 // ---------------- internal context accessor ----------------

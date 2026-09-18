@@ -7,7 +7,7 @@
  * Skips work entirely while coords are null.
  */
 import { useEffect, useRef, useState } from "react";
-import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { fetchJsonCached } from "@/lib/apiCache";
 import type { HourlyPoint, AQPoint } from "@/lib/exerciseComfort";
 
 interface Data {
@@ -51,13 +51,16 @@ export function useExerciseComfortData(
       isFetching.current = true;
       if (showLoading) setData((p) => ({ ...p, loading: true, error: false }));
       try {
-        const [wxRes, aqRes] = await Promise.all([
-          fetchWithTimeout(wxUrl),
-          fetchWithTimeout(aqUrl),
+        // Hourly forecast + AQI barely move within 10 minutes, and air
+        // quality must never take the whole panel down, so it is allowed to
+        // fail softly.
+        const [wxSettled, aqSettled] = await Promise.allSettled([
+          fetchJsonCached<any>(wxUrl, 10 * 60_000),
+          fetchJsonCached<any>(aqUrl, 10 * 60_000),
         ]);
-        if (!wxRes.ok) throw new Error(`wx ${wxRes.status}`);
-        const wx = await wxRes.json();
-        const aq = aqRes.ok ? await aqRes.json() : null;
+        if (wxSettled.status !== "fulfilled") throw wxSettled.reason;
+        const wx = wxSettled.value;
+        const aq = aqSettled.status === "fulfilled" ? aqSettled.value : null;
         if (cancelled) return;
 
         const h = wx?.hourly ?? {};
