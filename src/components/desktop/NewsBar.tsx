@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWarningTrends } from "@/hooks/useWarningTrends";
 
 const ROTATE_INTERVAL_MS = 6_000;
-const MARQUEE_SPEED_PX_S = 50;
+const MARQUEE_SPEED_PX_S = 60;
 const MARQUEE_MIN_DURATION_S = 12;
 
 // Thick, cartoony-but-serious outline: eight directional hits plus a soft glow.
@@ -122,31 +122,6 @@ export function NewsBar() {
         <span className="font-mono text-sm font-extrabold italic tracking-tighter leading-none text-primary">
           STORMCIRCLE
         </span>
-      </div>
-
-      {/* Live trends badge */}
-      <div className="flex items-center px-3 shrink-0 z-10">
-        <div
-          className="flex items-center gap-2 px-2 py-0.5 rounded-sm"
-          style={{
-            background: "rgba(255,157,0,0.1)",
-            border: "1px solid rgba(255,157,0,0.3)",
-          }}
-        >
-          <span className="relative flex h-1.5 w-1.5">
-            <span
-              className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-              style={{ background: "#ff9d00" }}
-            />
-            <span
-              className="relative inline-flex rounded-full h-1.5 w-1.5"
-              style={{ background: "#ff9d00" }}
-            />
-          </span>
-          <span className="font-mono text-[10px] font-black uppercase tracking-widest text-primary">
-            Live Trends
-          </span>
-        </div>
       </div>
 
       {/* Ticker zone */}
