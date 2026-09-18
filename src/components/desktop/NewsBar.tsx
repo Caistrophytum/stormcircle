@@ -92,17 +92,20 @@ export function NewsBar() {
       );
       // Resume where the previous run of this same headline left off, so a
       // speed change never restarts the headline from the beginning.
-      const preserved =
-        progressKeyRef.current === runKey ? progressRatioRef.current : 0;
-      progressKeyRef.current = runKey;
-      if (preserved > 0) {
-        animation.currentTime = Math.min(preserved, 0.999) * duration;
+      // The saved progress is consumed once so it can never leak into a
+      // later headline and make it finish (or stall) unexpectedly.
+      const resume = resumeRef.current;
+      resumeRef.current = null;
+      if (resume && resume.key === runKey && resume.ratio > 0 && resume.ratio < 1) {
+        animation.currentTime = resume.ratio * duration;
       }
       animRef.current = animation;
       animDurationRef.current = duration;
-      animation.onfinish = () => {
-        if (!cancelled) advance();
+      const finished = animation;
+      finished.onfinish = () => {
+        if (!cancelled && animRef.current === finished) advance();
       };
+
     };
 
     const frame = requestAnimationFrame(start);
