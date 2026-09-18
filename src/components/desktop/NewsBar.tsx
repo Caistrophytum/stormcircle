@@ -128,7 +128,9 @@ export function NewsBar() {
 
   return (
     <div
-      className="pointer-events-auto absolute top-3 z-20 hidden md:flex items-stretch h-11 overflow-hidden rounded-lg"
+      className="pointer-events-auto absolute top-3 z-20 hidden md:flex items-stretch h-11 overflow-hidden rounded-lg cursor-pointer select-none"
+      onClick={() => setSpeedMode((m) => (m + 1) % SPEED_MULTIPLIERS.length)}
+      title="Click to change ticker speed"
       style={{
         left: "calc(1.25rem + ((100vw - 56px) / 3))",
         right: "calc(1.25rem + ((100vw - 56px) / 3))",
