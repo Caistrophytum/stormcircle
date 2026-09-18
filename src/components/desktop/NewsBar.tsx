@@ -22,8 +22,8 @@ function buildOutline(color: string) {
   ].join(", ");
 }
 
-// Click cycles ticker speed: normal -> slow (0.5x) -> fast (1.5x) -> normal.
-const SPEED_MULTIPLIERS = [1, 0.5, 1.5];
+// Click cycles ticker speed: normal -> slow (0.5x) -> fast (2x) -> normal.
+const SPEED_MULTIPLIERS = [1, 0.5, 2];
 
 export function NewsBar() {
   const { trends, collecting, steady } = useWarningTrends();
