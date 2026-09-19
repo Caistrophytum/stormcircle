@@ -141,17 +141,10 @@ Deno.serve(async (req) => {
 
     const userIds = prefs.map((p) => p.user_id);
     const chatSince = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const [{ data: profiles }, { data: states }, { data: alerts }, { data: chatRows }] =
+    const [{ data: profiles }, { data: states }, { data: chatRows }] =
       await Promise.all([
         supabase.from("profiles").select("id, username, location").in("id", userIds),
         supabase.from("notification_state").select("*").in("user_id", userIds),
-        // PERF: push the expiry filter into SQL. This used to pull every row
-        // in the table (geometry included, ~4MB) and discard expired ones in
-        // JS, on a five-minute cron.
-        supabase
-          .from("active_alerts")
-          .select("alert_id, event, severity, headline, area_desc, expires_at, geometry")
-          .or(`expires_at.is.null,expires_at.gte.${new Date().toISOString()}`),
         supabase
           .from("messages")
           .select("id, user_id, username, content, created_at, place_lat, place_lon")
@@ -172,21 +165,73 @@ Deno.serve(async (req) => {
       fireRes.status === "fulfilled" && fireRes.value.ok ? (await fireRes.value.json())?.features ?? [] : [];
 
     const now = Date.now();
-    const liveAlerts = (alerts ?? []).filter(
-      (a) => !a.expires_at || new Date(a.expires_at).getTime() > now,
-    );
 
     const geoCache = new Map<string, { lat: number; lon: number } | null>();
     const wrsCache = new Map<string, number | null>();
     let delivered = 0;
+
+    // Resolve every subscriber's hometown point up front, so alert geometry
+    // can be streamed once and matched against all of them.
+    const points = new Map<string, { lat: number; lon: number }>();
+    for (const pref of prefs) {
+      const location = profileById.get(pref.user_id)?.location ?? null;
+      if (!location) continue;
+      if (!geoCache.has(location)) geoCache.set(location, await geocode(location));
+      const pt = geoCache.get(location);
+      if (pt) points.set(pref.user_id, pt);
+    }
+
+    // PERF: the alert table carries ~16MB of GeoJSON. Loading it whole killed
+    // the worker (HTTP 546). Stream it in small pages, keep only the matches
+    // per user, and let each page be garbage collected.
+    interface CoveringAlert {
+      alert_id: string;
+      event: string | null;
+      severity: string | null;
+      headline: string | null;
+      area_desc: string | null;
+    }
+    const coveringByUser = new Map<string, CoveringAlert[]>();
+    if (points.size) {
+      const PAGE = 50;
+      for (let from = 0; ; from += PAGE) {
+        const { data: page, error: pageErr } = await supabase
+          .from("active_alerts")
+          .select("alert_id, event, severity, headline, area_desc, expires_at, geometry")
+          .or(`expires_at.is.null,expires_at.gte.${new Date().toISOString()}`)
+          .order("alert_id", { ascending: true })
+          .range(from, from + PAGE - 1);
+        if (pageErr) {
+          console.error("[notify-dispatch] alert page failed", pageErr.message);
+          break;
+        }
+        if (!page?.length) break;
+        for (const a of page) {
+          if (a.expires_at && new Date(a.expires_at).getTime() <= now) continue;
+          const geom = a.geometry as unknown as Geom;
+          for (const [uid, pt] of points) {
+            if (!pointInGeom(pt.lon, pt.lat, geom)) continue;
+            const list = coveringByUser.get(uid) ?? [];
+            list.push({
+              alert_id: a.alert_id,
+              event: a.event,
+              severity: a.severity,
+              headline: a.headline,
+              area_desc: a.area_desc,
+            });
+            coveringByUser.set(uid, list);
+          }
+        }
+        if (page.length < PAGE) break;
+      }
+    }
 
     for (const pref of prefs) {
       const profile = profileById.get(pref.user_id);
       const location = profile?.location ?? null;
       if (!location) continue;
 
-      if (!geoCache.has(location)) geoCache.set(location, await geocode(location));
-      const pt = geoCache.get(location);
+      const pt = points.get(pref.user_id);
       if (!pt) continue;
 
       const state = stateById.get(pref.user_id) ?? null;
@@ -194,9 +239,7 @@ Deno.serve(async (req) => {
       const cityLabel = location.split(",")[0]?.trim() || location;
 
       // ── 2a. Alerts covering the hometown point ──────────────────────────
-      const covering = liveAlerts.filter((a) =>
-        pointInGeom(pt.lon, pt.lat, a.geometry as unknown as Geom),
-      );
+      const covering = coveringByUser.get(pref.user_id) ?? [];
       const prevAlerts = (state?.active_alerts ?? {}) as Record<string, string>;
       const nextAlerts: Record<string, string> = {};
       for (const a of covering) {
