@@ -676,18 +676,21 @@ export type Database = {
           count: number
           day: string
           event: string
+          region: string
           updated_at: string
         }
         Insert: {
           count?: number
           day: string
           event: string
+          region?: string
           updated_at?: string
         }
         Update: {
           count?: number
           day?: string
           event?: string
+          region?: string
           updated_at?: string
         }
         Relationships: []
