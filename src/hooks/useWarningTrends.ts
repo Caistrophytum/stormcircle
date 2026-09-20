@@ -16,7 +16,13 @@ export type Trend = {
   color: string;
 };
 
-type CountRow = { event: string; day: string; count: number; region: string };
+type CountRow = {
+  event: string;
+  day: string;
+  count: number;
+  region: string;
+  updated_at: string | null;
+};
 
 function getBucketDate() {
   const now = new Date();
@@ -98,14 +104,24 @@ export function useWarningTrends(region: TrendRegion = "all") {
       setLoading(true);
       const { data, error } = await supabase
         .from("warning_daily_counts")
-        .select("event, day, count, region")
+        .select("event, day, count, region, updated_at")
         .order("day", { ascending: false });
 
       if (!cancelled) {
         if (error) {
           console.error("[useWarningTrends] failed to load", error);
         } else {
-          setRows((data ?? []) as CountRow[]);
+          const loaded = (data ?? []) as CountRow[];
+          setRows(loaded);
+          // Show when the stored counts were last refreshed, even before the
+          // user triggers a manual update.
+          const newest = loaded.reduce((max, r) => {
+            const t = r.updated_at ? Date.parse(r.updated_at) : NaN;
+            return Number.isFinite(t) && t > max ? t : max;
+          }, 0);
+          if (newest > 0) {
+            setLastUpdatedAt((prev) => (prev && prev > newest ? prev : newest));
+          }
         }
         setLoading(false);
       }
