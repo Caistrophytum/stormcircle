@@ -1,10 +1,22 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useWarningTrends } from "@/hooks/useWarningTrends";
+import { ChevronDown, RefreshCw } from "lucide-react";
+import { useWarningTrends, type TrendRegion } from "@/hooks/useWarningTrends";
 
 const ROTATE_INTERVAL_MS = 6_000;
 const MARQUEE_SPEED_PX_S = 60;
 const MARQUEE_MIN_DURATION_S = 12;
+
+const SPEED_OPTIONS = [0.5, 1, 2];
+const REGION_OPTIONS: { value: TrendRegion; label: string; tag: string }[] = [
+  { value: "all", label: "All Trends", tag: "ALL" },
+  { value: "US", label: "US Trends", tag: "US" },
+  { value: "EU", label: "EU Trends", tag: "EU" },
+];
+
+const LS_SPEED = "sc.newsbar.speed";
+const LS_REGION = "sc.newsbar.region";
+const LS_UPDATED = "sc.newsbar.lastUpdated";
 
 // Thick, cartoony-but-serious outline: eight directional hits plus a soft glow.
 function buildOutline(color: string) {
@@ -22,23 +34,76 @@ function buildOutline(color: string) {
   ].join(", ");
 }
 
-// Click cycles ticker speed: normal -> slow (0.5x) -> fast (2x) -> normal.
-const SPEED_MULTIPLIERS = [1, 0.5, 3];
+function readStoredSpeed() {
+  const raw = Number(localStorage.getItem(LS_SPEED));
+  return SPEED_OPTIONS.includes(raw) ? raw : 1;
+}
+
+function readStoredRegion(): TrendRegion {
+  const raw = localStorage.getItem(LS_REGION);
+  return raw === "US" || raw === "EU" || raw === "all" ? raw : "all";
+}
+
+function readStoredUpdated() {
+  const raw = Number(localStorage.getItem(LS_UPDATED));
+  return Number.isFinite(raw) && raw > 0 ? raw : null;
+}
+
+function formatTime(ts: number) {
+  return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
 export function NewsBar() {
-  const { trends, collecting, steady } = useWarningTrends();
+  const [region, setRegion] = useState<TrendRegion>(readStoredRegion);
+  const { trends, collecting, steady, refreshNow, refreshing, lastUpdatedAt } =
+    useWarningTrends(region);
   const [index, setIndex] = useState(0);
   const [tickerRun, setTickerRun] = useState(0);
-  const [speedMode, setSpeedMode] = useState(0);
+  const [speed, setSpeed] = useState(readStoredSpeed);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(readStoredUpdated);
   const zoneRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const [contentNode, setContentNode] = useState<HTMLSpanElement | null>(null);
   const current = trends[index];
+  const activeRegion = REGION_OPTIONS.find((r) => r.value === region) ?? REGION_OPTIONS[0];
 
   // Preserves scroll position across speed changes (same headline only).
   const animRef = useRef<Animation | null>(null);
   const animDurationRef = useRef(0);
   const resumeRef = useRef<{ key: string; ratio: number } | null>(null);
 
+  useEffect(() => {
+    localStorage.setItem(LS_SPEED, String(speed));
+  }, [speed]);
+
+  useEffect(() => {
+    localStorage.setItem(LS_REGION, region);
+  }, [region]);
+
+  useEffect(() => {
+    if (lastUpdatedAt) {
+      setUpdatedAt(lastUpdatedAt);
+      localStorage.setItem(LS_UPDATED, String(lastUpdatedAt));
+    }
+  }, [lastUpdatedAt]);
+
+  // Close the drop-down on outside click or Escape.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     if (trends.length === 0) return;
@@ -90,12 +155,11 @@ export function NewsBar() {
 
       const startX = zoneWidth + 8;
       const endX = -(contentWidth + 16);
-      const speedMult = SPEED_MULTIPLIERS[speedMode];
       // Minimum duration scales with the speed multiplier so faster modes
       // are never clamped back toward the base pace.
-      const minDuration = MARQUEE_MIN_DURATION_S * 1000 / speedMult;
+      const minDuration = (MARQUEE_MIN_DURATION_S * 1000) / speed;
       const duration = Math.max(
-        ((startX - endX) / (MARQUEE_SPEED_PX_S * speedMult)) * 1000,
+        ((startX - endX) / (MARQUEE_SPEED_PX_S * speed)) * 1000,
         minDuration,
       );
       animation = content.animate(
@@ -116,7 +180,6 @@ export function NewsBar() {
       finished.onfinish = () => {
         if (!cancelled && animRef.current === finished) advance();
       };
-
     };
 
     const frame = requestAnimationFrame(start);
@@ -130,19 +193,17 @@ export function NewsBar() {
       // Snapshot progress so a speed change can resume mid-headline.
       snapshot();
 
-
       cancelAnimationFrame(frame);
       animation?.cancel();
       if (timer) clearTimeout(timer);
       window.removeEventListener("resize", start);
     };
-  }, [index, tickerRun, speedMode, trends.length, collecting, current?.event, contentNode, advance]);
+  }, [index, tickerRun, speed, trends.length, collecting, current?.event, contentNode, advance]);
 
   return (
     <div
-      className="pointer-events-auto absolute top-3 z-20 hidden md:flex items-stretch h-11 overflow-hidden rounded-lg cursor-pointer select-none"
-      onClick={() => setSpeedMode((m) => (m + 1) % SPEED_MULTIPLIERS.length)}
-      title="Click to change ticker speed"
+      ref={rootRef}
+      className="pointer-events-auto absolute top-3 z-20 hidden md:flex items-stretch h-11 rounded-lg select-none"
       style={{
         left: "calc(1.25rem + ((100vw - 56px) / 3))",
         right: "calc(1.25rem + ((100vw - 56px) / 3))",
@@ -153,9 +214,14 @@ export function NewsBar() {
           "inset 0 0 24px rgba(255,157,0,0.05), 0 12px 32px rgba(0,0,0,0.55)",
       }}
     >
-      {/* Masthead */}
-      <div
-        className="flex items-center h-full px-4 shrink-0 z-10"
+      {/* Masthead / menu trigger */}
+      <button
+        type="button"
+        onClick={() => setMenuOpen((o) => !o)}
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        title="News bar settings"
+        className="flex items-center gap-2 h-full px-4 shrink-0 z-30 rounded-l-lg transition-colors hover:bg-white/10"
         style={{
           background: "rgba(255,255,255,0.03)",
           borderRight: "1px solid rgba(255,157,0,0.22)",
@@ -164,7 +230,97 @@ export function NewsBar() {
         <span className="font-mono text-sm font-extrabold italic tracking-tighter leading-none text-primary">
           STORMCIRCLE
         </span>
-      </div>
+        <span
+          className="font-mono text-[9px] font-bold tracking-widest text-primary/70 border border-primary/40 rounded-sm px-1 leading-none py-0.5"
+        >
+          {activeRegion.tag}
+        </span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 text-primary/80 transition-transform ${menuOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {/* Drop-down panel */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+            className="absolute left-0 top-full mt-2 z-40 w-60 rounded-lg p-3 space-y-3"
+            style={{
+              background: "rgba(10,10,12,0.97)",
+              border: "1px solid rgba(255,157,0,0.25)",
+              boxShadow: "0 16px 40px rgba(0,0,0,0.6)",
+              backdropFilter: "blur(8px)",
+            }}
+          >
+            <div className="space-y-1.5">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+                Speed
+              </div>
+              <div className="flex gap-1.5">
+                {SPEED_OPTIONS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSpeed(s)}
+                    className={`flex-1 font-mono text-[11px] font-bold rounded-sm py-1 border transition-colors ${
+                      speed === s
+                        ? "bg-primary text-black border-primary"
+                        : "text-white/70 border-white/15 hover:border-primary/50"
+                    }`}
+                  >
+                    x{s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+                Data
+              </div>
+              <button
+                type="button"
+                onClick={() => void refreshNow()}
+                disabled={refreshing}
+                className="w-full flex items-center justify-center gap-1.5 font-mono text-[11px] font-bold rounded-sm py-1.5 border border-white/15 text-white/80 hover:border-primary/50 disabled:opacity-60"
+              >
+                <RefreshCw className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`} />
+                {refreshing
+                  ? "Updating..."
+                  : updatedAt
+                    ? `Update now (last ${formatTime(updatedAt)})`
+                    : "Update now"}
+              </button>
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+                Filter
+              </div>
+              <div className="flex flex-col gap-1">
+                {REGION_OPTIONS.map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setRegion(r.value)}
+                    className={`text-left font-mono text-[11px] font-bold rounded-sm px-2 py-1 border transition-colors ${
+                      region === r.value
+                        ? "bg-primary/20 text-primary border-primary/50"
+                        : "text-white/70 border-white/10 hover:border-primary/40"
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Ticker zone */}
       <div ref={zoneRef} className="flex-1 h-full relative flex items-center overflow-hidden">
@@ -249,7 +405,7 @@ export function NewsBar() {
 
       {/* Inset vignette */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none rounded-lg"
         style={{ boxShadow: "inset 0 0 40px rgba(0,0,0,0.8)" }}
       />
     </div>
