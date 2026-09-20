@@ -16,7 +16,13 @@ export type Trend = {
   color: string;
 };
 
-type CountRow = { event: string; day: string; count: number; region: string };
+type CountRow = {
+  event: string;
+  day: string;
+  count: number;
+  region: string;
+  updated_at: string | null;
+};
 
 function getBucketDate() {
   const now = new Date();
