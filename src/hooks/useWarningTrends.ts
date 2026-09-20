@@ -18,12 +18,19 @@ function getBucketDate() {
   return new Date(now.getTime() - 12 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-// Wording and color both follow the magnitude levels
-// (low: up to 50%, medium: up to 150%, high: above 150%).
+// Wording thresholds are direction-specific: upward trends follow the
+// low/medium/high magnitude levels (up to 50%, up to 150%, above 150%),
+// downward trends use the steeper decline ladder (up to 30%, up to 60%,
+// beyond 60%).
+function getTrendWord(abs: number, direction: "up" | "down") {
+  if (direction === "up") {
+    return abs > 150 ? "Spiking" : abs > 50 ? "Rushing" : "Trending";
+  }
+  return abs > 60 ? "Spiking" : abs > 30 ? "Rushing" : "Trending";
+}
+
 function getTrendLabel(percent: number, direction: "up" | "down") {
-  const abs = Math.abs(percent);
-  const word = abs > 150 ? "Spiking" : abs > 50 ? "Rushing" : "Trending";
-  return `${word} ${direction === "up" ? "Upwards" : "Downwards"}`;
+  return `${getTrendWord(Math.abs(percent), direction)} ${direction === "up" ? "Upwards" : "Downwards"}`;
 }
 
 function getLevelColor(level: Trend["level"], direction: "up" | "down") {
@@ -35,6 +42,14 @@ function getLevelColor(level: Trend["level"], direction: "up" | "down") {
   if (level === "high") return "hsl(220, 85%, 42%)";
   if (level === "medium") return "hsl(175, 90%, 45%)";
   return "hsl(142, 100%, 60%)";
+}
+
+/** Magnitude level thresholds, direction-specific (percent is absolute). */
+function getTrendLevel(abs: number, direction: "up" | "down"): Trend["level"] {
+  if (direction === "up") {
+    return abs <= 50 ? "low" : abs <= 150 ? "medium" : "high";
+  }
+  return abs <= 30 ? "low" : abs <= 60 ? "medium" : "high";
 }
 
 export function useWarningTrends() {
@@ -104,7 +119,7 @@ export function useWarningTrends() {
 
       const direction = diff > 0 ? "up" : "down";
       const abs = Math.abs(percent);
-      const level: Trend["level"] = abs <= 50 ? "low" : abs <= 150 ? "medium" : "high";
+      const level = getTrendLevel(abs, direction);
       const label = getTrendLabel(percent, direction);
       const color = getLevelColor(level, direction);
 
