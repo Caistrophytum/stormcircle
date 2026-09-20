@@ -119,7 +119,7 @@ export function useWarningTrends() {
 
       const direction = diff > 0 ? "up" : "down";
       const abs = Math.abs(percent);
-      const level: Trend["level"] = abs <= 50 ? "low" : abs <= 150 ? "medium" : "high";
+      const level = getTrendLevel(abs, direction);
       const label = getTrendLabel(percent, direction);
       const color = getLevelColor(level, direction);
 
