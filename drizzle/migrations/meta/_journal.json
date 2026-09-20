@@ -22,6 +22,13 @@
       "when": 1789917412994,
       "tag": "0002_warning_daily_counts_region",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789917786482,
+      "tag": "0003_backfill_eu_warning_counts",
+      "breakpoints": true
     }
   ]
 }
