@@ -111,7 +111,7 @@ export function NewsBar() {
   useEffect(() => {
     if (trends.length === 0) return;
     setIndex(0);
-  }, [trends.length]);
+  }, [trends.length, region]);
 
   const advance = useCallback(() => {
     setIndex((i) => (i + 1) % Math.max(trends.length, 1));
