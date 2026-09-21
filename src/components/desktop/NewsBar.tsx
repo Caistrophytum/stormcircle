@@ -124,7 +124,7 @@ export function NewsBar() {
     let animation: Animation | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
-    const runKey = `${current?.event}-${index}-${tickerRun}`;
+    const runKey = `${current?.event}-${safeIndex}-${tickerRun}`;
 
     // Capture how far the current run of this headline has travelled, so any
     // restart (speed change, font load, resize) picks up from that point.
@@ -354,7 +354,7 @@ export function NewsBar() {
             </motion.span>
           ) : (
             <motion.div
-              key={`${current.event}-${index}-${tickerRun}`}
+              key={`${current.event}-${safeIndex}-${tickerRun}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
