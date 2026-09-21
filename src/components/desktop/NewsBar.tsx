@@ -65,7 +65,10 @@ export function NewsBar() {
   const zoneRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [contentNode, setContentNode] = useState<HTMLSpanElement | null>(null);
-  const current = trends[index];
+  // Clamp during render: a region switch can shrink the list before the
+  // index-reset effect runs, which would otherwise dereference undefined.
+  const safeIndex = trends.length > 0 ? index % trends.length : 0;
+  const current = trends[safeIndex];
   const activeRegion = REGION_OPTIONS.find((r) => r.value === region) ?? REGION_OPTIONS[0];
 
   // Preserves scroll position across speed changes (same headline only).
