@@ -201,7 +201,7 @@ export function NewsBar() {
       if (timer) clearTimeout(timer);
       window.removeEventListener("resize", start);
     };
-  }, [index, tickerRun, speed, trends.length, collecting, current?.event, contentNode, advance]);
+  }, [safeIndex, tickerRun, speed, trends.length, collecting, current?.event, contentNode, advance]);
 
   return (
     <div
@@ -338,7 +338,7 @@ export function NewsBar() {
         />
 
         <AnimatePresence mode="wait">
-          {collecting || trends.length === 0 ? (
+          {collecting || trends.length === 0 || !current ? (
             <motion.span
               key={steady ? "steady" : "collecting"}
               initial={{ opacity: 0, y: 8 }}
