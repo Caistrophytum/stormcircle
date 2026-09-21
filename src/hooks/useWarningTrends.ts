@@ -113,6 +113,9 @@ export function useWarningTrends(region: TrendRegion = "all") {
         } else {
           const loaded = (data ?? []) as CountRow[];
           setRows(loaded);
+          // Drop any manual snapshot: fresh server counts supersede it, so
+          // periodic refreshes keep moving the ticker.
+          setLocalToday(null);
           // Show when the stored counts were last refreshed, even before the
           // user triggers a manual update.
           const newest = loaded.reduce((max, r) => {

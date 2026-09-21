@@ -65,7 +65,10 @@ export function NewsBar() {
   const zoneRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [contentNode, setContentNode] = useState<HTMLSpanElement | null>(null);
-  const current = trends[index];
+  // Clamp during render: a region switch can shrink the list before the
+  // index-reset effect runs, which would otherwise dereference undefined.
+  const safeIndex = trends.length > 0 ? index % trends.length : 0;
+  const current = trends[safeIndex];
   const activeRegion = REGION_OPTIONS.find((r) => r.value === region) ?? REGION_OPTIONS[0];
 
   // Preserves scroll position across speed changes (same headline only).
@@ -108,7 +111,7 @@ export function NewsBar() {
   useEffect(() => {
     if (trends.length === 0) return;
     setIndex(0);
-  }, [trends.length]);
+  }, [trends.length, region]);
 
   const advance = useCallback(() => {
     setIndex((i) => (i + 1) % Math.max(trends.length, 1));
@@ -121,7 +124,7 @@ export function NewsBar() {
     let animation: Animation | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
-    const runKey = `${current?.event}-${index}-${tickerRun}`;
+    const runKey = `${current?.event}-${safeIndex}-${tickerRun}`;
 
     // Capture how far the current run of this headline has travelled, so any
     // restart (speed change, font load, resize) picks up from that point.
@@ -198,7 +201,7 @@ export function NewsBar() {
       if (timer) clearTimeout(timer);
       window.removeEventListener("resize", start);
     };
-  }, [index, tickerRun, speed, trends.length, collecting, current?.event, contentNode, advance]);
+  }, [safeIndex, tickerRun, speed, trends.length, collecting, current?.event, contentNode, advance]);
 
   return (
     <div
@@ -335,7 +338,7 @@ export function NewsBar() {
         />
 
         <AnimatePresence mode="wait">
-          {collecting || trends.length === 0 ? (
+          {collecting || trends.length === 0 || !current ? (
             <motion.span
               key={steady ? "steady" : "collecting"}
               initial={{ opacity: 0, y: 8 }}
@@ -351,7 +354,7 @@ export function NewsBar() {
             </motion.span>
           ) : (
             <motion.div
-              key={`${current.event}-${index}-${tickerRun}`}
+              key={`${current.event}-${safeIndex}-${tickerRun}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
