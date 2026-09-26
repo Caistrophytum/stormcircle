@@ -13,7 +13,7 @@
  * The CityProvider wraps everything so hooks that depend on the selected city
  * (radar, weather, sounding) work consistently with the desktop tree.
  */
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { CityProvider } from "@/contexts/CityContext";
 import MobileHeader from "./MobileHeader";
 import MobileMain from "./MobileMain";
@@ -28,8 +28,8 @@ export type MobileScreenId = "faq" | "account" | "chat" | "alerts" | "radar" | "
 export default function MobileLayout() {
   // Which overlay is currently visible (null = none, main content shown).
   const [activeScreen, setActiveScreen] = useState<MobileScreenId | null>(null);
-  // Collapse/expand the floating button row to free up screen real estate.
-  const [buttonsVisible, setButtonsVisible] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   return (
     <CityProvider>
@@ -42,7 +42,7 @@ export default function MobileLayout() {
           overflow: "hidden",
           background: "#050505",
           color: "#e8e8e8",
-          fontFamily: "'JetBrains Mono', monospace",
+          fontFamily: "var(--font-sans)",
           position: "relative",
         }}
       >
@@ -59,9 +59,13 @@ export default function MobileLayout() {
 
         {/* Persistent floating action buttons (bottom-right). */}
         <MobileFloatingButtons
-          buttonsVisible={buttonsVisible}
-          onToggle={() => setButtonsVisible((v) => !v)}
-          onOpen={setActiveScreen}
+          open={menuOpen}
+          onToggle={() => setMenuOpen((value) => !value)}
+          onClose={closeMenu}
+          onOpen={(screen) => {
+            setMenuOpen(false);
+            setActiveScreen(screen);
+          }}
         />
 
         {/* Full-screen overlay - only mounted when a screen is active so

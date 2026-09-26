@@ -12,6 +12,7 @@
  * returns the user to MobileMain.
  */
 import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import AccountCenter from "@/pages/AccountCenter";
 import CitizenReports from "@/components/CitizenReports";
 import FAQ from "@/pages/FAQ";
@@ -36,7 +37,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
         zIndex: 1000,
         display: "flex",
         flexDirection: "column",
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "var(--font-sans)",
         color: "#e8e8e8",
       }}
     >
@@ -70,29 +71,16 @@ export default function MobileScreen({ screen, onClose }: Props) {
         {screen === "exercise" && <ExerciseComfort open onClose={onClose} />}
       </div>
 
-      <button
+      <Button
+        type="button"
+        size="icon"
+        variant="outline"
         aria-label="Return"
         onClick={onClose}
-        style={{
-          position: "fixed",
-          bottom: "20px",
-          right: "12px",
-          width: "44px",
-          height: "44px",
-          borderRadius: "50%",
-          background: "rgba(10,10,14,0.9)",
-          border: "1px solid rgba(255,157,0,0.4)",
-          color: "#ff9d00",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          boxShadow: "0 0 8px rgba(255,157,0,0.33)",
-          zIndex: 1100,
-        }}
+        className="fixed bottom-5 right-3 z-[1100] size-11 rounded-md border-primary/50 bg-card text-primary shadow-[0_0_10px_hsl(var(--primary)/0.28)] hover:bg-secondary"
       >
         <ArrowLeft size={18} />
-      </button>
+      </Button>
     </div>
   );
 }

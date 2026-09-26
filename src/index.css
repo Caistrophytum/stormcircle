@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -63,7 +61,7 @@
 
     /* Fonts */
     --font-mono: 'JetBrains Mono', monospace;
-    --font-sans: 'Inter', sans-serif;
+    --font-sans: 'Work Sans', sans-serif;
   }
 }
 
@@ -79,6 +77,10 @@
 
   .font-mono {
     font-family: var(--font-mono);
+  }
+
+  .emoji-glyph {
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
   }
 }
 
