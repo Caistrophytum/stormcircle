@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useRefreshTick } from "./useRefreshTick";
 
@@ -92,10 +92,19 @@ export function useWarningTrends(region: TrendRegion = "all") {
   const tick = useRefreshTick();
   const [rows, setRows] = useState<CountRow[]>([]);
   const [loading, setLoading] = useState(true);
-  // Locally recompiled counts for today's bucket, keyed "event|REGION".
-  const [localToday, setLocalToday] = useState<Record<string, number> | null>(null);
+  // Locally recompiled counts for today's bucket, keyed "event|REGION",
+  // tagged with the bucket day they were compiled for.
+  const [localToday, setLocalToday] = useState<{
+    day: string;
+    counts: Record<string, number>;
+  } | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  // Timestamp of the latest manual compilation. Read through a ref inside the
+  // load effect so a periodic refresh can tell whether the server rollup has
+  // genuinely superseded the manual snapshot (newer updated_at for today's
+  // bucket) or is just re-delivering the same older numbers.
+  const manualAtRef = useRef<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,16 +122,26 @@ export function useWarningTrends(region: TrendRegion = "all") {
         } else {
           const loaded = (data ?? []) as CountRow[];
           setRows(loaded);
-          // Drop any manual snapshot: fresh server counts supersede it, so
-          // periodic refreshes keep moving the ticker.
-          setLocalToday(null);
-          // Show when the stored counts were last refreshed, even before the
-          // user triggers a manual update.
+          // Keep a manual snapshot until the server rollup for today's bucket
+          // is newer than the manual compilation itself. The hourly rollup can
+          // rewrite rows without moving their data forward, so clearing on
+          // every periodic refresh would silently throw the manual update away
+          // within a minute while the button still shows its timestamp.
+          const today = getBucketDate();
+          const serverToday = loaded.reduce((max, r) => {
+            if (r.day !== today) return max;
+            const t = r.updated_at ? Date.parse(r.updated_at) : NaN;
+            return Number.isFinite(t) && t > max ? t : max;
+          }, 0);
           const newest = loaded.reduce((max, r) => {
             const t = r.updated_at ? Date.parse(r.updated_at) : NaN;
             return Number.isFinite(t) && t > max ? t : max;
           }, 0);
-          if (newest > 0) {
+          if (manualAtRef.current !== null && serverToday > manualAtRef.current) {
+            manualAtRef.current = null;
+            setLocalToday(null);
+            if (newest > 0) setLastUpdatedAt(newest);
+          } else if (newest > 0) {
             setLastUpdatedAt((prev) => (prev && prev > newest ? prev : newest));
           }
         }
@@ -158,7 +177,8 @@ export function useWarningTrends(region: TrendRegion = "all") {
         const key = `${row.event}|${regionOf(row.alert_id)}`;
         counts[key] = (counts[key] ?? 0) + 1;
       }
-      setLocalToday(counts);
+      setLocalToday({ day: getBucketDate(), counts });
+      manualAtRef.current = Date.now();
       setLastUpdatedAt(Date.now());
     } catch (err) {
       console.error("[useWarningTrends] manual refresh failed", err);
@@ -185,10 +205,11 @@ export function useWarningTrends(region: TrendRegion = "all") {
       }
     }
 
-    // A manual update replaces today's stored counts with freshly compiled ones.
-    if (localToday) {
+    // A manual update replaces today's stored counts with freshly compiled ones,
+    // but only while it belongs to the current bucket day.
+    if (localToday && localToday.day === today) {
       for (const key of Object.keys(byEvent)) byEvent[key].today = 0;
-      for (const [key, count] of Object.entries(localToday)) {
+      for (const [key, count] of Object.entries(localToday.counts)) {
         const sep = key.lastIndexOf("|");
         const event = key.slice(0, sep);
         const rowRegion = key.slice(sep + 1);
