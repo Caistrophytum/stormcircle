@@ -81,7 +81,14 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
       }
       try {
         // Shared 4-minute cache, deduped against the other Open-Meteo hooks.
-        const json = await fetchJsonCached<any>(url, 4 * 60_000);
+        // AQI comes from a separate endpoint and must not fail the block.
+        const aqiUrl =
+          `https://air-quality-api.open-meteo.com/v1/air-quality` +
+          `?latitude=${lat}&longitude=${lon}&current=us_aqi&timezone=UTC`;
+        const [json, aqiJson] = await Promise.all([
+          fetchJsonCached<any>(url, 4 * 60_000),
+          fetchJsonCached<any>(aqiUrl, 4 * 60_000).catch(() => null),
+        ]);
         const c = json?.current ?? {};
         const hourly = json?.hourly ?? {};
         const times: string[] = hourly.time ?? [];
@@ -104,6 +111,8 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
         const past = hourIdx >= 3 ? mslpValues[hourIdx - 3] : null;
         const pressureTrend3hHpa =
           pressureHpa != null && typeof past === "number" ? pressureHpa - past : null;
+        const aqiUs =
+          typeof aqiJson?.current?.us_aqi === "number" ? aqiJson.current.us_aqi : null;
         if (cancelled) return;
         setData({
           temperatureC: typeof c.temperature_2m === "number" ? c.temperature_2m : null,
@@ -114,6 +123,7 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
           uvIndex: typeof uvIndex === "number" ? uvIndex : null,
           pressureHpa,
           pressureTrend3hHpa,
+          aqiUs,
           loading: false,
           error: false,
         });
