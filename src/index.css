@@ -78,6 +78,10 @@
   .font-mono {
     font-family: var(--font-mono);
   }
+
+  .emoji-glyph {
+    font-family: 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+  }
 }
 
 @layer components {

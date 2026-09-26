@@ -101,7 +101,7 @@ function SettingsGroup({ id, emoji, title, summary, open, onToggle, children }: 
         className="h-auto min-h-16 w-full justify-between rounded-none px-3 py-3 text-left hover:bg-background/40"
       >
         <span className="flex min-w-0 items-center gap-3">
-          <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-md bg-background text-lg">{emoji}</span>
+          <span aria-hidden="true" className="emoji-glyph flex size-9 shrink-0 items-center justify-center rounded-md bg-background text-lg">{emoji}</span>
           <span className="min-w-0">
             <span className="block font-mono text-xs font-bold uppercase text-card-foreground">{title}</span>
             <span className="block truncate text-[10px] font-normal text-muted-foreground">{summary}</span>
