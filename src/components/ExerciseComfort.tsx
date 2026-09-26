@@ -23,6 +23,7 @@ import { useHomeCityFireRisk } from "@/hooks/useHomeCityFireRisk";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
 import { pointInPolygon } from "@/lib/pointInPolygon";
 import { useExerciseComfortData } from "@/hooks/useExerciseComfortData";
+import { useUnitSystem } from "@/hooks/useUnitSystem";
 import {
   computeAllActivities,
   describeWarningRestrictions,
@@ -298,6 +299,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const fire = useHomeCityFireRisk(location);
   const polygons = useWarningPolygons();
   const data = useExerciseComfortData(home.coords);
+  const unitSystem = useUnitSystem();
 
   // Dedupe warnings by event (keeping the highest severity), only those whose
   // polygon covers the home point. Works for any feed in `active_alerts` -
@@ -331,8 +333,9 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
       spcRisk: home.risk,
       fireRisk: fire.risk,
       wrs,
+      unitSystem,
     });
-  }, [data.hourly, data.airQuality, activeWarnings, home.risk, fire.risk, wrs]);
+  }, [data.hourly, data.airQuality, activeWarnings, home.risk, fire.risk, wrs, unitSystem]);
 
   const hasLocation = !!location;
   const loading = data.loading && !data.hourly.length;
@@ -405,7 +408,7 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
         }}
       >
         Score = 100 − the sum of hazard points (Ideal ≥ 80, Good ≥ 60, Fair ≥ 40, Poor ≥ 20, Dangerous &lt; 20).
-        Budgets: real-feel temperature 100, wind 100 (0–110 km/h), rain 80 (0–20 mm/h), US AQI 100, UV 60 (0–11), each
+        Budgets use standardized source values internally: real-feel temperature 100, wind 100, rain 80, US AQI 100, UV 60, each
         scaled by an activity multiplier. Active alerts raise their hazard's severity floor; life-safety alerts cap the
         score.
       </div>

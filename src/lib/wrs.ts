@@ -11,7 +11,7 @@
  *   • Physical block - SFC RH 50%, MID RH 35%, MID LAPSE 15% → `physGate`,
  *     a log-shaped multiplier applied to the whole virtual block.
  */
-import { displayLengthM, type UnitSystem } from "@/hooks/useUnitSystem";
+import { displayLapseRate, displayLengthM, displayWindMs, type UnitSystem } from "@/hooks/useUnitSystem";
 
 export type WeatherCondition = "sunny" | "cloudy" | "rainy" | "stormy";
 
@@ -93,6 +93,8 @@ export function computeWRS(opts: {
     return d ? Math.round(d.value).toLocaleString() : "ERR";
   };
   const lenUnit = unitSystem === "metric" ? "m" : "ft";
+  const shearDisplay = displayWindMs(sounding.shear, unitSystem);
+  const lapseDisplay = displayLapseRate(sounding.lapseMid, unitSystem);
 
   const color = (score: number, hasValue: boolean) => {
     if (!stationActive || !hasValue) return P.green;
@@ -147,7 +149,7 @@ export function computeWRS(opts: {
   const nodes: WRSNode[] = [
     { label: "CAPE", value: fmt(sounding.cape), unit: "J/kg", color: color(capeScore, sounding.cape != null), w: capeContrib, primary: true },
     { label: "CIN", value: fmt(sounding.cin), unit: "J/kg", color: color(cinScore, sounding.cin != null), w: -cinLoss, primary: true },
-    { label: "SHEAR", value: fmtNum(sounding.shear, 1), unit: "m/s", color: color(shearScore, sounding.shear != null), w: shearContrib, primary: true },
+    { label: "SHEAR", value: guard(sounding.shear) ?? shearDisplay?.value.toFixed(1) ?? "ERR", unit: shearDisplay?.unit ?? (unitSystem === "metric" ? "m/s" : "kt"), color: color(shearScore, sounding.shear != null), w: shearContrib, primary: true },
     { label: "LCL", value: fmtLenM(sounding.lcl), unit: lenUnit, color: color(lclScore, sounding.lcl != null), w: lclContrib, primary: false },
     { label: "EL", value: fmtLenM(sounding.el), unit: lenUnit, color: color(elScore, sounding.el != null), w: elContrib, primary: false },
   ];
@@ -155,7 +157,7 @@ export function computeWRS(opts: {
   const physicalNodes: WRSNode[] = [
     { label: "SFC RH", value: fmtNum(sounding.rhSurface, 0), unit: "%", color: color(rhSfcScore, sounding.rhSurface != null), w: stationActive ? Math.round(rhSfcScore * PHYS_W.sfc * 100) : 0, primary: true },
     { label: "MID RH", value: fmtNum(sounding.rhMid, 0), unit: "%", color: color(rhMidScore, sounding.rhMid != null), w: stationActive ? Math.round(rhMidScore * PHYS_W.mid * 100) : 0, primary: true },
-    { label: "MID LAPSE", value: fmtNum(sounding.lapseMid, 1), unit: "°C/km", color: color(lapseScore, sounding.lapseMid != null), w: stationActive ? Math.round(lapseScore * PHYS_W.lapse * 100) : 0, primary: true },
+    { label: "MID LAPSE", value: guard(sounding.lapseMid) ?? lapseDisplay?.value.toFixed(1) ?? "ERR", unit: lapseDisplay?.unit ?? (unitSystem === "metric" ? "°C/km" : "°F/1kft"), color: color(lapseScore, sounding.lapseMid != null), w: stationActive ? Math.round(lapseScore * PHYS_W.lapse * 100) : 0, primary: true },
   ];
 
   const threatLevel = Math.min(

@@ -18,7 +18,7 @@ import { useHometownWeather, pressureTrendDescriptor } from "@/hooks/useHometown
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
-import { useUnitSystem, displayTemp, displayWindSpeed, displayLengthM, displayPressure } from "@/hooks/useUnitSystem";
+import { useUnitSystem, displayTemp, displayWindSpeed, displayLengthM, displayLengthKm, displayPressure } from "@/hooks/useUnitSystem";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { useLocalClock } from "@/hooks/useLocalClock";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
@@ -398,11 +398,11 @@ export default function MobileMain() {
       if (km <= 0.05) {
         hometownText += `\n\nYou are inside an active ${nearestDanger.event} polygon.`;
       } else {
-        const useMiles = unitSystem === "imperial";
-        const val = useMiles ? km * 0.621371 : km;
-        const unit = useMiles ? "mi" : "km";
-        const formatted = val < 10 ? val.toFixed(1) : Math.round(val).toLocaleString();
-        hometownText += `\n\nNearest ${nearestDanger.event}: ${formatted} ${unit} away (edge-to-home).`;
+        const shownDistance = displayLengthKm(km, unitSystem);
+        if (shownDistance) {
+          const formatted = shownDistance.value < 10 ? shownDistance.value.toFixed(1) : Math.round(shownDistance.value).toLocaleString();
+          hometownText += `\n\nNearest ${nearestDanger.event}: ${formatted} ${shownDistance.unit} away (edge-to-home).`;
+        }
       }
     }
   }

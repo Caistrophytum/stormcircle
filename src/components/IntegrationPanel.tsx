@@ -1,6 +1,7 @@
 import { Radio } from "lucide-react";
 import { motion } from "framer-motion";
 import { getLSRColor, getSourceColor, useLSR } from "@/hooks/useLSR";
+import { displayLSRMagnitude, useUnitSystem } from "@/hooks/useUnitSystem";
 
 function getTimeAgo(isoString: string): string {
   const diff = Date.now() - new Date(isoString).getTime();
@@ -11,17 +12,9 @@ function getTimeAgo(isoString: string): string {
   return `${hrs}h ${mins % 60}m ago`;
 }
 
-function getMagnitudeUnit(typetext: string): string {
-  const t = typetext.toUpperCase();
-  if (t.includes("HAIL")) return "in.";
-  if (t.includes("WIND")) return "mph";
-  if (t.includes("SNOW") || t.includes("RAIN")) return "in.";
-  if (t.includes("FLOOD")) return "ft.";
-  return "";
-}
-
 const IntegrationPanel = () => {
   const { reports, lastUpdated } = useLSR();
+  const unitSystem = useUnitSystem();
 
   return (
     <div className="flex flex-col h-full">
@@ -33,7 +26,9 @@ const IntegrationPanel = () => {
       <div className="flex-1 overflow-y-auto p-3 space-y-2 w-fit">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full flex-col gap-2">
               <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-                {reports.map((report) => (
+                {reports.map((report) => {
+                  const magnitude = displayLSRMagnitude(report.magnitude, report.typetext, unitSystem);
+                  return (
                   <div
                     key={`${report.valid}-${report.typetext}-${report.lat}-${report.lon}`}
                     className="glass-panel space-y-2 p-3 font-mono"
@@ -61,9 +56,9 @@ const IntegrationPanel = () => {
                       >
                         {report.source}
                       </span>
-                      {report.magnitude && (
+                      {magnitude && report.magnitude !== 0 && (
                         <span className="text-[10px] font-bold text-foreground">
-                          {report.magnitude} {getMagnitudeUnit(report.typetext)}
+                          {Number(magnitude.value.toFixed(magnitude.value < 10 ? 1 : 0))} {magnitude.unit}
                         </span>
                       )}
                     </div>
@@ -73,7 +68,8 @@ const IntegrationPanel = () => {
                       </p>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               <span className="border-t border-border pt-2 text-[9px] font-mono text-muted-foreground">
