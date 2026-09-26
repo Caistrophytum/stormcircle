@@ -70,6 +70,8 @@ const cToF = (c: number) => c * 9 / 5 + 32;
 const mToFt = (m: number) => m * 3.28084;
 const kmToMi = (km: number) => km * 0.621371;
 const kmhToMph = (kmh: number) => kmh * 0.621371;
+const mmToIn = (mm: number) => mm / 25.4;
+const msToKnots = (ms: number) => ms * 1.943844;
 
 
 export interface DisplayValue {
@@ -105,4 +107,44 @@ export function displayPressure(hpa: number | null, system: UnitSystem): Display
   return system === "metric"
     ? { value: hpa, unit: " mb" }
     : { value: hpa * 0.0295299830714, unit: " inHg" };
+}
+
+export function displayPrecipitationMm(mm: number | null, system: UnitSystem): DisplayValue | null {
+  if (mm == null) return null;
+  return system === "metric" ? { value: mm, unit: "mm" } : { value: mmToIn(mm), unit: "in" };
+}
+
+export function displayWindMs(ms: number | null, system: UnitSystem): DisplayValue | null {
+  if (ms == null) return null;
+  return system === "metric" ? { value: ms, unit: "m/s" } : { value: msToKnots(ms), unit: "kt" };
+}
+
+export function displayLapseRate(cPerKm: number | null, system: UnitSystem): DisplayValue | null {
+  if (cPerKm == null) return null;
+  return system === "metric"
+    ? { value: cPerKm, unit: "°C/km" }
+    : { value: cPerKm * 0.54864, unit: "°F/1kft" };
+}
+
+/** Converts IEM local storm report magnitudes, whose source units are imperial. */
+export function displayLSRMagnitude(
+  value: number | null,
+  type: string,
+  system: UnitSystem,
+): DisplayValue | null {
+  if (value == null) return null;
+  const upper = type.toUpperCase();
+  if (upper.includes("WIND")) {
+    return system === "metric" ? { value: value * 1.609344, unit: "km/h" } : { value, unit: "mph" };
+  }
+  if (upper.includes("HAIL")) {
+    return system === "metric" ? { value: value * 2.54, unit: "cm" } : { value, unit: "in" };
+  }
+  if (upper.includes("SNOW") || upper.includes("RAIN")) {
+    return system === "metric" ? { value: value * 25.4, unit: "mm" } : { value, unit: "in" };
+  }
+  if (upper.includes("FLOOD")) {
+    return system === "metric" ? { value: value * 0.3048, unit: "m" } : { value, unit: "ft" };
+  }
+  return { value, unit: "" };
 }

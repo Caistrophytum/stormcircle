@@ -20,6 +20,7 @@
 
 import type { SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import type { FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
+import { displayPrecipitationMm, displayTemp, displayWindSpeed, type UnitSystem } from "@/hooks/useUnitSystem";
 
 export type Activity = "walk" | "run" | "bike" | "hike" | "calisthenics";
 
@@ -67,6 +68,7 @@ export interface ComfortContext {
   spcRisk: SPCRiskLevel;
   fireRisk: FireRiskLevel;
   wrs: number;                 // 0–100 WRS threat from sounding panel
+  unitSystem?: UnitSystem;     // display only; scoring remains in source SI units
 }
 
 export type HazardKey = "temp" | "wind" | "uv" | "aq" | "rain";
@@ -246,15 +248,18 @@ const WARNING_CATEGORIES: { re: RegExp; key: HazardKey }[] = [
 
 
 // ── Readable current-value strings for the UI ───────────────────────────
-function details(h: HourlyPoint, aqi: number | null): Record<HazardKey, string> {
+function details(h: HourlyPoint, aqi: number | null, unitSystem: UnitSystem): Record<HazardKey, string> {
   const rf = h.apparentTemperature;
   const wind = Math.max(h.windSpeed ?? 0, h.windGusts ?? h.windSpeed ?? 0) * 3.6;
+  const shownTemp = displayTemp(rf, unitSystem);
+  const shownWind = displayWindSpeed(wind, unitSystem);
+  const shownRain = displayPrecipitationMm(h.precipMm ?? 0, unitSystem);
   return {
-    temp: rf == null ? "no data" : `${Math.round(rf)} °C real feel`,
-    wind: `${Math.round(wind)} km/h`,
+    temp: shownTemp == null ? "no data" : `${Math.round(shownTemp.value)} ${shownTemp.unit} real feel`,
+    wind: shownWind == null ? "no data" : `${Math.round(shownWind.value)} ${shownWind.unit}`,
     uv: h.uvIndex == null ? "no data" : `UV ${h.uvIndex.toFixed(1)}`,
     aq: aqi == null ? "no data" : `AQI ${Math.round(aqi)}`,
-    rain: `${(h.precipMm ?? 0).toFixed(1)} mm/h`,
+    rain: shownRain == null ? "no data" : `${shownRain.value.toFixed(unitSystem === "metric" ? 1 : 2)} ${shownRain.unit}/h`,
   };
 }
 
@@ -263,7 +268,7 @@ function scoreHour(
   h: HourlyPoint,
   aqi: number | null,
   activity: Activity,
-  _ctx: Pick<ComfortContext, "activeWarnings">,
+  ctx: Pick<ComfortContext, "activeWarnings" | "unitSystem">,
 ): HourResult {
   const mult = MULTIPLIERS[activity];
 
@@ -278,7 +283,7 @@ function scoreHour(
   };
 
 
-  const text = details(h, aqi);
+  const text = details(h, aqi, ctx.unitSystem ?? "metric");
   const keys: HazardKey[] = ["temp", "wind", "uv", "aq", "rain"];
 
   const raw = keys.map((k) => {

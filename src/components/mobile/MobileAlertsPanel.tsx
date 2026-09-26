@@ -21,6 +21,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useHomeCountry } from "@/hooks/useHomeCountry";
 import { useAlerts, type Alert, type Severity, type AlertKind } from "@/hooks/useAlerts";
 import { useLSR, getLSRColor, getSourceColor } from "@/hooks/useLSR";
+import { displayLSRMagnitude, useUnitSystem } from "@/hooks/useUnitSystem";
 import { formatRelativeTime } from "@/lib/timeFormat";
 
 // ── Badge palettes mirrored from desktop EventInfoPanel ────────────────────
@@ -249,6 +250,7 @@ function CountRow({
 
 // ── Main panel ─────────────────────────────────────────────────────────────
 export default function MobileAlertsPanel() {
+  const unitSystem = useUnitSystem();
   const { mostDangerous, dangerousRanked, topHazards, newWarnings, loading, error, lastUpdated } = useAlerts();
   // Local = hazards from the user's hometown country only; Intl = worldwide.
   const homeCountry = useHomeCountry();
@@ -383,10 +385,10 @@ export default function MobileAlertsPanel() {
           const typeColor = getLSRColor(r.typetext);
           const srcColor = getSourceColor(r.source);
           const location = [r.city, r.state].filter(Boolean).join(", ");
-          const mag =
-            r.magnitude !== null && r.magnitude !== 0
-              ? `${r.magnitude}${/wind/i.test(r.typetext) ? " mph" : /hail/i.test(r.typetext) ? '"' : ""}`
-              : "";
+          const shownMagnitude = displayLSRMagnitude(r.magnitude, r.typetext, unitSystem);
+          const mag = shownMagnitude && r.magnitude !== 0
+            ? `${Number(shownMagnitude.value.toFixed(shownMagnitude.value < 10 ? 1 : 0))} ${shownMagnitude.unit}`.trim()
+            : "";
           return (
             <div
               key={`${r.valid}-${i}`}
