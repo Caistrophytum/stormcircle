@@ -1,112 +1,135 @@
-/**
- * MobileFloatingButtons - the bottom-right action row on mobile.
- *
- * Buttons (left → right):
- *   • FAQ      - opens the FAQ page overlay (mirrors the desktop StatusBar FAQ link)
- *   • Account  - opens AccountCenter (sign in / profile / hometown / settings)
- *   • Chat     - opens CitizenReports (the public chat / report feed)
- *   • Alerts   - opens the latest Professional Weather Reports / LSR report list
- *   • Radar    - opens the full-screen radar mini-map
- *
- * A trailing chevron toggles the whole row so the user can hide the buttons
- * when they obscure underlying content. The chevron itself stays visible.
- */
-import { User, MessageCircle, AlertTriangle, Radio, HelpCircle, Activity } from "lucide-react";
+import { useEffect, useRef } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  HelpCircle,
+  Menu,
+  MessageCircle,
+  Radio,
+  Settings,
+  X,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { MobileScreenId } from "./MobileLayout";
 
 interface Props {
-  buttonsVisible: boolean;
+  open: boolean;
   onToggle: () => void;
+  onClose: () => void;
   onOpen: (screen: MobileScreenId) => void;
 }
 
-export default function MobileFloatingButtons({ buttonsVisible, onToggle, onOpen }: Props) {
-  // Order matters - FAQ is placed first (leftmost) per spec, immediately
-  // followed by Account so the help affordance sits next to the user's hub.
-  // Exercise sits between Account and Chat so wellness features cluster with
-  // personal (Account) rather than tactical (Radar/Alerts).
-  const buttons = [
-    { id: "faq" as const, icon: <HelpCircle size={18} />, color: "#ff9d00", label: "FAQ" },
-    { id: "account" as const, icon: <User size={18} />, color: "#7dd3fc", label: "Account" },
-    { id: "exercise" as const, icon: <Activity size={18} />, color: "#a3e635", label: "Exercise comfort" },
-    { id: "chat" as const, icon: <MessageCircle size={18} />, color: "#00ff88", label: "Chat" },
-    { id: "alerts" as const, icon: <AlertTriangle size={18} />, color: "#ff9d00", label: "All alerts" },
-    { id: "radar" as const, icon: <Radio size={18} />, color: "#ff6b6b", label: "Radar" },
-  ];
+const items = [
+  { id: "radar" as const, icon: Radio, label: "Radar", description: "Live precipitation scan", tone: "text-neon-blue" },
+  { id: "alerts" as const, icon: AlertTriangle, label: "Alerts", description: "Warnings near you", tone: "text-destructive" },
+  { id: "chat" as const, icon: MessageCircle, label: "Chat", description: "Community reports", tone: "text-neon-green" },
+  { id: "exercise" as const, icon: Activity, label: "Exercise Comfort", description: "Outdoor conditions", tone: "text-primary" },
+  { id: "account" as const, icon: Settings, label: "General Settings", description: "Profile and preferences", tone: "text-muted-foreground" },
+  { id: "faq" as const, icon: HelpCircle, label: "Q&A", description: "Answers and support", tone: "text-muted-foreground" },
+];
+
+export default function MobileFloatingButtons({ open, onToggle, onClose, onOpen }: Props) {
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const firstItemRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+      window.requestAnimationFrame(() => firstItemRef.current?.focus());
+    } else {
+      document.body.style.overflow = "";
+      if (wasOpen.current) triggerRef.current?.focus();
+    }
+    wasOpen.current = open;
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
+  const choose = (screen: MobileScreenId) => {
+    onClose();
+    onOpen(screen);
+  };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "20px",
-        right: "12px",
-        display: "flex",
-        flexDirection: "row",
-        alignItems: "center",
-        gap: "10px",
-        zIndex: 500,
-      }}
-    >
-      {/* The action button group - fades out (pointer-events disabled) when hidden. */}
+    <>
       <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          gap: "10px",
-          opacity: buttonsVisible ? 1 : 0,
-          pointerEvents: buttonsVisible ? "auto" : "none",
-          transition: "opacity 0.25s ease",
-        }}
-      >
-        {buttons.map((btn) => (
-          <button
-            key={btn.id}
-            aria-label={btn.label}
-            onClick={() => onOpen(btn.id)}
-            style={{
-              width: "44px",
-              height: "44px",
-              borderRadius: "50%",
-              background: "rgba(10,10,14,0.9)",
-              border: `1px solid ${btn.color}66`,
-              color: btn.color,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              boxShadow: `0 0 8px ${btn.color}33`,
-              flexShrink: 0,
-            }}
-          >
-            {btn.icon}
-          </button>
-        ))}
-      </div>
+        aria-hidden={!open}
+        className={cn(
+          "fixed inset-0 z-[490] bg-background/80 transition-opacity duration-200 motion-reduce:transition-none",
+          open ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0",
+        )}
+        onClick={onClose}
+      />
 
-      {/* Persistent toggle chevron - always interactive so users can re-show the row. */}
-      <button
-        aria-label={buttonsVisible ? "Hide actions" : "Show actions"}
-        onClick={onToggle}
-        style={{
-          width: "44px",
-          height: "44px",
-          borderRadius: "50%",
-          background: "rgba(10,10,14,0.85)",
-          border: "1px solid rgba(255,157,0,0.4)",
-          color: "#ff9d00",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          opacity: buttonsVisible ? 1 : 0.5,
-          transition: "opacity 0.25s ease",
-          fontSize: "16px",
-          fontWeight: 700,
-          flexShrink: 0,
-        }}
+      <nav
+        id="mobile-command-menu"
+        aria-label="Main navigation"
+        aria-hidden={!open}
+        className={cn(
+          "fixed inset-y-0 left-0 z-[500] flex w-[min(78vw,18rem)] flex-col border-r border-border bg-secondary px-3 pb-5 pt-[max(1.25rem,env(safe-area-inset-top))] shadow-2xl transition-transform duration-200 ease-out motion-reduce:transition-none",
+          open ? "translate-x-0" : "-translate-x-full",
+        )}
       >
-        {buttonsVisible ? "›" : "‹"}
-      </button>
-    </div>
+        <div className="mb-6 flex items-center gap-3 border-b border-border px-2 pb-4">
+          <div className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground neon-glow-amber">
+            <Radio className="size-5" />
+          </div>
+          <div>
+            <p className="font-mono text-xs font-bold uppercase text-primary">StormCircle</p>
+            <p className="text-[10px] text-muted-foreground">Command menu</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {items.map((item, index) => {
+            const Icon = item.icon;
+            return (
+              <Button
+                key={item.id}
+                ref={index === 0 ? firstItemRef : undefined}
+                type="button"
+                variant="ghost"
+                onClick={() => choose(item.id)}
+                className="h-14 w-full justify-start rounded-md border border-transparent px-3 text-left hover:border-border hover:bg-background/70"
+              >
+                <Icon className={cn("!size-5", item.tone)} />
+                <span className="min-w-0">
+                  <span className="block font-mono text-xs font-bold uppercase text-foreground">{item.label}</span>
+                  <span className="block truncate text-[10px] font-normal text-muted-foreground">{item.description}</span>
+                </span>
+              </Button>
+            );
+          })}
+        </div>
+
+        <div className="mt-auto flex items-center gap-2 border-t border-border px-2 pt-4 font-mono text-[10px] uppercase text-neon-green">
+          <span className="size-1.5 rounded-full bg-neon-green shadow-[0_0_6px_hsl(var(--neon-green))]" />
+          Navigation ready
+        </div>
+      </nav>
+
+      <Button
+        ref={triggerRef}
+        type="button"
+        size="icon"
+        aria-label={open ? "Close menu" : "Open menu"}
+        aria-expanded={open}
+        aria-controls="mobile-command-menu"
+        onClick={onToggle}
+        className="fixed bottom-5 right-3 z-[510] size-11 rounded-md border border-primary/60 bg-card text-primary shadow-[0_0_12px_hsl(var(--primary)/0.3)] hover:bg-secondary"
+      >
+        {open ? <X className="!size-5" /> : <Menu className="!size-5" />}
+      </Button>
+    </>
   );
 }
