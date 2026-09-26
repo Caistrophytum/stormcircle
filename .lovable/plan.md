@@ -7,7 +7,7 @@ A new "Tomorrow's weather recap" section on the notifications settings screen:
 - Toggle "Include best times to exercise". When it's on, pick one or more activities (walk, run, bike, hike, calisthenics).
 
 Each day at the chosen hour, one notification goes out for the user's hometown, for example:
-"Tomorrow in Tel Aviv: Real feel 18-31°C, wind up to 22 km/h, UV 8 (Very high), 40% chance of rain (2 mm).
+"Tomorrow in Tel Aviv: Real feel mild morning, hot afternoon, wind up to 22 km/h, UV 8 (Very high), 40% chance of rain (2 mm).
 Best times: Run 06:00-08:00 (score 86), Calisthenics 18:00-20:00 (score 79)."
 
 Units follow the user's US/SI setting when that is known, and SI otherwise. The recap shows up in the notification bell and as a push notification, just like the other categories. Quiet hours still apply.
