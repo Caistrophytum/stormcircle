@@ -387,10 +387,14 @@ export type Database = {
           chat_messages: boolean
           chat_scope: string
           created_at: string
+          daily_recap: boolean
           enabled: boolean
           fire_outlook: boolean
           quiet_end: number | null
           quiet_start: number | null
+          recap_activities: string[]
+          recap_exercise: boolean
+          recap_hour: number
           spc_outlook: boolean
           timezone: string | null
           updated_at: string
@@ -404,10 +408,14 @@ export type Database = {
           chat_messages?: boolean
           chat_scope?: string
           created_at?: string
+          daily_recap?: boolean
           enabled?: boolean
           fire_outlook?: boolean
           quiet_end?: number | null
           quiet_start?: number | null
+          recap_activities?: string[]
+          recap_exercise?: boolean
+          recap_hour?: number
           spc_outlook?: boolean
           timezone?: string | null
           updated_at?: string
@@ -421,10 +429,14 @@ export type Database = {
           chat_messages?: boolean
           chat_scope?: string
           created_at?: string
+          daily_recap?: boolean
           enabled?: boolean
           fire_outlook?: boolean
           quiet_end?: number | null
           quiet_start?: number | null
+          recap_activities?: string[]
+          recap_exercise?: boolean
+          recap_hour?: number
           spc_outlook?: boolean
           timezone?: string | null
           updated_at?: string
@@ -439,6 +451,7 @@ export type Database = {
           active_alerts: Json
           last_chat_at: string | null
           last_fire: string | null
+          last_recap_date: string | null
           last_spc: string | null
           last_wrs: number | null
           last_wrs_at: string | null
@@ -450,6 +463,7 @@ export type Database = {
           active_alerts?: Json
           last_chat_at?: string | null
           last_fire?: string | null
+          last_recap_date?: string | null
           last_spc?: string | null
           last_wrs?: number | null
           last_wrs_at?: string | null
@@ -461,6 +475,7 @@ export type Database = {
           active_alerts?: Json
           last_chat_at?: string | null
           last_fire?: string | null
+          last_recap_date?: string | null
           last_spc?: string | null
           last_wrs?: number | null
           last_wrs_at?: string | null
