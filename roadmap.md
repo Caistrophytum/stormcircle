@@ -19,3 +19,8 @@ All items below are implemented and verified.
 - zone_geom_cache is the largest table (~41MB). A 3-day vacuum job exists; not changed.
 - alerts-poll defers ~250 zone shape lookups per run by design (CPU budget).
 - No React.memo on the large mobile and chat components; the context split removed the main re-render driver, so this was left alone rather than risk behaviour changes.
+
+## Audit pass 2 (2026-09-26)
+- [x] Crash boundary around the whole app + global unhandled-rejection guard
+- [x] Mobile chat box applies realtime payloads instead of re-querying per event
+- [x] Indexes: messages(user_id, created_at) for rate limit; message_signature expression index for delete trigger
