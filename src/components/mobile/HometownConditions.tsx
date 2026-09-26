@@ -185,6 +185,7 @@ export default function HometownConditions({ cityName, weather, signedIn }: Prop
       style={{
         position: "relative",
         overflow: "hidden",
+        flexShrink: 0,
         borderLeft: "2px solid rgba(255,157,0,0.4)",
         background: "linear-gradient(90deg, rgba(255,157,0,0.05), transparent 70%)",
         padding: "10px 12px 8px",
