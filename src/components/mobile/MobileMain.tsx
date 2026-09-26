@@ -254,11 +254,19 @@ function useRecentChatMessages(limit = 30) {
     const ch = supabase
       .channel(`mobile-main-chat_${Math.random().toString(36).slice(2)}_${Date.now()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, (payload: any) => {
-        // Prune deleted rows right away so the box never shows a message
-        // that no longer exists, then re-sync in the background.
-        const deletedId = payload?.eventType === "DELETE" ? (payload?.old?.id as string | undefined) : undefined;
-        if (deletedId) setMsgs((prev) => prev.filter((m) => m.id !== deletedId));
-        void load();
+        // Apply the payload directly instead of re-querying: a reload per
+        // event made every connected phone hit the database on every post.
+        // The 60 s tick and wake handlers still re-sync anything missed.
+        if (payload?.eventType === "DELETE") {
+          const deletedId = payload?.old?.id as string | undefined;
+          if (deletedId) setMsgs((prev) => prev.filter((m) => m.id !== deletedId));
+          return;
+        }
+        if (payload?.eventType === "INSERT") {
+          const row = payload.new as ChatMessage | undefined;
+          if (!row?.id || BOT_USER_IDS.includes(row.user_id) || row.badge === "System") return;
+          setMsgs((prev) => (prev.some((m) => m.id === row.id) ? prev : [row, ...prev].slice(0, limit)));
+        }
       })
       .subscribe();
 

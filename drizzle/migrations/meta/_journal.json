@@ -36,6 +36,13 @@
       "when": 1790452597473,
       "tag": "0004_daily_recap_prefs",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790454940524,
+      "tag": "0005_perf_message_indexes",
+      "breakpoints": true
     }
   ]
 }
