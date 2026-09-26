@@ -77,14 +77,16 @@ const realFeelDescriptor = (c: number) => {
 };
 
 /** Severity color for a wording chip: calm/green -> mid/amber -> hot/red. */
-function severityColor(word: string): string {
-  const calm = ["Calm", "Light Air", "Light Breeze", "Gentle Breeze", "Good", "None", "Low", "Pleasant", "Comfortable", "Dry", "Very Dry", "Moderate"];
-  const warn = ["Moderate Breeze", "Fresh Breeze", "Medium", "Cool", "Warm", "Mostly Comfortable", "Muggy", "Unhealthy for Sensitive Groups"];
-  const hot = ["Strong Breeze", "Near Gale", "Gale", "Strong Gale", "Storm", "Violent Storm", "Hurricane Force", "High", "Very High", "Extreme", "Hot", "Very Hot", "Unhealthy", "Very Unhealthy", "Hazardous", "Oppressive", "Very Dry"];
+function severityColor(rawWord: string): string {
+  // Pressure trend wordings arrive prefixed with their direction arrow.
+  const word = rawWord.replace(/^[↗↘→]\s*/, "");
+  const calm = ["Calm", "Light Air", "Light Breeze", "Gentle Breeze", "Good", "None", "Low", "Pleasant", "Comfortable", "Dry", "Very Dry", "Moderate", "Stable"];
+  const warn = ["Moderate Breeze", "Fresh Breeze", "Medium", "Cool", "Warm", "Very Warm", "Mostly Comfortable", "Muggy", "Unhealthy for Sensitive Groups", "Climbing", "Falling"];
+  const hot = ["Strong Breeze", "Near Gale", "Gale", "Strong Gale", "Storm", "Violent Storm", "Hurricane Force", "High", "Very High", "Extreme", "Hot", "Very Hot", "Unhealthy", "Very Unhealthy", "Hazardous", "Oppressive"];
   if (calm.includes(word)) return "hsl(120 60% 55%)";
   if (warn.includes(word)) return "hsl(50 95% 55%)";
   if (hot.includes(word)) return "hsl(0 80% 60%)";
-  // Dangerous heat wording gets its own deep-red tier.
+  // Dangerous heat wording and sharp pressure moves get their own deep-red tier.
   return "hsl(0 85% 50%)";
 }
 
