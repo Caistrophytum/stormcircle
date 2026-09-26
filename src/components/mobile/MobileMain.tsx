@@ -24,6 +24,7 @@ import { useLocalClock } from "@/hooks/useLocalClock";
 import { SystemMessageCard } from "@/components/SystemMessageCard";
 import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import LocateMeButton from "@/components/mobile/LocateMeButton";
+import HometownConditions from "@/components/mobile/HometownConditions";
 import type { RawMessage } from "@/lib/reportGrouping";
 import { pointInRing } from "@/lib/pointInPolygon";
 import { computeWRS } from "@/lib/wrs";
