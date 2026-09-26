@@ -24,6 +24,10 @@ interface Prefs {
   quiet_start: number | null;
   quiet_end: number | null;
   timezone: string | null;
+  daily_recap: boolean;
+  recap_hour: number;
+  recap_exercise: boolean;
+  recap_activities: string[];
 }
 
 const DEFAULTS: Prefs = {
@@ -39,7 +43,19 @@ const DEFAULTS: Prefs = {
   quiet_start: null,
   quiet_end: null,
   timezone: null,
+  daily_recap: false,
+  recap_hour: 7,
+  recap_exercise: false,
+  recap_activities: [],
 };
+
+const RECAP_ACTIVITIES = [
+  { key: "walk", label: "Walk" },
+  { key: "run", label: "Run" },
+  { key: "bike", label: "Bike" },
+  { key: "hike", label: "Hike" },
+  { key: "calisthenics", label: "Calisthenics" },
+];
 
 const TOGGLES: Array<{ key: keyof Prefs; label: string; hint: string }> = [
   { key: "alerts_new", label: "New weather alerts", hint: "Warnings, watches and advisories covering your hometown." },
@@ -204,6 +220,78 @@ export default function NotificationSettings() {
                 className="mt-2 w-full accent-primary"
               />
             </div>
+
+            <div className="pt-3 border-t border-border space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-[12px] font-semibold text-card-foreground">Tomorrow's weather recap</div>
+                  <div className="text-[11px] text-muted-foreground">
+                    Daily summary of tomorrow's real feel, wind, UV and rain for your hometown.
+                  </div>
+                </div>
+                <Switch
+                  checked={prefs.daily_recap}
+                  disabled={!prefs.enabled}
+                  onCheckedChange={(v) => void save({ ...prefs, daily_recap: v })}
+                />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="recap-hour">
+                  Delivery time: {String(prefs.recap_hour).padStart(2, "0")}:00 local
+                </label>
+                <input
+                  id="recap-hour"
+                  type="range"
+                  min={4}
+                  max={11}
+                  step={1}
+                  value={prefs.recap_hour}
+                  disabled={!prefs.enabled || !prefs.daily_recap}
+                  onChange={(e) => void save({ ...prefs, recap_hour: Number(e.target.value) })}
+                  className="mt-2 w-full accent-primary"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <div className="text-[12px] font-semibold text-card-foreground">Include best times to exercise</div>
+                  <div className="text-[11px] text-muted-foreground">Adds the most comfortable 2-hour window per activity.</div>
+                </div>
+                <Switch
+                  checked={prefs.recap_exercise}
+                  disabled={!prefs.enabled || !prefs.daily_recap}
+                  onCheckedChange={(v) => void save({ ...prefs, recap_exercise: v })}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {RECAP_ACTIVITIES.map((a) => {
+                  const on = prefs.recap_activities.includes(a.key);
+                  return (
+                    <button
+                      key={a.key}
+                      type="button"
+                      disabled={!prefs.enabled || !prefs.daily_recap || !prefs.recap_exercise}
+                      onClick={() =>
+                        void save({
+                          ...prefs,
+                          recap_activities: on
+                            ? prefs.recap_activities.filter((x) => x !== a.key)
+                            : [...prefs.recap_activities, a.key],
+                        })
+                      }
+                      className={`rounded-sm border px-2 py-1 font-mono text-[11px] uppercase tracking-wider transition-colors disabled:opacity-40 ${
+                        on
+                          ? "border-primary/60 bg-primary/10 text-primary"
+                          : "border-border bg-background text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {a.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+
 
             <div className="pt-3 border-t border-border">
               <span className={labelClass}>Quiet hours (local time)</span>

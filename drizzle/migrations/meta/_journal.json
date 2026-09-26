@@ -29,6 +29,13 @@
       "when": 1789917786482,
       "tag": "0003_backfill_eu_warning_counts",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790452597473,
+      "tag": "0004_daily_recap_prefs",
+      "breakpoints": true
     }
   ]
 }
