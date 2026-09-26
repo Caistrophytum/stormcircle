@@ -12,6 +12,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { pointInGeom, type Geom } from "../_shared/geo.ts";
 import { fetchSounding, wrsFromSounding } from "../_shared/wrs-server.ts";
 import { sendPush, type VapidKeys } from "../_shared/webpush.ts";
+import { computeComfort, type Activity, type HourlyPoint } from "./comfort.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -100,6 +101,159 @@ function inQuietHours(tz: string | null, start: number | null, end: number | nul
   return start <= end ? hour >= start && hour < end : hour >= start || hour < end;
 }
 
+// ─── next-day recap ─────────────────────────────────────────────────────────
+
+const ACTIVITIES: Activity[] = ["walk", "run", "bike", "hike", "calisthenics"];
+const ACTIVITY_LABEL: Record<Activity, string> = {
+  walk: "Walk", run: "Run", bike: "Bike", hike: "Hike", calisthenics: "Calisthenics",
+};
+
+interface TomorrowForecast {
+  date: string;
+  hours: HourlyPoint[]; // local-time hours of tomorrow, 00..23
+}
+
+/** Local hour and YYYY-MM-DD in the user's timezone. */
+function localHourDate(tz: string | null): { hour: number; date: string } {
+  const d = new Date();
+  try {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: tz || "UTC", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "numeric", hour12: false,
+    }).formatToParts(d);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+    return { hour: Number(get("hour")) % 24, date: `${get("year")}-${get("month")}-${get("day")}` };
+  } catch {
+    return { hour: d.getUTCHours(), date: d.toISOString().slice(0, 10) };
+  }
+}
+
+async function fetchTomorrow(lat: number, lon: number): Promise<TomorrowForecast | null> {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+      `&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,` +
+      `precipitation,wind_speed_10m,wind_gusts_10m,uv_index,weather_code` +
+      `&wind_speed_unit=ms&timezone=auto&forecast_days=2`;
+    const ctrl = AbortSignal.timeout(8000);
+    const res = await fetch(url, { signal: ctrl });
+    if (!res.ok) return null;
+    const j = await res.json();
+    const h = j?.hourly;
+    if (!h?.time?.length) return null;
+    const times: string[] = h.time;
+    const date = times[times.length - 1].slice(0, 10);
+    const hours: HourlyPoint[] = [];
+    times.forEach((t, i) => {
+      if (!t.startsWith(date)) return;
+      hours.push({
+        time: t,
+        temperature: h.temperature_2m?.[i] ?? null,
+        apparentTemperature: h.apparent_temperature?.[i] ?? null,
+        humidity: h.relative_humidity_2m?.[i] ?? null,
+        precipProbability: h.precipitation_probability?.[i] ?? null,
+        precipMm: h.precipitation?.[i] ?? null,
+        windSpeed: h.wind_speed_10m?.[i] ?? null,
+        windGusts: h.wind_gusts_10m?.[i] ?? null,
+        uvIndex: h.uv_index?.[i] ?? null,
+        weatherCode: h.weather_code?.[i] ?? null,
+      });
+    });
+    return hours.length ? { date, hours } : null;
+  } catch {
+    return null;
+  }
+}
+
+const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+const maxOf = (xs: number[]) => (xs.length ? Math.max(...xs) : null);
+const hourOf = (t: string) => Number(t.slice(11, 13));
+
+function feelWord(c: number): string {
+  if (c < 0) return "freezing";
+  if (c < 8) return "cold";
+  if (c < 14) return "cool";
+  if (c < 20) return "mild";
+  if (c < 26) return "warm";
+  if (c < 33) return "hot";
+  return "very hot";
+}
+
+/** Beaufort wording from sustained wind in m/s. */
+function beaufort(ms: number): string {
+  const scale: Array<[number, string]> = [
+    [0.5, "calm winds"], [1.6, "light air"], [3.4, "a light breeze"], [5.5, "a gentle breeze"],
+    [8.0, "a moderate breeze"], [10.8, "a fresh breeze"], [13.9, "a strong breeze"],
+    [17.2, "near-gale winds"], [20.8, "gale-force winds"], [24.5, "strong gale-force winds"],
+    [28.5, "storm-force winds"], [32.7, "violent storm-force winds"],
+  ];
+  for (const [lim, w] of scale) if (ms < lim) return w;
+  return "hurricane-force winds";
+}
+
+function uvWord(uv: number): string {
+  if (uv < 3) return "low UV";
+  if (uv < 6) return "moderate UV";
+  if (uv < 8) return "high UV";
+  if (uv < 11) return "very high UV";
+  return "extreme UV";
+}
+
+function rainPhrase(prob: number, maxRate: number): string {
+  if (prob < 20 || maxRate < 0.1) return "no rain expected";
+  const chance = prob < 40 ? "a low" : prob < 70 ? "a medium" : "a high";
+  const kind = maxRate < 2.5 ? "light" : maxRate < 7.6 ? "mild" : maxRate < 30 ? "heavy" : "torrential";
+  return `${chance} chance of ${kind} rain`;
+}
+
+function buildRecap(fc: TomorrowForecast, acts: Activity[]): { body: string } {
+  const num = (v: number | null): v is number => v != null && Number.isFinite(v);
+  const feelIn = (lo: number, hi: number) =>
+    avg(fc.hours.filter((h) => hourOf(h.time) >= lo && hourOf(h.time) < hi)
+      .map((h) => h.apparentTemperature).filter(num));
+  const morning = feelIn(6, 12);
+  const afternoon = feelIn(12, 18);
+  let feel = "";
+  if (morning != null && afternoon != null) {
+    const m = feelWord(morning), a = feelWord(afternoon);
+    feel = m === a ? `a ${m} day` : `a ${m} morning turning into a ${a} afternoon`;
+  } else if (morning ?? afternoon) {
+    feel = `a ${feelWord((morning ?? afternoon)!)} day`;
+  }
+  const wind = maxOf(fc.hours.map((h) => h.windSpeed).filter(num));
+  const uv = maxOf(fc.hours.map((h) => h.uvIndex).filter(num));
+  const prob = maxOf(fc.hours.map((h) => h.precipProbability).filter(num)) ?? 0;
+  const rate = maxOf(fc.hours.map((h) => h.precipMm).filter(num)) ?? 0;
+
+  const bits = [feel, wind != null ? beaufort(wind) : "", uv != null ? uvWord(uv) : "", rainPhrase(prob, rate)]
+    .filter(Boolean);
+  let body = bits.length
+    ? bits.slice(0, -1).join(", ") + (bits.length > 1 ? ", and " : "") + bits[bits.length - 1] + "."
+    : "Forecast unavailable.";
+  body = body.charAt(0).toUpperCase() + body.slice(1);
+
+  if (acts.length) {
+    const daytime = fc.hours.filter((h) => hourOf(h.time) >= 5 && hourOf(h.time) <= 21);
+    const lines: string[] = [];
+    for (const act of acts) {
+      const res = computeComfort(act, {
+        hourly: daytime, airQuality: [], activeWarnings: [], spcRisk: "NONE", fireRisk: "NONE", wrs: 0,
+      });
+      const s = res.series;
+      let bestI = -1, bestScore = -1;
+      for (let i = 0; i + 1 < s.length; i++) {
+        const v = (s[i].score + s[i + 1].score) / 2;
+        if (v > bestScore) { bestScore = v; bestI = i; }
+      }
+      if (bestI < 0) continue;
+      const start = hourOf(daytime[bestI].time);
+      const pad = (n: number) => String(n % 24).padStart(2, "0");
+      lines.push(`${ACTIVITY_LABEL[act]} ${pad(start)}:00-${pad(start + 2)}:00 (${Math.round(bestScore)})`);
+    }
+    if (lines.length) body += `\nBest times: ${lines.join(", ")}.`;
+  }
+  return { body };
+}
+
 // ─── entrypoint ─────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -168,6 +322,7 @@ Deno.serve(async (req) => {
 
     const geoCache = new Map<string, { lat: number; lon: number } | null>();
     const wrsCache = new Map<string, number | null>();
+    const forecastCache = new Map<string, TomorrowForecast | null>();
     let delivered = 0;
 
     // Resolve every subscriber's hometown point up front, so alert geometry
@@ -374,6 +529,35 @@ Deno.serve(async (req) => {
         }
       }
 
+      // ── 2f. Next-day weather recap (once per local day at chosen hour) ──
+      let recapDate: string | null = state?.last_recap_date ?? null;
+      if (pref.daily_recap) {
+        const { hour, date } = localHourDate(pref.timezone);
+        const target = pref.recap_hour ?? 7;
+        // 2-hour grace window tolerates a missed scheduler run.
+        if (hour >= target && hour < target + 2 && recapDate !== date) {
+          const fkey = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`;
+          if (!forecastCache.has(fkey)) forecastCache.set(fkey, await fetchTomorrow(pt.lat, pt.lon));
+          const fc = forecastCache.get(fkey);
+          if (fc) {
+            const acts = pref.recap_exercise
+              ? ((pref.recap_activities ?? []) as string[]).filter((a): a is Activity =>
+                ACTIVITIES.includes(a as Activity))
+              : [];
+            const { body } = buildRecap(fc, acts);
+            pending.push({
+              title: `Tomorrow in ${cityLabel}`,
+              body,
+              category: "daily_recap",
+              severity: null,
+              dedupe: `recap:${date}`,
+              payload: { date: fc.date },
+            });
+            recapDate = date;
+          }
+        }
+      }
+
       // ── 3. Persist the new snapshot regardless of delivery ──────────────
       const wrsChanged = wrs != null;
       const notifiedWrs = pending.some((p) => p.category === "wrs_swing");
@@ -390,6 +574,7 @@ Deno.serve(async (req) => {
         last_chat_at: freshChat.length
           ? freshChat[freshChat.length - 1].created_at
           : state?.last_chat_at ?? new Date(now - CHAT_LOOKBACK_MS).toISOString(),
+        last_recap_date: recapDate,
         updated_at: new Date().toISOString(),
       });
 
