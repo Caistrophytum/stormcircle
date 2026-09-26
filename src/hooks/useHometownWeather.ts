@@ -12,6 +12,8 @@ export interface HometownWeather {
   pressureHpa: number | null;
   /** Change in MSLP over the past 3 hours (hPa), null when unavailable. */
   pressureTrend3hHpa: number | null;
+  /** Current US AQI at the hometown, null when unavailable. */
+  aqiUs: number | null;
   loading: boolean;
   error: boolean;
 }
@@ -24,6 +26,7 @@ const EMPTY: HometownWeather = {
   uvIndex: null,
   pressureHpa: null,
   pressureTrend3hHpa: null,
+  aqiUs: null,
   loading: false,
   error: false,
 };
