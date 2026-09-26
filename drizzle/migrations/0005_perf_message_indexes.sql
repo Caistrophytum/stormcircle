@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS messages_user_created_idx ON public.messages (user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS messages_signature_idx ON public.messages (public.message_signature(content));
