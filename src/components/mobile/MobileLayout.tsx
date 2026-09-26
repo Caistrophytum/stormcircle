@@ -42,7 +42,7 @@ export default function MobileLayout() {
           overflow: "hidden",
           background: "#050505",
           color: "#e8e8e8",
-          fontFamily: "'JetBrains Mono', monospace",
+          fontFamily: "var(--font-sans)",
           position: "relative",
         }}
       >

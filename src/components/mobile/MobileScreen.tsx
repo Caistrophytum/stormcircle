@@ -37,7 +37,7 @@ export default function MobileScreen({ screen, onClose }: Props) {
         zIndex: 1000,
         display: "flex",
         flexDirection: "column",
-        fontFamily: "'JetBrains Mono', monospace",
+        fontFamily: "var(--font-sans)",
         color: "#e8e8e8",
       }}
     >
