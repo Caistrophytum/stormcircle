@@ -552,7 +552,7 @@ Deno.serve(async (req) => {
               : [];
             const { body } = buildRecap(fc, acts);
             pending.push({
-              title: `Tomorrow, ${shortDate(fc.date)} in ${cityLabel}`,
+              title: `Today, ${shortDate(fc.date)} in ${cityLabel}`,
               body,
               category: "daily_recap",
               severity: null,
