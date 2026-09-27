@@ -167,6 +167,12 @@ async function fetchTomorrow(lat: number, lon: number): Promise<TomorrowForecast
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 const maxOf = (xs: number[]) => (xs.length ? Math.max(...xs) : null);
 const hourOf = (t: string) => Number(t.slice(11, 13));
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+/** "2026-09-28" -> "Sep 28" (the string is already local, so no timezone parsing). */
+const shortDate = (iso: string) => {
+  const m = Number(iso.slice(5, 7)), d = Number(iso.slice(8, 10));
+  return `${MONTHS[(m || 1) - 1]} ${d || 1}`;
+};
 
 function feelWord(c: number): string {
   if (c < 0) return "freezing";
@@ -546,7 +552,7 @@ Deno.serve(async (req) => {
               : [];
             const { body } = buildRecap(fc, acts);
             pending.push({
-              title: `Tomorrow in ${cityLabel}`,
+              title: `Tomorrow, ${shortDate(fc.date)} in ${cityLabel}`,
               body,
               category: "daily_recap",
               severity: null,
