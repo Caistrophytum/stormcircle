@@ -101,7 +101,7 @@ function inQuietHours(tz: string | null, start: number | null, end: number | nul
   return start <= end ? hour >= start && hour < end : hour >= start || hour < end;
 }
 
-// ─── next-day recap ─────────────────────────────────────────────────────────
+// ─── same-day recap ─────────────────────────────────────────────────────────
 
 const ACTIVITIES: Activity[] = ["walk", "run", "bike", "hike", "calisthenics"];
 const ACTIVITY_LABEL: Record<Activity, string> = {
@@ -110,7 +110,7 @@ const ACTIVITY_LABEL: Record<Activity, string> = {
 
 interface TomorrowForecast {
   date: string;
-  hours: HourlyPoint[]; // local-time hours of tomorrow, 00..23
+  hours: HourlyPoint[]; // local-time hours of the recap day, 00..23
 }
 
 /** Local hour and YYYY-MM-DD in the user's timezone. */
@@ -535,7 +535,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── 2f. Next-day weather recap (once per local day at chosen hour) ──
+      // ── 2f. Same-day weather recap (once per local day at chosen hour) ──
       let recapDate: string | null = state?.last_recap_date ?? null;
       if (pref.daily_recap) {
         const { hour, date } = localHourDate(pref.timezone);
