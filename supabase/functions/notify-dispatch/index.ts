@@ -128,12 +128,12 @@ function localHourDate(tz: string | null): { hour: number; date: string } {
   }
 }
 
-async function fetchTomorrow(lat: number, lon: number): Promise<TomorrowForecast | null> {
+async function fetchToday(lat: number, lon: number): Promise<TomorrowForecast | null> {
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
       `&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,` +
       `precipitation,wind_speed_10m,wind_gusts_10m,uv_index,weather_code` +
-      `&wind_speed_unit=ms&timezone=auto&forecast_days=2`;
+      `&wind_speed_unit=ms&timezone=auto&forecast_days=1`;
     const ctrl = AbortSignal.timeout(8000);
     const res = await fetch(url, { signal: ctrl });
     if (!res.ok) return null;
@@ -141,7 +141,7 @@ async function fetchTomorrow(lat: number, lon: number): Promise<TomorrowForecast
     const h = j?.hourly;
     if (!h?.time?.length) return null;
     const times: string[] = h.time;
-    const date = times[times.length - 1].slice(0, 10);
+    const date = times[0].slice(0, 10);
     const hours: HourlyPoint[] = [];
     times.forEach((t, i) => {
       if (!t.startsWith(date)) return;
@@ -543,7 +543,7 @@ Deno.serve(async (req) => {
         // 2-hour grace window tolerates a missed scheduler run.
         if (hour >= target && hour < target + 2 && recapDate !== date) {
           const fkey = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`;
-          if (!forecastCache.has(fkey)) forecastCache.set(fkey, await fetchTomorrow(pt.lat, pt.lon));
+          if (!forecastCache.has(fkey)) forecastCache.set(fkey, await fetchToday(pt.lat, pt.lon));
           const fc = forecastCache.get(fkey);
           if (fc) {
             const acts = pref.recap_exercise
