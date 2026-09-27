@@ -91,7 +91,8 @@ const faqs: FaqItem[] = [
     question: "Is there a StormCircle Zello channel?",
     answer: (
       <>
-        Yes — you can join the StormCircle channel on Zello for live voice storm spotting and community coordination during active weather. Visit{" "}
+        Yes - you can join the StormCircle channel on Zello for live voice storm spotting and community coordination
+        during active weather. Visit{" "}
         <a
           href="https://Zello.com/stormcirclezello"
           target="_blank"
