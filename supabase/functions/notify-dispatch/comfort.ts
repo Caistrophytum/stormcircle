@@ -325,8 +325,11 @@ function scoreHour(
 }
 
 // ── Public entry ────────────────────────────────────────────────────────
-function computeComfort(activity: Activity, ctx: ComfortContext): ActivityResult {
-  const series: HourResult[] = ctx.hourly.slice(0, 7).map((h) => {
+/** Score an activity. `maxHours` limits how many of ctx.hourly are scored
+ *  (default 7 = the "now + 6" UI window); callers with a longer series, such
+ *  as the daily recap's full daytime span, pass a larger value. */
+export function computeComfort(activity: Activity, ctx: ComfortContext, maxHours = 7): ActivityResult {
+  const series: HourResult[] = ctx.hourly.slice(0, maxHours).map((h) => {
     const idx = ctx.airQuality.findIndex((a) => a.time === h.time);
     const aq = idx >= 0 ? ctx.airQuality[idx].usAqi : (ctx.airQuality[0]?.usAqi ?? null);
     return scoreHour(h, aq, activity, ctx);
