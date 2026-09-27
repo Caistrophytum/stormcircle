@@ -540,8 +540,11 @@ Deno.serve(async (req) => {
       if (pref.daily_recap) {
         const { hour, date } = localHourDate(pref.timezone);
         const target = pref.recap_hour ?? 7;
-        // 2-hour grace window tolerates a missed scheduler run.
-        if (hour >= target && hour < target + 2 && recapDate !== date) {
+        // Send at the first run at/after the chosen hour, unless quiet hours
+        // are active. Quiet hours postpone rather than consume the recap, so
+        // it still goes out once the quiet window ends.
+        const quietNow = inQuietHours(pref.timezone, pref.quiet_start, pref.quiet_end);
+        if (hour >= target && !quietNow && recapDate !== date) {
           const fkey = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`;
           if (!forecastCache.has(fkey)) forecastCache.set(fkey, await fetchToday(pt.lat, pt.lon));
           const fc = forecastCache.get(fkey);
