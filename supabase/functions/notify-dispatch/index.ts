@@ -237,7 +237,7 @@ function buildRecap(fc: TomorrowForecast, acts: Activity[]): { body: string } {
     for (const act of acts) {
       const res = computeComfort(act, {
         hourly: daytime, airQuality: [], activeWarnings: [], spcRisk: "NONE", fireRisk: "NONE", wrs: 0,
-      });
+      }, daytime.length);
       const s = res.series;
       let bestI = -1, bestScore = -1;
       for (let i = 0; i + 1 < s.length; i++) {
