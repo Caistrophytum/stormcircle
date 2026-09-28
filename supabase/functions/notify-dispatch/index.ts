@@ -14,6 +14,17 @@ import { fetchSounding, wrsFromSounding } from "../_shared/wrs-server.ts";
 import { sendPush, type VapidKeys } from "../_shared/webpush.ts";
 import { computeComfort, type Activity, type HourlyPoint } from "./comfort.ts";
 
+// Every outbound request (external APIs, database, push services) gets a hard
+// timeout so one slow upstream cannot hold the worker until the runtime kills it.
+const _fetch = globalThis.fetch;
+globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) =>
+  _fetch(input, { signal: AbortSignal.timeout(10_000), ...init })) as typeof fetch;
+
+// Stop starting new users after this much wall time; unprocessed users keep
+// their previous state and are picked up on the next 5-minute run.
+const RUN_BUDGET_MS = 90_000;
+const USER_CONCURRENCY = 6;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
@@ -211,19 +222,22 @@ function rainPhrase(prob: number, maxRate: number): string {
   return `${chance} chance of ${kind} rain`;
 }
 
-function buildRecap(fc: TomorrowForecast, acts: Activity[]): { body: string } {
+function buildRecap(fc: TomorrowForecast, acts: Activity[], fromHour: number): { body: string } {
   const num = (v: number | null): v is number => v != null && Number.isFinite(v);
   const feelIn = (lo: number, hi: number) =>
     avg(fc.hours.filter((h) => hourOf(h.time) >= lo && hourOf(h.time) < hi)
       .map((h) => h.apparentTemperature).filter(num));
-  const morning = feelIn(6, 12);
-  const afternoon = feelIn(12, 18);
+  // Only describe and suggest hours that are still ahead of the send time.
+  const morning = fromHour < 11 ? feelIn(Math.max(6, fromHour), 12) : null;
+  const afternoon = feelIn(Math.max(12, fromHour), 18);
   let feel = "";
   if (morning != null && afternoon != null) {
     const m = feelWord(morning), a = feelWord(afternoon);
     feel = m === a ? `a ${m} day` : `a ${m} morning turning into a ${a} afternoon`;
-  } else if (morning ?? afternoon) {
-    feel = `a ${feelWord((morning ?? afternoon)!)} day`;
+  } else if (afternoon != null) {
+    feel = `a ${feelWord(afternoon)} afternoon`;
+  } else if (morning != null) {
+    feel = `a ${feelWord(morning)} day`;
   }
   const wind = maxOf(fc.hours.map((h) => h.windSpeed).filter(num));
   const uv = maxOf(fc.hours.map((h) => h.uvIndex).filter(num));
@@ -238,7 +252,7 @@ function buildRecap(fc: TomorrowForecast, acts: Activity[]): { body: string } {
   body = body.charAt(0).toUpperCase() + body.slice(1);
 
   if (acts.length) {
-    const daytime = fc.hours.filter((h) => hourOf(h.time) >= 5 && hourOf(h.time) <= 21);
+    const daytime = fc.hours.filter((h) => hourOf(h.time) >= Math.max(5, fromHour) && hourOf(h.time) <= 21);
     const lines: string[] = [];
     for (const act of acts) {
       const res = computeComfort(act, {
@@ -387,13 +401,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    for (const pref of prefs) {
+    const processUser = async (pref: (typeof prefs)[number]): Promise<void> => {
       const profile = profileById.get(pref.user_id);
       const location = profile?.location ?? null;
-      if (!location) continue;
+      if (!location) return;
 
       const pt = points.get(pref.user_id);
-      if (!pt) continue;
+      if (!pt) return;
 
       const state = stateById.get(pref.user_id) ?? null;
       const pending: Pending[] = [];
@@ -553,7 +567,7 @@ Deno.serve(async (req) => {
               ? ((pref.recap_activities ?? []) as string[]).filter((a): a is Activity =>
                 ACTIVITIES.includes(a as Activity))
               : [];
-            const { body } = buildRecap(fc, acts);
+            const { body } = buildRecap(fc, acts, hour + 1);
             pending.push({
               title: `Today, ${shortDate(fc.date)} in ${cityLabel}`,
               body,
@@ -567,30 +581,35 @@ Deno.serve(async (req) => {
         }
       }
 
-      // ── 3. Persist the new snapshot regardless of delivery ──────────────
+      // ── 3. Persist the snapshot only AFTER delivery, so a run killed
+      //       mid-way never marks alerts as seen without notifying.
       const wrsChanged = wrs != null;
       const notifiedWrs = pending.some((p) => p.category === "wrs_swing");
-      await supabase.from("notification_state").upsert({
-        user_id: pref.user_id,
-        last_wrs: wrsChanged ? wrs : state?.last_wrs ?? null,
-        last_wrs_at: wrsChanged ? new Date().toISOString() : state?.last_wrs_at ?? null,
-        last_wrs_notified_at: notifiedWrs
-          ? new Date().toISOString()
-          : state?.last_wrs_notified_at ?? null,
-        last_spc: spcLevel,
-        last_fire: fireLevel,
-        active_alerts: nextAlerts,
-        last_chat_at: freshChat.length
-          ? freshChat[freshChat.length - 1].created_at
-          : state?.last_chat_at ?? new Date(now - CHAT_LOOKBACK_MS).toISOString(),
-        last_recap_date: recapDate,
-        updated_at: new Date().toISOString(),
-      });
+      const persist = async () => {
+        const { error: stErr } = await supabase.from("notification_state").upsert({
+          user_id: pref.user_id,
+          last_wrs: wrsChanged ? wrs : state?.last_wrs ?? null,
+          last_wrs_at: wrsChanged ? new Date().toISOString() : state?.last_wrs_at ?? null,
+          last_wrs_notified_at: notifiedWrs
+            ? new Date().toISOString()
+            : state?.last_wrs_notified_at ?? null,
+          last_spc: spcLevel,
+          last_fire: fireLevel,
+          active_alerts: nextAlerts,
+          last_chat_at: freshChat.length
+            ? freshChat[freshChat.length - 1].created_at
+            : state?.last_chat_at ?? new Date(now - CHAT_LOOKBACK_MS).toISOString(),
+          last_recap_date: recapDate,
+          updated_at: new Date().toISOString(),
+        });
+        if (stErr) console.error("[notify-dispatch] state save failed", stErr.message);
 
-      if (!pending.length) continue;
+      };
+
+      if (!pending.length) return persist();
 
       // Quiet hours suppress delivery (state is still tracked above).
-      if (inQuietHours(pref.timezone, pref.quiet_start, pref.quiet_end)) continue;
+      if (inQuietHours(pref.timezone, pref.quiet_start, pref.quiet_end)) return persist();
 
       // Hourly cap.
       const { count } = await supabase
@@ -599,7 +618,7 @@ Deno.serve(async (req) => {
         .eq("user_id", pref.user_id)
         .gte("created_at", new Date(now - 60 * 60 * 1000).toISOString());
       let budget = Math.max(0, MAX_PER_HOUR - (count ?? 0));
-      if (!budget) continue;
+      if (!budget) return persist();
 
       const { data: subs } = await supabase
         .from("push_subscriptions")
@@ -647,7 +666,26 @@ Deno.serve(async (req) => {
           }
         }
       }
-    }
+      await persist();
+    };
+
+    // Bounded concurrency plus a wall-clock budget keep the run well inside
+    // the runtime limit as the subscriber list grows.
+    const started = Date.now();
+    let cursor = 0, skipped = 0;
+    const worker = async () => {
+      while (cursor < prefs.length) {
+        const pref = prefs[cursor++];
+        if (Date.now() - started > RUN_BUDGET_MS) { skipped++; continue; }
+        try {
+          await processUser(pref);
+        } catch (e) {
+          console.error("[notify-dispatch] user failed", pref.user_id, String(e));
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: USER_CONCURRENCY }, worker));
+    if (skipped) console.warn(`[notify-dispatch] budget hit, ${skipped} users deferred`);
 
     return new Response(JSON.stringify({ ok: true, users: prefs.length, delivered }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
