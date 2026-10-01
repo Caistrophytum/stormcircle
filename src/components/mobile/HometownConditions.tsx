@@ -290,16 +290,27 @@ export default function HometownConditions({ cityName, weather, signedIn }: Prop
             weather.windSpeedKmh != null && !weather.loading ? beaufortDescriptor(weather.windSpeedKmh) : null,
           )}
 
-          {/* UV */}
+          {/* UV // Cloud cover */}
           {row(
             "uv",
-            "UV Index",
+            "UV // Cloud",
             weather.loading ? (
               <span style={{ color: "#888" }}>...</span>
-            ) : weather.uvIndex == null ? (
+            ) : weather.uvIndex == null && weather.cloudCoverPct == null ? (
               <span style={{ color: "#ff6b6b" }}>ERR</span>
             ) : (
-              <span style={{ color: AMBER, fontWeight: 700 }}>{Math.round(weather.uvIndex)}</span>
+              <span style={{ display: "flex", alignItems: "baseline", whiteSpace: "nowrap" }}>
+                <span style={{ color: weather.uvIndex == null ? "#ff6b6b" : AMBER, fontWeight: 700 }}>
+                  {weather.uvIndex == null ? "ERR" : Math.round(weather.uvIndex)}
+                </span>
+                <span style={{ color: AMBER_DIM, fontStyle: "italic", margin: "0 4px" }}>/</span>
+                <span style={{ color: weather.cloudCoverPct == null ? "#ff6b6b" : AMBER, fontWeight: 700 }}>
+                  {weather.cloudCoverPct == null ? "ERR" : Math.round(weather.cloudCoverPct)}
+                  {weather.cloudCoverPct != null && (
+                    <span style={{ fontSize: "9px", opacity: 0.6, marginLeft: "2px" }}>%</span>
+                  )}
+                </span>
+              </span>
             ),
             weather.uvIndex != null && !weather.loading ? uvDescriptor(weather.uvIndex) : null,
           )}
