@@ -39,7 +39,7 @@ export function useExerciseComfortData(
     const wxUrl =
       `https://api.open-meteo.com/v1/forecast` +
       `?latitude=${lat}&longitude=${lon}` +
-      `&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,uv_index,weather_code` +
+      `&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,uv_index,weather_code,cloud_cover` +
       `&wind_speed_unit=ms&forecast_days=2&timezone=UTC`;
     const aqUrl =
       `https://air-quality-api.open-meteo.com/v1/air-quality` +
@@ -93,6 +93,7 @@ export function useExerciseComfortData(
             windSpeed: pick(h.wind_speed_10m, j),
             windGusts: pick(h.wind_gusts_10m, j),
             uvIndex: pick(h.uv_index, j),
+            cloudCover: pick(h.cloud_cover, j),
             weatherCode: pick(h.weather_code, j),
           });
         }

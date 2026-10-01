@@ -8,6 +8,8 @@ export interface HometownWeather {
   apparentTemperatureC: number | null;
   windSpeedKmh: number | null;
   uvIndex: number | null;
+  /** Current total cloud cover (%), null when unavailable. */
+  cloudCoverPct: number | null;
   /** Mean sea level pressure (hPa / mb). */
   pressureHpa: number | null;
   /** Change in MSLP over the past 3 hours (hPa), null when unavailable. */
@@ -24,6 +26,7 @@ const EMPTY: HometownWeather = {
   apparentTemperatureC: null,
   windSpeedKmh: null,
   uvIndex: null,
+  cloudCoverPct: null,
   pressureHpa: null,
   pressureTrend3hHpa: null,
   aqiUs: null,
@@ -61,7 +64,7 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
     const url =
       `https://api.open-meteo.com/v1/forecast` +
       `?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,dewpoint_2m,apparent_temperature,wind_speed_10m,pressure_msl` +
+      `&current=temperature_2m,dewpoint_2m,apparent_temperature,wind_speed_10m,pressure_msl,cloud_cover` +
       `&hourly=uv_index,pressure_msl&past_days=1` +
       `&timezone=UTC`;
 
@@ -121,6 +124,7 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
             typeof c.apparent_temperature === "number" ? c.apparent_temperature : null,
           windSpeedKmh: typeof c.wind_speed_10m === "number" ? c.wind_speed_10m : null,
           uvIndex: typeof uvIndex === "number" ? uvIndex : null,
+          cloudCoverPct: typeof c.cloud_cover === "number" ? c.cloud_cover : null,
           pressureHpa,
           pressureTrend3hHpa,
           aqiUs,
