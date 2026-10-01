@@ -250,13 +250,21 @@ const WARNING_CATEGORIES: { re: RegExp; key: HazardKey }[] = [
 // ── Readable current-value strings for the UI ───────────────────────────
 function details(h: HourlyPoint, aqi: number | null, unitSystem: UnitSystem): Record<HazardKey, string> {
   const rf = h.apparentTemperature;
-  const wind = Math.max(h.windSpeed ?? 0, h.windGusts ?? h.windSpeed ?? 0) * 3.6;
+  // Show sustained wind (matches the weather card); gusts listed separately.
+  // Scoring still uses gusts via windSeverity.
   const shownTemp = displayTemp(rf, unitSystem);
-  const shownWind = displayWindSpeed(wind, unitSystem);
+  const shownWind = displayWindSpeed(h.windSpeed == null ? null : h.windSpeed * 3.6, unitSystem);
+  const shownGust = displayWindSpeed(h.windGusts == null ? null : h.windGusts * 3.6, unitSystem);
   const shownRain = displayPrecipitationMm(h.precipMm ?? 0, unitSystem);
   return {
     temp: shownTemp == null ? "no data" : `${Math.round(shownTemp.value)} ${shownTemp.unit} real feel`,
-    wind: shownWind == null ? "no data" : `${Math.round(shownWind.value)} ${shownWind.unit}`,
+    wind:
+      shownWind == null
+        ? "no data"
+        : `${Math.round(shownWind.value)} ${shownWind.unit}` +
+          (shownGust && Math.round(shownGust.value) > Math.round(shownWind.value)
+            ? `, gusts ${Math.round(shownGust.value)}`
+            : ""),
     uv: h.uvIndex == null ? "no data" : `UV ${h.uvIndex.toFixed(1)}`,
     aq: aqi == null ? "no data" : `AQI ${Math.round(aqi)}`,
     rain: shownRain == null ? "no data" : `${shownRain.value.toFixed(unitSystem === "metric" ? 1 : 2)} ${shownRain.unit}/h`,
