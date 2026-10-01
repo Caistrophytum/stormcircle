@@ -89,7 +89,12 @@ const RadarOverlayLayer = forwardRef<unknown, RadarOverlayLayerProps>(function R
       tms: false,
       detectRetina: false,
       minZoom: 1,
-      maxZoom: 20,
+      // EU composite (RainViewer) natively tops out at z7; beyond ~z12 the
+      // upscaled tile becomes a faint blur that visually "vanishes" into the
+      // dark basemap. Cap the EU layer at 12 (RainViewer's own reference
+      // value) so the imagery stays legible at every zoom instead of fading
+      // out. NEXRAD keeps its full 0-20 range.
+      maxZoom: euMode ? 12 : 20,
       ...(euMode ? { maxNativeZoom: 7 } : {}),
       zIndex: 650,
       attribution: euMode
