@@ -45,6 +45,8 @@ export interface HourlyPoint {
   windGusts: number | null;
   /** dimensionless */
   uvIndex: number | null;
+  /** Total cloud cover (%) for the hour; scales UV impact down. */
+  cloudCover?: number | null;
   /** WMO weather code */
   weatherCode: number | null;
 }
@@ -265,7 +267,7 @@ function details(h: HourlyPoint, aqi: number | null, unitSystem: UnitSystem): Re
           (shownGust && Math.round(shownGust.value) > Math.round(shownWind.value)
             ? `, gusts ${Math.round(shownGust.value)}`
             : ""),
-    uv: h.uvIndex == null ? "no data" : `UV ${h.uvIndex.toFixed(1)}`,
+    uv: h.uvIndex == null ? "no data" : `UV ${h.uvIndex.toFixed(1)}` + (h.cloudCover != null ? `, ${Math.round(h.cloudCover)}% clouds` : ""),
     aq: aqi == null ? "no data" : `AQI ${Math.round(aqi)}`,
     rain: shownRain == null ? "no data" : `${shownRain.value.toFixed(unitSystem === "metric" ? 1 : 2)} ${shownRain.unit}/h`,
   };
@@ -285,7 +287,8 @@ function scoreHour(
   const severity: Record<HazardKey, number> = {
     temp: tempSeverity(h.apparentTemperature),
     wind: windSeverity(h.windSpeed, h.windGusts),
-    uv: uvSeverity(h.uvIndex),
+    // Cloud cover slashes UV impact proportionally (50% cover -> half the UV hazard).
+    uv: uvSeverity(h.uvIndex) * (1 - clamp(h.cloudCover ?? 0, 0, 100) / 100),
     aq: aqSeverity(aqi),
     rain: rainSeverity(h.precipMm),
   };
