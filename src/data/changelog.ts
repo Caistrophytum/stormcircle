@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-10-01 17z",
+    tag: "NEW",
+    title: "Support Me?",
+    body: "Added a new PayPal-powered support option in the Q&A/FAQ page, in order to keep StormCircle running without any external obligations, plus a few additional small fixes. Cheers!",
+  },
+  {
     date: "2026-09-26 20z",
     tag: "IMPROVED",
     title: "UI 2.0 - Mobile",
