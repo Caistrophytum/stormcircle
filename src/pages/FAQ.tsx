@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, HelpCircle } from "lucide-react";
+import { ArrowLeft, Plus, HelpCircle, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type FaqItem = {
@@ -109,10 +109,21 @@ const faqs: FaqItem[] = [
   },
 ];
 
+const PAYPAL_BASE = "https://paypal.me/OmriHazut";
+const PRESET_AMOUNTS = [2, 5, 10, 25];
+
 export default function FAQ({ hideBackButton = false }: { hideBackButton?: boolean } = {}) {
   const navigate = useNavigate();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [customAmount, setCustomAmount] = useState("");
   const toggle = (i: number) => setOpenIndex(openIndex === i ? null : i);
+
+  // Custom amount: accept "7" or "7,50"; clamp to a sane PayPal.me range.
+  const parsedCustom = parseFloat(customAmount.replace(",", "."));
+  const customValid = Number.isFinite(parsedCustom) && parsedCustom >= 1 && parsedCustom <= 10000;
+  const customHref = customValid
+    ? `${PAYPAL_BASE}/${parsedCustom.toFixed(2).replace(/\.00$/, "")}`
+    : PAYPAL_BASE;
 
   return (
     <>
@@ -172,6 +183,56 @@ export default function FAQ({ hideBackButton = false }: { hideBackButton?: boole
             <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
               Everything you need to know about StormCircle - the weather social network connecting meteorologists and
               the public in real time.
+            </p>
+          </div>
+
+          {/* Support / donation block */}
+          <div className="glass-panel border-primary/40 p-6 mb-8">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-primary/30 bg-primary/10 text-primary rounded-sm mb-4">
+              <Heart className="size-3" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Support the Project</span>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+              Would you like to support the development of StormCircle, keeping it accessible and free for everybody
+              without ads or sponsors?
+            </p>
+            <div className="flex flex-wrap items-center gap-2.5">
+              {PRESET_AMOUNTS.map((amount) => (
+                <a
+                  key={amount}
+                  href={`${PAYPAL_BASE}/${amount}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 border border-primary/40 bg-primary/10 text-primary font-mono text-sm font-bold rounded-sm hover:bg-primary/20 hover:border-primary transition-all"
+                >
+                  ${amount}
+                </a>
+              ))}
+              <div className="flex items-stretch">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") window.open(customHref, "_blank", "noopener,noreferrer");
+                  }}
+                  placeholder="Custom"
+                  aria-label="Custom amount in USD"
+                  className="w-24 px-3 py-2.5 bg-card border border-primary/40 rounded-l-sm text-sm font-mono text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                />
+                <a
+                  href={customHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-4 border border-l-0 border-primary/40 bg-primary/10 text-primary font-mono text-sm font-bold rounded-r-sm hover:bg-primary/20 hover:border-primary transition-all"
+                >
+                  →
+                </a>
+              </div>
+            </div>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mt-3">
+              Secure donation via PayPal · amounts in USD
             </p>
           </div>
 
