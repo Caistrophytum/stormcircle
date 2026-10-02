@@ -26,4 +26,4 @@ All items below are implemented and verified.
 - [x] Indexes: messages(user_id, created_at) for rate limit; message_signature expression index for delete trigger
 
 ## Linked desktop panels
-- [x] Top 10 Hazards and chat exchange vertical space when either panel is minimized
+- [x] Minimizing Top 10 Hazards expands chat below its collapsed header

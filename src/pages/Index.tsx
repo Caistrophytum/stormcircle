@@ -46,7 +46,6 @@ const Index = () => {
                 <DesktopDock />
                 <FloatingChat
                   focus={desktopPanelFocus}
-                  onFocusChange={setDesktopPanelFocus}
                 />
               </div>
             </main>
