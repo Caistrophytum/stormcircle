@@ -24,3 +24,6 @@ All items below are implemented and verified.
 - [x] Crash boundary around the whole app + global unhandled-rejection guard
 - [x] Mobile chat box applies realtime payloads instead of re-querying per event
 - [x] Indexes: messages(user_id, created_at) for rate limit; message_signature expression index for delete trigger
+
+## Linked desktop panels
+- [x] Top 10 Hazards and chat exchange vertical space when either panel is minimized
