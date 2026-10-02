@@ -17,9 +17,10 @@ interface Props {
   overlayScale?: number;
   desktopPanelFocus?: DesktopPanelFocus;
   onDesktopPanelFocusChange?: (focus: DesktopPanelFocus) => void;
+  onHazardsReleasedHeightChange?: (px: number) => void;
 }
 
-const TacticalMap = forwardRef<HTMLElement, Props>(({ desktopPanelFocus = null, onDesktopPanelFocusChange }, ref) => {
+const TacticalMap = forwardRef<HTMLElement, Props>(({ desktopPanelFocus = null, onDesktopPanelFocusChange, onHazardsReleasedHeightChange }, ref) => {
   const { weatherCondition } = useWRSMetrics();
   const { appReady } = useStatusSlice();
   const [loadingTooLong, setLoadingTooLong] = useState(false);
@@ -80,6 +81,7 @@ const TacticalMap = forwardRef<HTMLElement, Props>(({ desktopPanelFocus = null, 
         <HazardTabs
           focus={desktopPanelFocus}
           onFocusChange={onDesktopPanelFocusChange}
+          onReleasedHeightChange={onHazardsReleasedHeightChange}
         />
       </div>
     </motion.section>

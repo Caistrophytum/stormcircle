@@ -13,6 +13,7 @@ export type DesktopPanelFocus = "hazards" | "chat" | null;
 
 const Index = () => {
   const [desktopPanelFocus, setDesktopPanelFocus] = useState<DesktopPanelFocus>(null);
+  const [hazardsReleasedPx, setHazardsReleasedPx] = useState(0);
 
   return (
     <>
@@ -38,6 +39,7 @@ const Index = () => {
                   overlayScale={1}
                   desktopPanelFocus={desktopPanelFocus}
                   onDesktopPanelFocusChange={setDesktopPanelFocus}
+                  onHazardsReleasedHeightChange={setHazardsReleasedPx}
                 />
               </Suspense>
 
@@ -46,6 +48,7 @@ const Index = () => {
                 <DesktopDock />
                 <FloatingChat
                   focus={desktopPanelFocus}
+                  releasedPx={hazardsReleasedPx}
                 />
               </div>
             </main>

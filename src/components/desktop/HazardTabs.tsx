@@ -8,7 +8,7 @@
  * (calc((100vw - 56px) / 3)). Each panel has its own collapse toggle and
  * each caps at 50dvh independently.
  */
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, ListOrdered, Bell, ChevronUp, ChevronDown } from "lucide-react";
 import EventInfoPanel from "@/components/EventInfoPanel";
@@ -28,14 +28,17 @@ function PanelShell({
   children,
   header,
   expanded = false,
+  shellRef,
 }: {
   accent: string;
   children: React.ReactNode;
   header: React.ReactNode;
   expanded?: boolean;
+  shellRef?: React.Ref<HTMLDivElement>;
 }) {
   return (
     <motion.div
+      ref={shellRef}
       initial={{ opacity: 0, y: -20, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ delay: 0.1, type: "spring", damping: 24 }}
@@ -127,18 +130,50 @@ export function DangerousPanel() {
 interface HazardTabsProps {
   focus?: DesktopPanelFocus;
   onFocusChange?: (focus: DesktopPanelFocus) => void;
+  /** Reports how many px of height this panel has given up while minimized. */
+  onReleasedHeightChange?: (px: number) => void;
 }
 
-export default function HazardTabs({ focus = null, onFocusChange }: HazardTabsProps) {
+export default function HazardTabs({ focus = null, onFocusChange, onReleasedHeightChange }: HazardTabsProps) {
   const [tab, setTab] = useState<TabId>("common");
   const collapsed = focus === "chat";
   const expanded = focus === "hazards";
   const active = TABS.find((t) => t.id === tab) ?? TABS[0];
 
+  // Track the panel's last normal (open) height so the chat can grow by
+  // exactly the space released, keeping the same gap as the open layout.
+  const shellRef = useRef<HTMLDivElement>(null);
+  const openHeightRef = useRef(0);
+  const collapsedRef = useRef(collapsed);
+  const expandedRef = useRef(expanded);
+  collapsedRef.current = collapsed;
+  expandedRef.current = expanded;
+  const reportRef = useRef(onReleasedHeightChange);
+  reportRef.current = onReleasedHeightChange;
+
+  useLayoutEffect(() => {
+    const el = shellRef.current;
+    if (!el) return;
+    const measure = () => {
+      const h = el.offsetHeight;
+      if (!collapsedRef.current) {
+        if (!expandedRef.current) openHeightRef.current = h;
+        reportRef.current?.(0);
+      } else {
+        reportRef.current?.(Math.max(0, openHeightRef.current - h));
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [collapsed, expanded]);
+
   return (
     <PanelShell
       accent={active.accent}
       expanded={expanded}
+      shellRef={shellRef}
       header={
         <div
           className="flex items-center gap-1 border-b p-2"
