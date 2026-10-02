@@ -12,6 +12,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, ListOrdered, Bell, ChevronUp, ChevronDown } from "lucide-react";
 import EventInfoPanel from "@/components/EventInfoPanel";
+import type { DesktopPanelFocus } from "@/pages/Index";
 
 type TabId = "common" | "new";
 
@@ -26,10 +27,12 @@ function PanelShell({
   accent,
   children,
   header,
+  expanded = false,
 }: {
   accent: string;
   children: React.ReactNode;
   header: React.ReactNode;
+  expanded?: boolean;
 }) {
   return (
     <motion.div
@@ -39,7 +42,8 @@ function PanelShell({
       className="pointer-events-auto flex flex-col overflow-hidden rounded-2xl"
       style={{
         width: "calc((100vw - 56px) / 3)",
-        maxHeight: "50dvh",
+        height: expanded ? "calc(100dvh - 104px)" : undefined,
+        maxHeight: expanded ? "calc(100dvh - 104px)" : "50dvh",
         background: "rgba(18,18,22,0.72)",
         backdropFilter: "blur(24px)",
         border: `1px solid rgba(${accent},0.35)`,
@@ -120,14 +124,21 @@ export function DangerousPanel() {
   );
 }
 
-export default function HazardTabs() {
+interface HazardTabsProps {
+  focus?: DesktopPanelFocus;
+  onFocusChange?: (focus: DesktopPanelFocus) => void;
+}
+
+export default function HazardTabs({ focus = null, onFocusChange }: HazardTabsProps) {
   const [tab, setTab] = useState<TabId>("common");
-  const [collapsed, setCollapsed] = useState(false);
-  const active = TABS.find((t) => t.id === tab)!;
+  const collapsed = focus === "chat";
+  const expanded = focus === "hazards";
+  const active = TABS.find((t) => t.id === tab) ?? TABS[0];
 
   return (
     <PanelShell
       accent={active.accent}
+      expanded={expanded}
       header={
         <div
           className="flex items-center gap-1 border-b p-2"
@@ -141,7 +152,7 @@ export default function HazardTabs() {
                   key={t.id}
                   onClick={() => {
                     setTab(t.id);
-                    setCollapsed(false);
+                    onFocusChange?.(null);
                   }}
                   className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-wider transition-all"
                   style={{
@@ -162,7 +173,7 @@ export default function HazardTabs() {
             })}
           </div>
           <button
-            onClick={() => setCollapsed((c) => !c)}
+            onClick={() => onFocusChange?.(collapsed ? null : "chat")}
             aria-label={collapsed ? "Expand hazards" : "Collapse hazards"}
             className="flex h-7 w-7 items-center justify-center rounded-md"
             style={{
@@ -189,7 +200,7 @@ export default function HazardTabs() {
             <div
               className="px-4 py-2 [&_.glass-panel]:!bg-transparent [&_.glass-panel]:!border-0 [&_.glass-panel]:!p-0 [&_.glass-panel]:!shadow-none"
               style={{
-                maxHeight: "calc(50dvh - 52px)",
+                maxHeight: expanded ? "calc(100dvh - 156px)" : "calc(50dvh - 52px)",
                 overflowY: "auto",
                 scrollbarWidth: "thin",
                 scrollbarColor: `rgba(${active.accent}, 0.35) transparent`,

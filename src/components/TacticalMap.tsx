@@ -4,6 +4,7 @@ import HazardTabs, { DangerousPanel } from "./desktop/HazardTabs";
 import { NewsBar } from "./desktop/NewsBar";
 import { useWRSMetrics, type WeatherCondition } from "@/hooks/useWRSMetrics";
 import { useStatusSlice } from "@/providers/DataProvider";
+import type { DesktopPanelFocus } from "@/pages/Index";
 
 const weatherBackgrounds: Record<WeatherCondition, string> = {
   sunny: new URL("../assets/weather-calm.jpg", import.meta.url).href,
@@ -14,9 +15,11 @@ const weatherBackgrounds: Record<WeatherCondition, string> = {
 
 interface Props {
   overlayScale?: number;
+  desktopPanelFocus?: DesktopPanelFocus;
+  onDesktopPanelFocusChange?: (focus: DesktopPanelFocus) => void;
 }
 
-const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
+const TacticalMap = forwardRef<HTMLElement, Props>(({ desktopPanelFocus = null, onDesktopPanelFocusChange }, ref) => {
   const { weatherCondition } = useWRSMetrics();
   const { appReady } = useStatusSlice();
   const [loadingTooLong, setLoadingTooLong] = useState(false);
@@ -74,7 +77,10 @@ const TacticalMap = forwardRef<HTMLElement, Props>((_props, ref) => {
       </div>
       <NewsBar />
       <div className="absolute top-3 right-3 z-10">
-        <HazardTabs />
+        <HazardTabs
+          focus={desktopPanelFocus}
+          onFocusChange={onDesktopPanelFocusChange}
+        />
       </div>
     </motion.section>
   );

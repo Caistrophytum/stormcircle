@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import StatusBar from "@/components/StatusBar";
 import DesktopDock from "@/components/desktop/DesktopDock";
@@ -9,7 +9,11 @@ import { RadarProvider } from "@/contexts/RadarContext";
 const TacticalMap = lazy(() => import("@/components/TacticalMap"));
 const MapFallback = () => <div className="w-full h-full bg-background" aria-hidden />;
 
+export type DesktopPanelFocus = "hazards" | "chat" | null;
+
 const Index = () => {
+  const [desktopPanelFocus, setDesktopPanelFocus] = useState<DesktopPanelFocus>(null);
+
   return (
     <>
       <Helmet>
@@ -30,13 +34,20 @@ const Index = () => {
             <StatusBar />
             <main className="relative flex flex-1 overflow-hidden">
               <Suspense fallback={<MapFallback />}>
-                <TacticalMap overlayScale={1} />
+                <TacticalMap
+                  overlayScale={1}
+                  desktopPanelFocus={desktopPanelFocus}
+                  onDesktopPanelFocusChange={setDesktopPanelFocus}
+                />
               </Suspense>
 
               {/* Bottom-right floating dock + chat */}
               <div className="pointer-events-none absolute bottom-4 right-4 z-30 flex items-end gap-3">
                 <DesktopDock />
-                <FloatingChat />
+                <FloatingChat
+                  focus={desktopPanelFocus}
+                  onFocusChange={setDesktopPanelFocus}
+                />
               </div>
             </main>
           </div>
