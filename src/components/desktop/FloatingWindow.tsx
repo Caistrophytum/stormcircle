@@ -7,23 +7,42 @@ import { motion, AnimatePresence } from "framer-motion";
 import { createPortal } from "react-dom";
 import { useEffect, useState, type ReactNode } from "react";
 
-function useDockRect() {
+function useDockRect(open: boolean) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   useEffect(() => {
+    if (!open) return;
     const el = document.getElementById("desktop-dock");
     if (!el) return;
-    const update = () => setRect(el.getBoundingClientRect());
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      setRect((prev) =>
+        prev && prev.top === r.top && prev.left === r.left && prev.width === r.width && prev.height === r.height
+          ? prev
+          : r,
+      );
+    };
     update();
+    // The dock (and its parents) animate with transforms, which ResizeObserver
+    // does not report. Re-measure every frame briefly after opening so the
+    // window settles on the dock's final position.
+    let raf = 0;
+    const until = performance.now() + 1200;
+    const tick = () => {
+      update();
+      if (performance.now() < until) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
     const ro = new ResizeObserver(update);
     ro.observe(el);
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
     return () => {
+      cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener("resize", update);
       window.removeEventListener("scroll", update, true);
     };
-  }, []);
+  }, [open]);
   return rect;
 }
 
@@ -55,7 +74,7 @@ export default function FloatingWindow({
   zIndex,
 }: Props) {
   const isModal = anchor === "center";
-  const dockRect = useDockRect();
+  const dockRect = useDockRect(open && anchor !== "center");
   const panelZ = zIndex ?? (isModal ? 1201 : 1100);
   const backdropZ = (zIndex ?? 1201) - 1;
 
