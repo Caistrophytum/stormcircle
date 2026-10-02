@@ -10,9 +10,11 @@ import type { DesktopPanelFocus } from "@/pages/Index";
 
 interface FloatingChatProps {
   focus?: DesktopPanelFocus;
+  /** Height (px) the minimized hazards panel released; chat grows by exactly this. */
+  releasedPx?: number;
 }
 
-export default function FloatingChat({ focus = null }: FloatingChatProps) {
+export default function FloatingChat({ focus = null, releasedPx = 0 }: FloatingChatProps) {
   const ping = useNewReportPing();
   const [flash, setFlash] = useState(false);
   const expanded = focus === "chat";
@@ -32,7 +34,7 @@ export default function FloatingChat({ focus = null }: FloatingChatProps) {
       className="pointer-events-auto relative flex flex-col overflow-hidden rounded-2xl"
       style={{
         width: "calc((100vw - 56px) / 3)",
-        height: expanded ? "calc(100dvh - 116px)" : "40dvh",
+        height: expanded ? `calc(40dvh + ${Math.round(releasedPx)}px)` : "40dvh",
         background: "rgba(18,18,22,0.72)",
         backdropFilter: "blur(24px)",
         border: flash
