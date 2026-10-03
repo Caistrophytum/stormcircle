@@ -25,7 +25,6 @@ const Index = () => {
         <meta property="og:description" content="Real-time storm reports, meteorologist verified alerts, and community weather communication." />
         <meta property="og:url" content="https://stormcircle.net/" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://stormcircle.net/og-image.png" />
       </Helmet>
 
       <h1 className="sr-only">StormCircle - Real-time Meteorological Network</h1>
