@@ -30,23 +30,26 @@ function scoreColor(score: number) {
   return "hsl(var(--neon-green))";
 }
 
-function MetricGrid({ nodes, columns }: { nodes: WRSNode[]; columns: 3 | 5 }) {
+function MetricGrid({ nodes }: { nodes: WRSNode[] }) {
   const primaryNodes = nodes.filter((node) => node.primary);
   const secondaryNodes = nodes.filter((node) => !node.primary);
   return (
     <div className="flex flex-col gap-1.5">
-      {primaryNodes.length > 0 && <MetricRow nodes={primaryNodes} columns={columns} />}
+      {primaryNodes.length > 0 && <MetricRow nodes={primaryNodes} />}
       {primaryNodes.length > 0 && secondaryNodes.length > 0 && (
         <div className="border-t border-dashed border-primary/15" />
       )}
-      {secondaryNodes.length > 0 && <MetricRow nodes={secondaryNodes} columns={columns} />}
+      {secondaryNodes.length > 0 && <MetricRow nodes={secondaryNodes} />}
     </div>
   );
 }
 
-function MetricRow({ nodes, columns }: { nodes: WRSNode[]; columns: 3 | 5 }) {
+function MetricRow({ nodes }: { nodes: WRSNode[] }) {
   return (
-    <div className={cn("grid gap-1", columns === 5 ? "grid-cols-5" : "grid-cols-3")}>
+    <div
+      className="grid gap-1"
+      style={{ gridTemplateColumns: `repeat(${nodes.length}, minmax(0, 1fr))` }}
+    >
       {nodes.map((node) => (
         <div
           key={node.label}
@@ -187,7 +190,7 @@ export default function MobileWRSPanel({
         open={virtualOpen}
         onToggle={() => setVirtualOpen((value) => !value)}
       >
-        <MetricGrid nodes={nodes} columns={5} />
+        <MetricGrid nodes={nodes} />
       </ParameterMenu>
 
       <ParameterMenu
@@ -195,7 +198,7 @@ export default function MobileWRSPanel({
         open={physicalOpen}
         onToggle={() => setPhysicalOpen((value) => !value)}
       >
-        <MetricGrid nodes={physicalNodes} columns={3} />
+        <MetricGrid nodes={physicalNodes} />
       </ParameterMenu>
 
       {!stationActive && (virtualOpen || physicalOpen) && (
