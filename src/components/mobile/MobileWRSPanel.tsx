@@ -31,6 +31,20 @@ function scoreColor(score: number) {
 }
 
 function MetricGrid({ nodes, columns }: { nodes: WRSNode[]; columns: 3 | 5 }) {
+  const primaryNodes = nodes.filter((node) => node.primary);
+  const secondaryNodes = nodes.filter((node) => !node.primary);
+  return (
+    <div className="flex flex-col gap-1.5">
+      {primaryNodes.length > 0 && <MetricRow nodes={primaryNodes} columns={columns} />}
+      {primaryNodes.length > 0 && secondaryNodes.length > 0 && (
+        <div className="border-t border-dashed border-primary/15" />
+      )}
+      {secondaryNodes.length > 0 && <MetricRow nodes={secondaryNodes} columns={columns} />}
+    </div>
+  );
+}
+
+function MetricRow({ nodes, columns }: { nodes: WRSNode[]; columns: 3 | 5 }) {
   return (
     <div className={cn("grid gap-1", columns === 5 ? "grid-cols-5" : "grid-cols-3")}>
       {nodes.map((node) => (
