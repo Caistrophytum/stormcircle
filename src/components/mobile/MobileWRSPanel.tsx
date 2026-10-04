@@ -31,17 +31,27 @@ function scoreColor(score: number) {
 }
 
 function MetricGrid({ nodes, columns }: { nodes: WRSNode[]; columns: 3 | 5 }) {
+  const primaryNodes = nodes.filter((node) => node.primary);
+  const secondaryNodes = nodes.filter((node) => !node.primary);
+  return (
+    <div className="flex flex-col gap-1.5">
+      {primaryNodes.length > 0 && <MetricRow nodes={primaryNodes} columns={columns} />}
+      {primaryNodes.length > 0 && secondaryNodes.length > 0 && (
+        <div className="border-t border-dashed border-primary/15" />
+      )}
+      {secondaryNodes.length > 0 && <MetricRow nodes={secondaryNodes} columns={columns} />}
+    </div>
+  );
+}
+
+function MetricRow({ nodes, columns }: { nodes: WRSNode[]; columns: 3 | 5 }) {
   return (
     <div className={cn("grid gap-1", columns === 5 ? "grid-cols-5" : "grid-cols-3")}>
       {nodes.map((node) => (
         <div
           key={node.label}
-          className={cn(
-            "relative min-w-0 overflow-hidden border-l-2 bg-background px-1 py-1.5 font-mono",
-            node.primary
-              ? "border-l-primary shadow-[inset_3px_0_6px_hsl(var(--primary)/0.45)]"
-              : "border-l-primary/30",
-          )}
+          className="relative min-w-0 overflow-hidden border-l-2 bg-background px-1 py-1.5 font-mono"
+          style={{ borderLeftColor: node.color }}
         >
           <div className="truncate pr-5 text-[7px] leading-none text-muted-foreground">{node.label}</div>
           <div
