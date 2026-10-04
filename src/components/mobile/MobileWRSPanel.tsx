@@ -50,8 +50,12 @@ function MetricRow({ nodes, columns }: { nodes: WRSNode[]; columns: 3 | 5 }) {
       {nodes.map((node) => (
         <div
           key={node.label}
-          className="relative min-w-0 overflow-hidden border-l-2 bg-background px-1 py-1.5 font-mono"
-          style={{ borderLeftColor: node.color }}
+          className={cn(
+            "relative min-w-0 overflow-hidden border-l-2 bg-background px-1 py-1.5 font-mono",
+            node.primary
+              ? "border-l-primary shadow-[inset_3px_0_6px_hsl(var(--primary)/0.45)]"
+              : "border-l-primary/30",
+          )}
         >
           <div className="truncate pr-5 text-[7px] leading-none text-muted-foreground">{node.label}</div>
           <div
