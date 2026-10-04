@@ -9,7 +9,6 @@
  *   5. WRS bar (0–100)
  */
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SyncSeconds, SyncShellRect } from "@/components/SyncCountdown";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
@@ -25,6 +24,7 @@ import { SystemMessageCard } from "@/components/SystemMessageCard";
 import CurrentLocationHazards from "@/components/CurrentLocationHazards";
 import LocateMeButton from "@/components/mobile/LocateMeButton";
 import HometownConditions from "@/components/mobile/HometownConditions";
+import MobileWRSPanel from "@/components/mobile/MobileWRSPanel";
 import type { RawMessage } from "@/lib/reportGrouping";
 import { pointInRing } from "@/lib/pointInPolygon";
 import { computeWRS } from "@/lib/wrs";
@@ -351,7 +351,7 @@ export default function MobileMain() {
 
   // ── Sounding / WRS ───────────────────────────────────────────────
   // Math lives in src/lib/wrs.ts so mobile and desktop can never drift.
-  const { nodes, physicalNodes, threatLevel, physGatePercent } = useMemo(
+  const { nodes, physicalNodes, threatLevel, physGatePercent, stationActive } = useMemo(
     () =>
       computeWRS({
         sounding,
@@ -417,9 +417,6 @@ export default function MobileMain() {
   }
 
   // SPC bot rendering is delegated to SystemMessageCard (handles markers, payload, dropdowns).
-
-  const threatColor =
-    threatLevel > 85 ? "#ff3b3b" : threatLevel >= 61 ? "#ff8c00" : threatLevel >= 31 ? "#ff9d00" : "#7CFC00";
 
   return (
     <div
@@ -500,6 +497,18 @@ export default function MobileMain() {
         cityName={profile?.location ?? null}
         weather={hometownWeather}
         signedIn={!!user}
+      />
+
+      {/* 1b. Unified mobile WRS panel */}
+      <MobileWRSPanel
+        nodes={nodes}
+        physicalNodes={physicalNodes}
+        threatLevel={threatLevel}
+        physGatePercent={physGatePercent}
+        stationActive={stationActive}
+        cityName={radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? "your area"}
+        localTime={localTime}
+        timezone={localTz}
       />
 
 
@@ -635,271 +644,6 @@ export default function MobileMain() {
           toggle={toggleKey}
         />
       )}
-      {/* 4. Virtual metrics */}
-      <div
-        style={{
-          padding: "8px 10px",
-          border: "1px solid rgba(255,157,0,0.2)",
-          background: "rgba(10,10,14,0.6)",
-          borderRadius: "2px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-          <h2
-            style={{
-              fontSize: "9px",
-              color: "#ff9d00",
-              letterSpacing: "0.15em",
-              fontWeight: 700,
-              margin: 0,
-              fontFamily: "'JetBrains Mono', monospace",
-              textTransform: "uppercase",
-            }}
-          >
-            VIRTUAL METRICS
-          </h2>
-          <span
-            style={{
-              fontSize: "8px",
-              color: "#ff9d00",
-              fontFamily: "'JetBrains Mono', monospace",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              flex: 1,
-              textAlign: "center",
-            }}
-          >
-            In {radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? "your area"}
-          </span>
-          <span
-            title={`Local time - ${localTz}`}
-            style={{
-              fontSize: "8px",
-              color: "#ff9d00",
-              fontFamily: "'JetBrains Mono', monospace",
-              fontWeight: 700,
-              letterSpacing: "0.08em",
-              whiteSpace: "nowrap",
-              border: "1px solid rgba(255,157,0,0.35)",
-              background: "rgba(255,157,0,0.08)",
-              padding: "1px 4px",
-              borderRadius: "1px",
-              marginRight: "4px",
-            }}
-          >
-            {localTime}
-          </span>
-
-          <span
-
-            style={{
-              fontSize: "8px",
-              color: "#ff9d00",
-              fontFamily: "'JetBrains Mono', monospace",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              border: "1px solid rgba(255,157,0,0.35)",
-              background: "rgba(255,157,0,0.08)",
-              padding: "1px 4px",
-              borderRadius: "1px",
-            }}
-          >
-            Scaled to {physGatePercent}%
-          </span>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "4px" }}>
-          {nodes.map((n, i) => {
-            const lit = n.primary;
-            return (
-              <div
-                key={n.label}
-                style={{
-                  position: "relative",
-                  padding: "4px 4px 4px 4px",
-                  background: "#050505",
-                  borderLeft: lit ? "2px solid #ff9d00" : "2px solid rgba(255,157,0,0.3)",
-                  boxShadow: lit ? "inset 3px 0 6px rgba(255,157,0,0.55)" : "none",
-                  minWidth: 0,
-                  overflow: "hidden",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
-                  <span style={{ fontSize: "7px", color: "#888" }}>{n.label}</span>
-                </div>
-                <div
-                  style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
-                >
-                  {n.value}
-                </div>
-                <div style={{ fontSize: "7px", color: "#666", marginTop: "1px" }}>{n.unit}</div>
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 1,
-                    right: 1,
-                    fontSize: "8px",
-                    color: "#050505",
-                    background: "#eaeaea",
-                    fontWeight: 700,
-                    padding: "0 3px",
-                    borderRadius: "1px",
-                  }}
-                >
-                  {n.w}%
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 4b. Physical metrics - surface-felt parameters that gate the virtual block */}
-      <div
-        style={{
-          padding: "8px 10px",
-          border: "1px solid rgba(255,157,0,0.2)",
-          background: "rgba(10,10,14,0.6)",
-          borderRadius: "2px",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "9px",
-            color: "#ff9d00",
-            letterSpacing: "0.15em",
-            fontWeight: 700,
-            marginBottom: "6px",
-            margin: "0 0 6px 0",
-            fontFamily: "'JetBrains Mono', monospace",
-            textTransform: "uppercase",
-          }}
-        >
-          PHYSICAL METRICS
-        </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "4px" }}>
-          {physicalNodes.map((n) => (
-            <div
-              key={n.label}
-              style={{
-                position: "relative",
-                padding: "4px 4px 4px 4px",
-                background: "#050505",
-                borderLeft: "2px solid rgba(255,157,0,0.3)",
-                minWidth: 0,
-                overflow: "hidden",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "3px", lineHeight: 1 }}>
-                <span style={{ fontSize: "7px", color: "#888" }}>{n.label}</span>
-                {n.primary && (
-                  <span
-                    style={{
-                      fontSize: "6px",
-                      color: "#ff9d00",
-                      border: "1px solid rgba(255,157,0,0.6)",
-                      padding: "0 2px",
-                      fontWeight: 700,
-                      letterSpacing: "0.1em",
-                    }}
-                  >
-                    PRIMARY
-                  </span>
-                )}
-              </div>
-              <div
-                style={{ fontSize: "11px", color: n.color, fontWeight: 700, marginTop: "2px", whiteSpace: "nowrap" }}
-              >
-                {n.value}
-              </div>
-              <div style={{ fontSize: "7px", color: "#666", marginTop: "1px" }}>{n.unit}</div>
-              <div
-                style={{
-                  position: "absolute",
-                  top: 1,
-                  right: 1,
-                  fontSize: "8px",
-                  color: "#050505",
-                  background: "#eaeaea",
-                  fontWeight: 700,
-                  padding: "0 3px",
-                  borderRadius: "1px",
-                }}
-              >
-                {n.w}%
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 5. WRS bar - wrapped in a neon blue 60 s sync countdown shell */}
-      <div
-        style={{
-          position: "relative",
-          padding: "8px 10px",
-          border: "1px solid rgba(255,157,0,0.2)",
-          background: "rgba(10,10,14,0.6)",
-          borderRadius: "2px",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-        }}
-      >
-        {/* Depleting neon blue perimeter */}
-        <SyncShellRect color="#00b4ff" />
-
-        <h2
-          style={{
-            fontSize: "10px",
-            color: "#888",
-            letterSpacing: "0.15em",
-            fontWeight: 700,
-            margin: 0,
-            fontFamily: "'JetBrains Mono', monospace",
-            textTransform: "uppercase",
-          }}
-        >
-          WRS
-        </h2>
-        <div
-          style={{
-            flex: 1,
-            height: "8px",
-            background: "rgba(255,255,255,0.08)",
-            borderRadius: "4px",
-            overflow: "hidden",
-          }}
-        >
-          <div
-            style={{
-              width: `${threatLevel}%`,
-              height: "100%",
-              background: threatColor,
-              transition: "width 0.6s ease-out",
-            }}
-          />
-        </div>
-        <span
-          style={{ fontSize: "14px", color: threatColor, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}
-        >
-          {threatLevel}
-        </span>
-        <SyncSeconds
-          style={{
-            fontSize: "10px",
-            color: "#00b4ff",
-            fontWeight: 700,
-            fontFamily: "'JetBrains Mono', monospace",
-            textShadow: "0 0 6px #00b4ff",
-          }}
-        />
-      </div>
-
-
       {/* 6. Latest chat messages - fills remaining space up to floating buttons */}
       <div
         style={{
