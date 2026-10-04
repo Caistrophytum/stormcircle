@@ -132,7 +132,7 @@ export default function MobileWRSPanel({
     <section className="relative shrink-0 overflow-hidden rounded-sm border-l-2 border-l-primary/40 bg-gradient-to-r from-primary/5 to-transparent px-3 pb-1 pt-2 font-mono">
       <div className="pointer-events-none absolute right-0 top-0 h-5 w-5 border-r border-t border-primary/20" />
 
-      <div className="flex min-h-[140px] items-center justify-between gap-3">
+      <div className="mb-2 flex min-h-[140px] items-center justify-between gap-3">
         <div className="flex h-[140px] min-w-0 flex-1 flex-col justify-center">
           <div className="text-[8px] uppercase tracking-[0.3em] text-primary/50">Risk telemetry</div>
           <h2 className="mt-2 max-w-[150px] text-[15px] font-bold uppercase leading-tight text-primary">
