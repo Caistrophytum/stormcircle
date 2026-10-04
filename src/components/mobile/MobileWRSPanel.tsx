@@ -190,7 +190,7 @@ export default function MobileWRSPanel({
         open={virtualOpen}
         onToggle={() => setVirtualOpen((value) => !value)}
       >
-        <MetricGrid nodes={nodes} columns={5} />
+        <MetricGrid nodes={nodes} />
       </ParameterMenu>
 
       <ParameterMenu
@@ -198,7 +198,7 @@ export default function MobileWRSPanel({
         open={physicalOpen}
         onToggle={() => setPhysicalOpen((value) => !value)}
       >
-        <MetricGrid nodes={physicalNodes} columns={3} />
+        <MetricGrid nodes={physicalNodes} />
       </ParameterMenu>
 
       {!stationActive && (virtualOpen || physicalOpen) && (
