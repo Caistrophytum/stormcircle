@@ -126,7 +126,7 @@ export default function MobileFloatingButtons({ open, onToggle, onClose, onOpen 
         aria-expanded={open}
         aria-controls="mobile-command-menu"
         onClick={onToggle}
-        className="fixed bottom-5 right-3 z-[510] size-11 rounded-md border border-primary/60 bg-card text-primary shadow-[0_0_12px_hsl(var(--primary)/0.3)] hover:bg-secondary"
+        className="fixed bottom-5 right-3 z-[510] size-11 rounded-md border border-[hsl(var(--neon-blue)/0.45)] bg-[hsl(var(--neon-blue)/0.12)] text-[hsl(var(--neon-blue))] shadow-[0_0_12px_hsl(var(--neon-blue)/0.25)] hover:bg-[hsl(var(--neon-blue)/0.2)]"
       >
         {open ? <X className="!size-5" /> : <Menu className="!size-5" />}
       </Button>
