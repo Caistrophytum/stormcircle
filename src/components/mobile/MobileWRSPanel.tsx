@@ -50,7 +50,10 @@ function MetricGrid({ nodes, columns }: { nodes: WRSNode[]; columns: 3 | 5 }) {
           >
             {node.value}
           </div>
-          <div className="mt-1 truncate text-[7px] leading-none text-muted-foreground">{node.unit}</div>
+          <div className="mt-1 flex min-w-0 items-center gap-1 text-[7px] leading-none text-muted-foreground">
+            <span className="truncate">{node.unit}</span>
+            {node.primary && <span className="shrink-0 text-[6px] font-bold text-primary">PRIMARY</span>}
+          </div>
           <div className="absolute right-0.5 top-0.5 rounded-sm bg-foreground px-1 text-[8px] font-bold leading-3 text-background">
             {node.w}%
           </div>
