@@ -50,6 +50,13 @@
       "when": 1791362426090,
       "tag": "0006_instant_chat_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791363217760,
+      "tag": "0007_grant_message_signature",
+      "breakpoints": true
     }
   ]
 }
