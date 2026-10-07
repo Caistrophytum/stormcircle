@@ -291,6 +291,17 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Scoped runs ("chat" / "alerts") are kicked the moment new data lands and
+  // only do the cheap work for that category. The cron sweep runs "full".
+  let mode: "full" | "chat" | "alerts" = "full";
+  try {
+    const b = await req.json();
+    if (b?.mode === "chat" || b?.mode === "alerts") mode = b.mode;
+  } catch { /* empty body = full sweep */ }
+  const doFull = mode === "full";
+  const doAlerts = mode !== "chat";
+  const doChat = mode !== "alerts";
+
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
 
   let vapid: VapidKeys | null = null;
@@ -303,10 +314,13 @@ Deno.serve(async (req) => {
 
   try {
     // 1. Users who opted in, with their saved hometown.
-    const { data: prefs } = await supabase
+    const { data: allPrefs } = await supabase
       .from("notification_prefs")
       .select("*")
       .eq("enabled", true);
+    const prefs = (allPrefs ?? []).filter((p) =>
+      mode === "chat" ? p.chat_messages : mode === "alerts" ? (p.alerts_new || p.alerts_upgrade) : true
+    );
     if (!prefs?.length) {
       return new Response(JSON.stringify({ ok: true, users: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -319,12 +333,14 @@ Deno.serve(async (req) => {
       await Promise.all([
         supabase.from("profiles").select("id, username, location").in("id", userIds),
         supabase.from("notification_state").select("*").in("user_id", userIds),
-        supabase
-          .from("messages")
-          .select("id, user_id, username, content, created_at, place_lat, place_lon")
-          .neq("badge", "System")
-          .gte("created_at", chatSince)
-          .order("created_at", { ascending: true }),
+        doChat
+          ? supabase
+            .from("messages")
+            .select("id, user_id, username, content, created_at, place_lat, place_lon")
+            .neq("badge", "System")
+            .gte("created_at", chatSince)
+            .order("created_at", { ascending: true })
+          : Promise.resolve({ data: [] as never[] }),
       ]);
     const chatMessages = chatRows ?? [];
 
@@ -332,7 +348,9 @@ Deno.serve(async (req) => {
     const stateById = new Map((states ?? []).map((s) => [s.user_id, s]));
 
     // 2. Outlook layers, fetched once per run and shared by all users.
-    const [spcRes, fireRes] = await Promise.allSettled([fetch(SPC_URL), fetch(FIRE_URL)]);
+    const [spcRes, fireRes] = doFull
+      ? await Promise.allSettled([fetch(SPC_URL), fetch(FIRE_URL)])
+      : [{ status: "rejected" as const, reason: null }, { status: "rejected" as const, reason: null }];
     const spcFeats: Array<{ properties: Record<string, unknown>; geometry: Geom }> =
       spcRes.status === "fulfilled" && spcRes.value.ok ? (await spcRes.value.json())?.features ?? [] : [];
     const fireFeats: Array<{ properties: Record<string, unknown>; geometry: Geom }> =
@@ -367,7 +385,7 @@ Deno.serve(async (req) => {
       area_desc: string | null;
     }
     const coveringByUser = new Map<string, CoveringAlert[]>();
-    if (points.size) {
+    if (points.size && doAlerts) {
       const PAGE = 50;
       for (let from = 0; ; from += PAGE) {
         const { data: page, error: pageErr } = await supabase
@@ -416,7 +434,7 @@ Deno.serve(async (req) => {
       // ── 2a. Alerts covering the hometown point ──────────────────────────
       const covering = coveringByUser.get(pref.user_id) ?? [];
       const prevAlerts = (state?.active_alerts ?? {}) as Record<string, string>;
-      const nextAlerts: Record<string, string> = {};
+      const nextAlerts: Record<string, string> = doAlerts ? {} : { ...prevAlerts };
       for (const a of covering) {
         const sev = a.severity ?? "Unknown";
         nextAlerts[a.alert_id] = sev;
@@ -446,7 +464,7 @@ Deno.serve(async (req) => {
 
       // ── 2b. WRS swings ──────────────────────────────────────────────────
       const key = `${pt.lat.toFixed(2)},${pt.lon.toFixed(2)}`;
-      if (!wrsCache.has(key)) {
+      if (doFull && !wrsCache.has(key)) {
         const s = await fetchSounding(pt.lat, pt.lon);
         wrsCache.set(key, s ? wrsFromSounding(s) : null);
       }
@@ -522,7 +540,7 @@ Deno.serve(async (req) => {
         ? new Date(state.last_chat_at).getTime()
         : now - CHAT_LOOKBACK_MS;
       let freshChat: typeof chatMessages = [];
-      if (pref.chat_messages) {
+      if (pref.chat_messages && doChat) {
         freshChat = chatMessages.filter((m) => {
           if (m.user_id === pref.user_id) return false;
           if (new Date(m.created_at as string).getTime() <= chatCutoff) return false;
@@ -551,7 +569,7 @@ Deno.serve(async (req) => {
 
       // ── 2f. Same-day weather recap (once per local day at chosen hour) ──
       let recapDate: string | null = state?.last_recap_date ?? null;
-      if (pref.daily_recap) {
+      if (pref.daily_recap && doFull) {
         const { hour, date } = localHourDate(pref.timezone);
         const target = pref.recap_hour ?? 7;
         // Send at the first run at/after the chosen hour, unless quiet hours
@@ -593,8 +611,8 @@ Deno.serve(async (req) => {
           last_wrs_notified_at: notifiedWrs
             ? new Date().toISOString()
             : state?.last_wrs_notified_at ?? null,
-          last_spc: spcLevel,
-          last_fire: fireLevel,
+          last_spc: doFull ? spcLevel : state?.last_spc ?? null,
+          last_fire: doFull ? fireLevel : state?.last_fire ?? null,
           active_alerts: nextAlerts,
           last_chat_at: freshChat.length
             ? freshChat[freshChat.length - 1].created_at
@@ -687,7 +705,7 @@ Deno.serve(async (req) => {
     await Promise.all(Array.from({ length: USER_CONCURRENCY }, worker));
     if (skipped) console.warn(`[notify-dispatch] budget hit, ${skipped} users deferred`);
 
-    return new Response(JSON.stringify({ ok: true, users: prefs.length, delivered }), {
+    return new Response(JSON.stringify({ ok: true, mode, users: prefs.length, delivered }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
