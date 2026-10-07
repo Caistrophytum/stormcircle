@@ -29,4 +29,4 @@ All items below are implemented and verified.
 - [x] Minimizing Top 10 Hazards expands chat below its collapsed header
 
 ## Q&A content review
-- [ ] Verify and update outdated answers, add missing guidance, and remove em dashes.
+- [x] Verified and updated outdated answers, added missing guidance, and removed em dashes. Checked all 20 answers and return navigation in the browser.
