@@ -27,3 +27,6 @@ All items below are implemented and verified.
 
 ## Linked desktop panels
 - [x] Minimizing Top 10 Hazards expands chat below its collapsed header
+
+## Q&A content review
+- [ ] Verify and update outdated answers, add missing guidance, and remove em dashes.
