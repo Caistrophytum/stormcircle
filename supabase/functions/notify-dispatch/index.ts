@@ -285,12 +285,6 @@ Deno.serve(async (req) => {
   const cronHeader = req.headers.get("x-cron-secret") ?? "";
   const authorized = auth === `Bearer ${SERVICE_KEY}` ||
     (CRON_SECRET && (cronHeader === CRON_SECRET || auth === `Bearer ${CRON_SECRET}`));
-  if (!authorized) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
-      status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   // Scoped runs ("chat" / "alerts") are kicked the moment new data lands and
   // only do the cheap work for that category. The cron sweep runs "full".
   let mode: "full" | "chat" | "alerts" = "full";
@@ -303,6 +297,20 @@ Deno.serve(async (req) => {
   const doChat = mode !== "alerts";
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, SERVICE_KEY);
+
+  // Chat kicks come from a database trigger using the public key, so they are
+  // allowed without the cron secret but bail out unless a real report just landed.
+  if (!authorized) {
+    const fresh = mode === "chat" && (await supabase
+      .from("messages").select("id", { count: "exact", head: true })
+      .neq("badge", "System")
+      .gte("created_at", new Date(Date.now() - 60_000).toISOString())).count;
+    if (!fresh) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+  }
 
   let vapid: VapidKeys | null = null;
   try {
