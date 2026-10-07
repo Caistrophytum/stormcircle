@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.message_signature(text) TO authenticated, anon, service_role;
