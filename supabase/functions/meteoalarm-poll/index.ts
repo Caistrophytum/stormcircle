@@ -1,3 +1,4 @@
+import { kickNotify } from "../_shared/kickNotify.ts";
 // meteoalarm-poll: scheduled ingest of European weather warnings from the
 // EUMETNET MeteoAlarm public country feeds.
 //
@@ -382,6 +383,8 @@ Deno.serve(async (req) => {
         .upsert(payload.slice(i, i + 200), { onConflict: "alert_id" });
       if (error) console.warn("[meteoalarm-poll] upsert err:", error);
     }
+
+    if (rows.some((r) => !firstSeen.has(r.alert_id))) kickNotify("alerts");
 
     const currentIds = new Set(rows.map((r) => r.alert_id));
     const toDelete = (existing ?? [])

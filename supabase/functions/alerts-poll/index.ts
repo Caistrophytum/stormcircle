@@ -1,3 +1,4 @@
+import { kickNotify } from "../_shared/kickNotify.ts";
 // alerts-poll: scheduled fetch of NWS active alerts.
 //
 // What this function does, in order:
@@ -333,6 +334,8 @@ Deno.serve(async (req) => {
         console.warn("[alerts-poll] batch upsert threw:", e);
       }
     }
+
+    if (changed.length > 0) kickNotify("alerts");
 
     const currentIds = new Set(rows.map((r) => r.alert_id));
     // Drop rows the feed no longer carries, plus anything that expired more
