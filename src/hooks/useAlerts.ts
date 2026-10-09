@@ -31,7 +31,7 @@ export interface NewWarning { event: string; count: number; }
 
 export interface AlertsData {
   mostDangerous: Alert[];
-  /** Full danger-sorted list (capped at 200) for client-side country filters. */
+  /** Full danger-sorted list for client-side country filters. */
   dangerousRanked: Alert[];
   topHazards: TopHazard[];
   newWarnings: NewWarning[];

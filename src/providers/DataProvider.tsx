@@ -548,10 +548,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Full ranked list (capped) so the UI can filter by country without
-        // a second query; `mostDangerous` stays the global top 10.
+        // Full ranked list (uncapped) so country filters never lose a
+        // country's alerts behind higher-ranked ones elsewhere.
         const ranked = [...list].sort((a, b) => dangerScore(a) - dangerScore(b));
-        const dangerousRanked = ranked.slice(0, 200);
+        const dangerousRanked = ranked;
         const mostDangerous = ranked.slice(0, 10);
         const counts = new Map<string, number>();
         for (const a of list) counts.set(a.event, (counts.get(a.event) ?? 0) + 1);
