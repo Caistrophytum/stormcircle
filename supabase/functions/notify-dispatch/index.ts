@@ -17,8 +17,17 @@ import { computeComfort, type Activity, type HourlyPoint } from "./comfort.ts";
 // Every outbound request (external APIs, database, push services) gets a hard
 // timeout so one slow upstream cannot hold the worker until the runtime kills it.
 const _fetch = globalThis.fetch;
-globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) =>
-  _fetch(input, { signal: AbortSignal.timeout(10_000), ...init })) as typeof fetch;
+// Database calls get a longer allowance than third-party APIs.
+const DB_HOST = (() => { try { return new URL(Deno.env.get("SUPABASE_URL") ?? "").host; } catch { return ""; } })();
+globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+  const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+  let ms = 10_000;
+  try { if (DB_HOST && new URL(url).host === DB_HOST) ms = 30_000; } catch { /* keep default */ }
+  return _fetch(input, { signal: AbortSignal.timeout(ms), ...init });
+}) as typeof fetch;
+const safeFeatures = async (r: Response): Promise<any[]> => {
+  try { return (await r.json())?.features ?? []; } catch (e) { console.warn("[notify-dispatch] outlook body", String(e)); return []; }
+};
 
 // Stop starting new users after this much wall time; unprocessed users keep
 // their previous state and are picked up on the next 5-minute run.
@@ -360,9 +369,9 @@ Deno.serve(async (req) => {
       ? await Promise.allSettled([fetch(SPC_URL), fetch(FIRE_URL)])
       : [{ status: "rejected" as const, reason: null }, { status: "rejected" as const, reason: null }];
     const spcFeats: Array<{ properties: Record<string, unknown>; geometry: Geom }> =
-      spcRes.status === "fulfilled" && spcRes.value.ok ? (await spcRes.value.json())?.features ?? [] : [];
+      spcRes.status === "fulfilled" && spcRes.value.ok ? await safeFeatures(spcRes.value) : [];
     const fireFeats: Array<{ properties: Record<string, unknown>; geometry: Geom }> =
-      fireRes.status === "fulfilled" && fireRes.value.ok ? (await fireRes.value.json())?.features ?? [] : [];
+      fireRes.status === "fulfilled" && fireRes.value.ok ? await safeFeatures(fireRes.value) : [];
 
     const now = Date.now();
 
