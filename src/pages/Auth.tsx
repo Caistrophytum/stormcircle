@@ -319,6 +319,7 @@ const Auth = () => {
     <>
       <Helmet>
         <title>Sign In - StormCircle</title>
+        <meta name="robots" content="noindex" />
         <meta
           name="description"
           content="Sign in to StormCircle to join real-time storm reporting, connect with meteorologists, and set your home city."

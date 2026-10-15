@@ -312,6 +312,7 @@ const AccountCenter = ({ hideBackLink = false }: { hideBackLink?: boolean } = {}
     <>
       <Helmet>
         <title>Account Center - StormCircle</title>
+        <meta name="robots" content="noindex" />
         <meta name="description" content="Manage your StormCircle operator profile, meteorologist badge application, home city, and account settings." />
         <link rel="canonical" href="https://stormcircle.net/account" />
         <meta property="og:title" content="Account Center - StormCircle" />
