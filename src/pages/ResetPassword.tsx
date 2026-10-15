@@ -74,6 +74,7 @@ const ResetPassword = () => {
     <>
       <Helmet>
         <title>Reset Password - StormCircle</title>
+        <meta name="robots" content="noindex" />
         <meta name="description" content="Reset your StormCircle account password to regain access to real-time storm reporting and weather alerts." />
         <link rel="canonical" href="https://stormcircle.net/reset-password" />
         <meta property="og:title" content="Reset Password - StormCircle" />
