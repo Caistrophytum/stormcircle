@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useHomeCityRisk, type SPCRiskLevel } from "@/hooks/useHomeCityRisk";
 import { useHomeCityFireRisk, type FireRiskLevel } from "@/hooks/useHomeCityFireRisk";
 import { useHometownWeather } from "@/hooks/useHometownWeather";
+import { useHometownCoords } from "@/hooks/useHometownCoords";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
@@ -299,18 +300,15 @@ export default function MobileMain() {
   const { user, profile } = useAuth();
   const homeRisk = useHomeCityRisk(profile?.location ?? null);
   const homeFireRisk = useHomeCityFireRisk(profile?.location ?? null);
-  const hometownWeather = useHometownWeather(
-    homeRisk.coords ? { lat: homeRisk.coords.lat, lon: homeRisk.coords.lon } : null,
-  );
+  const hometown = useHometownCoords();
+  const hometownWeather = useHometownWeather(hometown);
   const radar = useRadar();
   const { time: localTime, timezone: localTz } = useLocalClock(
     radar.selectedCity?.lat ?? null,
     radar.selectedCity?.lon ?? null,
   );
 
-  const sounding = useSoundingData(
-    radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
-  );
+  const sounding = useSoundingData(radar.selectedCity ?? hometown);
   const unitSystem = useUnitSystem();
   const warningPolygons = useWarningPolygons();
   const botLatest = useBotMessagesLatest([BOT_USER_ID, HURRICANE_BOT_ID, FIRE_BOT_ID]);

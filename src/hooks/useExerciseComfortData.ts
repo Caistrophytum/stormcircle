@@ -6,7 +6,7 @@
  * Uses Open-Meteo (public, keyless, cached). Refreshes every 15 minutes.
  * Skips work entirely while coords are null.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchJsonCached } from "@/lib/apiCache";
 import type { HourlyPoint, AQPoint } from "@/lib/exerciseComfort";
 
@@ -24,7 +24,6 @@ export function useExerciseComfortData(
   coords: { lat: number; lon: number } | null,
 ): Data {
   const [data, setData] = useState<Data>(EMPTY);
-  const isFetching = useRef(false);
 
   useEffect(() => {
     if (!coords) {
@@ -32,6 +31,8 @@ export function useExerciseComfortData(
       return;
     }
     let cancelled = false;
+    let isFetching = false;
+    setData({ ...EMPTY, loading: true });
     const { lat, lon } = coords;
 
     // Round the "current hour" to top-of-hour UTC so the hourly array
@@ -47,8 +48,8 @@ export function useExerciseComfortData(
       `&hourly=us_aqi&forecast_days=2&timezone=UTC`;
 
     const run = async (showLoading: boolean) => {
-      if (isFetching.current) return;
-      isFetching.current = true;
+      if (isFetching) return;
+      isFetching = true;
       if (showLoading) setData((p) => ({ ...p, loading: true, error: false }));
       try {
         // Hourly forecast + AQI barely move within 10 minutes, and air
@@ -118,7 +119,7 @@ export function useExerciseComfortData(
         console.error("[useExerciseComfortData] fetch failed", err);
         if (!cancelled) setData((p) => ({ ...p, loading: false, error: true }));
       } finally {
-        isFetching.current = false;
+        isFetching = false;
       }
     };
 

@@ -8,7 +8,7 @@
  *     matches the second comma-separated token of `label` (state), else
  *     falls back to the first result.
  */
-import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { fetchJsonCached } from "@/lib/apiCache";
 
 export interface GeocodeResult {
   id?: number;
@@ -32,9 +32,7 @@ export async function searchGeocode(
   const url =
     `https://geocoding-api.open-meteo.com/v1/search` +
     `?name=${encodeURIComponent(trimmed)}&count=${count}&language=en&format=json`;
-  const res = await fetchWithTimeout(url);
-  if (!res.ok) return [];
-  const json = await res.json();
+  const json = await fetchJsonCached<{ results?: GeocodeResult[] }>(url, 24 * 60 * 60_000);
   return (json?.results ?? []) as GeocodeResult[];
 }
 

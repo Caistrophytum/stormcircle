@@ -228,6 +228,7 @@ export function useSoundingData(location: LatLon | null): SoundingData {
 
     return () => {
       cancelled = true;
+      isFetchingRef.current = false;
     };
   }, [location?.lat, location?.lon, tick]);
 

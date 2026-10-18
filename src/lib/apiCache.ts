@@ -16,7 +16,7 @@
  *     so a transient outage does not stick.
  *   - The cache is bounded so a long session cannot grow it without limit.
  */
-import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
+import { fetchJsonWithTimeout, HttpError } from "@/lib/fetchWithTimeout";
 
 interface Entry {
   expires: number;
@@ -50,9 +50,16 @@ export async function fetchJsonCached<T = unknown>(
   if (pending) return pending as Promise<T>;
 
   const promise = (async () => {
-    const res = await fetchWithTimeout(url, {}, timeoutMs);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
+    let json: T;
+    try {
+      json = await fetchJsonWithTimeout<T>(url, timeoutMs);
+    } catch (error) {
+      // One shared retry for transient failures, never amplify rate limits or
+      // invalid requests. Both attempts include the complete response body.
+      if (error instanceof HttpError && error.status < 500) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      json = await fetchJsonWithTimeout<T>(url, timeoutMs);
+    }
     cache.set(url, { expires: Date.now() + ttlMs, value: json });
     prune();
     return json;

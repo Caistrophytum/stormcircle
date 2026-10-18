@@ -30,3 +30,7 @@ All items below are implemented and verified.
 
 ## Q&A content review
 - [x] Verified and updated outdated answers, added missing guidance, and removed em dashes. Checked all 20 answers and return navigation in the browser.
+
+## Weather error recovery
+- [x] Trace login/location connections and persistent ERR across weather, WRS, AQI and exercise. No static connection mismatch or invalid weather parameters found; intermittent profile timeouts remain a possible separate cause.
+- [x] Fix confirmed request and recovery defects, add regression tests, and verify signed-in readings. Seven tests pass; signed-in weather and WRS recover after deliberately interrupted requests and a reload.

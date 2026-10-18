@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { geocodeLabel } from "@/lib/openMeteo";
 import { useAuth } from "@/hooks/useAuth";
+import { useRefreshTick } from "@/hooks/useRefreshTick";
 
 const CACHE_KEY = "home-coords-v1";
 
@@ -17,7 +18,12 @@ export interface HomeCoords {
 
 function readCache(): Record<string, HomeCoords> {
   try {
-    return JSON.parse(localStorage.getItem(CACHE_KEY) ?? "{}") as Record<string, HomeCoords>;
+    const raw: unknown = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "{}");
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    return Object.fromEntries(Object.entries(raw).filter(([, value]) =>
+      value && Number.isFinite(value.lat) && Math.abs(value.lat) <= 90 &&
+      Number.isFinite(value.lon) && Math.abs(value.lon) <= 180,
+    ));
   } catch {
     return {};
   }
@@ -26,6 +32,7 @@ function readCache(): Record<string, HomeCoords> {
 export function useHometownCoords(): HomeCoords | null {
   const { profile } = useAuth();
   const label = profile?.location ?? null;
+  const tick = useRefreshTick();
   const [coords, setCoords] = useState<HomeCoords | null>(() =>
     label ? (readCache()[label] ?? null) : null,
   );
@@ -40,6 +47,7 @@ export function useHometownCoords(): HomeCoords | null {
       setCoords(cached);
       return;
     }
+    setCoords(null);
     let cancelled = false;
     void (async () => {
       const res = await geocodeLabel(label);
@@ -59,7 +67,7 @@ export function useHometownCoords(): HomeCoords | null {
     return () => {
       cancelled = true;
     };
-  }, [label]);
+  }, [label, tick]);
 
   return coords;
 }
