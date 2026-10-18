@@ -19,3 +19,22 @@ export async function fetchWithTimeout(
     clearTimeout(timer);
   }
 }
+
+/** Unlike returning Response, keep the deadline active while downloading JSON. */
+export async function fetchJsonWithTimeout<T>(url: string, timeoutMs = 10_000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new HttpError(response.status);
+    return await response.json() as T;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export class HttpError extends Error {
+  constructor(public readonly status: number) {
+    super(`HTTP ${status}`);
+  }
+}

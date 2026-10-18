@@ -100,6 +100,7 @@ export function useCurrentWeather(location: LatLon | null): CurrentWeather {
     fetchNow(isNewLocation);
     return () => {
       cancelled = true;
+      isFetchingRef.current = false;
     };
   }, [location?.lat, location?.lon, tick]);
 

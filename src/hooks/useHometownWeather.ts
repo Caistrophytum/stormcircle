@@ -151,6 +151,7 @@ export function useHometownWeather(location: LatLon | null): HometownWeather {
     fetchNow(isNewLocation);
     return () => {
       cancelled = true;
+      isFetchingRef.current = false;
     };
   }, [location?.lat, location?.lon, tick]);
 
