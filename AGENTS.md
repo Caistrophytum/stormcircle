@@ -8,3 +8,4 @@
 - Mobile WRS presentation stays isolated in `MobileWRSPanel`; scoring and unit conversion remain in the shared WRS model so desktop and mobile cannot drift.
 - Urgent notifications are event-driven: warning pollers and a chat insert trigger kick scoped notify-dispatch runs (mode alerts/chat); the cron sweep stays as the full backstop, avoiding high-frequency polling.
 - External cached JSON and geocoding share deduplication and body-inclusive deadlines so a stalled download cannot block all later refreshes.
+- Weather and exercise resolve hometown through `useHometownCoords`; WRS uses selected city or hometown directly rather than waiting for radar initialization or outlook polling.

@@ -18,7 +18,12 @@ export interface HomeCoords {
 
 function readCache(): Record<string, HomeCoords> {
   try {
-    return JSON.parse(localStorage.getItem(CACHE_KEY) ?? "{}") as Record<string, HomeCoords>;
+    const raw: unknown = JSON.parse(localStorage.getItem(CACHE_KEY) ?? "{}");
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    return Object.fromEntries(Object.entries(raw).filter(([, value]) =>
+      value && Number.isFinite(value.lat) && Math.abs(value.lat) <= 90 &&
+      Number.isFinite(value.lon) && Math.abs(value.lon) <= 180,
+    ));
   } catch {
     return {};
   }

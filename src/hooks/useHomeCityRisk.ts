@@ -6,7 +6,7 @@
  * Returns one of: "NONE" | "TSTM" | "MRGL" | "SLGT" | "ENH" | "MDT" | "HIGH"
  * plus a `loading` flag. Polls SPC every 5 minutes (matches useSPCOutlook).
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchWithTimeout } from "@/lib/fetchWithTimeout";
 import { geocodeLabel } from "@/lib/openMeteo";
 import { pointInPolygon } from "@/lib/pointInPolygon";
@@ -51,7 +51,6 @@ export function useHomeCityRisk(location: string | null): {
   const [risk, setRisk] = useState<SPCRiskLevel>("NONE");
   const [loading, setLoading] = useState(false);
   const [coords, setCoords] = useState<{ lat: number; lon: number; countryCode?: string } | null>(null);
-  const isFetchingRef = useRef(false);
 
   useEffect(() => {
     if (!location) {
@@ -61,17 +60,21 @@ export function useHomeCityRisk(location: string | null): {
     }
 
     let cancelled = false;
+    let isFetching = false;
+    const label = location;
+    setCoords(null);
+    setRisk("NONE");
     let resolved: { lat: number; lon: number; countryCode?: string } | null = null;
 
     async function evaluate() {
       if (cancelled) return;
       // In-flight guard: don't overlap a previous slow SPC fetch.
-      if (isFetchingRef.current) return;
-      isFetchingRef.current = true;
+      if (isFetching) return;
+      isFetching = true;
       setLoading(true);
       try {
         if (!resolved) {
-          resolved = await geocodeLabel(location!);
+          resolved = await geocodeLabel(label);
           if (!cancelled) setCoords(resolved);
         }
         if (!resolved || cancelled) {
@@ -101,7 +104,7 @@ export function useHomeCityRisk(location: string | null): {
       } finally {
         if (!cancelled) setLoading(false);
         // Always release the guard so the next tick can fire.
-        isFetchingRef.current = false;
+        isFetching = false;
       }
     }
 

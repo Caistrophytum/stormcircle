@@ -7,6 +7,7 @@
  */
 import { useMemo } from "react";
 import { useSoundingData } from "@/hooks/useSoundingData";
+import { useHometownCoords } from "@/hooks/useHometownCoords";
 import { useRadarContext } from "@/contexts/RadarContext";
 import { useUnitSystem } from "@/hooks/useUnitSystem";
 import { computeWRS, type WeatherCondition } from "@/lib/wrs";
@@ -33,9 +34,8 @@ export interface WRSMetrics {
 
 export function useWRSMetrics(): WRSMetrics {
   const radar = useRadarContext();
-  const sounding = useSoundingData(
-    radar.selectedCity ? { lat: radar.selectedCity.lat, lon: radar.selectedCity.lon } : null,
-  );
+  const hometown = useHometownCoords();
+  const sounding = useSoundingData(radar.selectedCity ?? hometown);
   const unitSystem = useUnitSystem();
 
   return useMemo(() => {

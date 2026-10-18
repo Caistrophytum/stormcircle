@@ -19,6 +19,7 @@ import FloatingWindow from "@/components/desktop/FloatingWindow";
 import { useAuth } from "@/hooks/useAuth";
 import { useMobile } from "@/hooks/useMobile";
 import { useHomeCityRisk } from "@/hooks/useHomeCityRisk";
+import { useHometownCoords } from "@/hooks/useHometownCoords";
 import { useHomeCityFireRisk } from "@/hooks/useHomeCityFireRisk";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
 import { pointInPolygon } from "@/lib/pointInPolygon";
@@ -296,9 +297,10 @@ export default function ExerciseComfort({ open, onClose, wrs = 0 }: Props) {
   const { profile } = useAuth();
   const location = profile?.location ?? null;
   const home = useHomeCityRisk(location);
+  const hometown = useHometownCoords();
   const fire = useHomeCityFireRisk(location);
   const polygons = useWarningPolygons();
-  const data = useExerciseComfortData(home.coords);
+  const data = useExerciseComfortData(hometown);
   const unitSystem = useUnitSystem();
 
   // Dedupe warnings by event (keeping the highest severity), only those whose
