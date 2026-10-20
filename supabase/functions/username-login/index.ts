@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const { data: profile, error: lookupErr } = await admin
       .from("profiles")
       .select("email")
-      .ilike("username", username)
+      .eq("username", username)
       .limit(1)
       .maybeSingle();
     if (lookupErr) {
