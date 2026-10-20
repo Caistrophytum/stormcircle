@@ -7,3 +7,5 @@ project_id = "cmugqctuyqsimhfxruap"
     verify_jwt = false
   [functions.push-subscribe]
     verify_jwt = false
+  [functions.username-login]
+    verify_jwt = false
