@@ -9,3 +9,4 @@
 - Urgent notifications are event-driven: warning pollers and a chat insert trigger kick scoped notify-dispatch runs (mode alerts/chat); the cron sweep stays as the full backstop, avoiding high-frequency polling.
 - External cached JSON and geocoding share deduplication and body-inclusive deadlines so a stalled download cannot block all later refreshes.
 - Weather and exercise resolve hometown through `useHometownCoords`; WRS uses selected city or hometown directly rather than waiting for radar initialization or outlook polling.
+- Username sign-in resolves the email inside the `username-login` function (server-side) because profiles are private to their owner and emails must never reach the browser.
