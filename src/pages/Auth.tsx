@@ -69,6 +69,8 @@ const passwordSchema = z
 
 // Same string for every login failure so we don't leak which field was wrong.
 const GENERIC_AUTH_ERROR = "Invalid credentials";
+const SERVICE_DOWN_ERROR = "Sign-in service is not responding. Please try again in a minute.";
+const RATE_LIMIT_ERROR = "Too many attempts. Please wait a few minutes and try again.";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -108,46 +110,55 @@ const Auth = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      let email = loginIdentifier.trim();
-      // If the user entered a username (no @), look up their email from profiles
-      if (!email.includes("@")) {
-        const parsed = usernameSchema.safeParse(email);
+      const identifier = loginIdentifier.trim();
+      if (!identifier.includes("@")) {
+        // Username sign-in: resolved server-side so emails never reach the browser.
+        const parsed = usernameSchema.safeParse(identifier);
         if (!parsed.success) {
-          // Generic message to avoid revealing whether the username exists
           toast.error(GENERIC_AUTH_ERROR);
           return;
         }
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("email")
-          .eq("username", parsed.data)
-          .maybeSingle();
-        if (error || !data) {
-          toast.error(GENERIC_AUTH_ERROR);
+        const { data, error } = await supabase.functions.invoke("username-login", {
+          body: { username: parsed.data, password: loginPassword },
+        });
+        const status = (error as { context?: Response } | null)?.context?.status ?? 0;
+        if (error || !data?.access_token) {
+          if (status === 401) toast.error(GENERIC_AUTH_ERROR);
+          else if (status === 429) toast.error(RATE_LIMIT_ERROR);
+          else toast.error(SERVICE_DOWN_ERROR);
           return;
         }
-        email = data.email;
+        const { error: sessionErr } = await supabase.auth.setSession({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+        });
+        if (sessionErr) {
+          toast.error(SERVICE_DOWN_ERROR);
+          return;
+        }
       } else {
-        const parsed = emailSchema.safeParse(email);
+        const parsed = emailSchema.safeParse(identifier);
         if (!parsed.success) {
           toast.error(GENERIC_AUTH_ERROR);
           return;
         }
-        email = parsed.data;
-      }
-
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password: loginPassword,
-      });
-      if (error) {
-        // Always return the same generic message - never reveal whether
-        // the email exists or whether only the password was wrong
-        toast.error(GENERIC_AUTH_ERROR);
-        return;
+        const { error } = await supabase.auth.signInWithPassword({
+          email: parsed.data,
+          password: loginPassword,
+        });
+        if (error) {
+          const status = (error as { status?: number }).status ?? 0;
+          // Outages are reported honestly; credential failures stay generic.
+          if (status === 0 || status >= 500) toast.error(SERVICE_DOWN_ERROR);
+          else if (status === 429) toast.error(RATE_LIMIT_ERROR);
+          else toast.error(GENERIC_AUTH_ERROR);
+          return;
+        }
       }
       toast.success("Signed in");
       navigate("/");
+    } catch {
+      toast.error(SERVICE_DOWN_ERROR);
     } finally {
       setSubmitting(false);
     }
