@@ -641,7 +641,11 @@ Deno.serve(async (req) => {
         if (state && !notifiedWrs) {
           const sameAlerts = JSON.stringify(Object.entries(next.active_alerts).sort()) ===
             JSON.stringify(Object.entries((state.active_alerts ?? {}) as Record<string, string>).sort());
-          const sameWrs = !wrsChanged || Number(state.last_wrs) === Number(wrs);
+          // Same score keeps the old baseline only while it is still well
+          // inside the swing window, so swing detection behaves as before.
+          const baselineAge = state.last_wrs_at ? now - new Date(state.last_wrs_at).getTime() : Infinity;
+          const sameWrs = !wrsChanged ||
+            (Number(state.last_wrs) === Number(wrs) && baselineAge < WRS_WINDOW_MS / 2);
           if (
             sameAlerts && sameWrs &&
             next.last_spc === state.last_spc && next.last_fire === state.last_fire &&
