@@ -403,36 +403,48 @@ Deno.serve(async (req) => {
     }
     const coveringByUser = new Map<string, CoveringAlert[]>();
     if (points.size && doAlerts) {
-      const PAGE = 50;
-      for (let from = 0; ; from += PAGE) {
-        const { data: page, error: pageErr } = await supabase
-          .from("active_alerts")
-          .select("alert_id, event, severity, headline, area_desc, expires_at, geometry")
-          .or(`expires_at.is.null,expires_at.gte.${new Date().toISOString()}`)
-          .order("alert_id", { ascending: true })
-          .range(from, from + PAGE - 1);
-        if (pageErr) {
-          console.error("[notify-dispatch] alert page failed", pageErr.message);
-          break;
-        }
-        if (!page?.length) break;
-        for (const a of page) {
-          if (a.expires_at && new Date(a.expires_at).getTime() <= now) continue;
-          const geom = a.geometry as unknown as Geom;
-          for (const [uid, pt] of points) {
-            if (!pointInGeom(pt.lon, pt.lat, geom)) continue;
-            const list = coveringByUser.get(uid) ?? [];
-            list.push({
-              alert_id: a.alert_id,
-              event: a.event,
-              severity: a.severity,
-              headline: a.headline,
-              area_desc: a.area_desc,
-            });
-            coveringByUser.set(uid, list);
+      // PERF: ask the database only for alerts whose bounding box contains
+      // each distinct subscriber point (bbox columns are kept by a trigger),
+      // then run the exact polygon test on those few candidates.
+      const usersByPoint = new Map<string, { lat: number; lon: number; uids: string[] }>();
+      for (const [uid, pt] of points) {
+        const k = `${pt.lat.toFixed(4)},${pt.lon.toFixed(4)}`;
+        const e = usersByPoint.get(k) ?? { lat: pt.lat, lon: pt.lon, uids: [] };
+        e.uids.push(uid);
+        usersByPoint.set(k, e);
+      }
+      const nowIso = new Date().toISOString();
+      const entries = [...usersByPoint.values()];
+      const CONC = 4;
+      for (let i = 0; i < entries.length; i += CONC) {
+        await Promise.all(entries.slice(i, i + CONC).map(async (e) => {
+          const { data: cands, error: cErr } = await supabase
+            .from("active_alerts")
+            .select("alert_id, event, severity, headline, area_desc, expires_at, geometry")
+            .lte("bbox_min_lon", e.lon).gte("bbox_max_lon", e.lon)
+            .lte("bbox_min_lat", e.lat).gte("bbox_max_lat", e.lat)
+            .or(`expires_at.is.null,expires_at.gte.${nowIso}`)
+            .limit(200);
+          if (cErr) {
+            console.error("[notify-dispatch] alert candidates failed", cErr.message);
+            return;
           }
-        }
-        if (page.length < PAGE) break;
+          for (const a of cands ?? []) {
+            if (a.expires_at && new Date(a.expires_at).getTime() <= now) continue;
+            if (!pointInGeom(e.lon, e.lat, a.geometry as unknown as Geom)) continue;
+            for (const uid of e.uids) {
+              const list = coveringByUser.get(uid) ?? [];
+              list.push({
+                alert_id: a.alert_id,
+                event: a.event,
+                severity: a.severity,
+                headline: a.headline,
+                area_desc: a.area_desc,
+              });
+              coveringByUser.set(uid, list);
+            }
+          }
+        }));
       }
     }
 
