@@ -243,8 +243,9 @@ function useRecentChatMessages(limit = 30) {
       const { data } = await supabase
         .from("messages")
         .select("id,username,badge,content,created_at,user_id")
+        .not("user_id", "in", `(${BOT_USER_IDS.join(",")})`)
         .order("created_at", { ascending: false })
-        .limit(limit * 2);
+        .limit(limit);
       if (!cancelled && data) {
         const filtered = (data as ChatMessage[]).filter((m) => !BOT_USER_IDS.includes(m.user_id)).slice(0, limit);
         setMsgs(filtered);

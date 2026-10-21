@@ -22,6 +22,17 @@ import { kickNotify } from "../_shared/kickNotify.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { GeometryResolver, type Geometry } from "./geometry.ts";
 
+// FNV-style double hash of the row content (excluding bookkeeping fields).
+function hashRow(value: unknown): string {
+  const s = JSON.stringify(value);
+  let h = 0x811c9dc5, g = 0x1000193;
+  for (let i = 0; i < s.length; i++) {
+    h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
+    g = Math.imul(g ^ s.charCodeAt(s.length - 1 - i), 0x01000193) >>> 0;
+  }
+  return `${h.toString(16)}${g.toString(16)}:${s.length}`;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
@@ -366,16 +377,24 @@ Deno.serve(async (req) => {
     //    feed we actually re-read this run. Untouched countries keep their rows.
     const { data: existing } = await supabase
       .from("active_alerts")
-      .select("alert_id, first_seen_at")
+      .select("alert_id, first_seen_at, content_hash")
       .like("alert_id", "MA-%");
     const firstSeen = new Map<string, string>();
-    for (const r of existing ?? []) if (r.first_seen_at) firstSeen.set(r.alert_id, r.first_seen_at);
+    const prevHash = new Map<string, string | null>();
+    for (const r of existing ?? []) {
+      if (r.first_seen_at) firstSeen.set(r.alert_id, r.first_seen_at);
+      prevHash.set(r.alert_id, r.content_hash ?? null);
+    }
 
-    const payload = rows.map((r) => ({
-      ...r,
-      updated_at: nowIso,
-      first_seen_at: firstSeen.get(r.alert_id) ?? nowIso,
-    }));
+    // PERF: only write rows whose content changed since the last poll.
+    const payload = rows
+      .map((r) => ({ ...r, content_hash: hashRow(r) }))
+      .filter((r) => prevHash.get(r.alert_id) !== r.content_hash)
+      .map((r) => ({
+        ...r,
+        updated_at: nowIso,
+        first_seen_at: firstSeen.get(r.alert_id) ?? nowIso,
+      }));
 
     for (let i = 0; i < payload.length; i += 200) {
       const { error } = await supabase
