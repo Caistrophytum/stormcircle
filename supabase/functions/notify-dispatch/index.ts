@@ -62,6 +62,7 @@ const MAX_PER_HOUR = 10;
 // Chat reports: how far back a first-time user is caught up on, and the
 // radius that counts as "local" for scope = local.
 const CHAT_LOOKBACK_MS = 15 * 60 * 1000;
+const INACTIVE_MS = 7 * 24 * 60 * 60 * 1000;
 const CHAT_LOCAL_RADIUS_KM = 150;
 const WRS_COOLDOWN_MS = 60 * 60 * 1000;
 const WRS_WINDOW_MS = 30 * 60 * 1000;
@@ -345,20 +346,24 @@ Deno.serve(async (req) => {
     }
 
     const userIds = prefs.map((p) => p.user_id);
-    const chatSince = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const [{ data: profiles }, { data: states }, { data: chatRows }] =
-      await Promise.all([
-        supabase.from("profiles").select("id, username, location").in("id", userIds),
-        supabase.from("notification_state").select("*").in("user_id", userIds),
-        doChat
-          ? supabase
-            .from("messages")
-            .select("id, user_id, username, content, created_at, place_lat, place_lon")
-            .neq("badge", "System")
-            .gte("created_at", chatSince)
-            .order("created_at", { ascending: true })
-          : Promise.resolve({ data: [] as never[] }),
-      ]);
+    const [{ data: profiles }, { data: states }] = await Promise.all([
+      supabase.from("profiles").select("id, username, location, last_active_at").in("id", userIds),
+      supabase.from("notification_state").select("*").in("user_id", userIds),
+    ]);
+    // Chat: read only after the oldest subscriber cursor (max 60 min back).
+    let chatSinceMs = Date.now() - CHAT_LOOKBACK_MS;
+    for (const s of states ?? []) {
+      if (s.last_chat_at) chatSinceMs = Math.min(chatSinceMs, new Date(s.last_chat_at).getTime());
+    }
+    chatSinceMs = Math.max(chatSinceMs, Date.now() - 60 * 60 * 1000);
+    const { data: chatRows } = doChat
+      ? await supabase
+        .from("messages")
+        .select("id, user_id, username, content, created_at, place_lat, place_lon")
+        .neq("badge", "System")
+        .gt("created_at", new Date(chatSinceMs).toISOString())
+        .order("created_at", { ascending: true })
+      : { data: [] as never[] };
     const chatMessages = chatRows ?? [];
 
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
@@ -384,7 +389,11 @@ Deno.serve(async (req) => {
     // can be streamed once and matched against all of them.
     const points = new Map<string, { lat: number; lon: number }>();
     for (const pref of prefs) {
-      const location = profileById.get(pref.user_id)?.location ?? null;
+      const prof = profileById.get(pref.user_id);
+      // Users away for 7+ days get no notifications (they are signed out on
+      // return). Without a point, processUser skips them entirely.
+      if (prof?.last_active_at && now - new Date(prof.last_active_at).getTime() > INACTIVE_MS) continue;
+      const location = prof?.location ?? null;
       if (!location) continue;
       if (!geoCache.has(location)) geoCache.set(location, await geocode(location));
       const pt = geoCache.get(location);
@@ -403,36 +412,48 @@ Deno.serve(async (req) => {
     }
     const coveringByUser = new Map<string, CoveringAlert[]>();
     if (points.size && doAlerts) {
-      const PAGE = 50;
-      for (let from = 0; ; from += PAGE) {
-        const { data: page, error: pageErr } = await supabase
-          .from("active_alerts")
-          .select("alert_id, event, severity, headline, area_desc, expires_at, geometry")
-          .or(`expires_at.is.null,expires_at.gte.${new Date().toISOString()}`)
-          .order("alert_id", { ascending: true })
-          .range(from, from + PAGE - 1);
-        if (pageErr) {
-          console.error("[notify-dispatch] alert page failed", pageErr.message);
-          break;
-        }
-        if (!page?.length) break;
-        for (const a of page) {
-          if (a.expires_at && new Date(a.expires_at).getTime() <= now) continue;
-          const geom = a.geometry as unknown as Geom;
-          for (const [uid, pt] of points) {
-            if (!pointInGeom(pt.lon, pt.lat, geom)) continue;
-            const list = coveringByUser.get(uid) ?? [];
-            list.push({
-              alert_id: a.alert_id,
-              event: a.event,
-              severity: a.severity,
-              headline: a.headline,
-              area_desc: a.area_desc,
-            });
-            coveringByUser.set(uid, list);
+      // PERF: ask the database only for alerts whose bounding box contains
+      // each distinct subscriber point (bbox columns are kept by a trigger),
+      // then run the exact polygon test on those few candidates.
+      const usersByPoint = new Map<string, { lat: number; lon: number; uids: string[] }>();
+      for (const [uid, pt] of points) {
+        const k = `${pt.lat.toFixed(4)},${pt.lon.toFixed(4)}`;
+        const e = usersByPoint.get(k) ?? { lat: pt.lat, lon: pt.lon, uids: [] };
+        e.uids.push(uid);
+        usersByPoint.set(k, e);
+      }
+      const nowIso = new Date().toISOString();
+      const entries = [...usersByPoint.values()];
+      const CONC = 4;
+      for (let i = 0; i < entries.length; i += CONC) {
+        await Promise.all(entries.slice(i, i + CONC).map(async (e) => {
+          const { data: cands, error: cErr } = await supabase
+            .from("active_alerts")
+            .select("alert_id, event, severity, headline, area_desc, expires_at, geometry")
+            .lte("bbox_min_lon", e.lon).gte("bbox_max_lon", e.lon)
+            .lte("bbox_min_lat", e.lat).gte("bbox_max_lat", e.lat)
+            .or(`expires_at.is.null,expires_at.gte.${nowIso}`)
+            .limit(200);
+          if (cErr) {
+            console.error("[notify-dispatch] alert candidates failed", cErr.message);
+            return;
           }
-        }
-        if (page.length < PAGE) break;
+          for (const a of cands ?? []) {
+            if (a.expires_at && new Date(a.expires_at).getTime() <= now) continue;
+            if (!pointInGeom(e.lon, e.lat, a.geometry as unknown as Geom)) continue;
+            for (const uid of e.uids) {
+              const list = coveringByUser.get(uid) ?? [];
+              list.push({
+                alert_id: a.alert_id,
+                event: a.event,
+                severity: a.severity,
+                headline: a.headline,
+                area_desc: a.area_desc,
+              });
+              coveringByUser.set(uid, list);
+            }
+          }
+        }));
       }
     }
 
@@ -621,7 +642,7 @@ Deno.serve(async (req) => {
       const wrsChanged = wrs != null;
       const notifiedWrs = pending.some((p) => p.category === "wrs_swing");
       const persist = async () => {
-        const { error: stErr } = await supabase.from("notification_state").upsert({
+        const next = {
           user_id: pref.user_id,
           last_wrs: wrsChanged ? wrs : state?.last_wrs ?? null,
           last_wrs_at: wrsChanged ? new Date().toISOString() : state?.last_wrs_at ?? null,
@@ -635,10 +656,33 @@ Deno.serve(async (req) => {
             ? freshChat[freshChat.length - 1].created_at
             : state?.last_chat_at ?? new Date(now - CHAT_LOOKBACK_MS).toISOString(),
           last_recap_date: recapDate,
+        };
+        // PERF: skip the write when nothing meaningful changed. last_wrs_at
+        // only matters when the score itself moved.
+        if (state && !notifiedWrs) {
+          const sameAlerts = JSON.stringify(Object.entries(next.active_alerts).sort()) ===
+            JSON.stringify(Object.entries((state.active_alerts ?? {}) as Record<string, string>).sort());
+          // Same score keeps the old baseline only while it is still well
+          // inside the swing window, so swing detection behaves as before.
+          const baselineAge = state.last_wrs_at ? now - new Date(state.last_wrs_at).getTime() : Infinity;
+          const sameWrs = !wrsChanged ||
+            (Number(state.last_wrs) === Number(wrs) && baselineAge < WRS_WINDOW_MS / 2);
+          if (
+            sameAlerts && sameWrs &&
+            next.last_spc === state.last_spc && next.last_fire === state.last_fire &&
+            next.last_chat_at === state.last_chat_at &&
+            next.last_recap_date === state.last_recap_date
+          ) return;
+          if (sameWrs) {
+            next.last_wrs = state.last_wrs;
+            next.last_wrs_at = state.last_wrs_at;
+          }
+        }
+        const { error: stErr } = await supabase.from("notification_state").upsert({
+          ...next,
           updated_at: new Date().toISOString(),
         });
         if (stErr) console.error("[notify-dispatch] state save failed", stErr.message);
-
       };
 
       if (!pending.length) return persist();

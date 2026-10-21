@@ -18,6 +18,10 @@ export type Database = {
         Row: {
           alert_id: string
           area_desc: string | null
+          bbox_max_lat: number | null
+          bbox_max_lon: number | null
+          bbox_min_lat: number | null
+          bbox_min_lon: number | null
           certainty: string | null
           content_hash: string | null
           effective: string | null
@@ -39,6 +43,10 @@ export type Database = {
         Insert: {
           alert_id: string
           area_desc?: string | null
+          bbox_max_lat?: number | null
+          bbox_max_lon?: number | null
+          bbox_min_lat?: number | null
+          bbox_min_lon?: number | null
           certainty?: string | null
           content_hash?: string | null
           effective?: string | null
@@ -60,6 +68,10 @@ export type Database = {
         Update: {
           alert_id?: string
           area_desc?: string | null
+          bbox_max_lat?: number | null
+          bbox_max_lon?: number | null
+          bbox_min_lat?: number | null
+          bbox_min_lon?: number | null
           certainty?: string | null
           content_hash?: string | null
           effective?: string | null
@@ -530,6 +542,7 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          last_active_at: string | null
           location: string | null
           meteorologist_applied: boolean
           username: string
@@ -539,6 +552,7 @@ export type Database = {
           created_at?: string | null
           email: string
           id: string
+          last_active_at?: string | null
           location?: string | null
           meteorologist_applied?: boolean
           username: string
@@ -548,6 +562,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          last_active_at?: string | null
           location?: string | null
           meteorologist_applied?: boolean
           username?: string
@@ -763,6 +778,7 @@ export type Database = {
       register_visit: { Args: { _visitor_id: string }; Returns: number }
       rollup_warning_counts: { Args: never; Returns: undefined }
       run_maintenance: { Args: never; Returns: undefined }
+      touch_last_active: { Args: never; Returns: string }
       upsert_cron_secret: { Args: { _val: string }; Returns: undefined }
     }
     Enums: {

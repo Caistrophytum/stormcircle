@@ -55,6 +55,7 @@ import type { LSRReport } from "@/hooks/useLSR";
 import type { Profile } from "@/hooks/useAuth";
 import { IEM_LSR_URL as LSR_URL } from "@/lib/endpoints";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
+import { toast } from "sonner";
 
 // ---------------- shared constants ----------------
 
@@ -63,6 +64,7 @@ const REALTIME_DEBOUNCE_MS = 300;
 // 60 s background refreshes for alerts + LSRs are driven by the shared
 // `useRefreshTick` clock (see the tick-effect below). No local intervals.
 const PROFILE_TIMEOUT_MS = 5_000;
+const INACTIVE_MS = 7 * 24 * 60 * 60 * 1000;
 const ALERTS_TIMEOUT_MS = 8_000;
 const POLYGONS_TIMEOUT_MS = 10_000;
 
@@ -524,6 +526,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const { data: rows, error } = await supabase
           .from("active_alerts")
           .select("alert_id, event, severity, certainty, urgency, headline, area_desc, expires_at, first_seen_at, properties")
+          .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
           .abortSignal(controller.signal);
         if (error) throw error;
         if (cancelled) return;
@@ -848,6 +851,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setUser(existing);
         setAuthLoading(false);
         if (existing) {
+          // 7-day inactivity rule: sign out returning users who were away
+          // 7+ days (their devices were already unregistered server-side).
+          void (async () => {
+            try {
+              const { data: prev } = await supabase.rpc("touch_last_active");
+              if (prev && Date.now() - new Date(prev as string).getTime() > INACTIVE_MS) {
+                toast("You were signed out after 7 days away", {
+                  description: "Sign in again to keep receiving notifications.",
+                });
+                await supabase.auth.signOut();
+                return;
+              }
+            } catch (e) {
+              console.warn("touch_last_active failed:", e);
+            }
+          })();
           void fetchProfile(existing.id);
         } else {
           setProfileLoading(false);

@@ -10,3 +10,5 @@
 - External cached JSON and geocoding share deduplication and body-inclusive deadlines so a stalled download cannot block all later refreshes.
 - Weather and exercise resolve hometown through `useHometownCoords`; WRS uses selected city or hometown directly rather than waiting for radar initialization or outlook polling.
 - Username sign-in resolves the email inside the `username-login` function (server-side) because profiles are private to their owner and emails must never reach the browser.
+- Users inactive 7+ days (profiles.last_active_at, touched daily via `touch_last_active`) are skipped by notify-dispatch, lose push registrations in maintenance, and are signed out on return, so stale devices get no ghost notifications.
+- notify-dispatch finds alert candidates via trigger-maintained bbox columns on `active_alerts`, then runs exact polygon tests; never page full geometry.
