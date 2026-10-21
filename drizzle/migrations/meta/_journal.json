@@ -64,6 +64,13 @@
       "when": 1792564105890,
       "tag": "0008_inactivity_and_alert_bbox",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792564122139,
+      "tag": "0009_fix_alert_bbox_trigger",
+      "breakpoints": true
     }
   ]
 }
