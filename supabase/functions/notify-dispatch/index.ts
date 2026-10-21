@@ -345,20 +345,24 @@ Deno.serve(async (req) => {
     }
 
     const userIds = prefs.map((p) => p.user_id);
-    const chatSince = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const [{ data: profiles }, { data: states }, { data: chatRows }] =
-      await Promise.all([
-        supabase.from("profiles").select("id, username, location").in("id", userIds),
-        supabase.from("notification_state").select("*").in("user_id", userIds),
-        doChat
-          ? supabase
-            .from("messages")
-            .select("id, user_id, username, content, created_at, place_lat, place_lon")
-            .neq("badge", "System")
-            .gte("created_at", chatSince)
-            .order("created_at", { ascending: true })
-          : Promise.resolve({ data: [] as never[] }),
-      ]);
+    const [{ data: profiles }, { data: states }] = await Promise.all([
+      supabase.from("profiles").select("id, username, location, last_active_at").in("id", userIds),
+      supabase.from("notification_state").select("*").in("user_id", userIds),
+    ]);
+    // Chat: read only after the oldest subscriber cursor (max 60 min back).
+    let chatSinceMs = Date.now() - CHAT_LOOKBACK_MS;
+    for (const s of states ?? []) {
+      if (s.last_chat_at) chatSinceMs = Math.min(chatSinceMs, new Date(s.last_chat_at).getTime());
+    }
+    chatSinceMs = Math.max(chatSinceMs, Date.now() - 60 * 60 * 1000);
+    const { data: chatRows } = doChat
+      ? await supabase
+        .from("messages")
+        .select("id, user_id, username, content, created_at, place_lat, place_lon")
+        .neq("badge", "System")
+        .gt("created_at", new Date(chatSinceMs).toISOString())
+        .order("created_at", { ascending: true })
+      : { data: [] as never[] };
     const chatMessages = chatRows ?? [];
 
     const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
