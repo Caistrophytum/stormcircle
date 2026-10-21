@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useOnlineCount } from "@/hooks/useOnlineCount";
 import { useLifetimeVisitors } from "@/hooks/useLifetimeVisitors";
 import { useUnitSystem, toggleUnitSystem } from "@/hooks/useUnitSystem";
-import { Radio } from "lucide-react";
 import NotificationBell from "@/components/NotificationBell";
 import stormcircleLogo from "@/assets/stormcircle-logo.png.asset.json";
 import {
