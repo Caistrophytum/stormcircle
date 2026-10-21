@@ -62,6 +62,7 @@ const MAX_PER_HOUR = 10;
 // Chat reports: how far back a first-time user is caught up on, and the
 // radius that counts as "local" for scope = local.
 const CHAT_LOOKBACK_MS = 15 * 60 * 1000;
+const INACTIVE_MS = 7 * 24 * 60 * 60 * 1000;
 const CHAT_LOCAL_RADIUS_KM = 150;
 const WRS_COOLDOWN_MS = 60 * 60 * 1000;
 const WRS_WINDOW_MS = 30 * 60 * 1000;
@@ -388,7 +389,11 @@ Deno.serve(async (req) => {
     // can be streamed once and matched against all of them.
     const points = new Map<string, { lat: number; lon: number }>();
     for (const pref of prefs) {
-      const location = profileById.get(pref.user_id)?.location ?? null;
+      const prof = profileById.get(pref.user_id);
+      // Users away for 7+ days get no notifications (they are signed out on
+      // return). Without a point, processUser skips them entirely.
+      if (prof?.last_active_at && now - new Date(prof.last_active_at).getTime() > INACTIVE_MS) continue;
+      const location = prof?.location ?? null;
       if (!location) continue;
       if (!geoCache.has(location)) geoCache.set(location, await geocode(location));
       const pt = geoCache.get(location);
