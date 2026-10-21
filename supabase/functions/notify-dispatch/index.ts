@@ -621,7 +621,7 @@ Deno.serve(async (req) => {
       const wrsChanged = wrs != null;
       const notifiedWrs = pending.some((p) => p.category === "wrs_swing");
       const persist = async () => {
-        const { error: stErr } = await supabase.from("notification_state").upsert({
+        const next = {
           user_id: pref.user_id,
           last_wrs: wrsChanged ? wrs : state?.last_wrs ?? null,
           last_wrs_at: wrsChanged ? new Date().toISOString() : state?.last_wrs_at ?? null,
@@ -635,10 +635,29 @@ Deno.serve(async (req) => {
             ? freshChat[freshChat.length - 1].created_at
             : state?.last_chat_at ?? new Date(now - CHAT_LOOKBACK_MS).toISOString(),
           last_recap_date: recapDate,
+        };
+        // PERF: skip the write when nothing meaningful changed. last_wrs_at
+        // only matters when the score itself moved.
+        if (state && !notifiedWrs) {
+          const sameAlerts = JSON.stringify(Object.entries(next.active_alerts).sort()) ===
+            JSON.stringify(Object.entries((state.active_alerts ?? {}) as Record<string, string>).sort());
+          const sameWrs = !wrsChanged || Number(state.last_wrs) === Number(wrs);
+          if (
+            sameAlerts && sameWrs &&
+            next.last_spc === state.last_spc && next.last_fire === state.last_fire &&
+            next.last_chat_at === state.last_chat_at &&
+            next.last_recap_date === state.last_recap_date
+          ) return;
+          if (sameWrs) {
+            next.last_wrs = state.last_wrs;
+            next.last_wrs_at = state.last_wrs_at;
+          }
+        }
+        const { error: stErr } = await supabase.from("notification_state").upsert({
+          ...next,
           updated_at: new Date().toISOString(),
         });
         if (stErr) console.error("[notify-dispatch] state save failed", stErr.message);
-
       };
 
       if (!pending.length) return persist();
