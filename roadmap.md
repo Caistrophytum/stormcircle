@@ -1,36 +1,3 @@
-# StormCircle performance and reliability audit
+# Roadmap
 
-All items below are implemented and verified.
-
-## Database / cloud
-- [x] D1 alerts-poll rewrote every alert row every minute. Added a content hash; only changed rows are written. Verified: 0 of 226 rows rewritten in a quiet minute.
-- [x] D2 Browser re-downloaded ~4MB of map shapes every 60s. Now fetches a tiny fingerprint list and pulls shapes only for new or changed alerts. Verified in a live 80 second run.
-- [x] D3 notify-dispatch now filters expired alerts in SQL instead of loading the whole table every 5 minutes.
-- [x] D4 Added an index for the trend bar query. Restored a dead expired-row cleanup branch in alerts-poll.
-
-## Frontend
-- [x] F1 Split the single shared data context into six per-domain contexts.
-- [x] F2 Moved the one-second countdown into isolated memoized widgets.
-- [x] F3 Memoized the main map panel.
-- [x] F4 Added a shared TTL cache and in-flight dedupe for Open-Meteo calls.
-- [x] F5 Recompressed background images and app icons (roughly 900KB saved).
-
-## Known remaining risks
-- zone_geom_cache is the largest table (~41MB). A 3-day vacuum job exists; not changed.
-- alerts-poll defers ~250 zone shape lookups per run by design (CPU budget).
-- No React.memo on the large mobile and chat components; the context split removed the main re-render driver, so this was left alone rather than risk behaviour changes.
-
-## Audit pass 2 (2026-09-26)
-- [x] Crash boundary around the whole app + global unhandled-rejection guard
-- [x] Mobile chat box applies realtime payloads instead of re-querying per event
-- [x] Indexes: messages(user_id, created_at) for rate limit; message_signature expression index for delete trigger
-
-## Linked desktop panels
-- [x] Minimizing Top 10 Hazards expands chat below its collapsed header
-
-## Q&A content review
-- [x] Verified and updated outdated answers, added missing guidance, and removed em dashes. Checked all 20 answers and return navigation in the browser.
-
-## Weather error recovery
-- [x] Trace login/location connections and persistent ERR across weather, WRS, AQI and exercise. No static connection mismatch or invalid weather parameters found; intermittent profile timeouts remain a possible separate cause.
-- [x] Fix confirmed request and recovery defects, add regression tests, and verify signed-in readings. Seven tests pass; signed-in weather and WRS recover after deliberately interrupted requests and a reload.
+- [ ] Database usage v2 spreadsheet (before/after optimizations of 21 Oct 2026). Blocked: needs ~24h of traffic; run when user asks on/after 22 Oct.
