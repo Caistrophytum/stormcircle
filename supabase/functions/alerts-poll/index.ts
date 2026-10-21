@@ -207,21 +207,19 @@ Deno.serve(async (req) => {
       // Pull whatever the cache already has - Postgres handles `.in()` up
       // to a generous size; chunk just in case there's a national outbreak.
       const CHUNK = 500;
-      const cutoff = new Date(Date.now() - ZONE_CACHE_TTL_MS).toISOString();
+      const cutoffMs = Date.now() - ZONE_CACHE_TTL_MS;
+      // Stale rows are kept as a fallback and for change comparison.
+      const staleGeom = new Map<string, GeomT>();
       for (let i = 0; i < zoneList.length; i += CHUNK) {
         const slice = zoneList.slice(i, i + CHUNK);
         const { data: cached } = await supabase
           .from("zone_geom_cache")
-          .select("zone_url, geometry")
-          .in("zone_url", slice)
-          // Perf: push staleness filter into SQL (backed by
-          // zone_geom_cache_fetched_at_idx) so we don't ship stale rows
-          // over the wire just to discard them in JS.
-          .gte("fetched_at", cutoff);
+          .select("zone_url, geometry, fetched_at")
+          .in("zone_url", slice);
         for (const row of cached ?? []) {
-          if (row.geometry) {
-            zoneGeom.set(row.zone_url, row.geometry as GeomT);
-          }
+          if (!row.geometry) continue;
+          if (new Date(row.fetched_at).getTime() >= cutoffMs) zoneGeom.set(row.zone_url, row.geometry as GeomT);
+          else staleGeom.set(row.zone_url, row.geometry as GeomT);
         }
       }
 
@@ -234,16 +232,36 @@ Deno.serve(async (req) => {
       const missing = missingAll.slice(0, MAX_MISSING_ZONES_PER_RUN);
       if (missingAll.length > missing.length) {
         console.log(`[alerts-poll] deferring ${missingAll.length - missing.length} zone fetches to next cycle`);
+        // Use stale shapes for deferred zones rather than drawing nothing.
+        for (const z of missingAll.slice(missing.length)) {
+          const g = staleGeom.get(z);
+          if (g) zoneGeom.set(z, g);
+        }
       }
       if (missing.length > 0) {
         const fetched = await runWithConcurrency(missing, ZONE_FETCH_CONCURRENCY, fetchZoneFromNetwork);
         const upserts: { zone_url: string; geometry: any; fetched_at: string }[] = [];
+        const unchanged: string[] = [];
         for (let i = 0; i < missing.length; i++) {
           const g = fetched[i];
           if (g) {
             zoneGeom.set(missing[i], g);
-            upserts.push({ zone_url: missing[i], geometry: g, fetched_at: nowIso });
+            const old = staleGeom.get(missing[i]);
+            // PERF: identical shape → only bump fetched_at (tiny row update,
+            // the large geometry value is not rewritten).
+            if (old && JSON.stringify(old) === JSON.stringify(g)) unchanged.push(missing[i]);
+            else upserts.push({ zone_url: missing[i], geometry: g, fetched_at: nowIso });
+          } else {
+            const old = staleGeom.get(missing[i]);
+            if (old) zoneGeom.set(missing[i], old);
           }
+        }
+        for (let i = 0; i < unchanged.length; i += 200) {
+          const { error } = await supabase
+            .from("zone_geom_cache")
+            .update({ fetched_at: nowIso })
+            .in("zone_url", unchanged.slice(i, i + 200));
+          if (error) console.warn("[alerts-poll] zone cache touch err:", error);
         }
         if (upserts.length > 0) {
           for (let i = 0; i < upserts.length; i += UPSERT_BATCH) {
