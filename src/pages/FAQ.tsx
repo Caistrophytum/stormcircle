@@ -112,26 +112,6 @@ const faqs: FaqItem[] = [
     answer:
       "Open StormCircle.net in your browser to explore the weather map and panels. Create a free account to post community reports, save your hometown, and configure notifications. On mobile, the bottom menu opens Radar, Alerts, Chat, Exercise Comfort, Settings, and Q&A. No app download is required.",
   },
-  {
-    question: "Is there a StormCircle Zello channel?",
-    answer: (
-      <>
-        Yes. StormCircle Radio is the community's Zello channel for voice communication.
-        Use the Radio link beside the notification bell on desktop, or{" "}
-        <a
-          href="https://on.zello.com/t5xn213"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
-        >
-          open StormCircle Radio on Zello
-        </a>{" "}
-        to join. It is not an emergency service.
-      </>
-    ),
-    jsonAnswer:
-      "Yes. StormCircle Radio is the community's Zello channel for voice communication. Use the Radio link beside the notification bell on desktop, or visit https://on.zello.com/t5xn213 to join. It is not an emergency service.",
-  },
 ];
 
 const PAYPAL_BASE = "https://paypal.me/OmriHazut";
