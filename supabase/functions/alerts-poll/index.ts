@@ -77,6 +77,11 @@ async function runWithConcurrency<T, R>(items: T[], limit: number, fn: (item: T)
   return out;
 }
 
+// jsonb reorders object keys, so compare type + coordinates, not the raw JSON.
+function sameGeom(a: any, b: any): boolean {
+  return a?.type === b?.type && JSON.stringify(a?.coordinates) === JSON.stringify(b?.coordinates);
+}
+
 async function fetchZoneFromNetwork(zoneUrl: string): Promise<GeomT> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ZONE_FETCH_TIMEOUT_MS);
@@ -249,7 +254,7 @@ Deno.serve(async (req) => {
             const old = staleGeom.get(missing[i]);
             // PERF: identical shape → only bump fetched_at (tiny row update,
             // the large geometry value is not rewritten).
-            if (old && JSON.stringify(old) === JSON.stringify(g)) unchanged.push(missing[i]);
+            if (old && sameGeom(old, g)) unchanged.push(missing[i]);
             else upserts.push({ zone_url: missing[i], geometry: g, fetched_at: nowIso });
           } else {
             const old = staleGeom.get(missing[i]);
@@ -337,7 +342,10 @@ Deno.serve(async (req) => {
     // quiet hour this drops a ~520-row / ~6MB write down to a handful of
     // rows, and stops the realtime channel from firing 520 change events a
     // minute at every connected browser.
-    const changed = rows.filter((r) => hashById.get(r.alert_id) !== r.content_hash);
+    // NWS occasionally lists the same alert id twice; Postgres rejects a batch
+    // that upserts one key twice, which failed the whole batch every run.
+    const uniqueRows = [...new Map(rows.map((r) => [r.alert_id, r])).values()];
+    const changed = uniqueRows.filter((r) => hashById.get(r.alert_id) !== r.content_hash);
 
     // Smaller batches keep each upsert well inside the Postgres
     // statement_timeout (large geometry payloads can otherwise push a
