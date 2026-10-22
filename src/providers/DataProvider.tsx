@@ -827,7 +827,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
 
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return;
       const next = session?.user ?? null;
       setUser(next);
@@ -836,7 +836,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
         // Deferred to avoid the Supabase deadlock when calling supabase from
         // inside an auth event callback. Dedup guard above prevents the
         // duplicate fetch caused by getSession() racing INITIAL_SESSION.
-        setTimeout(() => { if (mounted) void fetchProfile(next.id); }, 0);
+        setTimeout(() => {
+          if (!mounted) return;
+          // A fresh sign-in counts as activity: reset the 7-day timer so the
+          // returning user is not signed out again or skipped by notifications.
+          if (event === "SIGNED_IN") {
+            void supabase.rpc("touch_last_active").then(({ error }) => {
+              if (error) console.warn("touch_last_active failed:", error);
+            });
+          }
+          void fetchProfile(next.id);
+        }, 0);
       } else {
         profileUserIdRef.current = null;
         setProfile(null);
