@@ -58,6 +58,7 @@ function stripHtml(input: string): string {
     // Decode-then-strip stray angle brackets that survived
     .replace(/[<>]/g, "")
     // Collapse non-printable control chars (keep \n, \r, \t)
+    // eslint-disable-next-line no-control-regex
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, "")
     .trim();
 }
