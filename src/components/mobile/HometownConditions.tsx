@@ -80,9 +80,52 @@ const realFeelDescriptor = (c: number) => {
 function severityColor(rawWord: string): string {
   // Pressure trend wordings arrive prefixed with their direction arrow.
   const word = rawWord.replace(/^[↗↘→]\s*/, "");
-  const calm = ["Calm", "Light Air", "Light Breeze", "Gentle Breeze", "Good", "None", "Low", "Pleasant", "Comfortable", "Dry", "Very Dry", "Moderate", "Stable"];
-  const warn = ["Moderate Breeze", "Fresh Breeze", "Medium", "Cool", "Warm", "Very Warm", "Mostly Comfortable", "Muggy", "Unhealthy for Sensitive Groups", "Climbing", "Falling"];
-  const hot = ["Strong Breeze", "Near Gale", "Gale", "Strong Gale", "Storm", "Violent Storm", "Hurricane Force", "High", "Very High", "Extreme", "Hot", "Very Hot", "Unhealthy", "Very Unhealthy", "Hazardous", "Oppressive"];
+  const calm = [
+    "Calm",
+    "Light Air",
+    "Light Breeze",
+    "Gentle Breeze",
+    "Good",
+    "None",
+    "Low",
+    "Pleasant",
+    "Comfortable",
+    "Dry",
+    "Very Dry",
+    "Stable",
+  ];
+  const warn = [
+    "Moderate",
+    "Moderate Breeze",
+    "Fresh Breeze",
+    "Medium",
+    "Cool",
+    "Warm",
+    "Very Warm",
+    "Mostly Comfortable",
+    "Muggy",
+    "Unhealthy for Sensitive Groups",
+    "Climbing",
+    "Falling",
+  ];
+  const hot = [
+    "Strong Breeze",
+    "Near Gale",
+    "Gale",
+    "Strong Gale",
+    "Storm",
+    "Violent Storm",
+    "Hurricane Force",
+    "High",
+    "Very High",
+    "Extreme",
+    "Hot",
+    "Very Hot",
+    "Unhealthy",
+    "Very Unhealthy",
+    "Hazardous",
+    "Oppressive",
+  ];
   if (calm.includes(word)) return "hsl(120 60% 55%)";
   if (warn.includes(word)) return "hsl(50 95% 55%)";
   if (hot.includes(word)) return "hsl(0 80% 60%)";
@@ -100,10 +143,7 @@ export default function HometownConditions({ cityName, weather, signedIn }: Prop
   const unitSystem = useUnitSystem();
 
   /** Small numeric readout: value + unit, or loading/ERR fallbacks. */
-  const readout = (
-    display: { value: number; unit: string } | null,
-    opts?: { decimals?: number },
-  ) => {
+  const readout = (display: { value: number; unit: string } | null, opts?: { decimals?: number }) => {
     if (weather.loading) {
       return <span style={{ color: "#888" }}>...</span>;
     }
@@ -120,13 +160,7 @@ export default function HometownConditions({ cityName, weather, signedIn }: Prop
   };
 
   /** Full parameter row: label / leader / value + wording chip. */
-  const row = (
-    key: string,
-    label: string,
-    valueNode: React.ReactNode,
-    wording?: string | null,
-    accent = false,
-  ) => (
+  const row = (key: string, label: string, valueNode: React.ReactNode, wording?: string | null, accent = false) => (
     <div
       key={key}
       style={{
@@ -333,10 +367,10 @@ export default function HometownConditions({ cityName, weather, signedIn }: Prop
           {row(
             "pressure",
             "Pressure",
-            readout(displayPressure(weather.pressureHpa, unitSystem), { decimals: displayPressure(1000, unitSystem)?.unit === " inHg" ? 2 : 0 }),
-            pressureTrend
-              ? `${trendArrow} ${pressureTrend}`
-              : null,
+            readout(displayPressure(weather.pressureHpa, unitSystem), {
+              decimals: displayPressure(1000, unitSystem)?.unit === " inHg" ? 2 : 0,
+            }),
+            pressureTrend ? `${trendArrow} ${pressureTrend}` : null,
           )}
 
           {/* Footer: unit system strip */}
