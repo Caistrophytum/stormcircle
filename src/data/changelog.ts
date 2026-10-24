@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-10-24 14z",
+    tag: "IMPROVED",
+    title: "Increased US Warning Stability, Overall Performance",
+    body: "This month has been marked with performance, performance, performance: US warnings should be a lot more stable now, instanced of double-warnings thta consumed compute power should happen in lower volumes, and user experience is set to move to the positive side.",
+  },
+  {
     date: "2026-10-01 17z",
     tag: "NEW",
     title: "Support Me?",
