@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-10-30 20z",
+    tag: "IMPROVED",
+    title: "Chat Location Fetch, Logged-Out Popup, Password Clearance",
+    body: "Minor improvements to overall quality of life features. Cheers!",
+  },
+  {
     date: "2026-10-24 14z",
     tag: "IMPROVED",
     title: "Increased US Warning Stability, Overall Performance",
