@@ -6,7 +6,8 @@
  */
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { guides } from "@/data/guides";
 import { ArrowLeft, Plus, HelpCircle, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -238,6 +239,18 @@ export default function FAQ({ hideBackButton = false }: { hideBackButton?: boole
             <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mt-3">
               Secure donation via PayPal · amounts in USD
             </p>
+          </div>
+
+          {/* Guides */}
+          <div className="mb-8">
+            <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-card-foreground mb-3">Guides</h2>
+            <div className="grid gap-2.5 md:grid-cols-3">
+              {guides.map((g) => (
+                <Link key={g.slug} to={`/guides/${g.slug}`} className="glass-panel p-4 text-sm text-card-foreground hover:border-primary/50 transition-colors">
+                  {g.title}
+                </Link>
+              ))}
+            </div>
           </div>
 
           {/* FAQ list */}

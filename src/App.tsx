@@ -51,6 +51,7 @@ const Auth = lazyWithRetry(() => import("./pages/Auth.tsx"), "Auth");
 const AccountCenter = lazyWithRetry(() => import("./pages/AccountCenter.tsx"), "AccountCenter");
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword.tsx"), "ResetPassword");
 const FAQ = lazyWithRetry(() => import("./pages/FAQ.tsx"), "FAQ");
+const Guide = lazyWithRetry(() => import("./pages/Guide.tsx"), "Guide");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"), "NotFound");
 const MobileLayout = lazyWithRetry(() => import("@/components/mobile/MobileLayout"), "MobileLayout");
 
@@ -78,6 +79,7 @@ const App = () => {
               <Route path="/account" element={<AccountCenter />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/guides/:slug" element={<Guide />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
