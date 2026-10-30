@@ -35,12 +35,14 @@ const Guide = () => {
         </script>
       </Helmet>
       <article className="max-w-2xl mx-auto px-5 py-10">
-        <Link to="/" className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-primary mb-8">
-          <ArrowLeft className="size-3.5" /> Back to StormCircle
-        </Link>
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-primary/30 bg-primary/10 text-primary rounded-sm mb-5">
-          <BookOpen className="size-3" />
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Guide</span>
+        <div className="flex flex-col items-start gap-4 mb-6">
+          <Link to="/faq" className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-primary">
+            <ArrowLeft className="size-3.5" /> Back to Q&A
+          </Link>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-primary/30 bg-primary/10 text-primary rounded-sm">
+            <BookOpen className="size-3" />
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider">Guide</span>
+          </div>
         </div>
         <h1 className="font-mono text-3xl font-bold tracking-tight text-card-foreground mb-3">{guide.title}</h1>
         <p className="text-sm text-muted-foreground leading-relaxed mb-8">{guide.description}</p>
