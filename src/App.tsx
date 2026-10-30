@@ -13,6 +13,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useViewportScaling } from "@/hooks/useScaling";
 import { useMobile } from "@/hooks/useMobile";
+import { SignedOutPrompt } from "@/components/SignedOutPrompt";
 
 /**
  * Wrap React.lazy so a stale hashed chunk (after a redeploy) doesn't leave the
@@ -69,6 +70,7 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <SignedOutPrompt />
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route path="/" element={isMobile ? <MobileLayout /> : <Index />} />

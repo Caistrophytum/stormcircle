@@ -38,6 +38,8 @@ import { useCitySearch } from "@/hooks/useCitySearch";
 import { groupMessages, type RawMessage, type StackedReport } from "@/lib/reportGrouping";
 import { useReportDistances } from "@/hooks/useReportDistances";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
+import { useHometownCoords } from "@/hooks/useHometownCoords";
+import { Home } from "lucide-react";
 
 type SortMode = "default" | "newest" | "nearest";
 
@@ -827,6 +829,9 @@ function ComposerDropdowns({
 }: ComposerProps) {
   const [open, setOpen] = useState<MenuKey>(null);
   const [locating, setLocating] = useState(false);
+  const { profile: myProfile } = useAuth();
+  const homeCoords = useHometownCoords();
+  const hometown = myProfile?.location ?? null;
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -927,6 +932,21 @@ function ComposerDropdowns({
               </div>
             </div>
             <ul>
+              {hometown && (
+                <li>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onPickPlace(hometown, homeCoords ? { lat: homeCoords.lat, lon: homeCoords.lon } : undefined);
+                      setOpen(null);
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-[11px] font-mono text-primary hover:bg-primary/10 transition-colors flex items-center gap-2 border-b border-border"
+                  >
+                    <Home className="size-3" />
+                    <span className="truncate">My hometown: {hometown}</span>
+                  </button>
+                </li>
+              )}
               <li>
                 <button
                   type="button"

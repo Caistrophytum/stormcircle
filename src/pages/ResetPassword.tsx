@@ -11,17 +11,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
-import { z } from "zod";
+import { PasswordChecklist } from "@/components/PasswordChecklist";
+import { friendlyPasswordError, passwordProblem } from "@/lib/passwordRules";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const passwordSchema = z
-  .string()
-  .min(8, { message: "Password must be at least 8 characters" })
-  .max(72, { message: "Password must be 72 characters or less" });
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -47,9 +44,9 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const parsed = passwordSchema.safeParse(password);
-    if (!parsed.success) {
-      toast.error(parsed.error.errors[0].message);
+    const problem = passwordProblem(password);
+    if (problem) {
+      toast.error(problem);
       return;
     }
     if (password !== confirm) {
@@ -60,7 +57,7 @@ const ResetPassword = () => {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) {
-        toast.error(error.message);
+        toast.error(friendlyPasswordError(error) ?? error.message);
         return;
       }
       toast.success("Password updated");
@@ -104,6 +101,7 @@ const ResetPassword = () => {
                 autoComplete="new-password"
                 required
               />
+              <PasswordChecklist password={password} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm">Confirm password</Label>
