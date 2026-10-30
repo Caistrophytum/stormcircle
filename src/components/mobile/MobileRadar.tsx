@@ -112,7 +112,7 @@ export default function MobileRadar() {
             >
               <Command shouldFilter={false}>
                 <CommandInput
-                  placeholder="Type a US city..."
+                  placeholder="Search for a city..."
                   className="h-9"
                   value={query}
                   onValueChange={setQuery}
