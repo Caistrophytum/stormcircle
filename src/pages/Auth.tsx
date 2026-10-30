@@ -19,6 +19,8 @@ import { useState, FormEvent } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate } from "react-router-dom";
 import { LogIn, UserPlus, KeyRound, Loader2, ArrowLeft, MailCheck } from "lucide-react";
+import { PasswordChecklist } from "@/components/PasswordChecklist";
+import { friendlyPasswordError } from "@/lib/passwordRules";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -198,7 +200,7 @@ const Auth = () => {
     }
     const password = passwordSchema.safeParse(suPassword);
     if (!password.success) {
-      toast.error(password.error.errors[0].message);
+      toast.error(`Password isn't secure enough: ${password.error.errors[0].message.replace(/^Password /, "it ")}.`);
       return;
     }
 
@@ -245,7 +247,7 @@ const Auth = () => {
         // when anti-enumeration is OFF. Surface a clear message.
         const msg = /already|registered|exists/i.test(raw)
           ? "An account with this email already exists"
-          : raw;
+          : friendlyPasswordError(error) ?? raw;
         toast.error(msg);
         return;
       }
@@ -519,6 +521,7 @@ const Auth = () => {
                       required
                       maxLength={128}
                     />
+                    <PasswordChecklist password={suPassword} />
                   </div>
                   <div className="space-y-1.5">
                     <label className={labelClass} htmlFor="su-confirm">
