@@ -251,7 +251,7 @@ function details(h: HourlyPoint, aqi: number | null): Record<HazardKey, string> 
   const rf = h.apparentTemperature;
   const wind = Math.max(h.windSpeed ?? 0, h.windGusts ?? h.windSpeed ?? 0) * 3.6;
   return {
-    temp: rf == null ? "no data" : `${Math.round(rf)} °C real feel`,
+    temp: rf == null ? "no data" : `feels like ${Math.round(rf)} °C`,
     wind: `${Math.round(wind)} km/h`,
     uv: h.uvIndex == null ? "no data" : `UV ${h.uvIndex.toFixed(1)}`,
     aq: aqi == null ? "no data" : `AQI ${Math.round(aqi)}`,
