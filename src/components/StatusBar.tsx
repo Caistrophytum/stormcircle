@@ -1,3 +1,4 @@
+import { comfortPerception } from "@/lib/comfortPerception";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler } from "lucide-react";
@@ -147,21 +148,7 @@ const StatusBar = () => {
     return "Extreme";
   };
 
-  /** Apparent temperature (Real Feel) categories (raw °C). */
-  const realFeelDescriptor = (c: number) => {
-    if (c < 11) return "Cold";
-    if (c <= 16) return "Cool";
-    if (c <= 21) return "Pleasant";
-    if (c <= 26) return "Warm";
-    if (c <= 31) return "Very Warm";
-    if (c <= 37) return "Hot";
-    if (c <= 41) return "Very Hot";
-    if (c <= 45) return "Dangerous Heat";
-    if (c <= 50) return "Very Dangerous Heat";
-    if (c <= 55) return "Extremely Dangerous Heat";
-    if (c <= 60) return "Extraordinarily Dangerous Heat";
-    return "Extreme Heat";
-  };
+  const realFeelDescriptor = comfortPerception;
 
   const renderRulerMetric = (
     label: string,
@@ -281,7 +268,7 @@ const StatusBar = () => {
                   {rulerSeparator}
                   {renderRulerMetric("Dew", dewDisp, hometown.dewpointC, hometown.dewpointC != null ? dewPointDescriptor(hometown.dewpointC) : undefined)}
                   {rulerSeparator}
-                  {renderRulerMetric("Real Feel", feelDisp, hometown.apparentTemperatureC, hometown.apparentTemperatureC != null ? realFeelDescriptor(hometown.apparentTemperatureC) : undefined)}
+                  {renderRulerMetric("Comfort Perception", feelDisp, hometown.apparentTemperatureC, hometown.apparentTemperatureC != null ? realFeelDescriptor(hometown.apparentTemperatureC) : undefined)}
                   {rulerSeparator}
                   {renderRulerMetric("Wind", windDisp, hometown.windSpeedKmh)}
                   {rulerSeparator}

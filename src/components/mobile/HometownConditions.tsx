@@ -1,3 +1,4 @@
+import { comfortPerception, comfortPerceptionColor } from "@/lib/comfortPerception";
 /**
  * HometownConditions - the mobile "Now in [hometown]" HUD telemetry card.
  *
@@ -60,26 +61,14 @@ const uvDescriptor = (uv: number) => {
   return "Extreme";
 };
 
-/** Apparent temperature (Real Feel) categories (raw degrees C). */
-const realFeelDescriptor = (c: number) => {
-  if (c < 11) return "Cold";
-  if (c <= 16) return "Cool";
-  if (c <= 21) return "Pleasant";
-  if (c <= 26) return "Warm";
-  if (c <= 31) return "Very Warm";
-  if (c <= 37) return "Hot";
-  if (c <= 41) return "Very Hot";
-  if (c <= 45) return "Dangerous Heat";
-  if (c <= 50) return "Very Dangerous Heat";
-  if (c <= 55) return "Extremely Dangerous Heat";
-  if (c <= 60) return "Extraordinarily Dangerous Heat";
-  return "Extreme Heat";
-};
+const realFeelDescriptor = comfortPerception;
 
 /** Severity color for a wording chip: calm/green -> mid/amber -> hot/red. */
 function severityColor(rawWord: string): string {
   // Pressure trend wordings arrive prefixed with their direction arrow.
   const word = rawWord.replace(/^[↗↘→]\s*/, "");
+  const cp = comfortPerceptionColor(word);
+  if (cp) return cp;
   const calm = [
     "Calm",
     "Light Air",
@@ -309,7 +298,7 @@ export default function HometownConditions({ cityName, weather, signedIn }: Prop
           {/* Real Feel */}
           {row(
             "realfeel",
-            "Real Feel",
+            "Comfort Perception",
             readout(displayTemp(weather.apparentTemperatureC, unitSystem)),
             weather.apparentTemperatureC != null && !weather.loading
               ? realFeelDescriptor(weather.apparentTemperatureC)
