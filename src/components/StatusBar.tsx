@@ -1,3 +1,4 @@
+import { comfortPerception } from "@/lib/comfortPerception";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, LogOut, User, Shield, ChevronDown, UserCog, HelpCircle, Ruler } from "lucide-react";
@@ -267,7 +268,7 @@ const StatusBar = () => {
                   {rulerSeparator}
                   {renderRulerMetric("Dew", dewDisp, hometown.dewpointC, hometown.dewpointC != null ? dewPointDescriptor(hometown.dewpointC) : undefined)}
                   {rulerSeparator}
-                  {renderRulerMetric("Real Feel", feelDisp, hometown.apparentTemperatureC, hometown.apparentTemperatureC != null ? realFeelDescriptor(hometown.apparentTemperatureC) : undefined)}
+                  {renderRulerMetric("Comfort Perception", feelDisp, hometown.apparentTemperatureC, hometown.apparentTemperatureC != null ? realFeelDescriptor(hometown.apparentTemperatureC) : undefined)}
                   {rulerSeparator}
                   {renderRulerMetric("Wind", windDisp, hometown.windSpeedKmh)}
                   {rulerSeparator}

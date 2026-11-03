@@ -1,3 +1,4 @@
+import { comfortPerception, comfortPerceptionColor } from "@/lib/comfortPerception";
 /**
  * HometownConditions - the mobile "Now in [hometown]" HUD telemetry card.
  *
@@ -297,7 +298,7 @@ export default function HometownConditions({ cityName, weather, signedIn }: Prop
           {/* Real Feel */}
           {row(
             "realfeel",
-            "Real Feel",
+            "Comfort Perception",
             readout(displayTemp(weather.apparentTemperatureC, unitSystem)),
             weather.apparentTemperatureC != null && !weather.loading
               ? realFeelDescriptor(weather.apparentTemperatureC)
