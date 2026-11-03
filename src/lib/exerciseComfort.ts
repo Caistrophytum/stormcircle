@@ -259,7 +259,7 @@ function details(h: HourlyPoint, aqi: number | null, unitSystem: UnitSystem): Re
   const shownGust = displayWindSpeed(h.windGusts == null ? null : h.windGusts * 3.6, unitSystem);
   const shownRain = displayPrecipitationMm(h.precipMm ?? 0, unitSystem);
   return {
-    temp: shownTemp == null ? "no data" : `${Math.round(shownTemp.value)} ${shownTemp.unit} real feel`,
+    temp: shownTemp == null ? "no data" : `feels like ${Math.round(shownTemp.value)} ${shownTemp.unit}`,
     wind:
       shownWind == null
         ? "no data"

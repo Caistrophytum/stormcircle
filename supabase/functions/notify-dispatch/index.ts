@@ -13,6 +13,8 @@ import { pointInGeom, type Geom } from "../_shared/geo.ts";
 import { fetchSounding, wrsFromSounding } from "../_shared/wrs-server.ts";
 import { sendPush, type VapidKeys } from "../_shared/webpush.ts";
 import { computeComfort, type Activity, type HourlyPoint } from "./comfort.ts";
+import { aOrAn, feelWord } from "./feel.ts";
+
 
 // Every outbound request (external APIs, database, push services) gets a hard
 // timeout so one slow upstream cannot hold the worker until the runtime kills it.
@@ -195,15 +197,7 @@ const shortDate = (iso: string) => {
   return `${MONTHS[(m || 1) - 1]} ${d || 1}`;
 };
 
-function feelWord(c: number): string {
-  if (c < 0) return "freezing";
-  if (c < 8) return "cold";
-  if (c < 14) return "cool";
-  if (c < 20) return "mild";
-  if (c < 26) return "warm";
-  if (c < 33) return "hot";
-  return "very hot";
-}
+
 
 /** Beaufort wording from sustained wind in m/s. */
 function beaufort(ms: number): string {
@@ -243,12 +237,15 @@ function buildRecap(fc: TomorrowForecast, acts: Activity[], fromHour: number): {
   let feel = "";
   if (morning != null && afternoon != null) {
     const m = feelWord(morning), a = feelWord(afternoon);
-    feel = m === a ? `a ${m} day` : `a ${m} morning turning into a ${a} afternoon`;
+    feel = m === a
+      ? `${aOrAn(m)} ${m} day`
+      : `${aOrAn(m)} ${m} morning turning into ${aOrAn(a)} ${a} afternoon`;
   } else if (afternoon != null) {
-    feel = `a ${feelWord(afternoon)} afternoon`;
+    feel = `${aOrAn(feelWord(afternoon))} ${feelWord(afternoon)} afternoon`;
   } else if (morning != null) {
-    feel = `a ${feelWord(morning)} day`;
+    feel = `${aOrAn(feelWord(morning))} ${feelWord(morning)} day`;
   }
+
   const wind = maxOf(fc.hours.map((h) => h.windSpeed).filter(num));
   const uv = maxOf(fc.hours.map((h) => h.uvIndex).filter(num));
   const prob = maxOf(fc.hours.map((h) => h.precipProbability).filter(num)) ?? 0;
