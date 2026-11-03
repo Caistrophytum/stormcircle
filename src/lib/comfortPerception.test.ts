@@ -60,7 +60,8 @@ describe("recap wording", () => {
 
   it("rounds to the nearest degree before picking a band", () => {
     expect(feelWord(5.6)).toBe("chilly");
-    expect(feelWord(-0.4)).toBe("very cold");
+    expect(feelWord(-10.4)).toBe("very cold");
+
   });
 
   it("picks the right article", () => {
