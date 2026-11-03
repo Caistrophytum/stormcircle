@@ -13,6 +13,8 @@ import { pointInGeom, type Geom } from "../_shared/geo.ts";
 import { fetchSounding, wrsFromSounding } from "../_shared/wrs-server.ts";
 import { sendPush, type VapidKeys } from "../_shared/webpush.ts";
 import { computeComfort, type Activity, type HourlyPoint } from "./comfort.ts";
+import { aOrAn, feelWord } from "./feel.ts";
+
 
 // Every outbound request (external APIs, database, push services) gets a hard
 // timeout so one slow upstream cannot hold the worker until the runtime kills it.
@@ -195,25 +197,6 @@ const shortDate = (iso: string) => {
   return `${MONTHS[(m || 1) - 1]} ${d || 1}`;
 };
 
-/** Comfort Perception wording, mirroring src/lib/comfortPerception.ts. Keep in sync. */
-function feelWord(c: number): string {
-  const t = Math.round(c);
-  if (t < -10) return "dangerously cold";
-  if (t < 0) return "very cold";
-  if (t < 6) return "cold";
-  if (t < 12) return "chilly";
-  if (t < 16) return "crisp";
-  if (t < 21) return "comfortable";
-  if (t < 25) return "tepid";
-  if (t < 29) return "warm";
-  if (t < 33) return "hot";
-  if (t < 39) return "very hot";
-  if (t < 46) return "dangerously hot";
-  return "extremely hot";
-}
-
-/** "a" or "an" in front of a feelWord phrase. */
-const aOrAn = (w: string) => (/^[aeiou]/i.test(w) ? "an" : "a");
 
 
 /** Beaufort wording from sustained wind in m/s. */
