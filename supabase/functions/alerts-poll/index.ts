@@ -326,8 +326,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ----- Build rows -----
-    const rows = features.map((f) => {
+    // ----- Build rows (changed alerts only) -----
+    const rows = changedFeatures.map((f) => {
       const p = f.properties ?? {};
       const id = String(p.id ?? f.id);
 
