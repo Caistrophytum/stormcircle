@@ -435,9 +435,9 @@ Deno.serve(async (req) => {
     const resolvedCount = rows.filter((r) => r.geometry).length;
     return new Response(JSON.stringify({
       ok: true,
-      seen: rows.length,
+      seen: features.length,
       upserted: changed.length,
-      unchanged: rows.length - changed.length,
+      unchanged: features.length - changedFeatures.length,
       deleted: toDelete.length,
       withGeometry: resolvedCount,
       zoneCacheHits: zoneList.length,
