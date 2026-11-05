@@ -168,16 +168,20 @@ Deno.serve(async (req) => {
     // show items first observed in the last 5 minutes.
     // Only NWS-sourced rows. Alerts written by other pollers (`MA-…` rows
     // from meteoalarm-poll) must never appear in this run's delete set.
-    // `content_hash` lets us skip re-writing rows that have not changed.
+    // `upstream_hash` covers the feed fields ONLY (no geometry), so we can
+    // tell "alert changed" before resolving any zone polygons. That keeps
+    // the per-minute read tiny: previously this loop pulled ~9MB of cached
+    // zone geometry every single minute even when nothing had changed,
+    // which saturated the database and caused site-wide timeouts.
     // `expires_at` is needed by the cleanup pass below (it used to read a
     // column that was never selected, so the expiry branch never fired).
     const { data: existing } = await supabase
       .from("active_alerts")
-      .select("alert_id, first_seen_at, expires_at, content_hash")
+      .select("alert_id, first_seen_at, expires_at, upstream_hash")
       .not("alert_id", "like", "MA-%");
 
-    const hashById = new Map<string, string | null>();
-    for (const r of existing ?? []) hashById.set(r.alert_id, r.content_hash ?? null);
+    const upstreamHashById = new Map<string, string | null>();
+    for (const r of existing ?? []) upstreamHashById.set(r.alert_id, r.upstream_hash ?? null);
 
     const firstSeenById = new Map<string, string>();
     for (const r of existing ?? []) {
@@ -195,11 +199,53 @@ Deno.serve(async (req) => {
     const watchEnrichment = new Map<string, { spcWatchTitle?: string; spcPds?: string }>();
     await Promise.all(uniqueWatchNumbers.map(async (n) => watchEnrichment.set(n, await fetchWatchEnrichment(n))));
 
+    // ----- Change detection on upstream fields only (no geometry) -----
+    // Hash everything the feed says about the alert EXCEPT the polygon,
+    // plus the SPC enrichment we just fetched. Zone polygons live in
+    // zone_geom_cache and change only on rare re-districting, so an
+    // unchanged upstream hash means the stored row - geometry included -
+    // is still accurate and we can skip zone resolution for it entirely.
+    const upstreamHashOf = (f: any): string => {
+      const p = f.properties ?? {};
+      const watchNumber = extractWatchNumber(p.event ?? null, p.parameters ?? {}, p.headline ?? null);
+      const enrich = watchNumber ? watchEnrichment.get(watchNumber) : undefined;
+      return contentHash({
+        alert_id: String(p.id ?? f.id),
+        event: p.event ?? null,
+        severity: p.severity ?? null,
+        certainty: p.certainty ?? null,
+        urgency: p.urgency ?? null,
+        headline: p.headline ?? null,
+        area_desc: p.areaDesc ?? null,
+        sent: p.sent ?? null,
+        effective: p.effective ?? null,
+        onset: p.onset ?? null,
+        expires_at: p.expires ?? null,
+        ends: p.ends ?? null,
+        status: p.status ?? null,
+        message_type: p.messageType ?? null,
+        description: p.description ?? "",
+        parameters: {
+          ...(p.parameters ?? {}),
+          ...(watchNumber ? { spcWatchNumber: watchNumber } : {}),
+          ...(enrich ?? {}),
+        },
+        affectedZones: Array.isArray(p.affectedZones) ? p.affectedZones : [],
+      });
+    };
+    const hashOfFeature = new Map<string, string>();
+    const changedFeatures = features.filter((f) => {
+      const id = String(f?.properties?.id ?? f?.id);
+      const h = upstreamHashOf(f);
+      hashOfFeature.set(id, h);
+      return upstreamHashById.get(id) !== h;
+    });
+
     // ----- Server-side zone geometry resolution -----
-    // Collect every zone URL referenced by an alert that lacks inline
+    // Collect every zone URL referenced by a CHANGED alert that lacks inline
     // geometry. Resolve them ONCE per cycle, using the persistent cache.
     const neededZones = new Set<string>();
-    for (const f of features) {
+    for (const f of changedFeatures) {
       const hasInline = f?.geometry?.type === "Polygon" || f?.geometry?.type === "MultiPolygon";
       if (hasInline) continue;
       const zones: string[] = Array.isArray(f?.properties?.affectedZones) ? f.properties.affectedZones : [];
@@ -280,8 +326,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ----- Build rows -----
-    const rows = features.map((f) => {
+    // ----- Build rows (changed alerts only) -----
+    const rows = changedFeatures.map((f) => {
       const p = f.properties ?? {};
       const id = String(p.id ?? f.id);
 
@@ -333,6 +379,7 @@ Deno.serve(async (req) => {
       return {
         ...core,
         content_hash: contentHash(core),
+        upstream_hash: hashOfFeature.get(id) ?? null,
         updated_at: nowIso,
         first_seen_at: firstSeenById.get(id) ?? nowIso,
       };
@@ -344,8 +391,7 @@ Deno.serve(async (req) => {
     // minute at every connected browser.
     // NWS occasionally lists the same alert id twice; Postgres rejects a batch
     // that upserts one key twice, which failed the whole batch every run.
-    const uniqueRows = [...new Map(rows.map((r) => [r.alert_id, r])).values()];
-    const changed = uniqueRows.filter((r) => hashById.get(r.alert_id) !== r.content_hash);
+    const changed = [...new Map(rows.map((r) => [r.alert_id, r])).values()];
 
     // Smaller batches keep each upsert well inside the Postgres
     // statement_timeout (large geometry payloads can otherwise push a
@@ -363,7 +409,10 @@ Deno.serve(async (req) => {
 
     if (changed.length > 0) kickNotify("alerts");
 
-    const currentIds = new Set(rows.map((r) => r.alert_id));
+    // The delete set must compare against the FULL feed, not just the
+    // changed rows we built above - otherwise every unchanged alert would
+    // look "removed" and get deleted.
+    const currentIds = new Set(features.map((f) => String(f?.properties?.id ?? f?.id)));
     // Drop rows the feed no longer carries, plus anything that expired more
     // than six hours ago (a safety net for rows the feed keeps re-listing).
     const staleCutoff = Date.now() - 6 * 60 * 60 * 1000;
@@ -386,9 +435,9 @@ Deno.serve(async (req) => {
     const resolvedCount = rows.filter((r) => r.geometry).length;
     return new Response(JSON.stringify({
       ok: true,
-      seen: rows.length,
+      seen: features.length,
       upserted: changed.length,
-      unchanged: rows.length - changed.length,
+      unchanged: features.length - changedFeatures.length,
       deleted: toDelete.length,
       withGeometry: resolvedCount,
       zoneCacheHits: zoneList.length,

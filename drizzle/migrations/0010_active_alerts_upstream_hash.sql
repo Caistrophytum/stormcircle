@@ -1,0 +1,2 @@
+ALTER TABLE public.active_alerts ADD COLUMN IF NOT EXISTS upstream_hash text;
+COMMENT ON COLUMN public.active_alerts.upstream_hash IS 'Hash of the upstream feed fields only (no geometry). Lets alerts-poll skip zone-geometry resolution for alerts whose feed content has not changed.';
