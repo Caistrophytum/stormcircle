@@ -168,16 +168,20 @@ Deno.serve(async (req) => {
     // show items first observed in the last 5 minutes.
     // Only NWS-sourced rows. Alerts written by other pollers (`MA-…` rows
     // from meteoalarm-poll) must never appear in this run's delete set.
-    // `content_hash` lets us skip re-writing rows that have not changed.
+    // `upstream_hash` covers the feed fields ONLY (no geometry), so we can
+    // tell "alert changed" before resolving any zone polygons. That keeps
+    // the per-minute read tiny: previously this loop pulled ~9MB of cached
+    // zone geometry every single minute even when nothing had changed,
+    // which saturated the database and caused site-wide timeouts.
     // `expires_at` is needed by the cleanup pass below (it used to read a
     // column that was never selected, so the expiry branch never fired).
     const { data: existing } = await supabase
       .from("active_alerts")
-      .select("alert_id, first_seen_at, expires_at, content_hash")
+      .select("alert_id, first_seen_at, expires_at, upstream_hash")
       .not("alert_id", "like", "MA-%");
 
-    const hashById = new Map<string, string | null>();
-    for (const r of existing ?? []) hashById.set(r.alert_id, r.content_hash ?? null);
+    const upstreamHashById = new Map<string, string | null>();
+    for (const r of existing ?? []) upstreamHashById.set(r.alert_id, r.upstream_hash ?? null);
 
     const firstSeenById = new Map<string, string>();
     for (const r of existing ?? []) {
