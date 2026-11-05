@@ -409,7 +409,10 @@ Deno.serve(async (req) => {
 
     if (changed.length > 0) kickNotify("alerts");
 
-    const currentIds = new Set(rows.map((r) => r.alert_id));
+    // The delete set must compare against the FULL feed, not just the
+    // changed rows we built above - otherwise every unchanged alert would
+    // look "removed" and get deleted.
+    const currentIds = new Set(features.map((f) => String(f?.properties?.id ?? f?.id)));
     // Drop rows the feed no longer carries, plus anything that expired more
     // than six hours ago (a safety net for rows the feed keeps re-listing).
     const staleCutoff = Date.now() - 6 * 60 * 60 * 1000;
