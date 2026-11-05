@@ -71,6 +71,13 @@
       "when": 1792564122139,
       "tag": "0009_fix_alert_bbox_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793895592209,
+      "tag": "0010_active_alerts_upstream_hash",
+      "breakpoints": true
     }
   ]
 }
