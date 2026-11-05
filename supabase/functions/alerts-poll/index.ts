@@ -379,6 +379,7 @@ Deno.serve(async (req) => {
       return {
         ...core,
         content_hash: contentHash(core),
+        upstream_hash: hashOfFeature.get(id) ?? null,
         updated_at: nowIso,
         first_seen_at: firstSeenById.get(id) ?? nowIso,
       };
