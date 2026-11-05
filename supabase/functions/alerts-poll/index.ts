@@ -391,8 +391,7 @@ Deno.serve(async (req) => {
     // minute at every connected browser.
     // NWS occasionally lists the same alert id twice; Postgres rejects a batch
     // that upserts one key twice, which failed the whole batch every run.
-    const uniqueRows = [...new Map(rows.map((r) => [r.alert_id, r])).values()];
-    const changed = uniqueRows.filter((r) => hashById.get(r.alert_id) !== r.content_hash);
+    const changed = [...new Map(rows.map((r) => [r.alert_id, r])).values()];
 
     // Smaller batches keep each upsert well inside the Postgres
     // statement_timeout (large geometry payloads can otherwise push a
