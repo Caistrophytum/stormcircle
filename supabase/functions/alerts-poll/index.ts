@@ -199,11 +199,53 @@ Deno.serve(async (req) => {
     const watchEnrichment = new Map<string, { spcWatchTitle?: string; spcPds?: string }>();
     await Promise.all(uniqueWatchNumbers.map(async (n) => watchEnrichment.set(n, await fetchWatchEnrichment(n))));
 
+    // ----- Change detection on upstream fields only (no geometry) -----
+    // Hash everything the feed says about the alert EXCEPT the polygon,
+    // plus the SPC enrichment we just fetched. Zone polygons live in
+    // zone_geom_cache and change only on rare re-districting, so an
+    // unchanged upstream hash means the stored row - geometry included -
+    // is still accurate and we can skip zone resolution for it entirely.
+    const upstreamHashOf = (f: any): string => {
+      const p = f.properties ?? {};
+      const watchNumber = extractWatchNumber(p.event ?? null, p.parameters ?? {}, p.headline ?? null);
+      const enrich = watchNumber ? watchEnrichment.get(watchNumber) : undefined;
+      return contentHash({
+        alert_id: String(p.id ?? f.id),
+        event: p.event ?? null,
+        severity: p.severity ?? null,
+        certainty: p.certainty ?? null,
+        urgency: p.urgency ?? null,
+        headline: p.headline ?? null,
+        area_desc: p.areaDesc ?? null,
+        sent: p.sent ?? null,
+        effective: p.effective ?? null,
+        onset: p.onset ?? null,
+        expires_at: p.expires ?? null,
+        ends: p.ends ?? null,
+        status: p.status ?? null,
+        message_type: p.messageType ?? null,
+        description: p.description ?? "",
+        parameters: {
+          ...(p.parameters ?? {}),
+          ...(watchNumber ? { spcWatchNumber: watchNumber } : {}),
+          ...(enrich ?? {}),
+        },
+        affectedZones: Array.isArray(p.affectedZones) ? p.affectedZones : [],
+      });
+    };
+    const hashOfFeature = new Map<string, string>();
+    const changedFeatures = features.filter((f) => {
+      const id = String(f?.properties?.id ?? f?.id);
+      const h = upstreamHashOf(f);
+      hashOfFeature.set(id, h);
+      return upstreamHashById.get(id) !== h;
+    });
+
     // ----- Server-side zone geometry resolution -----
-    // Collect every zone URL referenced by an alert that lacks inline
+    // Collect every zone URL referenced by a CHANGED alert that lacks inline
     // geometry. Resolve them ONCE per cycle, using the persistent cache.
     const neededZones = new Set<string>();
-    for (const f of features) {
+    for (const f of changedFeatures) {
       const hasInline = f?.geometry?.type === "Polygon" || f?.geometry?.type === "MultiPolygon";
       if (hasInline) continue;
       const zones: string[] = Array.isArray(f?.properties?.affectedZones) ? f.properties.affectedZones : [];
