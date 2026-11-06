@@ -121,6 +121,7 @@ export default function MobileWRSPanel({
   cityName,
   localTime,
   timezone,
+  children,
 }: MobileWRSPanelProps) {
   const [virtualOpen, setVirtualOpen] = useState(false);
   const [physicalOpen, setPhysicalOpen] = useState(false);
