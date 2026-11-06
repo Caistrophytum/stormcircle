@@ -12,3 +12,4 @@
 - Username sign-in resolves the email inside the `username-login` function (server-side) because profiles are private to their owner and emails must never reach the browser.
 - Users inactive 7+ days (profiles.last_active_at, touched daily via `touch_last_active`) are skipped by notify-dispatch, lose push registrations in maintenance, and are signed out on return, so stale devices get no ghost notifications.
 - notify-dispatch finds alert candidates via trigger-maintained bbox columns on `active_alerts`, then runs exact polygon tests; never page full geometry.
+- Live WRS and the 24h forecast slider share the pure parser in `src/lib/soundingParse.ts`; the forecast fetch is lazy (first slider touch) so live and simulated scores never drift and no extra polling runs.

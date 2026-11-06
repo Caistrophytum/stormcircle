@@ -17,6 +17,8 @@ import { useHometownWeather } from "@/hooks/useHometownWeather";
 import { useHometownCoords } from "@/hooks/useHometownCoords";
 import { useRadar } from "@/hooks/useRadar";
 import { useSoundingData } from "@/hooks/useSoundingData";
+import { useSoundingForecast } from "@/hooks/useSoundingForecast";
+import WRSForecastSlider from "@/components/WRSForecastSlider";
 import { useWarningPolygons, type WarningPolygon } from "@/hooks/useWarningPolygons";
 import { useUnitSystem, displayLengthM, displayLengthKm } from "@/hooks/useUnitSystem";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
@@ -309,7 +311,13 @@ export default function MobileMain() {
     radar.selectedCity?.lon ?? null,
   );
 
-  const sounding = useSoundingData(radar.selectedCity ?? hometown);
+  const wrsLoc = radar.selectedCity ?? hometown;
+  const liveSounding = useSoundingData(wrsLoc);
+  const [wrsOffset, setWrsOffset] = useState(0);
+  useEffect(() => setWrsOffset(0), [wrsLoc?.lat, wrsLoc?.lon]);
+  const wrsForecast = useSoundingForecast(wrsLoc, wrsOffset > 0);
+  const wrsHour = wrsOffset > 0 ? wrsForecast.hours[wrsOffset] : undefined;
+  const sounding = wrsOffset > 0 ? (wrsHour?.sounding ?? { ...liveSounding, loading: true }) : liveSounding;
   const unitSystem = useUnitSystem();
   const warningPolygons = useWarningPolygons();
   const botLatest = useBotMessagesLatest([BOT_USER_ID, HURRICANE_BOT_ID, FIRE_BOT_ID]);
@@ -508,7 +516,16 @@ export default function MobileMain() {
         cityName={radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? "your area"}
         localTime={localTime}
         timezone={localTz}
-      />
+      >
+        <WRSForecastSlider
+          className="mt-3"
+          value={wrsOffset}
+          onChange={setWrsOffset}
+          time={wrsHour?.time ?? null}
+          timezone={localTz}
+          loading={wrsOffset > 0 && wrsForecast.loading}
+        />
+      </MobileWRSPanel>
 
 
       {/* 2. Hometown news bar - SPC severe risk (CONUS only). */}

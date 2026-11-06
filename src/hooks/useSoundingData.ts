@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchJsonCached } from "@/lib/apiCache";
 import { useRefreshTick } from "./useRefreshTick";
+import { currentHourIndex, HOURLY_UPPER, parseSounding, SURFACE_VARS } from "@/lib/soundingParse";
 
 export interface SoundingData {
   cape: number | null;
@@ -53,15 +54,6 @@ const EMPTY: SoundingData = {
   error: false,
 };
 
-/** Espy-style LCL approximation: LCL ≈ 125 * (T - Td), in meters AGL. */
-function computeLCL(t2m: number, td2m: number): number {
-  return 125 * (t2m - td2m);
-}
-
-function normalizeCIN(cin: number): number {
-  return cin > 0 ? -cin : cin;
-}
-
 export interface LatLon {
   lat: number;
   lon: number;
@@ -93,8 +85,8 @@ export function useSoundingData(location: LatLon | null): SoundingData {
     const url =
       `https://api.open-meteo.com/v1/forecast` +
       `?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,dewpoint_2m,relative_humidity_2m,cape,convective_inhibition,lifted_index,boundary_layer_height` +
-      `&hourly=relative_humidity_700hPa,vertical_velocity_700hPa,temperature_700hPa,temperature_500hPa,geopotential_height_700hPa,geopotential_height_500hPa,wind_speed_850hPa,wind_direction_850hPa,wind_speed_500hPa,wind_direction_500hPa` +
+      `&current=${SURFACE_VARS}` +
+      `&hourly=${HOURLY_UPPER}` +
       `&wind_speed_unit=ms&forecast_days=1&timezone=UTC`;
 
     const fetchSounding = async (showLoading: boolean) => {
@@ -113,96 +105,10 @@ export function useSoundingData(location: LatLon | null): SoundingData {
         // Soundings only move hourly upstream; a 5-minute shared cache keeps
         // the desktop and mobile WRS panels from each issuing their own call.
         const json = await fetchJsonCached<any>(url, 5 * 60_000);
-        const c = json?.current ?? {};
-
-        const t2m = typeof c.temperature_2m === "number" ? c.temperature_2m : null;
-        const td2m = typeof c.dewpoint_2m === "number" ? c.dewpoint_2m : null;
-        const lcl = t2m != null && td2m != null ? computeLCL(t2m, td2m) : null;
-
-        // Pick the hourly samples matching the current UTC hour.
         const times: string[] = json?.hourly?.time ?? [];
-        const rh700: Array<number | null> = json?.hourly?.relative_humidity_700hPa ?? [];
-        const omega700: Array<number | null> = json?.hourly?.vertical_velocity_700hPa ?? [];
-        const ws850: Array<number | null> = json?.hourly?.wind_speed_850hPa ?? [];
-        const wd850: Array<number | null> = json?.hourly?.wind_direction_850hPa ?? [];
-        const ws500: Array<number | null> = json?.hourly?.wind_speed_500hPa ?? [];
-        const wd500: Array<number | null> = json?.hourly?.wind_direction_500hPa ?? [];
-        let idx = 0;
-        if (times.length) {
-          const nowHr = new Date().toISOString().slice(0, 13); // "YYYY-MM-DDTHH"
-          const found = times.findIndex((t) => t.startsWith(nowHr));
-          if (found >= 0) idx = found;
-        }
-        const pick = (arr: Array<number | null>): number | null => {
-          const v = arr[idx];
-          return typeof v === "number" ? v : null;
-        };
-        const rhMid = rh700.length ? pick(rh700) : null;
-        const omegaMid = omega700.length ? pick(omega700) : null;
-
-        // Mid-level lapse rate (700→500 hPa, °C/km). Smoother and better
-        // resolved than a single-level omega sample, and a genuine
-        // thermodynamic ingredient for deep convection.
-        const t700arr: Array<number | null> = json?.hourly?.temperature_700hPa ?? [];
-        const t500arr: Array<number | null> = json?.hourly?.temperature_500hPa ?? [];
-        const z700arr: Array<number | null> = json?.hourly?.geopotential_height_700hPa ?? [];
-        const z500arr: Array<number | null> = json?.hourly?.geopotential_height_500hPa ?? [];
-        const t700 = t700arr.length ? pick(t700arr) : null;
-        const t500 = t500arr.length ? pick(t500arr) : null;
-        const z700 = z700arr.length ? pick(z700arr) : null;
-        const z500 = z500arr.length ? pick(z500arr) : null;
-        let lapseMid: number | null = null;
-        if (t700 != null && t500 != null) {
-          // Standard-atmosphere separation fallback: 5574 m − 3012 m ≈ 2.562 km.
-          const dzKm = z700 != null && z500 != null && z500 > z700 ? (z500 - z700) / 1000 : 2.562;
-          lapseMid = (t700 - t500) / dzKm;
-        }
-
-        // Convert speed/direction → u/v components (meteorological "from"
-        // convention: direction is the *source* bearing). Bulk shear is the
-        // magnitude of the vector difference between 500 hPa and 850 hPa.
-        const s850 = ws850.length ? pick(ws850) : null;
-        const d850 = wd850.length ? pick(wd850) : null;
-        const s500 = ws500.length ? pick(ws500) : null;
-        const d500 = wd500.length ? pick(wd500) : null;
-        let shear: number | null = null;
-        if (s850 != null && d850 != null && s500 != null && d500 != null) {
-          const toUV = (speed: number, dir: number) => {
-            const rad = ((dir + 180) * Math.PI) / 180;
-            return { u: speed * Math.sin(rad), v: speed * Math.cos(rad) };
-          };
-          const a = toUV(s850, d850);
-          const b = toUV(s500, d500);
-          shear = Math.hypot(b.u - a.u, b.v - a.v);
-        }
-
-        const capeVal = typeof c.cape === "number" ? c.cape : null;
-        const liVal = typeof c.lifted_index === "number" ? c.lifted_index : null;
-        // Approximate Equilibrium Level (m AGL): base cloud + buoyancy depth
-        // (∝ √CAPE) + instability boost (∝ −LI). Clamped 0–16 km.
-        let elVal: number | null = null;
-        if (capeVal != null && lcl != null) {
-          const buoyancyDepth = Math.sqrt(Math.max(0, capeVal)) * 55;
-          const liBoost = liVal != null && liVal < 0 ? Math.min(-liVal, 12) * 700 : 0;
-          elVal = Math.max(0, Math.min(16000, lcl + buoyancyDepth + liBoost));
-        }
-
+        const parsed = parseSounding(json?.current ?? {}, json?.hourly, currentHourIndex(times));
         if (cancelled) return;
-        setData({
-          cape: capeVal,
-          cin: typeof c.convective_inhibition === "number" ? normalizeCIN(c.convective_inhibition) : null,
-          li: liVal,
-          blh: typeof c.boundary_layer_height === "number" ? c.boundary_layer_height : null,
-          lcl,
-          el: elVal,
-          rhSurface: typeof c.relative_humidity_2m === "number" ? c.relative_humidity_2m : null,
-          rhMid,
-          omegaMid,
-          lapseMid,
-          shear,
-          loading: false,
-          error: false,
-        });
+        setData({ ...parsed, loading: false, error: false });
       } catch (err) {
         console.error("[useSoundingData] fetch failed", err);
         if (cancelled) return;

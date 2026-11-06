@@ -6,6 +6,7 @@
  * result to the field names the desktop components expect.
  */
 import { useMemo } from "react";
+import { useSoundingForecast } from "@/hooks/useSoundingForecast";
 import { useSoundingData } from "@/hooks/useSoundingData";
 import { useHometownCoords } from "@/hooks/useHometownCoords";
 import { useRadarContext } from "@/contexts/RadarContext";
@@ -30,12 +31,20 @@ export interface WRSMetrics {
   weatherCondition: WeatherCondition;
   stationActive: boolean;
   physGatePercent: number;
+  /** ISO UTC time of the forecast hour when hourOffset > 0. */
+  forecastTime: string | null;
+  forecastLoading: boolean;
 }
 
-export function useWRSMetrics(): WRSMetrics {
+/** @param hourOffset 0 = live; 1..24 = simulated from the hourly forecast. */
+export function useWRSMetrics(hourOffset = 0): WRSMetrics {
   const radar = useRadarContext();
   const hometown = useHometownCoords();
-  const sounding = useSoundingData(radar.selectedCity ?? hometown);
+  const loc = radar.selectedCity ?? hometown;
+  const live = useSoundingData(loc);
+  const forecast = useSoundingForecast(loc, hourOffset > 0);
+  const fh = hourOffset > 0 ? forecast.hours[hourOffset] : undefined;
+  const sounding = hourOffset > 0 ? (fh?.sounding ?? { ...live, loading: true }) : live;
   const unitSystem = useUnitSystem();
 
   return useMemo(() => {
@@ -60,6 +69,8 @@ export function useWRSMetrics(): WRSMetrics {
       weatherCondition: r.weatherCondition,
       stationActive: r.stationActive,
       physGatePercent: r.physGatePercent,
+      forecastTime: fh?.time ?? null,
+      forecastLoading: hourOffset > 0 && forecast.loading,
     };
-  }, [sounding, radar.selectedStation, unitSystem]);
+  }, [sounding, radar.selectedStation, unitSystem, fh, hourOffset, forecast.loading]);
 }
