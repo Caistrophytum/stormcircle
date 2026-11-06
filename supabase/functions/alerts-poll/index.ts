@@ -386,7 +386,10 @@ Deno.serve(async (req) => {
       return {
         ...core,
         content_hash: contentHash(core),
-        upstream_hash: hashOfFeature.get(id) ?? null,
+        // Null when geometry is incomplete → the row looks "changed" again
+        // next run, so its zones are re-queued and the outline rebuilt once
+        // the cache fills in.
+        upstream_hash: geomComplete ? hashOfFeature.get(id) ?? null : null,
         updated_at: nowIso,
         first_seen_at: firstSeenById.get(id) ?? nowIso,
       };
