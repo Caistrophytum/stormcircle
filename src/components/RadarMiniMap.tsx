@@ -203,7 +203,7 @@ const RadarStationMarkers = ({
 };
 
 /** Small overlay showing when the displayed radar scan was taken. */
-const LastScanBadge = ({ station, euMode }: { station: RadarStation | null; euMode?: boolean }) => {
+export const LastScanBadge = ({ station, euMode, inline }: { station: RadarStation | null; euMode?: boolean; inline?: boolean }) => {
   useRefreshTick(); // re-render each minute so the "ago" text stays fresh
   const lastReceived = useRadarStationStatus();
   const ts = euMode ? getLastEuFrameTimeMs() : station ? lastReceived[station.id] : undefined;
@@ -215,7 +215,7 @@ const LastScanBadge = ({ station, euMode }: { station: RadarStation | null; euMo
   }
   const stale = ts ? Date.now() - ts > 20 * 60 * 1000 : false;
   return (
-    <div className="absolute bottom-2 left-2 z-[1001] pointer-events-none rounded-sm border border-border bg-background/80 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+    <div className={`${inline ? "" : "absolute bottom-2 left-2 z-[1001]"} pointer-events-none rounded-sm border border-border bg-background/80 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground`}>
       Last scan: <span className={stale ? "text-destructive" : "text-primary"}>{label}</span>
     </div>
   );
@@ -329,7 +329,7 @@ export const LeafletRadar = ({
         />
       )}
 
-      {interactive && <LastScanBadge station={station} euMode={euMode} />}
+      {interactive && !mobile && <LastScanBadge station={station} euMode={euMode} />}
       <Recenter station={station} />
       {onMap && <MapRefCapture onMap={onMap} />}
     </MapContainer>
