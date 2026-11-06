@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronsUpDown, Check, MapPin } from "lucide-react";
-import { LeafletRadar } from "@/components/RadarMiniMap";
+import { LeafletRadar, LastScanBadge } from "@/components/RadarMiniMap";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Command,
@@ -54,14 +54,12 @@ export default function MobileRadar() {
       </div>
 
       {/* Overlay source toggle (EU composite vs NEXRAD) */}
+      <div className="absolute flex items-center gap-2" style={{ top: 10, left: 10, zIndex: 900 }}>
       <button
         type="button"
         onClick={toggleRadarMode}
-        className="absolute font-mono text-[10px] uppercase tracking-wider rounded-sm px-2 py-1"
+        className="font-mono text-[10px] uppercase tracking-wider rounded-sm px-2 py-1"
         style={{
-          top: 10,
-          left: 10,
-          zIndex: 900,
           background: "rgba(10,10,14,0.9)",
           border: "1px solid rgba(255,157,0,0.5)",
           color: "#ff9d00",
@@ -69,6 +67,8 @@ export default function MobileRadar() {
       >
         {euMode ? "EU Composite" : "NEXRAD"}
       </button>
+      <LastScanBadge station={selectedStation} euMode={euMode} inline />
+      </div>
 
       {/* Bottom 17% - controls */}
       <div
