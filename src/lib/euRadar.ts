@@ -30,6 +30,10 @@ export function isInEuRadarCoverage(lat: number, lon: number): boolean {
   );
 }
 
+let lastEuFrameTimeMs: number | null = null;
+/** Time (ms) of the newest EU composite frame fetched, for the "last scan" badge. */
+export const getLastEuFrameTimeMs = () => lastEuFrameTimeMs;
+
 const RAINVIEWER_INDEX = "https://api.rainviewer.com/public/weather-maps.json";
 
 export interface EuRadarFrame {
@@ -61,6 +65,7 @@ export async function fetchLatestEuRadarFrame(): Promise<EuRadarFrame | null> {
     const past = json.radar?.past ?? [];
     const last = past[past.length - 1];
     if (!last) return null;
+    lastEuFrameTimeMs = last.time * 1000;
     return {
       time: last.time,
       host: json.host ?? "https://tilecache.rainviewer.com",

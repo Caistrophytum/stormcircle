@@ -9,6 +9,7 @@ import { ProductCode, SelectedCity } from "@/hooks/useRadar";
 import { useWarningPolygons } from "@/hooks/useWarningPolygons";
 import { useRefreshTick } from "@/hooks/useRefreshTick";
 import { useRadarStationStatus } from "@/hooks/useRadarStationStatus";
+import { getLastEuFrameTimeMs } from "@/lib/euRadar";
 import WarningPolygons, { WarningPolygonsHandle } from "./WarningPolygons";
 
 /** Custom Leaflet pane name for radar station markers. Sits above the
@@ -201,6 +202,25 @@ const RadarStationMarkers = ({
   );
 };
 
+/** Small overlay showing when the displayed radar scan was taken. */
+const LastScanBadge = ({ station, euMode }: { station: RadarStation | null; euMode?: boolean }) => {
+  useRefreshTick(); // re-render each minute so the "ago" text stays fresh
+  const lastReceived = useRadarStationStatus();
+  const ts = euMode ? getLastEuFrameTimeMs() : station ? lastReceived[station.id] : undefined;
+  let label = "--";
+  if (ts) {
+    const mins = Math.max(0, Math.round((Date.now() - ts) / 60000));
+    const clock = new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    label = `${clock} (${mins < 1 ? "just now" : `${mins} min ago`})`;
+  }
+  const stale = ts ? Date.now() - ts > 20 * 60 * 1000 : false;
+  return (
+    <div className="absolute bottom-2 left-2 z-[1001] pointer-events-none rounded-sm border border-border bg-background/80 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+      Last scan: <span className={stale ? "text-destructive" : "text-primary"}>{label}</span>
+    </div>
+  );
+};
+
 interface LeafletMapProps {
   station: RadarStation | null;
   tileUrl: string | null;
@@ -309,6 +329,7 @@ export const LeafletRadar = ({
         />
       )}
 
+      {interactive && <LastScanBadge station={station} euMode={euMode} />}
       <Recenter station={station} />
       {onMap && <MapRefCapture onMap={onMap} />}
     </MapContainer>
