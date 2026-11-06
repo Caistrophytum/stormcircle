@@ -18,6 +18,12 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    date: "2026-11-06 13z",
+    tag: "NEW",
+    title: "Forecast Slider For WRS",
+    body: "Added a new forecast slider that interacts only with the WRS objects in order to attempt to simulate the WRS for up to 24 hours.",
+  },
+  {
     date: "2026-10-30 20z",
     tag: "IMPROVED",
     title: "Chat Location Fetch, Logged-Out Popup, Password Clearance",
