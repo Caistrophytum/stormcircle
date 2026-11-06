@@ -332,12 +332,19 @@ Deno.serve(async (req) => {
       const id = String(p.id ?? f.id);
 
       let geom: GeomT = null;
+      // True when we have a complete outline this run. A zone-based alert
+      // whose zones were deferred (per-run fetch cap) or failed to fetch
+      // resolves to null/partial geometry; in that case we must NOT record
+      // the upstream hash, or the next run would skip this alert as
+      // "unchanged" and the outline would never be rebuilt.
+      let geomComplete = true;
       if (f.geometry?.type === "Polygon" || f.geometry?.type === "MultiPolygon") {
         geom = f.geometry as GeomT;
       } else {
         const zones: string[] = Array.isArray(p.affectedZones) ? p.affectedZones : [];
         if (zones.length > 0) {
           const resolved = zones.map((z) => zoneGeom.get(z) ?? null);
+          if (resolved.some((g) => !g)) geomComplete = false;
           geom = combinePolys(resolved);
         }
       }
