@@ -1,3 +1,4 @@
+import WRSForecastSlider from "@/components/WRSForecastSlider";
 /**
  * MetricsTab - WRS filling circle + physical parameters filling line + virtual
  * parameter cards. Colors shift gradually as values change (CSS transitions
@@ -136,9 +137,13 @@ function CitySearchButton({
 
 export default function MetricsTab() {
 
-  const { threatLevel, physicalNodes, soundingNodes, stationActive, physGatePercent } = useWRSMetrics();
-  const { profile } = useAuth();
   const radar = useRadarContext();
+  const [hourOffset, setHourOffset] = useState(0);
+  const cityKey = `${radar.selectedCity?.lat},${radar.selectedCity?.lon}`;
+  useEffect(() => setHourOffset(0), [cityKey]);
+  const { threatLevel, physicalNodes, soundingNodes, stationActive, physGatePercent, forecastTime, forecastLoading } =
+    useWRSMetrics(hourOffset);
+  const { profile } = useAuth();
   const cityName = radar.selectedCity?.name ?? profile?.location?.split(",")[0]?.trim() ?? null;
   const { time: localTime, timezone } = useLocalClock(
     radar.selectedCity?.lat ?? null,
@@ -314,6 +319,14 @@ export default function MetricsTab() {
 
 
       </div>
+
+      <WRSForecastSlider
+        value={hourOffset}
+        onChange={setHourOffset}
+        time={forecastTime}
+        timezone={timezone}
+        loading={forecastLoading}
+      />
 
       {/* Virtual parameters - rounded boxes */}
       <div>

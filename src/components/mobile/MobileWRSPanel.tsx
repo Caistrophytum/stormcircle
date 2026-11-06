@@ -15,6 +15,7 @@ interface MobileWRSPanelProps {
   cityName: string;
   localTime: string;
   timezone: string;
+  children?: React.ReactNode;
 }
 
 const METER_SIZE = 124;
@@ -206,6 +207,7 @@ export default function MobileWRSPanel({
           Pick a radar station on the map to enable metrics.
         </p>
       )}
+      {children}
     </section>
   );
 }
